@@ -16,7 +16,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from mr_engine.transforms import get_whitelist
+from mr_engine.transforms import get_whitelist, get_compound_groups
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +88,35 @@ class RawMRFromAgent(BaseModel):
             raise ValueError("MR must have at least one transform step")
         if not self.evidence:
             raise ValueError("MR must have at least one evidence citation")
+        return self
+
+    @model_validator(mode="after")
+    def _compound_steps_all_or_nothing(self) -> "RawMRFromAgent":
+        """
+        Enforce the all-or-nothing rule for compound-step groups.
+
+        If ANY transform from a compound group appears in transform_steps,
+        then ALL members of that group must be present.  This prevents the
+        LLM from listing e.g. permute_ALT without the matching remap_GT,
+        which would produce a semantically broken MR.
+
+        The compound groups are derived dynamically from the TRANSFORM_REGISTRY
+        (any group with 2+ members is a compound group), so adding a new
+        compound group in the future requires zero changes here.
+        """
+        steps = set(self.transform_steps)
+        for group_id, required_members in get_compound_groups().items():
+            present = steps & required_members
+            if present and present != required_members:
+                missing = sorted(required_members - present)
+                present_list = sorted(present)
+                raise ValueError(
+                    f"Compound-step violation for group '{group_id}': "
+                    f"found {present_list} but missing {missing}. "
+                    f"These transforms are biologically co-dependent and MUST "
+                    f"ALL appear together in transform_steps: "
+                    f"{sorted(required_members)}"
+                )
         return self
 
 

@@ -1,0 +1,153 @@
+"""
+SAM normalizer: parse raw SAM text into CanonicalSam.
+
+This is the Python-native parser used as a reference normalizer.
+It reads raw SAM text lines and produces a CanonicalSam object.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any, Optional
+
+from .schema import (
+    CanonicalSam,
+    CanonicalSamHeader,
+    CanonicalSamRecord,
+    CigarOp,
+    TagValue,
+)
+
+
+def normalize_sam_text(lines: list[str]) -> CanonicalSam:
+    """Parse raw SAM text lines into a CanonicalSam object."""
+    header_lines: list[str] = []
+    alignment_lines: list[str] = []
+
+    for line in lines:
+        stripped = line.rstrip("\r\n")
+        if not stripped:
+            continue
+        if stripped.startswith("@"):
+            header_lines.append(stripped)
+        else:
+            alignment_lines.append(stripped)
+
+    header = _parse_header(header_lines)
+    records = [_parse_alignment(al) for al in alignment_lines]
+    return CanonicalSam(header=header, records=records)
+
+
+def _parse_header(header_lines: list[str]) -> CanonicalSamHeader:
+    """Parse SAM header lines into CanonicalSamHeader."""
+    hd: Optional[dict[str, str]] = None
+    sq: list[dict[str, str]] = []
+    rg: list[dict[str, str]] = []
+    pg: list[dict[str, str]] = []
+    co: list[str] = []
+
+    for line in header_lines:
+        fields = line.split("\t")
+        record_type = fields[0]
+
+        if record_type == "@HD":
+            hd = _parse_tag_fields(fields[1:])
+        elif record_type == "@SQ":
+            sq.append(_parse_tag_fields(fields[1:]))
+        elif record_type == "@RG":
+            rg.append(_parse_tag_fields(fields[1:]))
+        elif record_type == "@PG":
+            pg.append(_parse_tag_fields(fields[1:]))
+        elif record_type == "@CO":
+            co.append("\t".join(fields[1:]))
+
+    return CanonicalSamHeader(HD=hd, SQ=sq, RG=rg, PG=pg, CO=sorted(co))
+
+
+def _parse_tag_fields(fields: list[str]) -> dict[str, str]:
+    """Parse TAG:VALUE header fields into a dict."""
+    result: dict[str, str] = {}
+    for field in fields:
+        if ":" in field:
+            key, val = field.split(":", 1)
+            result[key] = val
+    return result
+
+
+def _parse_alignment(line: str) -> CanonicalSamRecord:
+    """Parse a SAM alignment line into CanonicalSamRecord."""
+    cols = line.split("\t")
+    if len(cols) < 11:
+        raise ValueError(f"SAM alignment has fewer than 11 columns: {line[:80]}")
+
+    qname = cols[0]
+    flag = int(cols[1])
+    rname = None if cols[2] == "*" else cols[2]
+    raw_pos = int(cols[3])
+    pos = None if raw_pos == 0 else raw_pos  # Already 1-based in SAM text
+    mapq = int(cols[4])
+    cigar = _parse_cigar(cols[5])
+    rnext = None if cols[6] == "*" else ("=" if cols[6] == "=" else cols[6])
+    raw_pnext = int(cols[7])
+    pnext = None if raw_pnext == 0 else raw_pnext
+    tlen = int(cols[8])
+    seq = None if cols[9] == "*" else cols[9]
+    qual = None if cols[10] == "*" else cols[10]
+
+    # Optional tags (columns 12+)
+    tags: dict[str, TagValue] = {}
+    for col in cols[11:]:
+        m = re.match(r"^([A-Za-z][A-Za-z0-9]):([AifZHB]):(.+)$", col)
+        if m:
+            tag_name = m.group(1)
+            tag_type = m.group(2)
+            tag_val = _parse_tag_value(m.group(3), tag_type)
+            tags[tag_name] = TagValue(type=tag_type, value=tag_val)
+
+    # Sort tags by key for deterministic output
+    sorted_tags = dict(sorted(tags.items()))
+
+    return CanonicalSamRecord(
+        QNAME=qname,
+        FLAG=flag,
+        RNAME=rname,
+        POS=pos,
+        MAPQ=mapq,
+        CIGAR=cigar,
+        RNEXT=rnext,
+        PNEXT=pnext,
+        TLEN=tlen,
+        SEQ=seq,
+        QUAL=qual,
+        tags=sorted_tags,
+    )
+
+
+def _parse_cigar(cigar_str: str) -> Optional[list[CigarOp]]:
+    """Parse CIGAR string into list of CigarOp."""
+    if cigar_str == "*":
+        return None
+    ops = []
+    for m in re.finditer(r"(\d+)([MIDNSHP=X])", cigar_str):
+        ops.append(CigarOp(op=m.group(2), len=int(m.group(1))))
+    return ops if ops else None
+
+
+def _parse_tag_value(val_str: str, tag_type: str) -> Any:
+    """Parse a SAM tag value according to its type."""
+    if tag_type == "i":
+        return int(val_str)
+    if tag_type == "f":
+        return float(val_str)
+    if tag_type == "B":
+        # Array type: B:type,val1,val2,...
+        parts = val_str.split(",")
+        subtype = parts[0]
+        values = parts[1:]
+        if subtype in ("c", "C", "s", "S", "i", "I"):
+            return [int(v) for v in values]
+        if subtype == "f":
+            return [float(v) for v in values]
+        return values
+    # A (char), Z (string), H (hex)
+    return val_str

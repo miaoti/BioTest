@@ -39,8 +39,10 @@ class TestRegistry:
         assert len(wl) == 13
 
     def test_all_transforms_are_callable(self):
-        for name, fn in TRANSFORM_REGISTRY.items():
-            assert callable(fn), f"{name} is not callable"
+        for name, meta in TRANSFORM_REGISTRY.items():
+            assert callable(meta.fn), f"{name} is not callable"
+            assert meta.format in ("VCF", "SAM", "VCF/SAM"), f"{name} has unknown format: {meta.format}"
+            assert meta.description, f"{name} has no description"
 
 
 # ===========================================================================

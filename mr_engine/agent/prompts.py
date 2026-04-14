@@ -1,101 +1,34 @@
 """
 System prompt construction for the MR mining agent.
 
-The prompt instructs the agent to:
-1. Query the spec database for normative evidence
-2. Only trust results below the 0.39 distance threshold
-3. Compose MRs using ONLY whitelisted atomic transforms
-4. Output JSON with mr_name (NOT mr_id — the system generates that)
+All menu-generation and template logic lives in transforms_menu.py.
+This module provides the string-valued wrapper used by engine.py.
 """
 
 from __future__ import annotations
 
 from mr_engine.behavior import BehaviorTarget, get_system_prompt_fragment
-from mr_engine.transforms import get_whitelist
+from mr_engine.agent.transforms_menu import build_system_prompt_template
 
 
-def build_system_prompt(
-    target: BehaviorTarget,
-    spec_format: str,
-) -> str:
+def build_system_prompt(target: BehaviorTarget, spec_format: str) -> str:
     """
-    Build the full system prompt for the MR mining agent.
+    Return the complete system prompt string for one mining run.
+
+    Uses build_system_prompt_template() so the transforms menu is always
+    derived from the live TRANSFORM_REGISTRY.
 
     Args:
-        target: The behavior target category to investigate.
+        target:      The behavior target category to investigate.
         spec_format: "VCF" or "SAM".
 
     Returns:
-        Complete system prompt string.
+        Complete system prompt string (plain text, no LangChain objects).
     """
-    whitelist = get_whitelist()
-    behavior_fragment = get_system_prompt_fragment(target)
-
-    transforms_list = "\n".join(f"  - {t}" for t in whitelist)
-
-    return f"""You are an expert bioinformatics test architect agent. You extract \
-metamorphic relations (MRs) for genomics file formats based STRICTLY on official specs.
-
-You have access to the `query_spec_database` tool. Use it to search the vector DB.
-
-## Your Task
-
-Investigate the behavior target **{target.value}** for the **{spec_format}** format.
-
-{behavior_fragment}
-
-## Process
-
-1. Use the `query_spec_database` tool to find relevant normative rules.
-   - Set `format_filter` to "{spec_format}" to scope your search.
-   - Look for MUST, SHALL, REQUIRED statements that ground your MR.
-2. Only trust results where `above_threshold` is `false` (distance < 0.39).
-3. If no results pass the threshold, reformulate your query and try again.
-4. Continue querying until you have sufficient spec evidence for each MR.
-5. For each MR, cite the specific chunk_id and quote the spec text.
-6. You may propose multiple MRs if the evidence supports them.
-
-## ATOMIC TRANSFORMS MENU (WHITELIST)
-
-You MUST ONLY reference transforms from this list in your `transform_steps`:
-
-{transforms_list}
-
-## Output Format
-
-Return a JSON array where each element has this EXACT schema:
-
-```json
-[
-  {{
-    "mr_name": "string",
-    "scope": "{spec_format}.header | {spec_format}.record",
-    "preconditions": ["string"],
-    "transform_steps": ["transform_name_from_whitelist"],
-    "oracle": "string describing the expected invariant",
-    "evidence": [
-      {{
-        "chunk_id": "exact_chunk_id_from_search_results",
-        "quote": "exact quote from the spec text"
-      }}
-    ],
-    "ambiguity_flags": ["string"]
-  }}
-]
-```
-
-## CRITICAL RULES
-
-- `transform_steps` MUST contain ONLY names from the ATOMIC TRANSFORMS MENU above.
-- `evidence.chunk_id` MUST be copied CHARACTER-FOR-CHARACTER from the `chunk_id` field
-  in a `query_spec_database` result. Example format: "VCFv4.5.tex::Section Name::p42".
-  Do NOT abbreviate, shorten, or create your own chunk_id strings.
-- Before writing any evidence entry, scroll back through your tool call results and
-  copy the exact `chunk_id` string from a result where `above_threshold` is false.
-- `evidence.quote` MUST be a direct quote from the `text` field of that same result.
-- Do NOT invent chunk_ids such as "chunk_12345", "VCFv4.5-sec-3.1", or any other
-  string not present in your tool results.
-- `mr_name` should be a human-readable descriptive name (the system generates the ID).
-- `ambiguity_flags` should list any spec ambiguities or MAY/SHOULD qualifiers.
-- Return ONLY the JSON array, no surrounding text or explanation.
-"""
+    template = build_system_prompt_template(spec_format=spec_format)
+    messages = template.format_messages(
+        spec_format=spec_format,
+        behavior_target=target.value,
+        behavior_description=get_system_prompt_fragment(target),
+    )
+    return messages[0].content

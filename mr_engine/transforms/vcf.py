@@ -17,7 +17,11 @@ from . import register_transform
 # ---------------------------------------------------------------------------
 # 1. shuffle_meta_lines
 # ---------------------------------------------------------------------------
-@register_transform("shuffle_meta_lines")
+@register_transform(
+    "shuffle_meta_lines",
+    format="VCF",
+    description="Shuffle VCF ##meta-information lines into a new order, keeping ##fileformat pinned first.",
+)
 def shuffle_meta_lines(
     vcf_lines: list[str],
     except_exact: Optional[list[str]] = None,
@@ -72,7 +76,11 @@ def shuffle_meta_lines(
 # ---------------------------------------------------------------------------
 # 2. permute_structured_kv_order
 # ---------------------------------------------------------------------------
-@register_transform("permute_structured_kv_order")
+@register_transform(
+    "permute_structured_kv_order",
+    format="VCF",
+    description="Reorder key=value pairs inside a structured ##INFO/##FORMAT/##FILTER meta-line (e.g. ID=DP,Number=1 -> Number=1,ID=DP).",
+)
 def permute_structured_kv_order(
     meta_line: str,
     seed: Optional[int] = None,
@@ -121,7 +129,12 @@ def permute_structured_kv_order(
 # ---------------------------------------------------------------------------
 # 3. choose_permutation
 # ---------------------------------------------------------------------------
-@register_transform("choose_permutation")
+@register_transform(
+    "choose_permutation",
+    format="VCF",
+    description="Generate a random permutation array [0..n-1] (helper step — always paired with permute_ALT + remap_GT + permute_Number_A_R_fields).",
+    group="alt_permutation",
+)
 def choose_permutation(n: int, seed: Optional[int] = None) -> list[int]:
     """
     Generate a random permutation of [0, 1, ..., n-1].
@@ -142,7 +155,12 @@ def choose_permutation(n: int, seed: Optional[int] = None) -> list[int]:
 # ---------------------------------------------------------------------------
 # 4. permute_alt
 # ---------------------------------------------------------------------------
-@register_transform("permute_ALT")
+@register_transform(
+    "permute_ALT",
+    format="VCF",
+    description="Reorder ALT alleles by permutation pi (e.g. 'A,C,T' with pi=[2,0,1] -> 'T,A,C').",
+    group="alt_permutation",
+)
 def permute_alt(alt_field: str, pi: list[int]) -> str:
     """
     Reorder ALT alleles according to permutation pi.
@@ -166,7 +184,12 @@ def permute_alt(alt_field: str, pi: list[int]) -> str:
 # ---------------------------------------------------------------------------
 # 5. remap_gt
 # ---------------------------------------------------------------------------
-@register_transform("remap_GT")
+@register_transform(
+    "remap_GT",
+    format="VCF",
+    description="Update GT allele indices to match the new ALT order; REF index (0) is never changed (e.g. '0/1' with A<->C swap -> '0/2').",
+    group="alt_permutation",
+)
 def remap_gt(gt_field: str, pi: list[int], missing: str = ".") -> str:
     """
     Remap genotype allele indices according to an ALT permutation.
@@ -205,7 +228,12 @@ def remap_gt(gt_field: str, pi: list[int], missing: str = ".") -> str:
 # ---------------------------------------------------------------------------
 # 6. permute_number_a_r_fields
 # ---------------------------------------------------------------------------
-@register_transform("permute_Number_A_R_fields")
+@register_transform(
+    "permute_Number_A_R_fields",
+    format="VCF",
+    description="Reorder Number=A INFO/FORMAT values (one per ALT) or Number=R values (REF fixed, ALTs reordered) to match the new ALT permutation.",
+    group="alt_permutation",
+)
 def permute_number_a_r_fields(
     values: str,
     pi: list[int],
@@ -248,7 +276,11 @@ def permute_number_a_r_fields(
 # ---------------------------------------------------------------------------
 # 7. permute_sample_columns
 # ---------------------------------------------------------------------------
-@register_transform("permute_sample_columns")
+@register_transform(
+    "permute_sample_columns",
+    format="VCF",
+    description="Shuffle sample columns across the whole file: the #CHROM header sample IDs and every data row move together with the same permutation.",
+)
 def permute_sample_columns(
     vcf_lines: list[str],
     seed: Optional[int] = None,
@@ -301,7 +333,11 @@ def permute_sample_columns(
 # ---------------------------------------------------------------------------
 # 8. shuffle_info_field_kv
 # ---------------------------------------------------------------------------
-@register_transform("shuffle_info_field_kv")
+@register_transform(
+    "shuffle_info_field_kv",
+    format="VCF",
+    description="Shuffle the semicolon-separated key=value entries in a VCF data line's INFO column (e.g. 'DP=30;AF=0.5;MQ=60' -> 'MQ=60;DP=30;AF=0.5').",
+)
 def shuffle_info_field_kv(
     info_str: str,
     seed: Optional[int] = None,
@@ -331,7 +367,11 @@ def shuffle_info_field_kv(
 # ---------------------------------------------------------------------------
 # 9. inject_equivalent_missing_values
 # ---------------------------------------------------------------------------
-@register_transform("inject_equivalent_missing_values")
+@register_transform(
+    "inject_equivalent_missing_values",
+    format="VCF",
+    description="Append a FORMAT field (declared in the header) filled with '.' to all samples — semantically a no-op that tests missing-value tolerance (e.g. FORMAT GT:DP -> GT:DP:GQ with all samples gaining ':.').",
+)
 def inject_equivalent_missing_values(
     format_str: str,
     sample_strs: list[str],

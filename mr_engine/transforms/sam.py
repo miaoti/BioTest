@@ -39,7 +39,11 @@ def _query_consumed(ops: list[tuple[int, str]]) -> int:
 # ---------------------------------------------------------------------------
 # 1. permute_optional_tag_fields
 # ---------------------------------------------------------------------------
-@register_transform("permute_optional_tag_fields")
+@register_transform(
+    "permute_optional_tag_fields",
+    format="SAM",
+    description="Shuffle the optional TAG:TYPE:VALUE fields (columns 12+) of a SAM alignment line while keeping the 11 mandatory fields fixed.",
+)
 def permute_optional_tag_fields(
     sam_line: str,
     seed: Optional[int] = None,
@@ -75,7 +79,11 @@ def permute_optional_tag_fields(
 # ---------------------------------------------------------------------------
 # 2. split_or_merge_adjacent_cigar_ops
 # ---------------------------------------------------------------------------
-@register_transform("split_or_merge_adjacent_cigar_ops")
+@register_transform(
+    "split_or_merge_adjacent_cigar_ops",
+    format="SAM",
+    description="Split one CIGAR op into two identical ops (10M -> 4M6M) or merge adjacent identical ops (4M6M -> 10M); total query-consumed length is always preserved.",
+)
 def split_or_merge_adjacent_cigar_ops(
     cigar: str,
     mode: str = "split",
@@ -141,7 +149,11 @@ def split_or_merge_adjacent_cigar_ops(
 # ---------------------------------------------------------------------------
 # 3. reorder_header_records
 # ---------------------------------------------------------------------------
-@register_transform("reorder_header_records")
+@register_transform(
+    "reorder_header_records",
+    format="SAM",
+    description="Shuffle SAM header lines of one type (e.g. all @SQ or all @RG lines) while keeping @HD mandatory as the first line.",
+)
 def reorder_header_records(
     header_lines: list[str],
     record_type: str = "@SQ",
@@ -199,7 +211,11 @@ def reorder_header_records(
 # ---------------------------------------------------------------------------
 # 4. toggle_cigar_hard_soft_clipping
 # ---------------------------------------------------------------------------
-@register_transform("toggle_cigar_hard_soft_clipping")
+@register_transform(
+    "toggle_cigar_hard_soft_clipping",
+    format="SAM",
+    description="Convert H<->S clipping in CIGAR and synchronize SEQ/QUAL (H->S: pad dummy bases; S->H: trim those bases); used to test clipping-representation equivalence.",
+)
 def toggle_cigar_hard_soft_clipping(
     cigar: str,
     seq: str,

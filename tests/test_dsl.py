@@ -67,6 +67,97 @@ class TestRawMRFromAgent:
             assert mr.scope == scope
 
 
+class TestCompoundStepValidator:
+    """Enforce all-or-nothing rule for the ALT permutation compound group."""
+
+    # All four compound members present — must pass
+    ALL_FOUR = [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields",
+    ]
+
+    BASE = {
+        "mr_name": "ALT Permutation",
+        "scope": "VCF.record",
+        "preconditions": [],
+        "oracle": "semantics preserved after ALT reorder",
+        "evidence": [{"chunk_id": "c1", "quote": "spec says so"}],
+        "ambiguity_flags": [],
+    }
+
+    def test_all_four_present_passes(self):
+        data = {**self.BASE, "transform_steps": list(self.ALL_FOUR)}
+        mr = RawMRFromAgent.model_validate(data)
+        assert set(mr.transform_steps) == set(self.ALL_FOUR)
+
+    def test_all_four_in_any_order_passes(self):
+        data = {**self.BASE, "transform_steps": list(reversed(self.ALL_FOUR))}
+        mr = RawMRFromAgent.model_validate(data)
+        assert len(mr.transform_steps) == 4
+
+    def test_single_compound_member_rejected(self):
+        """Only permute_ALT without its companions must fail."""
+        data = {**self.BASE, "transform_steps": ["permute_ALT"]}
+        with pytest.raises(ValidationError) as exc_info:
+            RawMRFromAgent.model_validate(data)
+        err = str(exc_info.value)
+        assert "Compound-step violation" in err
+        assert "choose_permutation" in err
+        assert "remap_GT" in err
+        assert "permute_Number_A_R_fields" in err
+
+    def test_two_of_four_rejected(self):
+        """permute_ALT + remap_GT without the other two must fail."""
+        data = {**self.BASE, "transform_steps": ["permute_ALT", "remap_GT"]}
+        with pytest.raises(ValidationError) as exc_info:
+            RawMRFromAgent.model_validate(data)
+        err = str(exc_info.value)
+        assert "choose_permutation" in err
+        assert "permute_Number_A_R_fields" in err
+        # The two present ones should NOT be listed as missing
+        assert "missing ['choose_permutation', 'permute_Number_A_R_fields']" in err
+
+    def test_three_of_four_rejected(self):
+        """Missing just one member must still fail."""
+        data = {**self.BASE, "transform_steps": [
+            "choose_permutation", "permute_ALT", "remap_GT"
+        ]}
+        with pytest.raises(ValidationError) as exc_info:
+            RawMRFromAgent.model_validate(data)
+        err = str(exc_info.value)
+        assert "permute_Number_A_R_fields" in err
+
+    def test_non_compound_transforms_unaffected(self):
+        """Standalone transforms should not trigger compound validation."""
+        data = {
+            **self.BASE,
+            "scope": "VCF.header",
+            "transform_steps": ["shuffle_meta_lines"],
+        }
+        mr = RawMRFromAgent.model_validate(data)
+        assert mr.transform_steps == ["shuffle_meta_lines"]
+
+    def test_compound_plus_extra_transforms_passes(self):
+        """All four compound members + extra non-compound transforms must pass."""
+        data = {**self.BASE, "transform_steps": [
+            *self.ALL_FOUR, "shuffle_info_field_kv",
+        ]}
+        mr = RawMRFromAgent.model_validate(data)
+        assert len(mr.transform_steps) == 5
+
+    def test_error_message_lists_all_required_members(self):
+        """The error must include the full required set so the LLM can fix it."""
+        data = {**self.BASE, "transform_steps": ["choose_permutation"]}
+        with pytest.raises(ValidationError) as exc_info:
+            RawMRFromAgent.model_validate(data)
+        err = str(exc_info.value)
+        # All four names must appear in the error for the LLM retry loop
+        for name in self.ALL_FOUR:
+            assert name in err, f"Expected '{name}' in error message"
+
+
 class TestHydratedEvidence:
     def test_valid_severities(self):
         for sev in ["CRITICAL", "ADVISORY", "INFORMATIONAL"]:
