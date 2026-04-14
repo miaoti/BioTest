@@ -87,9 +87,14 @@ Return a JSON array where each element has this EXACT schema:
 ## CRITICAL RULES
 
 - `transform_steps` MUST contain ONLY names from the ATOMIC TRANSFORMS MENU above.
-- `evidence.chunk_id` MUST be the exact `chunk_id` returned by `query_spec_database`.
-- `evidence.quote` MUST be a direct quote from the search result text.
-- Do NOT invent or hallucinate chunk_ids or quotes.
+- `evidence.chunk_id` MUST be copied CHARACTER-FOR-CHARACTER from the `chunk_id` field
+  in a `query_spec_database` result. Example format: "VCFv4.5.tex::Section Name::p42".
+  Do NOT abbreviate, shorten, or create your own chunk_id strings.
+- Before writing any evidence entry, scroll back through your tool call results and
+  copy the exact `chunk_id` string from a result where `above_threshold` is false.
+- `evidence.quote` MUST be a direct quote from the `text` field of that same result.
+- Do NOT invent chunk_ids such as "chunk_12345", "VCFv4.5-sec-3.1", or any other
+  string not present in your tool results.
 - `mr_name` should be a human-readable descriptive name (the system generates the ID).
 - `ambiguity_flags` should list any spec ambiguities or MAY/SHOULD qualifiers.
 - Return ONLY the JSON array, no surrounding text or explanation.

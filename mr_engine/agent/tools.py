@@ -10,21 +10,15 @@ from __future__ import annotations
 from typing import Optional
 
 from langchain_core.tools import tool
-from spec_ingestor.indexer import SpecIndex
-
-# Lazy singleton
-_index: SpecIndex | None = None
+from mr_engine.index_loader import EphemeralSpecIndex, get_ephemeral_index
 
 # Phase A established rejection threshold
 REJECTION_THRESHOLD = 0.39
 
 
-def get_spec_index() -> SpecIndex:
-    """Get or create the singleton SpecIndex instance."""
-    global _index
-    if _index is None:
-        _index = SpecIndex()
-    return _index
+def get_spec_index() -> EphemeralSpecIndex:
+    """Get or create the singleton ephemeral SpecIndex."""
+    return get_ephemeral_index()
 
 
 @tool

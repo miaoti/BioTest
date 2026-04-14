@@ -1,0 +1,74 @@
+{
+  "enforced": [
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "meta_info_field_order_invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "VCF file contains meta-information lines with structured fields"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "Reordering of fields within meta-information lines (ID, Number, Type, Description, optional fields) must not change the biological semantics of the VCF file",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p121",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": []
+    },
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "meta_header_lines_order_invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "VCF file contains meta-information lines",
+        "##fileformat line is first if present"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "Reordering of meta-information lines (except ##fileformat) must not change the biological semantics of the VCF file",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": []
+    },
+    {
+      "mr_id": "a8b8d3f93cf5",
+      "mr_name": "genotype_field_ordering_invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "VCF record contains genotype fields with Number=G"
+      ],
+      "transform_steps": [
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "Genotype field values must maintain the prescribed ordering based on ploidy and allele count, and reordering must not be allowed",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p159",
+          "quote": "G: The field has one value for each possible genotype. The values must be in the same order as prescribed in section <ref> (see Genotype Ordering).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        }
+      ],
+      "ambiguity_flags": []
+    }
+  ],
+  "quarantine": [],
+  "summary": {
+    "enforced_count": 3,
+    "quarantine_count": 0,
+    "total": 3
+  }
+}

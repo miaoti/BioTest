@@ -40,6 +40,7 @@ class LLMSettings(BaseSettings):
     google_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
 
     # Local vLLM
     vllm_base_url: Optional[str] = None
@@ -62,6 +63,7 @@ class LLMSettings(BaseSettings):
             (["gemini", "google"], "GOOGLE_API_KEY", self.google_api_key),
             (["gpt", "o1", "o3", "openai"], "OPENAI_API_KEY", self.openai_api_key),
             (["claude", "anthropic"], "ANTHROPIC_API_KEY", self.anthropic_api_key),
+            (["llama", "mixtral", "gemma", "qwen", "kimi", "allam", "groq/compound"], "GROQ_API_KEY", self.groq_api_key),
         ]
 
         for keywords, env_name, key_value in checks:
@@ -119,7 +121,57 @@ def get_llm(settings: Optional[LLMSettings] = None) -> BaseChatModel:
         logger.info("Initialized vLLM model '%s' at %s", actual_model, settings.vllm_base_url)
         return llm
 
-    # ── Cloud providers via init_chat_model ──
+    # ── Google Gemini ──
+    model_lower = model_name.lower()
+    if any(kw in model_lower for kw in ("gemini", "google")):
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        llm = ChatGoogleGenerativeAI(
+            model=model_name,
+            google_api_key=settings.google_api_key,
+            **kwargs,
+        )
+        logger.info("Initialized Google GenAI model '%s'", model_name)
+        return llm
+
+    # ── OpenAI ──
+    if any(kw in model_lower for kw in ("gpt", "o1", "o3", "openai")):
+        from langchain_openai import ChatOpenAI
+
+        llm = ChatOpenAI(
+            model=model_name,
+            api_key=settings.openai_api_key,
+            **kwargs,
+        )
+        logger.info("Initialized OpenAI model '%s'", model_name)
+        return llm
+
+    # ── Anthropic ──
+    if any(kw in model_lower for kw in ("claude", "anthropic")):
+        from langchain_anthropic import ChatAnthropic
+
+        llm = ChatAnthropic(
+            model=model_name,
+            api_key=settings.anthropic_api_key,
+            **kwargs,
+        )
+        logger.info("Initialized Anthropic model '%s'", model_name)
+        return llm
+
+    # ── Groq ──
+    if any(kw in model_lower for kw in ("llama", "mixtral", "gemma", "qwen", "kimi", "allam", "meta-llama", "groq/compound", "deepseek")):
+        from langchain_groq import ChatGroq
+
+        llm = ChatGroq(
+            model=model_name,
+            api_key=settings.groq_api_key,
+            temperature=settings.llm_temperature,
+            max_tokens=settings.llm_max_tokens,
+        )
+        logger.info("Initialized Groq model '%s'", model_name)
+        return llm
+
+    # ── Fallback: try init_chat_model ──
     from langchain.chat_models import init_chat_model
 
     llm = init_chat_model(model_name, **kwargs)

@@ -18,7 +18,12 @@ from dataclasses import dataclass, field
 
 from pydantic import ValidationError
 
-from spec_ingestor.indexer import SpecIndex
+from typing import Protocol
+
+
+class HasCollection(Protocol):
+    """Anything with a _collection attribute (SpecIndex or EphemeralSpecIndex)."""
+    _collection: object
 from .models import (
     HydratedEvidence,
     MetamorphicRelation,
@@ -41,7 +46,7 @@ class CompilationResult:
 
 def compile_mr_output(
     raw_text: str,
-    spec_index: SpecIndex,
+    spec_index,
 ) -> CompilationResult:
     """
     Full compilation pipeline: parse -> validate -> hydrate -> hash -> assemble.
@@ -165,7 +170,7 @@ def compile_mr_output(
 
 def _hydrate_evidence(
     raw_evidences: list[RawEvidence],
-    spec_index: SpecIndex,
+    spec_index,
 ) -> tuple[list[HydratedEvidence], list[str]]:
     """
     Look up each chunk_id in ChromaDB to retrieve ground-truth metadata.
@@ -214,18 +219,41 @@ def _hydrate_evidence(
 
 def _extract_json(text: str) -> str | None:
     """
-    Extract JSON from agent output, handling:
+    Extract JSON from agent output, handling many LLM output patterns:
     - ```json ... ``` markdown fences
+    - ``` ... ``` without language tag
     - Raw JSON starting with [ or {
+    - JSON embedded in surrounding text/explanation
     """
-    # Try markdown fenced code blocks first
-    match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
+    if not text or not text.strip():
+        return None
 
-    # Try raw JSON
+    # Try markdown fenced code blocks first (with or without language tag)
+    match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if match:
+        candidate = match.group(1).strip()
+        if candidate.startswith(("[", "{")):
+            return candidate
+
+    # Try raw JSON (entire text is JSON)
     stripped = text.strip()
     if stripped.startswith(("[", "{")):
         return stripped
+
+    # Try to find JSON array or object embedded in text
+    # Look for the first [ or { and match to the last ] or }
+    for start_char, end_char in [("[", "]"), ("{", "}")]:
+        start_idx = text.find(start_char)
+        if start_idx == -1:
+            continue
+        end_idx = text.rfind(end_char)
+        if end_idx > start_idx:
+            candidate = text[start_idx:end_idx + 1]
+            # Quick sanity check: try to parse it
+            try:
+                json.loads(candidate)
+                return candidate
+            except json.JSONDecodeError:
+                continue
 
     return None

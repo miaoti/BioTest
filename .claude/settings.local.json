@@ -11,7 +11,14 @@
       "Bash(py:*)",
       "Bash(curl -s \"https://api.github.com/repos/samtools/hts-specs/contents/?ref=e821e4f02ae25c2175f9a366edca1322d6a2de72\")",
       "Bash(python -c \"import sys,json; [print\\(f['name']\\) for f in json.loads\\(sys.stdin.read\\(\\)\\) if 'ver' in f['name'].lower\\(\\) or 'VCF' in f['name'] or 'SAM' in f['name']]\")",
-      "Bash(wc -l data/raw_tex/*.tex)"
+      "Bash(wc -l data/raw_tex/*.tex)",
+      "Bash(python -c ':*)",
+      "Bash(python3.14 -c \"import pydantic; print\\(pydantic.__version__\\)\")",
+      "Bash(python3.14 -c ':*)",
+      "Bash(python3.14 -m pip install langchain-groq)",
+      "Bash(python3.14 -m pytest tests/ -x -q)",
+      "Bash(python3.14 -m pytest tests/ --ignore=tests/test_golden_retrieval.py -q)",
+      "Bash(python3.14 -m mr_engine --format VCF --target ordering_invariance --export data/mr_registry.json --verbose)"
     ]
   }
 }

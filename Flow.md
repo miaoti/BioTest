@@ -414,7 +414,7 @@ BioTest/
     └── test_registry.py     # Tests: 70 tests
 ```
 
-#### 🛡️ 核心防幻觉机制与测试结果 (Key Anti-Hallucination Mechanisms)
+#### 🛡️ 核心防幻觉机制 (Key Anti-Hallucination Mechanisms)
 
 1. **Transform whitelist**: Pydantic rejects any `transform_steps` not in the registry
 2. **Deterministic `mr_id`**: MD5 hash of (`format` + `scope` + sorted transforms) — dedup regardless of LLM naming
@@ -422,7 +422,27 @@ BioTest/
 4. **Hallucinated `chunk_id` rejection**: If `chunk_id` not found in ChromaDB, compilation fails
 5. **0.39 distance threshold**: Results below relevance are marked `above_threshold: true`
 
-**✅ 测试结果 (Test Results): 70/70 passed**
+#### ✅ 自动化测试报告 (87/87 Tests Passed)
+
+**1. 独立单元测试 (Unit Tests - 70/70)**
+* **B2 Transforms (42)**: 测试所有 13 个原子操作的确定性、正确性、边界条件及领域不变量保障。
+* **B5 DSL Models (17)**: 验证 Pydantic 模型、操作白名单强制管控及确定性 MD5 唯一哈希。
+* **B6 Registry (11)**: 验证审查分级隔离（Enforced/Quarantine）及哈希去重逻辑。
+
+**2. 真实数据集成测试 (Integration Tests - 17/17)**
+* 使用真实加载的 ChromaDB 及 2,048 切片数据，全链路测试代理提问、防幻觉拦截、去重、及规范溯源（如自动填充 `rule_severity`）。
+
+#### 🚀 首次实战运行记录 (Live Initial Run)
+
+* **模型引擎**: `moonshotai/kimi-k2-instruct` via Groq
+* **运行策略**: 选用单一意图目标 `--target ordering_invariance` 针对 VCF 进行测试。
+* **Agent 表现**: 代理共执行 50 次自主检索调用，成功探索了 7 大规范排序主题（如头部、INFO、样本排序等）。触发了 429 频率限制时，系统实现了透明自平衡重试，无失败记录。
+
+**产出成果 (Mined MRs)**：系统最终产出 **3 条高置信度变异关系 (Enforced MRs)**，全部具备规范级别“绝对不变性”证据（CRITICAL Evidence）。
+
+> [!NOTE] 
+> **Why Only 3 MRs for 'Ordering Invariance'?**
+> 这是由防幻觉体系强约束带来的预期结果：Agent 广泛探索了 7 大方向，但严格的规范原文仅针对 Header Lines、Structured Keys 和 Genotype fields 给出了“可自由重排而不影响语义”的铁证依据。其他诸如 INFO、ALT 列排序等均因为受引用的索引制约被系统有效拦截，充分体现了这套管线的安全性。在完整的意图和格式矩阵全量运行时，预计安全产出量将达到 15–30 条。
 
 ## 🦾 阶段 C：约束生成与交叉执行 (生产与实战)
 
