@@ -1,0 +1,123 @@
+# ============================================================================
+# BioTest Grand Orchestrator Configuration
+# ============================================================================
+# This file drives the entire metamorphic testing pipeline:
+#   Phase A (Spec Ingestion) → Phase B (MR Mining) → Phase C (Cross-Execution)
+#
+# Usage:  py -3.12 biotest.py                         # uses this config
+#         py -3.12 biotest.py --config custom.yaml     # uses custom config
+#         py -3.12 biotest.py --phase C                # run only Phase C
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Phase A: Specification Ingestion & RAG Index
+# ---------------------------------------------------------------------------
+phase_a:
+  enabled: true
+
+  # Which spec files to fetch from samtools/hts-specs GitHub repo
+  specs:
+    - file: VCFv4.5.tex
+      format: VCF
+      version: "4.5"
+    - file: SAMv1.tex
+      format: SAM
+      version: "1.6"
+
+  # GitHub source control
+  github:
+    repo: samtools/hts-specs
+    branch: master
+    # Pin to a specific commit SHA for reproducibility (null = HEAD)
+    pin_sha: null
+
+  # Embedding model for ChromaDB
+  embedding_model: text-embedding-3-small
+  chroma_collection: hts_specs
+
+# ---------------------------------------------------------------------------
+# Phase B: Agentic RAG-Driven MR Mining
+# ---------------------------------------------------------------------------
+phase_b:
+  enabled: true
+
+  # Which formats to mine MRs for
+  formats:
+    - VCF
+    # - SAM  # Uncomment when SAM seeds are ready for testing
+
+  # Behavior themes to target (subset of all 6 available)
+  # Full list: ordering_invariance, semantics_preserving_permutation,
+  #            normalization_invariance, rejection_invariance,
+  #            coordinate_indexing_invariance, round_trip_invariance
+  themes:
+    - ordering_invariance
+    # - semantics_preserving_permutation
+    # - normalization_invariance
+
+  # LLM configuration (reads API keys from .env)
+  llm:
+    model: moonshotai/kimi-k2-instruct   # Groq model
+    temperature: 0.0
+    max_retries: 3
+
+  # Output
+  registry_path: data/mr_registry.json
+
+# ---------------------------------------------------------------------------
+# Phase C: Cross-Execution & Differential Testing
+# ---------------------------------------------------------------------------
+phase_c:
+  enabled: true
+
+  # Seed corpus directory
+  seeds_dir: seeds
+
+  # Bug report output directory
+  output_dir: bug_reports
+
+  # DET report output
+  det_report_path: data/det_report.json
+
+  # Format filter (null = test all available formats)
+  format_filter: VCF
+
+  # Systems Under Test — parser runners
+  suts:
+    - name: htsjdk
+      language: Java
+      enabled: true
+      adapter: harnesses/java/build/libs/biotest-harness-all.jar
+      java_cmd: java
+      timeout_s: 60
+
+    - name: biopython
+      language: Python
+      enabled: true
+      # No adapter path needed — imported in-process
+      timeout_s: 30
+
+    - name: pysam
+      language: Python
+      enabled: false    # Not available on Windows
+      timeout_s: 30
+
+    - name: seqan3
+      language: C++
+      enabled: false    # Needs cmake build
+      adapter: harnesses/cpp/build/biotest_harness.exe
+      timeout_s: 60
+
+    - name: reference
+      language: Python
+      enabled: true
+      # Built-in reference parser — always available
+      timeout_s: 30
+
+# ---------------------------------------------------------------------------
+# Global Settings
+# ---------------------------------------------------------------------------
+global:
+  log_level: INFO       # DEBUG | INFO | WARNING | ERROR
+  parallel: false       # Future: parallel runner execution
+  seed_rng: 42          # Master RNG seed for reproducibility
