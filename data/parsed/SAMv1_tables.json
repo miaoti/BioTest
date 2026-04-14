@@ -1,0 +1,890 @@
+[
+  {
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "Col",
+      "Field",
+      "Type",
+      "Regexp/Range",
+      "Brief description"
+    ],
+    "rows": [
+      [
+        "1",
+        "QNAME",
+        "String",
+        "",
+        "Query template NAME"
+      ],
+      [
+        "2",
+        "FLAG",
+        "Int",
+        "[0, 2^16-1]",
+        "bitwise FLAG"
+      ],
+      [
+        "3",
+        "RNAME",
+        "String",
+        "|",
+        "Reference sequence NAME"
+      ],
+      [
+        "4",
+        "POS",
+        "Int",
+        "[0, 2^31-1]",
+        "1-based leftmost mapping POSition"
+      ],
+      [
+        "5",
+        "MAPQ",
+        "Int",
+        "[0, 2^8-1]",
+        "MAPping Quality"
+      ],
+      [
+        "6",
+        "CIGAR",
+        "String",
+        "92*|([0-9]+[MIDNSHP=X])+",
+        "CIGAR string"
+      ],
+      [
+        "7",
+        "RNEXT",
+        "String",
+        "|=|",
+        "Reference name of the mate/next read"
+      ],
+      [
+        "8",
+        "PNEXT",
+        "Int",
+        "[0, 2^31-1]",
+        "Position of the mate/next read"
+      ],
+      [
+        "9",
+        "TLEN",
+        "Int",
+        "[-2^31+1, 2^31-1]",
+        "observed Template LENgth"
+      ],
+      [
+        "10",
+        "SEQ",
+        "String",
+        "92*|[A-Za-z=.]+",
+        "segment SEQuence"
+      ],
+      [
+        "11",
+        "QUAL",
+        "String",
+        "[!-126]+",
+        "ASCII of Phred-scaled base QUALity+33"
+      ]
+    ],
+    "column_spec": "rllll"
+  },
+  {
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "2cBit",
+      "Description"
+    ],
+    "rows": [
+      [
+        "1",
+        "0x1",
+        "template having multiple segments in sequencing"
+      ],
+      [
+        "2",
+        "0x2",
+        "each segment properly aligned according to the aligner"
+      ],
+      [
+        "4",
+        "0x4",
+        "segment unmapped"
+      ],
+      [
+        "8",
+        "0x8",
+        "next segment in the template unmapped"
+      ],
+      [
+        "16",
+        "0x10",
+        "SEQ being reverse complemented"
+      ],
+      [
+        "32",
+        "0x20",
+        "SEQ of the next segment in the template being reverse complemented"
+      ],
+      [
+        "64",
+        "0x40",
+        "the first segment in the template"
+      ],
+      [
+        "128",
+        "0x80",
+        "the last segment in the template"
+      ],
+      [
+        "256",
+        "0x100",
+        "secondary alignment"
+      ],
+      [
+        "512",
+        "0x200",
+        "not passing filters, such as platform/vendor quality controls"
+      ],
+      [
+        "1024",
+        "0x400",
+        "PCR or optical duplicate"
+      ],
+      [
+        "2048",
+        "0x800",
+        "supplementary alignment"
+      ]
+    ],
+    "column_spec": "rrl"
+  },
+  {
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "Op",
+      "BAM",
+      "Description",
+      "Consumes"
+    ],
+    "rows": [
+      [
+        "query",
+        "Consumes"
+      ],
+      [
+        "reference"
+      ],
+      [
+        "M",
+        "0",
+        "alignment match (can be a sequence match or mismatch)",
+        "yes",
+        "yes"
+      ],
+      [
+        "I",
+        "1",
+        "insertion to the reference",
+        "yes",
+        "no"
+      ],
+      [
+        "D",
+        "2",
+        "deletion from the reference",
+        "no",
+        "yes"
+      ],
+      [
+        "N",
+        "3",
+        "skipped region from the reference",
+        "no",
+        "yes"
+      ],
+      [
+        "S",
+        "4",
+        "soft clipping (clipped sequences present in SEQ)",
+        "yes",
+        "no"
+      ],
+      [
+        "H",
+        "5",
+        "hard clipping (clipped sequences NOT present in SEQ)",
+        "no",
+        "no"
+      ],
+      [
+        "P",
+        "6",
+        "padding (silent deletion from padded reference)",
+        "no",
+        "no"
+      ],
+      [
+        "=",
+        "7",
+        "sequence match",
+        "yes",
+        "yes"
+      ],
+      [
+        "X",
+        "8",
+        "sequence mismatch",
+        "yes",
+        "yes"
+      ]
+    ],
+    "column_spec": "cclcc"
+  },
+  {
+    "section": "The alignment section: optional fields",
+    "headers": [
+      "Type",
+      "Regexp matching VALUE",
+      "Description"
+    ],
+    "rows": [
+      [
+        "A",
+        "[!-126]",
+        "Printable character"
+      ],
+      [
+        "i",
+        "[-+]?[0-9]+",
+        "Signed integer"
+      ],
+      [
+        "f",
+        "[-+]?[0-9]*92.?[0-9]+([eE][-+]?[0-9]+)?",
+        "Single-precision floating number"
+      ],
+      [
+        "Z",
+        "[   !-126]*",
+        "Printable string, including space"
+      ],
+      [
+        "H",
+        "([0-9A-F][0-9A-F])*",
+        "Byte array in the Hex format"
+      ],
+      [
+        "B",
+        "[cCsSiIf](,[-+]?[0-9]*92.?[0-9]+([eE][-+]?[0-9]+)?)*",
+        "Integer or numeric array"
+      ]
+    ],
+    "column_spec": "cll"
+  },
+  {
+    "section": "Recommended Practice for the SAM Format",
+    "headers": [
+      "",
+      "1cFLAG",
+      "1cPOS",
+      "CIGAR",
+      "1cOptional fields"
+    ],
+    "rows": [
+      [
+        "The 5' fragment",
+        "883 (0x373)",
+        "86097",
+        "188M",
+        "FI:i:1  TC:i:3"
+      ],
+      [
+        "Middle fragment",
+        "819 (0x333)",
+        "85441",
+        "181M",
+        "FI:i:2  TC:i:3"
+      ],
+      [
+        "The 3' fragment",
+        "947 (0x3B3)",
+        "85052",
+        "303M",
+        "FI:i:3  TC:i:3"
+      ]
+    ],
+    "column_spec": "llrcl"
+  },
+  {
+    "section": "The BGZF compression format",
+    "headers": [
+      "3|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "rows": [
+      [
+        "6|c|List of compression blocks (until the end of the file)"
+      ],
+      [
+        "",
+        "2l|ID1",
+        "gzip IDentifier1",
+        "uint8_t",
+        "31"
+      ],
+      [
+        "",
+        "2l|ID2",
+        "gzip IDentifier2",
+        "uint8_t",
+        "139"
+      ],
+      [
+        "",
+        "2l|CM",
+        "gzip Compression Method",
+        "uint8_t",
+        "8"
+      ],
+      [
+        "",
+        "2l|FLG",
+        "gzip FLaGs",
+        "uint8_t",
+        "4"
+      ],
+      [
+        "",
+        "2l|MTIME",
+        "gzip Modification TIME",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "2l|XFL",
+        "gzip eXtra FLags",
+        "uint8_t",
+        ""
+      ],
+      [
+        "",
+        "2l|OS",
+        "gzip Operating System",
+        "uint8_t",
+        ""
+      ],
+      [
+        "",
+        "2l|XLEN",
+        "gzip eXtra LENgth",
+        "uint16_t",
+        ""
+      ],
+      [
+        "",
+        "5c|Extra subfield(s) (total size=XLEN)"
+      ],
+      [
+        "",
+        "",
+        "4c|Additional RFC1952 extra subfields if present"
+      ],
+      [
+        "",
+        "",
+        "SI1",
+        "Subfield Identifier1",
+        "uint8_t",
+        "66"
+      ],
+      [
+        "",
+        "",
+        "SI2",
+        "Subfield Identifier2",
+        "uint8_t",
+        "67"
+      ],
+      [
+        "",
+        "",
+        "SLEN",
+        "Subfield LENgth",
+        "uint16_t",
+        "2"
+      ],
+      [
+        "",
+        "",
+        "BSIZE",
+        "total Block SIZE minus 1",
+        "uint16_t",
+        ""
+      ],
+      [
+        "",
+        "",
+        "4c|Additional RFC1952 extra subfields if present"
+      ],
+      [
+        "",
+        "2l|CDATA",
+        "Compressed DATA by zlib::deflate()",
+        "uint8_t[BSIZE-XLEN-19]",
+        ""
+      ],
+      [
+        "",
+        "2l|CRC32",
+        "CRC-32",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "2l|ISIZE",
+        "Input SIZE (length of uncompressed data)",
+        "uint32_t",
+        ""
+      ]
+    ],
+    "column_spec": "|l|l|l|l|l|r|"
+  },
+  {
+    "section": "The BAM format",
+    "headers": [
+      "|l|r|\n  \n  3|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "rows": [
+      [
+        "3|l|magic",
+        "BAM magic string",
+        "char[4]",
+        "BAM92 1"
+      ],
+      [
+        "3|l|l_text",
+        "Length of the header text, including any NUL padding",
+        "uint32_t",
+        "< 2^31"
+      ],
+      [
+        "3|l|text",
+        "Plain header text in SAM; not necessarily NUL-terminated",
+        "char[l_text]",
+        ""
+      ],
+      [
+        "\n  3|l|n_ref",
+        "# reference sequences",
+        "uint32_t",
+        "< 2^31"
+      ],
+      [
+        "6|c|List of reference information (n=n_ref)"
+      ],
+      [
+        "",
+        "2l|l_name",
+        "Length of the reference name plus 1 (including NUL)",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "2l|name",
+        "Reference sequence name; NUL-terminated",
+        "char[l_name]",
+        ""
+      ],
+      [
+        "",
+        "2l|l_ref",
+        "Length of the reference sequence",
+        "uint32_t",
+        "< 2^31"
+      ],
+      [
+        "6|c|List of alignments (until the end of the file)"
+      ],
+      [
+        "",
+        "2l|block_size",
+        "Total length of the alignment record, excluding this field",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "2l|refID",
+        "Reference sequence ID, -1\u2264 refID< n_ref; -1 for a read without a mapping position",
+        "int32_t",
+        "[-1]"
+      ],
+      [
+        "",
+        "2l|pos",
+        "0-based leftmost coordinate (= POS-1)",
+        "int32_t",
+        "[-1]"
+      ],
+      [
+        "",
+        "2l|l_read_name",
+        "Length of read_name below (= length( QNAME)+1)",
+        "uint8_t",
+        ""
+      ],
+      [
+        "",
+        "2l|mapq",
+        "Mapping quality (=MAPQ)",
+        "uint8_t",
+        ""
+      ],
+      [
+        "",
+        "2l|bin",
+        "BAI index bin, see Section\u00a0<ref>",
+        "uint16_t",
+        ""
+      ],
+      [
+        "",
+        "2l|n_cigar_op",
+        "Number of operations in CIGAR, see Section\u00a0<ref>",
+        "uint16_t",
+        ""
+      ],
+      [
+        "",
+        "2l|flag",
+        "Bitwise flags (= FLAG)",
+        "uint16_t",
+        ""
+      ],
+      [
+        "",
+        "2l|l_seq",
+        "Length of SEQ",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "2l|next_refID",
+        "Ref-ID of the next segment (-1\u2264 next_refID< n_ref)",
+        "int32_t",
+        "[-1]"
+      ],
+      [
+        "",
+        "2l|next_pos",
+        "0-based leftmost pos of the next segment (= PNEXT-1)",
+        "int32_t",
+        "[-1]"
+      ],
+      [
+        "",
+        "2l|tlen",
+        "Template length (= TLEN)",
+        "int32_t",
+        "[0]"
+      ],
+      [
+        "",
+        "2l|read_name",
+        "Read name, NUL-terminated (QNAME with trailing `')",
+        "char[l_read_name]",
+        ""
+      ],
+      [
+        "",
+        "2l|cigar",
+        "CIGAR: op_len6060 4124op. `MIDNSHP=X'\u2192`012345678'",
+        "uint32_t[n_cigar_op]",
+        ""
+      ],
+      [
+        "",
+        "2l|seq",
+        "4-bit encoded read: `=ACMGRSVTWYHKDBN'\u2192[0,15]. See Section\u00a0<ref>",
+        "uint8_t[(l_seq+1)/2]",
+        ""
+      ],
+      [
+        "",
+        "2l|qual",
+        "Phred-scaled base qualities. See Section\u00a0<ref>",
+        "char[l_seq]",
+        ""
+      ],
+      [
+        "",
+        "5c|List of auxiliary data (until the end of the alignment block)"
+      ],
+      [
+        "",
+        "",
+        "tag",
+        "Two-character tag",
+        "char[2]",
+        ""
+      ],
+      [
+        "",
+        "",
+        "val_type",
+        "Value type: AcCsSiIfZHB, see Section\u00a0<ref>",
+        "char",
+        ""
+      ],
+      [
+        "",
+        "",
+        "value",
+        "Tag value",
+        "(by val_type)",
+        ""
+      ]
+    ],
+    "column_spec": "|l|l|l|p{8.15cm"
+  },
+  {
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "l\nc1i8   (i.e., int8_t)",
+      "i4int32_t"
+    ],
+    "rows": [
+      [
+        "C1u8   (i.e., uint8_t)",
+        "I4uint32_t"
+      ],
+      [
+        "s2int16_t",
+        "f4float"
+      ],
+      [
+        "S2uint16_t",
+        ""
+      ]
+    ],
+    "column_spec": "l@{\\hspace{1in"
+  },
+  {
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "Z1char1NUL"
+    ],
+    "rows": [
+      [
+        "H2hex hex1NUL"
+      ]
+    ],
+    "column_spec": "l"
+  },
+  {
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "c1i8   (i.e., int8_t elements)"
+    ],
+    "rows": [
+      [
+        "C1u8   (i.e., uint8_t elements)"
+      ],
+      [
+        "s2int16_t"
+      ],
+      [
+        "S2uint16_t"
+      ],
+      [
+        "i4int32_t"
+      ],
+      [
+        "I4uint32_t"
+      ],
+      [
+        "f4float"
+      ]
+    ],
+    "column_spec": "l"
+  },
+  {
+    "section": "A conceptual example",
+    "headers": [
+      "9|c|0 (0\u2013144kbp)"
+    ],
+    "rows": [
+      [
+        "3|c|1 (0\u201348kbp)",
+        "3c|2 (48\u201396kbp)",
+        "3c|3 (96\u2013144kbp)"
+      ],
+      [
+        "4 (0\u201316k)",
+        "5 (16\u201332k)",
+        "6 (32\u201348k)",
+        "7 (48\u201364k)",
+        "8 (64\u201380k)",
+        "9 (80\u201396k)",
+        "10",
+        "11",
+        "12"
+      ]
+    ],
+    "column_spec": "|c|c|c|c|c|c|c|c|c|"
+  },
+  {
+    "section": "The BAI index format for BAM files",
+    "headers": [
+      "4|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "rows": [
+      [
+        "4|l|magic",
+        "Magic string",
+        "char[4]",
+        "BAI92 1"
+      ],
+      [
+        "4|l|n_ref",
+        "# reference sequences",
+        "uint32_t",
+        "< 2^31"
+      ],
+      [
+        "7|c|List of indices (n=n_ref)"
+      ],
+      [
+        "",
+        "3l|n_bin",
+        "# distinct bins (for the binning index)",
+        "uint32_t",
+        "\u2264 37451"
+      ],
+      [
+        "",
+        "6c|List of distinct bins (n=n_bin)"
+      ],
+      [
+        "",
+        "",
+        "2l|bin",
+        "Distinct bin",
+        "uint32_t",
+        "\u2264 37450"
+      ],
+      [
+        "",
+        "",
+        "2l|n_chunk",
+        "# chunks",
+        "uint32_t",
+        ""
+      ],
+      [
+        "",
+        "",
+        "5c|List of chunks (n=n_chunk)"
+      ],
+      [
+        "",
+        "",
+        "",
+        "chunk_beg",
+        "(Virtual) file offset of the start of the chunk",
+        "uint64_t",
+        ""
+      ],
+      [
+        "",
+        "",
+        "",
+        "chunk_end",
+        "(Virtual) file offset of the end of the chunk",
+        "uint64_t",
+        ""
+      ],
+      [
+        "",
+        "3l|n_intv",
+        "# 16kbp intervals (for the linear index)",
+        "uint32_t",
+        "\u2264 2^17"
+      ],
+      [
+        "",
+        "6c|List of intervals (n=n_intv)"
+      ],
+      [
+        "",
+        "",
+        "2l|ioffset",
+        "(Virtual) file offset of the first alignment in the interval",
+        "uint64_t",
+        ""
+      ],
+      [
+        "4|l|n_no_coor (optional)",
+        "Number of unplaced unmapped reads (RNAME *)",
+        "uint64_t",
+        ""
+      ]
+    ],
+    "column_spec": "|l|l|l|l|l|l|r|"
+  },
+  {
+    "section": "The BAI index format for BAM files",
+    "headers": [
+      "bin",
+      "Magic bin number",
+      "uint32_t",
+      "37450"
+    ],
+    "rows": [
+      [
+        "n_chunk",
+        "# chunks",
+        "uint32_t",
+        "2"
+      ],
+      [
+        "ref_beg",
+        "(Virtual) file offset of the start of reads placed on this reference",
+        "uint64_t",
+        ""
+      ],
+      [
+        "ref_end",
+        "(Virtual) file offset of the end of reads placed on this reference",
+        "uint64_t",
+        ""
+      ],
+      [
+        "n_mapped",
+        "Number of mapped read-segments for this reference",
+        "uint64_t",
+        ""
+      ],
+      [
+        "n_unmapped",
+        "Number of unmapped read-segments for this reference",
+        "uint64_t",
+        ""
+      ]
+    ],
+    "column_spec": "|l|l|l|r|"
+  }
+]

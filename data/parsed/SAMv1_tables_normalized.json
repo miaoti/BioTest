@@ -1,0 +1,440 @@
+[
+  {
+    "type": "generic",
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "Col",
+      "Field",
+      "Type",
+      "Regexp/Range",
+      "Brief description"
+    ],
+    "records": [
+      {
+        "Col": "1",
+        "Field": "QNAME",
+        "Type": "String",
+        "Regexp/Range": "",
+        "Brief description": "Query template NAME"
+      },
+      {
+        "Col": "2",
+        "Field": "FLAG",
+        "Type": "Int",
+        "Regexp/Range": "[0, 2^16-1]",
+        "Brief description": "bitwise FLAG"
+      },
+      {
+        "Col": "3",
+        "Field": "RNAME",
+        "Type": "String",
+        "Regexp/Range": "|",
+        "Brief description": "Reference sequence NAME"
+      },
+      {
+        "Col": "4",
+        "Field": "POS",
+        "Type": "Int",
+        "Regexp/Range": "[0, 2^31-1]",
+        "Brief description": "1-based leftmost mapping POSition"
+      },
+      {
+        "Col": "5",
+        "Field": "MAPQ",
+        "Type": "Int",
+        "Regexp/Range": "[0, 2^8-1]",
+        "Brief description": "MAPping Quality"
+      },
+      {
+        "Col": "6",
+        "Field": "CIGAR",
+        "Type": "String",
+        "Regexp/Range": "92*|([0-9]+[MIDNSHP=X])+",
+        "Brief description": "CIGAR string"
+      },
+      {
+        "Col": "7",
+        "Field": "RNEXT",
+        "Type": "String",
+        "Regexp/Range": "|=|",
+        "Brief description": "Reference name of the mate/next read"
+      },
+      {
+        "Col": "8",
+        "Field": "PNEXT",
+        "Type": "Int",
+        "Regexp/Range": "[0, 2^31-1]",
+        "Brief description": "Position of the mate/next read"
+      },
+      {
+        "Col": "9",
+        "Field": "TLEN",
+        "Type": "Int",
+        "Regexp/Range": "[-2^31+1, 2^31-1]",
+        "Brief description": "observed Template LENgth"
+      },
+      {
+        "Col": "10",
+        "Field": "SEQ",
+        "Type": "String",
+        "Regexp/Range": "92*|[A-Za-z=.]+",
+        "Brief description": "segment SEQuence"
+      },
+      {
+        "Col": "11",
+        "Field": "QUAL",
+        "Type": "String",
+        "Regexp/Range": "[!-126]+",
+        "Brief description": "ASCII of Phred-scaled base QUALity+33"
+      }
+    ]
+  },
+  {
+    "type": "flag_bits",
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "2cBit",
+      "Description"
+    ],
+    "records": []
+  },
+  {
+    "type": "cigar_operations",
+    "section": "The alignment section: mandatory fields",
+    "headers": [
+      "op",
+      "bam_code",
+      "description",
+      "consumes_query",
+      "consumes_reference"
+    ],
+    "records": [
+      {
+        "op": "M",
+        "bam_code": 0,
+        "description": "alignment match (can be a sequence match or mismatch)",
+        "consumes_query": true,
+        "consumes_reference": true
+      },
+      {
+        "op": "I",
+        "bam_code": 1,
+        "description": "insertion to the reference",
+        "consumes_query": true,
+        "consumes_reference": false
+      },
+      {
+        "op": "D",
+        "bam_code": 2,
+        "description": "deletion from the reference",
+        "consumes_query": false,
+        "consumes_reference": true
+      },
+      {
+        "op": "N",
+        "bam_code": 3,
+        "description": "skipped region from the reference",
+        "consumes_query": false,
+        "consumes_reference": true
+      },
+      {
+        "op": "S",
+        "bam_code": 4,
+        "description": "soft clipping (clipped sequences present in SEQ)",
+        "consumes_query": true,
+        "consumes_reference": false
+      },
+      {
+        "op": "H",
+        "bam_code": 5,
+        "description": "hard clipping (clipped sequences NOT present in SEQ)",
+        "consumes_query": false,
+        "consumes_reference": false
+      },
+      {
+        "op": "P",
+        "bam_code": 6,
+        "description": "padding (silent deletion from padded reference)",
+        "consumes_query": false,
+        "consumes_reference": false
+      },
+      {
+        "op": "=",
+        "bam_code": 7,
+        "description": "sequence match",
+        "consumes_query": true,
+        "consumes_reference": true
+      },
+      {
+        "op": "X",
+        "bam_code": 8,
+        "description": "sequence mismatch",
+        "consumes_query": true,
+        "consumes_reference": true
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "The alignment section: optional fields",
+    "headers": [
+      "Type",
+      "Regexp matching VALUE",
+      "Description"
+    ],
+    "records": [
+      {
+        "Type": "A",
+        "Regexp matching VALUE": "[!-126]",
+        "Description": "Printable character"
+      },
+      {
+        "Type": "i",
+        "Regexp matching VALUE": "[-+]?[0-9]+",
+        "Description": "Signed integer"
+      },
+      {
+        "Type": "f",
+        "Regexp matching VALUE": "[-+]?[0-9]*92.?[0-9]+([eE][-+]?[0-9]+)?",
+        "Description": "Single-precision floating number"
+      },
+      {
+        "Type": "Z",
+        "Regexp matching VALUE": "[   !-126]*",
+        "Description": "Printable string, including space"
+      },
+      {
+        "Type": "H",
+        "Regexp matching VALUE": "([0-9A-F][0-9A-F])*",
+        "Description": "Byte array in the Hex format"
+      },
+      {
+        "Type": "B",
+        "Regexp matching VALUE": "[cCsSiIf](,[-+]?[0-9]*92.?[0-9]+([eE][-+]?[0-9]+)?)*",
+        "Description": "Integer or numeric array"
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "Recommended Practice for the SAM Format",
+    "headers": [
+      "",
+      "1cFLAG",
+      "1cPOS",
+      "CIGAR",
+      "1cOptional fields"
+    ],
+    "records": [
+      {
+        "": "The 5' fragment",
+        "1cFLAG": "883 (0x373)",
+        "1cPOS": "86097",
+        "CIGAR": "188M",
+        "1cOptional fields": "FI:i:1  TC:i:3"
+      },
+      {
+        "": "Middle fragment",
+        "1cFLAG": "819 (0x333)",
+        "1cPOS": "85441",
+        "CIGAR": "181M",
+        "1cOptional fields": "FI:i:2  TC:i:3"
+      },
+      {
+        "": "The 3' fragment",
+        "1cFLAG": "947 (0x3B3)",
+        "1cPOS": "85052",
+        "CIGAR": "303M",
+        "1cOptional fields": "FI:i:3  TC:i:3"
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "The BGZF compression format",
+    "headers": [
+      "3|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "records": []
+  },
+  {
+    "type": "generic",
+    "section": "The BAM format",
+    "headers": [
+      "|l|r|\n  \n  3|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "records": [
+      {
+        "|l|r|\n  \n  3|c|Field": "3|l|magic",
+        "1c|Description": "BAM magic string",
+        "1c|Type": "char[4]",
+        "1c|Value": "BAM92 1"
+      },
+      {
+        "|l|r|\n  \n  3|c|Field": "3|l|l_text",
+        "1c|Description": "Length of the header text, including any NUL padding",
+        "1c|Type": "uint32_t",
+        "1c|Value": "< 2^31"
+      },
+      {
+        "|l|r|\n  \n  3|c|Field": "3|l|text",
+        "1c|Description": "Plain header text in SAM; not necessarily NUL-terminated",
+        "1c|Type": "char[l_text]",
+        "1c|Value": ""
+      },
+      {
+        "|l|r|\n  \n  3|c|Field": "\n  3|l|n_ref",
+        "1c|Description": "# reference sequences",
+        "1c|Type": "uint32_t",
+        "1c|Value": "< 2^31"
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "l\nc1i8   (i.e., int8_t)",
+      "i4int32_t"
+    ],
+    "records": [
+      {
+        "l\nc1i8   (i.e., int8_t)": "C1u8   (i.e., uint8_t)",
+        "i4int32_t": "I4uint32_t"
+      },
+      {
+        "l\nc1i8   (i.e., int8_t)": "s2int16_t",
+        "i4int32_t": "f4float"
+      },
+      {
+        "l\nc1i8   (i.e., int8_t)": "S2uint16_t",
+        "i4int32_t": ""
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "Z1char1NUL"
+    ],
+    "records": [
+      {
+        "Z1char1NUL": "H2hex hex1NUL"
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "Auxiliary data encoding",
+    "headers": [
+      "c1i8   (i.e., int8_t elements)"
+    ],
+    "records": [
+      {
+        "c1i8   (i.e., int8_t elements)": "C1u8   (i.e., uint8_t elements)"
+      },
+      {
+        "c1i8   (i.e., int8_t elements)": "s2int16_t"
+      },
+      {
+        "c1i8   (i.e., int8_t elements)": "S2uint16_t"
+      },
+      {
+        "c1i8   (i.e., int8_t elements)": "i4int32_t"
+      },
+      {
+        "c1i8   (i.e., int8_t elements)": "I4uint32_t"
+      },
+      {
+        "c1i8   (i.e., int8_t elements)": "f4float"
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "A conceptual example",
+    "headers": [
+      "9|c|0 (0\u2013144kbp)"
+    ],
+    "records": []
+  },
+  {
+    "type": "generic",
+    "section": "The BAI index format for BAM files",
+    "headers": [
+      "4|c|Field",
+      "1c|Description",
+      "1c|Type",
+      "1c|Value"
+    ],
+    "records": [
+      {
+        "4|c|Field": "4|l|magic",
+        "1c|Description": "Magic string",
+        "1c|Type": "char[4]",
+        "1c|Value": "BAI92 1"
+      },
+      {
+        "4|c|Field": "4|l|n_ref",
+        "1c|Description": "# reference sequences",
+        "1c|Type": "uint32_t",
+        "1c|Value": "< 2^31"
+      },
+      {
+        "4|c|Field": "4|l|n_no_coor (optional)",
+        "1c|Description": "Number of unplaced unmapped reads (RNAME *)",
+        "1c|Type": "uint64_t",
+        "1c|Value": ""
+      }
+    ]
+  },
+  {
+    "type": "generic",
+    "section": "The BAI index format for BAM files",
+    "headers": [
+      "bin",
+      "Magic bin number",
+      "uint32_t",
+      "37450"
+    ],
+    "records": [
+      {
+        "bin": "n_chunk",
+        "Magic bin number": "# chunks",
+        "uint32_t": "uint32_t",
+        "37450": "2"
+      },
+      {
+        "bin": "ref_beg",
+        "Magic bin number": "(Virtual) file offset of the start of reads placed on this reference",
+        "uint32_t": "uint64_t",
+        "37450": ""
+      },
+      {
+        "bin": "ref_end",
+        "Magic bin number": "(Virtual) file offset of the end of reads placed on this reference",
+        "uint32_t": "uint64_t",
+        "37450": ""
+      },
+      {
+        "bin": "n_mapped",
+        "Magic bin number": "Number of mapped read-segments for this reference",
+        "uint32_t": "uint64_t",
+        "37450": ""
+      },
+      {
+        "bin": "n_unmapped",
+        "Magic bin number": "Number of unmapped read-segments for this reference",
+        "uint32_t": "uint64_t",
+        "37450": ""
+      }
+    ]
+  }
+]
