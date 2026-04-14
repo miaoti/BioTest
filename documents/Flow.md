@@ -79,14 +79,6 @@ BioTest/
     ├── raw_tex/             # Downloaded .tex files + manifest
     ├── parsed/              # JSON chunks + extracted tables
     └── chroma_db/           # ChromaDB persistent store
-
-
-
-
-
-
-
-
 ```
 
 #### ✅ 阶段 A 全面验收测试报告 (Comprehensive Validation Report)
@@ -306,8 +298,6 @@ py -3.14 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
   
   ATOMIC TRANSFORMS MENU: {ATOMIC_TRANSFORMS_LIST}
   
-  
-  
   ```
 
 ### 5. MR-DSL 结构化编译与确定性哈希去重 (DSL Compilation & Deterministic Hashing)
@@ -338,8 +328,6 @@ Agent 提取完成后，系统使用 Pydantic 对其 JSON 输出进行拦截校�
   evidence:
     - spec: VCFv4.5
       anchor: "Number=A ... values must be in the same order as listed in ALT"
-  
-  
   
   ```
 
