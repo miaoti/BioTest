@@ -82,11 +82,14 @@ phase_c:
   # Format filter (null = test all available formats)
   format_filter: VCF
 
-  # Systems Under Test — parser runners
+  # Systems Under Test — real parser implementations from SUTfolder/
+  # (only actual external parsers; the built-in reference normalizer is
+  #  always included automatically by the orchestrator as a baseline)
   suts:
     - name: htsjdk
       language: Java
       enabled: true
+      sut_path: SUTfolder/java/htsjdk
       adapter: harnesses/java/build/libs/biotest-harness-all.jar
       java_cmd: java
       timeout_s: 60
@@ -94,25 +97,16 @@ phase_c:
     - name: biopython
       language: Python
       enabled: true
-      # No adapter path needed — imported in-process
-      timeout_s: 30
-
-    - name: pysam
-      language: Python
-      enabled: false    # Not available on Windows
+      sut_path: SUTfolder/python/biopython
+      # No adapter path needed — imported in-process via pip
       timeout_s: 30
 
     - name: seqan3
       language: C++
-      enabled: false    # Needs cmake build
+      enabled: true
+      sut_path: SUTfolder/cpp/seqan3
       adapter: harnesses/cpp/build/biotest_harness.exe
       timeout_s: 60
-
-    - name: reference
-      language: Python
-      enabled: true
-      # Built-in reference parser — always available
-      timeout_s: 30
 
 # ---------------------------------------------------------------------------
 # Global Settings

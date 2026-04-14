@@ -97,6 +97,88 @@ py -3.12 -m pytest tests/test_orchestrator_mocked.py -v
 
 ---
 
+## Adding a New Parser (SUT)
+
+> **If you want to test a parser that is not already included, you must write a
+> Harness (Canonical Adapter) for it and register it in `biotest_config.yaml`.**
+
+BioTest compares parsers by converting their outputs into a common **Canonical
+JSON** format. Each parser speaks a different language and exposes a different
+API, so a thin wrapper — called a **Harness** — is required to bridge the gap.
+
+### What a Harness Does
+
+```
+Input:  file path (VCF or SAM)
+          |
+          v
+  [ Call the SUT's native API to parse the file ]
+          |
+          v
+  [ Convert the SUT's in-memory objects to Canonical JSON ]
+          |
+          v
+Output: JSON to stdout  (exit 0 = success, non-zero = error)
+```
+
+Without a Harness, there is no way to compare a Java `VariantContext` object
+against a Python `AlignmentIterator` object — the Harness normalizes both
+into the same JSON schema so `deep_equal` can do the comparison.
+
+### Step-by-step
+
+**1. Write the Harness**
+
+| SUT Language | What to write | Example |
+|:------------:|---------------|---------|
+| Java | A `.java` file compiled into a fat JAR | `harnesses/java/BioTestHarness.java` |
+| C / C++ | A `.cpp` file compiled into an executable | `harnesses/cpp/biotest_harness.cpp` |
+| Python (pip) | A runner class extending `ParserRunner` | `test_engine/runners/biopython_runner.py` |
+| Rust / Go / other | A binary that reads a file and prints JSON to stdout | (same pattern as C++) |
+
+The Harness must output JSON conforming to the canonical schema defined in
+`test_engine/canonical/schema.py` (`CanonicalVcf` / `CanonicalSam`).
+
+**2. Register it in `biotest_config.yaml`**
+
+```yaml
+phase_c:
+  suts:
+    # ... existing SUTs ...
+
+    - name: my_new_parser          # unique name
+      language: Rust               # for display only
+      enabled: true
+      sut_path: SUTfolder/rust/my_parser   # where the source lives
+      adapter: harnesses/rust/my_parser    # path to compiled binary
+      timeout_s: 60
+```
+
+**3. (If subprocess-based) Add a runner class**
+
+For Java/C++/Rust SUTs that run as external processes, create a new runner in
+`test_engine/runners/` following the pattern of `htsjdk_runner.py` or
+`seqan3_runner.py`. For Python libraries, follow `biopython_runner.py`.
+
+**4. Run the pipeline**
+
+```bash
+py -3.12 biotest.py --phase C
+```
+
+The orchestrator will automatically include your new SUT in both the
+metamorphic and differential oracles.
+
+### Coordinate Trap
+
+Be aware of the **0-based vs 1-based coordinate trap**. The canonical JSON
+uses 1-based positions (matching the VCF/SAM spec text). If your SUT converts
+to 0-based internally (like pysam and SeqAn3 do), your Harness **must add +1**
+before outputting POS and PNEXT. See the
+[Coordinate Normalization](#coordinate-normalization) table below.
+
+---
+
 ## Project Structure
 
 ```

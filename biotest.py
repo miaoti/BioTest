@@ -218,10 +218,13 @@ def run_phase_b(cfg: dict[str, Any]) -> PhaseBResult:
 # ===========================================================================
 
 def _build_runners(cfg: dict[str, Any]) -> list:
-    """Build runner instances from YAML SUT configuration."""
-    from test_engine.runners.base import ParserRunner
+    """Build runner instances from YAML SUT configuration.
+
+    Only real SUTs are listed in the config (htsjdk, biopython, seqan3).
+    The reference runner is always appended automatically as a baseline —
+    it is framework infrastructure, not a System Under Test.
+    """
     from test_engine.runners.htsjdk_runner import HTSJDKRunner
-    from test_engine.runners.pysam_runner import PysamRunner
     from test_engine.runners.biopython_runner import BiopythonRunner
     from test_engine.runners.seqan3_runner import SeqAn3Runner
     from test_engine.runners.reference_runner import ReferenceRunner
@@ -233,11 +236,9 @@ def _build_runners(cfg: dict[str, Any]) -> list:
             java_cmd=c.get("java_cmd", "java"),
         ),
         "biopython": lambda c: BiopythonRunner(),
-        "pysam": lambda c: PysamRunner(),
         "seqan3": lambda c: SeqAn3Runner(
             binary_path=Path(c["adapter"]) if c.get("adapter") else None,
         ),
-        "reference": lambda c: ReferenceRunner(),
     }
 
     runners = []
@@ -248,6 +249,9 @@ def _build_runners(cfg: dict[str, Any]) -> list:
         factory = runner_map.get(name)
         if factory:
             runners.append(factory(sut))
+
+    # Always add the reference runner as baseline (not a SUT)
+    runners.append(ReferenceRunner())
 
     return runners
 
