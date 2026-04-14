@@ -35,9 +35,9 @@ BioTest is a fully automated pipeline that mines test rules from genomics specif
    VCFv4.5.tex      LLM Agent +       Metamorphic +
    SAMv1.tex        RAG Query        Differential
           |                |            Oracles
-     ChromaDB        MR Registry          |
-   (1,425 chunks)   (3 enforced)    Bug Reports
-                                    DET Report
+     ChromaDB        MR Registry            |
+   (1,425 chunks)   (3 enforced)      Bug Reports
+                                      DET Report
 ```
 
 | Phase | Module | What it does |
