@@ -244,40 +244,11 @@ py -3.14 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
 这些原子操作绝非随机臆造，而是根植于明确的生物信息学标准与变体检测理论。这种设计保证了我们的测试生成具有严格的**生物学语义等价性 (Biological Semantic Equivalence)**。
 
 | **原子操作函数 (Atomic Transform)** | **合理性依据 (Rationale)** | **文献/规范支撑 (Citation Anchor)** |
-| `permute_ALT` & `remap_GT` | VCF 规范定义 ALT 为无序集合的索引，GT 是对该集合的引用，物理顺序不改变生物学等位基因表达。 | 
-
-$$
-1
-$$
-
-             VCF v4.5 Spec, Section 1.6.2: "The order of ALT alleles is not specified... GT refers to the list." |
-| `shuffle_meta_lines` | VCF 头部元数据除 `##fileformat` 外，均不应受出现顺序的影响。 | 
-
-$$
-1
-$$
-
-             VCF v4.5 Spec, Section 1.2: "The order of header lines... is not significant." |
-| `split_or_merge_adjacent_cigar_ops` | CIGAR 算子合并（如 `2M1M -> 3M`）在比对路径上是语义恒等的。 | 
-
-$$
-2
-$$
-
-             SAM Spec, Section 1.4.6: Defines operators.               
-
-$$
-3
-$$
-
-             HTSlib: Internal normalization logic natively supports this equivalence. |
-| `permute_Number_A_R_fields` | 必须保证 Per-allele 数据的维度随 ALT 同步变化，这在实际 GATK 注释中是极易出错的边界。 | 
-
-$$
-4
-$$
-
-             GATK Best Practices: Specifically warns about allele-specific annotation alignment errors. |
+| :--- | :--- | :--- |
+| `permute_ALT` & `remap_GT` | VCF 规范定义 ALT 为无序集合的索引，GT 是对该集合的引用，物理顺序不改变生物学等位基因表达。 | [1] VCF v4.5 Spec, Section 1.6.2: "The order of ALT alleles is not specified... GT refers to the list." |
+| `shuffle_meta_lines` | VCF 头部元数据除 `##fileformat` 外，均不应受出现顺序的影响。 | [1] VCF v4.5 Spec, Section 1.2: "The order of header lines... is not significant." |
+| `split_or_merge_adjacent_cigar_ops` | CIGAR 算子合并（如 `2M1M -> 3M`）在比对路径上是语义恒等的。 | [2] SAM Spec, Section 1.4.6: Defines operators.<br>[3] HTSlib: Internal normalization logic natively supports this equivalence. |
+| `permute_Number_A_R_fields` | 必须保证 Per-allele 数据的维度随 ALT 同步变化，这在实际 GATK 注释中是极易出错的边界。 | [4] GATK Best Practices: Specifically warns about allele-specific annotation alignment errors. |
 
 **核心参考文献 (References):**
 
