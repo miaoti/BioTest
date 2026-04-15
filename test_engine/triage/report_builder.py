@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 from .classifier import ClassifiedFailure
 from .evidence_formatter import format_evidence
+from ..generators.shrink import shrink_vcf_lines, shrink_sam_lines
 from ..oracles.metamorphic import OracleResult
 
 logger = logging.getLogger(__name__)
@@ -56,15 +57,27 @@ def build_bug_report(
     bug_dir = output_dir / f"BUG-{timestamp}_{seq}"
     bug_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Copy seed files (use read+write to avoid Windows file locking)
+    # 1. Copy seed files, applying custom shrink for minimal reproduction
+    fmt = mr_dict.get("scope", "").split(".")[0].upper()  # "VCF" or "SAM"
+    shrinker = shrink_vcf_lines if fmt == "VCF" else shrink_sam_lines
+
     try:
-        (bug_dir / seed_path.name).write_bytes(seed_path.read_bytes())
+        original_lines = seed_path.read_text(encoding="utf-8").splitlines(keepends=True)
+        shrunk_original = shrinker(original_lines)
+        (bug_dir / seed_path.name).write_text(
+            "".join(shrunk_original), encoding="utf-8"
+        )
     except OSError as e:
         logger.warning("Could not copy seed file: %s", e)
+
     if transformed_path and transformed_path.exists():
         try:
-            (bug_dir / f"T_{seed_path.name}").write_bytes(
-                transformed_path.read_bytes()
+            transformed_lines = transformed_path.read_text(
+                encoding="utf-8"
+            ).splitlines(keepends=True)
+            shrunk_transformed = shrinker(transformed_lines)
+            (bug_dir / f"T_{seed_path.name}").write_text(
+                "".join(shrunk_transformed), encoding="utf-8"
             )
         except OSError as e:
             logger.warning("Could not copy transformed file: %s", e)

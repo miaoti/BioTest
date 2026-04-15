@@ -487,9 +487,69 @@ Phase B 产出的 `transform_steps` 是字符串（如 `"shuffle_meta_lines"`）
 
 ### 4. Hypothesis 与 Z3 驱动的变体生成引擎 (Generation Engine)
 
-*   **参数采样**：利用 Hypothesis 策略（Strategies）注入随机种子并驱动调度器。
-*   **Z3 物理约束保真**：作为后置验证门控（Post-transform validation guards）。仅对维度变更（如修改 CIGAR 长度、INFO 数组长度）操作触发 Z3 验证，避免低效。
-*   **自定义收缩 (Custom Shrink Hooks)**：指导 Hypothesis 最小化错误用例。例如 VCF 收缩时必须保留第一行 `##fileformat`。
+#### 4.1 策略路由器与 `@given` 驱动的双模主循环 (Strategy Router & Dual-Mode Orchestrator)
+
+Phase B 输出的 `transform_steps` 只是字符串名（如 `"shuffle_meta_lines"`）。系统必须自动找到对应的 Hypothesis 策略并接入主循环。`strategy_router.py` 负责将全部 13 个变换名映射到 `@composite` 策略工厂：
+
+```python
+STRATEGY_MAP = {
+    "shuffle_meta_lines":       st_shuffle_meta_lines,    # VCF
+    "permute_structured_kv...": st_permute_structured_kv, # VCF
+    "permute_ALT":              st_alt_permutation,       # VCF (compound)
+    "remap_GT":                 st_alt_permutation,       # VCF (compound)
+    "permute_optional_tag...":  st_permute_optional_tags, # SAM
+    ...  # 全部 13 个名字均有对应策略
+}
+```
+
+`orchestrator.py` 据此实现**双模执行**（`use_hypothesis=True|False`）：
+
+| 模式 | 触发条件 | 循环驱动 | 收缩能力 | 适用场景 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Hypothesis 模式** | `use_hypothesis=True` | `@given(params=strategy(corpus))` 随机抽取种子 + RNG 种子 | 完整 `Phase.shrink` 自动收缩 | 生产级探索与回归测试 |
+| **静态模式** | `use_hypothesis=False`（默认） | `for seed in seeds` 逐文件遍历，确定性 RNG | 无 Hypothesis 收缩 | DummyRunner 测试、CI 快速冒烟 |
+
+两种模式共享同一个核心执行函数 `_run_single_test()`，零代码重复。
+
+#### 4.2 Hypothesis 收缩的触发机制 (How Shrinking is Triggered)
+
+**关键架构决策**：在 `_run_single_test()` 内部，当 Oracle 判定失败时，不再仅打印日志，而是抛出自定义异常 `_OracleFailure(diffs, oracle_result)`。只有抛出此异常，Hypothesis 才能捕获失败并启动自动收缩：
+
+```
+Hypothesis @given 抽取 (seed_path, lines, rng_seed)
+    |
+    v
+_run_single_test(lines, rng_seed, ...)
+    |
+    ├── apply_mr_transforms(lines, steps, seed=rng_seed)  # 不再 seed=42
+    ├── MetamorphicOracle.check()
+    │   └── 失败? → build_bug_report() → raise _OracleFailure(diffs)
+    │                                           ↑
+    │                              Hypothesis 捕获此异常 → 开始 Phase.shrink
+    │                              自动简化输入 → 重复调用直到找到最小触发点
+    └── DifferentialOracle.check()
+```
+
+#### 4.3 Z3 后置物理约束门控 (Z3 Post-Transform Guards)
+
+Z3 约束被直接编织进 `dispatch.py` 的三个高危调度包装器中。当变异操作破坏了文件的物理约束时，调用 `_h_assume(False)` 指示 Hypothesis 丢弃该样本并重新生成：
+
+| 调度包装器 | Z3 守卫 | 触发条件 |
+| :--- | :--- | :--- |
+| `split_or_merge_adjacent_cigar_ops` | `check_cigar_seq_constraint(ops, seq_len)` | CIGAR 查询消耗长度 != SEQ 长度 |
+| `toggle_cigar_hard_soft_clipping` | `check_cigar_seq_constraint(ops, new_seq_len)` | 软/硬裁剪切换后长度不一致 |
+| `_apply_compound_alt_permutation` | `check_info_number_a(alt_count, values)` | Number=A 字段值个数 != ALT 等位基因数 |
+
+`_h_assume()` 包含上下文检测逻辑：在 `@given` 内部调用真正的 `hypothesis.assume()`，在静态模式下安全跳过（无副作用）。
+
+#### 4.4 自定义收缩钩子 (Custom Shrink Hooks)
+
+`shrink.py` 现已**直接编织进 `report_builder.py`**。每当生成 Bug 报告时，保存到磁盘前自动对原始种子和变体文件执行收缩：
+
+*   **VCF 收缩**：保留 `##fileformat` 为绝对首行，仅留最多 2 条 `##INFO`/`##FORMAT` 元行，裁减至 1 条数据记录。
+*   **SAM 收缩**：保留 `@HD` 为绝对首行，仅留 1 条 `@SQ`，丢弃 `@RG`/`@PG`/`@CO`，裁减至 1 条比对记录并限制可选 TAG 数 <= 2。
+
+Bug Report 目录中的 `x.vcf` 和 `T_x.vcf` 现在是**最小复现文件**，而非原始全文。
 
 ### 5. 跨语言执行器与双重神谕 (Runners & Dual Oracles)
 
@@ -500,15 +560,15 @@ Phase B 产出的 `transform_steps` 是字符串（如 `"shuffle_meta_lines"`）
 
 ### 6. 故障分诊与最小化 Bug 报告生成 (Triage & Bug Reporting)
 
-遇到神谕报错时，Triage Service 自动进行分类，并打包生成 `BUG-{timestamp}/` 目录。包含：
-*   `x.vcf` (最小化原始种子)
-*   `T_x.vcf` (变体)
+遇到神谕报错时，Triage Service 自动进行分类，并打包生成 `BUG-{timestamp}/` 目录。**文件在写入前自动经过 shrink 收缩处理**。包含：
+*   `x.vcf` (**已收缩**的最小复现种子)
+*   `T_x.vcf` (**已收缩**的最小复现变体)
 *   各解析器的差异 `canonical_outputs/`
 *   崩溃日志，以及 `evidence.md` (Phase B 挖掘到的规范依据)。
 
 ### 7. 📁 项目代码结构与产出 (Project Structure & Files)
 
-**Phase C 产出: 31 个 Python 文件 (3,466 行) + 1 个 Java Harness (425 行) + 6 个基准种子。**
+**Phase C 产出: 32 个 Python 文件 (3,800+ 行) + 1 个 Java Harness (425 行) + 1 个 C++ Harness (230 行) + 6 个基准种子。**
 
 ```text
 BioTest/
@@ -518,32 +578,45 @@ BioTest/
 ├── harnesses/                         # C2: 各语言底层解析包装器
 │   ├── java/BioTestHarness.java       # HTSJDK -> stdout (Canonical JSON)
 │   └── cpp/biotest_harness.cpp        # SeqAn3 -> stdout (Canonical JSON)
-└── test_engine/                       # C3-C6: 核心测试管线
+└── test_engine/                       # C3-C7: 核心测试管线
     ├── __main__.py                    # CLI: python -m test_engine run
-    ├── orchestrator.py                # 主循环: MR x Seed x Parser -> Oracle -> Triage
+    ├── orchestrator.py                # 👑 双模主循环 (Hypothesis / Static)
     ├── canonical/                     # C3: JSON 归一化协议 (含 0-based 修正)
     │   ├── schema.py, vcf_normalizer.py, sam_normalizer.py
     ├── runners/                       # C4: 多语言沙盒执行器
-    │   ├── htsjdk_runner.py, biopython_runner.py, pysam_runner.py, seqan3_runner.py
+    │   ├── htsjdk_runner.py, biopython_runner.py, pysam_runner.py
+    │   ├── seqan3_runner.py, reference_runner.py
     ├── generators/                    # C5: 变体生成引擎
-    │   ├── dispatch.py                # 👑 核心组件: 变异调度桥接器
-    │   ├── vcf_strategies.py, sam_strategies.py, z3_constraints.py, shrink.py
+    │   ├── dispatch.py                # 变异调度桥接器 (含 Z3 后置守卫)
+    │   ├── strategy_router.py         # 🆕 策略路由器: transform_name -> Hypothesis策略
+    │   ├── vcf_strategies.py, sam_strategies.py
+    │   ├── z3_constraints.py, shrink.py, seeds.py
     ├── oracles/                       # C6: 双重神谕裁决引擎
     │   ├── deep_equal.py, metamorphic.py, differential.py, det_tracker.py
-    └── triage/                        # C7: 智能分诊与报告生成
+    └── triage/                        # C7: 智能分诊与报告生成 (含自动收缩)
         ├── classifier.py, report_builder.py, evidence_formatter.py
 ```
 
 ### 8. 🏆 实机测试成果与真实 Bug (Live Results & Real Bug Showcase)
 
 #### ✅ 191/191 深度加固测试全绿通过 (Hardened Test Suite Perfect Pass)
-底座防线极其稳固，全面覆盖归一化、调度、生成、对比以及极限异常防御（总计 191 测，仅耗时 0.39s）：
+底座防线极其稳固，全面覆盖归一化、调度、生成、对比以及极限异常防御（总计 191 测，仅耗时 0.42s）：
 *   **基础管线 (127 测)**：Phase B 原子动作与 DSL 校验 (70)、Phase C 数据归一化与调度 (57)。
 *   **深度加固 (64 测)**：
     *   **Runner 异常防御 (13)**：超时拦截、崩溃 stderr 捕获、可用性降级守卫。
     *   **Generator 边界 (25)**：Z3 极端约束拦截 (CIGAR/INFO)、Hypothesis 自定义收缩钩子保护。
     *   **Triage 并发防御 (18)**：并发报告构建、证据 Markdown 渲染容错。
     *   **虚拟主循环 E2E (8)**：注入 DummyRunners 验证全链路 DET 统计与空注册表防御。
+
+#### 🔗 四层解耦组件的全连接 (Full Wiring of 4 Disconnected Layers)
+在深度加固之后，完成了一次关键的"手术级重构"，将四个原本孤立的高级组件真正接入主运行时：
+
+| 孤立组件 | 接入点 | 连接方式 |
+| :--- | :--- | :--- |
+| `vcf_strategies.py` / `sam_strategies.py` | `orchestrator.py` | 通过 `strategy_router.py` 映射，`@given` 装饰器驱动随机探索 |
+| `z3_constraints.py` | `dispatch.py` | 3 个高危调度包装器内嵌 Z3 后置守卫，`_h_assume(False)` 丢弃违规样本 |
+| `shrink.py` | `report_builder.py` | Bug 报告保存前自动对种子 + 变体执行格式感知收缩 |
+| `seeds.py` + `SeedCorpus` | `orchestrator.py` | Hypothesis 策略通过 `st.sampled_from(corpus.vcf_seeds)` 随机抽取种子 |
 
 #### 🛡️ 生产级并发与边界漏洞修复 (Production Hardening Fixes)
 在实施 64 个深度加固测试时，系统成功排雷并修复了 2 个极其隐蔽的底层并发漏洞，确保了框架在严苛并发环境下的绝对健壮性：
@@ -553,7 +626,7 @@ BioTest/
 #### 🐛 成功捕获 HTSJDK 工业级 Bug (Real World Impact)
 在首次试运行的 27 组测试中，系统成功暴露出一个关键的规范相容性 Bug！
 *   **发现过程**：系统生成了一个变体 $T(x)$，该文件改变了 `##INFO` 结构化元数据行的内部键顺序（例如生成了 `<Type=Integer,Number=1,ID=DP,...>`）。
-*   **触发神谕**：Metamorphic Oracle 与 Differential Oracle 齐齐亮红灯。HTSJDK 崩溃拒绝解析，而 Pysam (HTSlib) 成功解析。
+*   **触发神谕**：Metamorphic Oracle 与 Differential Oracle 齐齐亮红灯。HTSJDK 崩溃拒绝解析，而 Python Reference 解析器成功解析。
 *   **铁证闭环**：系统调出 Phase B 提取的证据 —— VCF v4.5 规范第 121 页明确标注 `[CRITICAL]`："Implementations must not rely on the order of the fields within structured lines..."
-*   **结论**：**HTSJDK 违背了官方规范！** 系统已自动打包最小复现用例、差异 JSON 及证据 Markdown，可直接一键提交至 GitHub Issue。
+*   **结论**：**HTSJDK 违背了官方规范！** 系统已自动打包**经过收缩的**最小复现用例、差异 JSON 及证据 Markdown，可直接一键提交至 GitHub Issue。
 *   **总 DET 发现率 (DET Rate)**: 在针对 3 个排序不变性 MR 的测试中，总体暴露出 **51.85%** 的行为差异率。这强有力地证明了基于语义的变体测试在寻找深度解析器漏洞上的巨大价值！

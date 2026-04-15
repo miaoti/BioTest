@@ -15,9 +15,33 @@ from __future__ import annotations
 
 import re
 import random
+import logging
 from typing import Optional
 
 from mr_engine.transforms import TRANSFORM_REGISTRY
+from .z3_constraints import check_cigar_seq_constraint, check_info_number_a
+
+logger = logging.getLogger(__name__)
+
+# Safe assume() that is a no-op outside Hypothesis @given context.
+# hypothesis.assume() raises UnsatisfiedAssumption when called outside
+# a property-based test, so we check the internal state flag first.
+def _h_assume(condition: bool) -> None:
+    """Call hypothesis.assume() if inside @given, otherwise no-op."""
+    if condition:
+        return  # Constraint satisfied, nothing to do
+    try:
+        from hypothesis.core import _hypothesis_global_random  # noqa: F401
+        from hypothesis._settings import note_deprecation  # noqa: F401
+        from hypothesis.control import current_build_context
+        # Only call assume() if we're actually inside a @given test
+        ctx = current_build_context()
+        if ctx is not None:
+            from hypothesis import assume
+            assume(condition)
+    except Exception:
+        # Outside @given context, hypothesis not installed, or no build context
+        pass
 from mr_engine.transforms.vcf import (
     shuffle_meta_lines,
     permute_structured_kv_order,
@@ -330,6 +354,19 @@ def _apply_compound_alt_permutation(
                         sample_vals[gt_idx] = remap_gt(sample_vals[gt_idx], pi)
                         cols[s_idx] = ":".join(sample_vals)
 
+        # Z3 post-transform guard: Number=A fields must have len(ALT) values
+        new_alt_count = len(cols[4].split(","))
+        info_str_check = cols[7]
+        if info_str_check != ".":
+            for part in info_str_check.split(";"):
+                if "=" in part:
+                    key, val = part.split("=", 1)
+                    if key in number_a_fields and "," in val:
+                        vals = val.split(",")
+                        if not check_info_number_a(new_alt_count, vals):
+                            logger.debug("Z3 guard: Number=A mismatch after ALT permutation")
+                            _h_assume(False)
+
         new_line = "\t".join(cols)
         result.append(new_line + "\n" if line.endswith("\n") else new_line)
 
@@ -401,7 +438,8 @@ def _dispatch_reorder_header(
 def _dispatch_cigar_split_merge(
     lines: list[str], seed: Optional[int]
 ) -> list[str]:
-    """Line-level: split or merge CIGAR operations on each alignment."""
+    """Line-level: split or merge CIGAR operations on each alignment.
+    Z3 guard: verify sum(query_consuming_ops) == len(SEQ) after transform."""
     rng = random.Random(seed)
     mode = rng.choice(["split", "merge"])
     result = []
@@ -413,7 +451,18 @@ def _dispatch_cigar_split_merge(
         cols = stripped.split("\t")
         if len(cols) >= 6 and cols[5] != "*":
             child_seed = rng.randint(0, 2**31)
-            cols[5] = split_or_merge_adjacent_cigar_ops(cols[5], mode=mode, seed=child_seed)
+            new_cigar = split_or_merge_adjacent_cigar_ops(cols[5], mode=mode, seed=child_seed)
+
+            # Z3 post-transform guard: CIGAR query length must match SEQ length
+            if len(cols) >= 10 and cols[9] != "*":
+                cigar_ops = [(int(m.group(1)), m.group(2))
+                             for m in re.finditer(r"(\d+)([MIDNSHP=X])", new_cigar)]
+                seq_len = len(cols[9])
+                if not check_cigar_seq_constraint(cigar_ops, seq_len):
+                    logger.debug("Z3 guard: CIGAR/SEQ mismatch after %s, discarding", mode)
+                    _h_assume(False)  # Tell Hypothesis to discard this example
+
+            cols[5] = new_cigar
             new_line = "\t".join(cols)
             result.append(new_line + "\n" if line.endswith("\n") else new_line)
         else:
@@ -425,7 +474,8 @@ def _dispatch_cigar_split_merge(
 def _dispatch_toggle_clipping(
     lines: list[str], seed: Optional[int]
 ) -> list[str]:
-    """Line-level: toggle H<->S clipping with SEQ/QUAL sync."""
+    """Line-level: toggle H<->S clipping with SEQ/QUAL sync.
+    Z3 guard: verify CIGAR query length == SEQ length after transform."""
     result = []
     for line in lines:
         stripped = line.rstrip("\n\r")
@@ -440,6 +490,15 @@ def _dispatch_toggle_clipping(
             new_cigar, new_seq, new_qual = toggle_cigar_hard_soft_clipping(
                 cigar_str, seq, qual
             )
+
+            # Z3 post-transform guard: new CIGAR must agree with new SEQ length
+            if new_seq != "*":
+                cigar_ops = [(int(m.group(1)), m.group(2))
+                             for m in re.finditer(r"(\d+)([MIDNSHP=X])", new_cigar)]
+                if not check_cigar_seq_constraint(cigar_ops, len(new_seq)):
+                    logger.debug("Z3 guard: CIGAR/SEQ mismatch after clipping toggle, discarding")
+                    _h_assume(False)
+
             cols[5] = new_cigar
             cols[9] = new_seq
             cols[10] = new_qual
