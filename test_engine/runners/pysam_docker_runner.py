@@ -183,12 +183,13 @@ class PysamDockerRunner(ParserRunner):
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
         except json.JSONDecodeError as e:
+            harness_stderr = (proc.stderr or "")[:2048] if "proc" in dir() else ""
             return RunnerResult(
                 success=False,
                 parser_name=self.name,
                 format_type=format_type,
                 error_type="parse_error",
-                stderr=f"Invalid JSON from pysam Docker harness: {e}",
+                stderr=f"Invalid JSON from pysam Docker harness: {e}\n--- harness stderr ---\n{harness_stderr}",
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
         except Exception as e:

@@ -1,0 +1,947 @@
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.yaml
+
+                                 Configuration                                 
++-----------------------------------------------------------------------------+
+|Spec Versions        | VCF v4.5, SAM v1.6                                    |
+|MR Themes            | ordering_invariance, semantics_preserving_permutation,|
+|                     | normalization_invariance, rejection_invariance,       |
+|                     | coordinate_indexing_invariance, round_trip_invariance |
+|Active SUTs          | htsjdk, biopython, seqan3, pysam                      |
+|Enabled Phases       | A -> B -> C                                           |
++-----------------------------------------------------------------------------+
+
+  Mining VCF / ordering_invariance...
+15:08:52 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:08:52 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+15:09:19 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 27.7s
+15:09:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+15:09:20 [DEBUG] httpcore.connection: connect_tcp.started host='localhost' port=11434 local_address=None timeout=None socket_options=None
+15:09:22 [DEBUG] httpcore.connection: connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x00000226440D25D0>
+15:09:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:09:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:09:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:09:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:09:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:09:30 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:09:30 GMT'), (b'Content-Length', b'1146')])
+15:09:30 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:09:30 [DEBUG] httpcore.http11: receive_response_body.complete
+15:09:30 [DEBUG] httpcore.http11: response_closed.started
+15:09:30 [DEBUG] httpcore.http11: response_closed.complete
+15:09:31 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:09:31 [DEBUG] httpcore.http11: send_request_headers.complete
+15:09:31 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:09:31 [DEBUG] httpcore.http11: send_request_body.complete
+15:09:31 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:09:42 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:09:42 GMT'), (b'Content-Length', b'1245')])
+15:09:42 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:09:42 [DEBUG] httpcore.http11: receive_response_body.complete
+15:09:42 [DEBUG] httpcore.http11: response_closed.started
+15:09:42 [DEBUG] httpcore.http11: response_closed.complete
+15:09:43 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:09:43 [DEBUG] httpcore.http11: send_request_headers.complete
+15:09:43 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:09:43 [DEBUG] httpcore.http11: send_request_body.complete
+15:09:43 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:09:55 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:09:55 GMT'), (b'Content-Length', b'1402')])
+15:09:55 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:09:55 [DEBUG] httpcore.http11: receive_response_body.complete
+15:09:55 [DEBUG] httpcore.http11: response_closed.started
+15:09:55 [DEBUG] httpcore.http11: response_closed.complete
+15:09:56 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:09:56 [DEBUG] httpcore.http11: send_request_headers.complete
+15:09:56 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:09:56 [DEBUG] httpcore.http11: send_request_body.complete
+15:09:56 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:13 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:13 GMT'), (b'Content-Length', b'1736')])
+15:10:13 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:13 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:13 [DEBUG] httpcore.http11: response_closed.started
+15:10:13 [DEBUG] httpcore.http11: response_closed.complete
+15:10:13 [DEBUG] mr_engine.agent.engine: Agent raw output (attempt 1):
+[
+  {
+    "mr_name": "VCF Header Meta-lines Order Invariance",
+    "scope": "VCF.header",
+    "preconditions": [
+      "VCF file contains meta-information lines",
+      "##fileformat line is present at the start"
+    ],
+    "transform_steps": [
+      "shuffle_meta_lines"
+    ],
+    "oracle": "The biological meaning and validity of the VCF file must remain unchanged after reordering meta-information lines",
+    "evidence": [
+      {
+        "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+15:10:13 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+15:10:13 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 1
+  Mining VCF / semantics_preserving_permutation...
+15:10:13 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:10:13 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+15:10:13 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:13 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:13 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:13 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:13 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:21 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:21 GMT'), (b'Content-Length', b'1130')])
+15:10:21 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:21 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:21 [DEBUG] httpcore.http11: response_closed.started
+15:10:21 [DEBUG] httpcore.http11: response_closed.complete
+15:10:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:33 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:33 GMT'), (b'Content-Length', b'527')])
+15:10:33 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:33 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:33 [DEBUG] httpcore.http11: response_closed.started
+15:10:33 [DEBUG] httpcore.http11: response_closed.complete
+15:10:33 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:33 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:33 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:33 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:33 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:37 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:37 GMT'), (b'Content-Length', b'534')])
+15:10:37 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:37 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:37 [DEBUG] httpcore.http11: response_closed.started
+15:10:37 [DEBUG] httpcore.http11: response_closed.complete
+15:10:37 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:37 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:37 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:37 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:37 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:41 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:41 GMT'), (b'Content-Length', b'536')])
+15:10:41 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:41 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:41 [DEBUG] httpcore.http11: response_closed.started
+15:10:41 [DEBUG] httpcore.http11: response_closed.complete
+15:10:41 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:41 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:41 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:41 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:41 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:46 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:46 GMT'), (b'Content-Length', b'526')])
+15:10:46 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:46 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:46 [DEBUG] httpcore.http11: response_closed.started
+15:10:46 [DEBUG] httpcore.http11: response_closed.complete
+15:10:46 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:46 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:46 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:46 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:46 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:51 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:51 GMT'), (b'Content-Length', b'537')])
+15:10:51 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:51 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:51 [DEBUG] httpcore.http11: response_closed.started
+15:10:51 [DEBUG] httpcore.http11: response_closed.complete
+15:10:51 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:51 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:51 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:51 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:51 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:10:56 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:10:56 GMT'), (b'Content-Length', b'536')])
+15:10:56 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:10:56 [DEBUG] httpcore.http11: receive_response_body.complete
+15:10:56 [DEBUG] httpcore.http11: response_closed.started
+15:10:56 [DEBUG] httpcore.http11: response_closed.complete
+15:10:56 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:10:56 [DEBUG] httpcore.http11: send_request_headers.complete
+15:10:56 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:10:56 [DEBUG] httpcore.http11: send_request_body.complete
+15:10:56 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:01 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:01 GMT'), (b'Content-Length', b'550')])
+15:11:01 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:01 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:01 [DEBUG] httpcore.http11: response_closed.started
+15:11:01 [DEBUG] httpcore.http11: response_closed.complete
+  Mining VCF / normalization_invariance...
+15:11:01 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:11:01 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+15:11:01 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:01 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:01 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:01 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:01 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:10 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:10 GMT'), (b'Content-Length', b'1156')])
+15:11:10 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:10 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:10 [DEBUG] httpcore.http11: response_closed.started
+15:11:10 [DEBUG] httpcore.http11: response_closed.complete
+15:11:11 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:11 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:11 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:11 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:11 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:15 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:15 GMT'), (b'Content-Length', b'522')])
+15:11:15 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:15 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:15 [DEBUG] httpcore.http11: response_closed.started
+15:11:15 [DEBUG] httpcore.http11: response_closed.complete
+15:11:16 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:16 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:16 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:16 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:16 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:20 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:20 GMT'), (b'Content-Length', b'525')])
+15:11:20 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:20 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:20 [DEBUG] httpcore.http11: response_closed.started
+15:11:20 [DEBUG] httpcore.http11: response_closed.complete
+15:11:20 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:20 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:20 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:20 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:20 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:26 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:26 GMT'), (b'Content-Length', b'556')])
+15:11:26 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:26 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:26 [DEBUG] httpcore.http11: response_closed.started
+15:11:26 [DEBUG] httpcore.http11: response_closed.complete
+15:11:26 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:26 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:26 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:26 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:26 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:30 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:30 GMT'), (b'Content-Length', b'562')])
+15:11:30 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:30 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:30 [DEBUG] httpcore.http11: response_closed.started
+15:11:30 [DEBUG] httpcore.http11: response_closed.complete
+15:11:31 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:31 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:31 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:31 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:31 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:36 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:36 GMT'), (b'Content-Length', b'569')])
+15:11:36 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:36 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:36 [DEBUG] httpcore.http11: response_closed.started
+15:11:36 [DEBUG] httpcore.http11: response_closed.complete
+15:11:36 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:36 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:36 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:36 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:36 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:41 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:41 GMT'), (b'Content-Length', b'559')])
+15:11:41 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:41 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:41 [DEBUG] httpcore.http11: response_closed.started
+15:11:41 [DEBUG] httpcore.http11: response_closed.complete
+15:11:41 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:41 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:41 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:41 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:41 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:46 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:46 GMT'), (b'Content-Length', b'562')])
+15:11:46 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:46 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:46 [DEBUG] httpcore.http11: response_closed.started
+15:11:46 [DEBUG] httpcore.http11: response_closed.complete
+  Mining VCF / rejection_invariance...
+15:11:46 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:11:46 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+15:11:46 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:46 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:46 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:46 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:46 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:11:57 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:11:57 GMT'), (b'Content-Length', b'1333')])
+15:11:57 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:11:57 [DEBUG] httpcore.http11: receive_response_body.complete
+15:11:57 [DEBUG] httpcore.http11: response_closed.started
+15:11:57 [DEBUG] httpcore.http11: response_closed.complete
+15:11:57 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:11:57 [DEBUG] httpcore.http11: send_request_headers.complete
+15:11:57 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:11:57 [DEBUG] httpcore.http11: send_request_body.complete
+15:11:57 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:05 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:05 GMT'), (b'Content-Length', b'994')])
+15:12:05 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:05 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:05 [DEBUG] httpcore.http11: response_closed.started
+15:12:05 [DEBUG] httpcore.http11: response_closed.complete
+15:12:05 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:05 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:05 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:05 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:05 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:12 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:12 GMT'), (b'Content-Length', b'596')])
+15:12:12 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:12 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:12 [DEBUG] httpcore.http11: response_closed.started
+15:12:12 [DEBUG] httpcore.http11: response_closed.complete
+15:12:12 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:12 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:12 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:12 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:12 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:18 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:18 GMT'), (b'Content-Length', b'617')])
+15:12:18 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:18 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:18 [DEBUG] httpcore.http11: response_closed.started
+15:12:18 [DEBUG] httpcore.http11: response_closed.complete
+15:12:18 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:18 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:18 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:18 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:18 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:22 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:22 GMT'), (b'Content-Length', b'592')])
+15:12:22 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:22 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:22 [DEBUG] httpcore.http11: response_closed.started
+15:12:22 [DEBUG] httpcore.http11: response_closed.complete
+15:12:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:27 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:27 GMT'), (b'Content-Length', b'607')])
+15:12:27 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:27 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:27 [DEBUG] httpcore.http11: response_closed.started
+15:12:27 [DEBUG] httpcore.http11: response_closed.complete
+15:12:27 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:27 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:27 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:27 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:27 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:32 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:32 GMT'), (b'Content-Length', b'605')])
+15:12:32 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:32 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:32 [DEBUG] httpcore.http11: response_closed.started
+15:12:32 [DEBUG] httpcore.http11: response_closed.complete
+15:12:32 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:32 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:32 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:32 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:32 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:37 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:37 GMT'), (b'Content-Length', b'612')])
+15:12:37 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:37 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:37 [DEBUG] httpcore.http11: response_closed.started
+15:12:37 [DEBUG] httpcore.http11: response_closed.complete
+  Mining VCF / coordinate_indexing_invariance...
+15:12:37 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:12:37 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+15:12:37 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:37 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:37 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:37 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:37 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:45 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:45 GMT'), (b'Content-Length', b'1101')])
+15:12:45 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:45 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:45 [DEBUG] httpcore.http11: response_closed.started
+15:12:45 [DEBUG] httpcore.http11: response_closed.complete
+15:12:45 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:45 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:45 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:45 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:45 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:12:53 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:12:53 GMT'), (b'Content-Length', b'937')])
+15:12:53 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:12:53 [DEBUG] httpcore.http11: receive_response_body.complete
+15:12:53 [DEBUG] httpcore.http11: response_closed.started
+15:12:53 [DEBUG] httpcore.http11: response_closed.complete
+15:12:53 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:12:53 [DEBUG] httpcore.http11: send_request_headers.complete
+15:12:53 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:12:53 [DEBUG] httpcore.http11: send_request_body.complete
+15:12:53 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:03 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:03 GMT'), (b'Content-Length', b'1115')])
+15:13:03 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:03 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:03 [DEBUG] httpcore.http11: response_closed.started
+15:13:03 [DEBUG] httpcore.http11: response_closed.complete
+15:13:04 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:04 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:04 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:04 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:04 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:12 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:12 GMT'), (b'Content-Length', b'911')])
+15:13:12 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:12 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:12 [DEBUG] httpcore.http11: response_closed.started
+15:13:12 [DEBUG] httpcore.http11: response_closed.complete
+15:13:12 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:12 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:12 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:12 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:12 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:20 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:20 GMT'), (b'Content-Length', b'940')])
+15:13:20 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:20 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:20 [DEBUG] httpcore.http11: response_closed.started
+15:13:20 [DEBUG] httpcore.http11: response_closed.complete
+15:13:21 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:21 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:21 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:21 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:21 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:31 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:31 GMT'), (b'Content-Length', b'1121')])
+15:13:31 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:31 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:31 [DEBUG] httpcore.http11: response_closed.started
+15:13:31 [DEBUG] httpcore.http11: response_closed.complete
+15:13:32 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:32 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:32 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:32 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:32 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:40 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:40 GMT'), (b'Content-Length', b'910')])
+15:13:40 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:40 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:40 [DEBUG] httpcore.http11: response_closed.started
+15:13:40 [DEBUG] httpcore.http11: response_closed.complete
+15:13:40 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:40 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:40 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:40 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:40 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:13:50 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:13:50 GMT'), (b'Content-Length', b'1124')])
+15:13:50 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:13:50 [DEBUG] httpcore.http11: receive_response_body.complete
+15:13:50 [DEBUG] httpcore.http11: response_closed.started
+15:13:50 [DEBUG] httpcore.http11: response_closed.complete
+  Mining VCF / round_trip_invariance...
+15:13:50 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:13:50 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+15:13:50 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:13:50 [DEBUG] httpcore.http11: send_request_headers.complete
+15:13:50 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:13:50 [DEBUG] httpcore.http11: send_request_body.complete
+15:13:50 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:06 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:06 GMT'), (b'Content-Length', b'1305')])
+15:14:06 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:06 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:06 [DEBUG] httpcore.http11: response_closed.started
+15:14:06 [DEBUG] httpcore.http11: response_closed.complete
+15:14:07 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:07 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:07 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:07 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:07 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:11 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:11 GMT'), (b'Content-Length', b'534')])
+15:14:11 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:11 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:11 [DEBUG] httpcore.http11: response_closed.started
+15:14:11 [DEBUG] httpcore.http11: response_closed.complete
+15:14:12 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:12 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:12 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:12 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:12 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:17 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:17 GMT'), (b'Content-Length', b'543')])
+15:14:17 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:17 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:17 [DEBUG] httpcore.http11: response_closed.started
+15:14:17 [DEBUG] httpcore.http11: response_closed.complete
+15:14:17 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:17 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:17 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:17 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:17 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:22 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:22 GMT'), (b'Content-Length', b'552')])
+15:14:22 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:22 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:22 [DEBUG] httpcore.http11: response_closed.started
+15:14:22 [DEBUG] httpcore.http11: response_closed.complete
+15:14:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:28 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:28 GMT'), (b'Content-Length', b'543')])
+15:14:28 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:28 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:28 [DEBUG] httpcore.http11: response_closed.started
+15:14:28 [DEBUG] httpcore.http11: response_closed.complete
+15:14:29 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:29 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:29 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:29 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:29 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:32 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:32 GMT'), (b'Content-Length', b'530')])
+15:14:32 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:32 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:32 [DEBUG] httpcore.http11: response_closed.started
+15:14:32 [DEBUG] httpcore.http11: response_closed.complete
+15:14:33 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:33 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:33 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:33 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:33 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:36 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:36 GMT'), (b'Content-Length', b'554')])
+15:14:36 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:36 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:36 [DEBUG] httpcore.http11: response_closed.started
+15:14:36 [DEBUG] httpcore.http11: response_closed.complete
+15:14:36 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:36 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:36 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:36 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:36 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:42 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:42 GMT'), (b'Content-Length', b'553')])
+15:14:42 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:42 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:42 [DEBUG] httpcore.http11: response_closed.started
+15:14:42 [DEBUG] httpcore.http11: response_closed.complete
+  Mining SAM / ordering_invariance...
+15:14:42 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:14:42 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+15:14:42 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:42 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:42 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:42 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:42 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:45 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:45 GMT'), (b'Content-Length', b'516')])
+15:14:45 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:45 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:45 [DEBUG] httpcore.http11: response_closed.started
+15:14:45 [DEBUG] httpcore.http11: response_closed.complete
+15:14:45 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:45 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:45 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:45 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:45 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:48 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:48 GMT'), (b'Content-Length', b'504')])
+15:14:48 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:48 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:48 [DEBUG] httpcore.http11: response_closed.started
+15:14:48 [DEBUG] httpcore.http11: response_closed.complete
+15:14:48 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:48 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:48 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:48 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:48 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:52 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:52 GMT'), (b'Content-Length', b'496')])
+15:14:52 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:52 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:52 [DEBUG] httpcore.http11: response_closed.started
+15:14:52 [DEBUG] httpcore.http11: response_closed.complete
+15:14:52 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:52 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:52 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:52 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:52 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:56 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:56 GMT'), (b'Content-Length', b'492')])
+15:14:56 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:56 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:56 [DEBUG] httpcore.http11: response_closed.started
+15:14:56 [DEBUG] httpcore.http11: response_closed.complete
+15:14:56 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:14:56 [DEBUG] httpcore.http11: send_request_headers.complete
+15:14:56 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:14:56 [DEBUG] httpcore.http11: send_request_body.complete
+15:14:56 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:14:59 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:14:59 GMT'), (b'Content-Length', b'499')])
+15:14:59 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:14:59 [DEBUG] httpcore.http11: receive_response_body.complete
+15:14:59 [DEBUG] httpcore.http11: response_closed.started
+15:14:59 [DEBUG] httpcore.http11: response_closed.complete
+15:15:00 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:00 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:00 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:00 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:00 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:04 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:04 GMT'), (b'Content-Length', b'505')])
+15:15:04 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:04 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:04 [DEBUG] httpcore.http11: response_closed.started
+15:15:04 [DEBUG] httpcore.http11: response_closed.complete
+15:15:05 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:05 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:05 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:05 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:05 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:08 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:08 GMT'), (b'Content-Length', b'494')])
+15:15:08 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:08 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:08 [DEBUG] httpcore.http11: response_closed.started
+15:15:08 [DEBUG] httpcore.http11: response_closed.complete
+15:15:08 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:08 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:08 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:08 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:08 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:12 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:12 GMT'), (b'Content-Length', b'502')])
+15:15:12 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:12 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:12 [DEBUG] httpcore.http11: response_closed.started
+15:15:12 [DEBUG] httpcore.http11: response_closed.complete
+  Mining SAM / semantics_preserving_permutation...
+15:15:12 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:15:12 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+15:15:12 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:12 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:12 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:12 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:12 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:18 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:18 GMT'), (b'Content-Length', b'986')])
+15:15:18 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:18 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:18 [DEBUG] httpcore.http11: response_closed.started
+15:15:18 [DEBUG] httpcore.http11: response_closed.complete
+15:15:19 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:19 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:19 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:19 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:19 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:22 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:22 GMT'), (b'Content-Length', b'508')])
+15:15:22 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:22 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:22 [DEBUG] httpcore.http11: response_closed.started
+15:15:22 [DEBUG] httpcore.http11: response_closed.complete
+15:15:23 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:23 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:23 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:23 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:23 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:26 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:26 GMT'), (b'Content-Length', b'507')])
+15:15:26 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:26 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:26 [DEBUG] httpcore.http11: response_closed.started
+15:15:26 [DEBUG] httpcore.http11: response_closed.complete
+15:15:26 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:26 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:26 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:26 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:26 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:31 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:31 GMT'), (b'Content-Length', b'529')])
+15:15:31 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:31 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:31 [DEBUG] httpcore.http11: response_closed.started
+15:15:31 [DEBUG] httpcore.http11: response_closed.complete
+15:15:31 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:31 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:31 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:31 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:31 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:34 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:34 GMT'), (b'Content-Length', b'507')])
+15:15:34 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:34 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:34 [DEBUG] httpcore.http11: response_closed.started
+15:15:34 [DEBUG] httpcore.http11: response_closed.complete
+15:15:34 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:34 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:34 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:34 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:34 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:39 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:39 GMT'), (b'Content-Length', b'529')])
+15:15:39 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:39 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:39 [DEBUG] httpcore.http11: response_closed.started
+15:15:39 [DEBUG] httpcore.http11: response_closed.complete
+15:15:40 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:40 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:40 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:40 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:40 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:43 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:43 GMT'), (b'Content-Length', b'507')])
+15:15:43 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:43 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:43 [DEBUG] httpcore.http11: response_closed.started
+15:15:43 [DEBUG] httpcore.http11: response_closed.complete
+15:15:43 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:43 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:43 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:43 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:43 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:48 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:48 GMT'), (b'Content-Length', b'529')])
+15:15:48 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:48 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:48 [DEBUG] httpcore.http11: response_closed.started
+15:15:48 [DEBUG] httpcore.http11: response_closed.complete
+  Mining SAM / normalization_invariance...
+15:15:48 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:15:48 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+15:15:48 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:48 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:48 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:48 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:48 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:15:54 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:15:54 GMT'), (b'Content-Length', b'929')])
+15:15:54 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:15:54 [DEBUG] httpcore.http11: receive_response_body.complete
+15:15:54 [DEBUG] httpcore.http11: response_closed.started
+15:15:54 [DEBUG] httpcore.http11: response_closed.complete
+15:15:54 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:15:54 [DEBUG] httpcore.http11: send_request_headers.complete
+15:15:54 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:15:54 [DEBUG] httpcore.http11: send_request_body.complete
+15:15:54 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:02 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:02 GMT'), (b'Content-Length', b'954')])
+15:16:02 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:02 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:02 [DEBUG] httpcore.http11: response_closed.started
+15:16:02 [DEBUG] httpcore.http11: response_closed.complete
+15:16:03 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:03 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:03 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:03 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:03 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:06 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:06 GMT'), (b'Content-Length', b'528')])
+15:16:06 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:06 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:06 [DEBUG] httpcore.http11: response_closed.started
+15:16:06 [DEBUG] httpcore.http11: response_closed.complete
+15:16:06 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:06 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:06 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:06 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:06 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:09 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:09 GMT'), (b'Content-Length', b'515')])
+15:16:09 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:09 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:09 [DEBUG] httpcore.http11: response_closed.started
+15:16:09 [DEBUG] httpcore.http11: response_closed.complete
+15:16:10 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:10 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:10 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:10 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:10 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:14 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:14 GMT'), (b'Content-Length', b'520')])
+15:16:14 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:14 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:14 [DEBUG] httpcore.http11: response_closed.started
+15:16:14 [DEBUG] httpcore.http11: response_closed.complete
+15:16:15 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:15 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:15 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:15 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:15 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:18 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:18 GMT'), (b'Content-Length', b'519')])
+15:16:18 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:18 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:18 [DEBUG] httpcore.http11: response_closed.started
+15:16:18 [DEBUG] httpcore.http11: response_closed.complete
+15:16:18 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:18 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:18 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:18 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:18 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:22 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:22 GMT'), (b'Content-Length', b'529')])
+15:16:22 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:22 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:22 [DEBUG] httpcore.http11: response_closed.started
+15:16:22 [DEBUG] httpcore.http11: response_closed.complete
+15:16:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:27 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:27 GMT'), (b'Content-Length', b'526')])
+15:16:27 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:27 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:27 [DEBUG] httpcore.http11: response_closed.started
+15:16:27 [DEBUG] httpcore.http11: response_closed.complete
+  Mining SAM / rejection_invariance...
+15:16:27 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:16:27 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+15:16:27 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:27 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:27 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:27 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:27 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:16:34 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:16:34 GMT'), (b'Content-Length', b'1137')])
+15:16:34 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:16:34 [DEBUG] httpcore.http11: receive_response_body.complete
+15:16:34 [DEBUG] httpcore.http11: response_closed.started
+15:16:34 [DEBUG] httpcore.http11: response_closed.complete
+15:16:35 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:16:35 [DEBUG] httpcore.http11: send_request_headers.complete
+15:16:35 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:16:35 [DEBUG] httpcore.http11: send_request_body.complete
+15:16:35 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:17:24 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:17:24 GMT'), (b'Transfer-Encoding', b'chunked')])
+15:17:24 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:17:24 [DEBUG] httpcore.http11: receive_response_body.complete
+15:17:24 [DEBUG] httpcore.http11: response_closed.started
+15:17:24 [DEBUG] httpcore.http11: response_closed.complete
+15:17:24 [DEBUG] mr_engine.agent.engine: Agent raw output (attempt 1):
+[
+  {
+    "mr_name": "Invalid Character in Read Name Field",
+    "scope": "SAM.record",
+    "preconditions": [
+      "A SAM record with a valid read name field (column 1) that contains an invalid character such as '@'"
+    ],
+    "transform_steps": [
+      "permute_optional_tag_fields"
+    ],
+    "oracle": "A compliant SAM parser must reject or flag the record due to the presence of the invalid '@' character in the read name field, as per the specification rule that read names may contain any pr
+15:17:24 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:17:24 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+  Mining SAM / coordinate_indexing_invariance...
+15:17:24 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:17:24 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+15:17:24 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:17:24 [DEBUG] httpcore.http11: send_request_headers.complete
+15:17:24 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:17:24 [DEBUG] httpcore.http11: send_request_body.complete
+15:17:24 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:17:38 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:17:38 GMT'), (b'Content-Length', b'1160')])
+15:17:38 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:17:38 [DEBUG] httpcore.http11: receive_response_body.complete
+15:17:38 [DEBUG] httpcore.http11: response_closed.started
+15:17:38 [DEBUG] httpcore.http11: response_closed.complete
+15:17:39 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:17:39 [DEBUG] httpcore.http11: send_request_headers.complete
+15:17:39 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:17:39 [DEBUG] httpcore.http11: send_request_body.complete
+15:17:39 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:17:47 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:17:47 GMT'), (b'Content-Length', b'940')])
+15:17:47 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:17:47 [DEBUG] httpcore.http11: receive_response_body.complete
+15:17:47 [DEBUG] httpcore.http11: response_closed.started
+15:17:47 [DEBUG] httpcore.http11: response_closed.complete
+15:17:49 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:17:49 [DEBUG] httpcore.http11: send_request_headers.complete
+15:17:49 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:17:49 [DEBUG] httpcore.http11: send_request_body.complete
+15:17:49 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:10 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:10 GMT'), (b'Transfer-Encoding', b'chunked')])
+15:18:10 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:10 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:10 [DEBUG] httpcore.http11: response_closed.started
+15:18:10 [DEBUG] httpcore.http11: response_closed.complete
+15:18:10 [DEBUG] mr_engine.agent.engine: Agent raw output (attempt 1):
+[
+  {
+    "mr_name": "SAM Coordinate System Invariance",
+    "scope": "SAM.record",
+    "preconditions": [
+      "The SAM file contains alignment records with POS field values",
+      "The POS field represents 1-based genomic coordinates as per SAM specification"
+    ],
+    "transform_steps": [
+      "toggle_cigar_hard_soft_clipping",
+      "split_or_merge_adjacent_cigar_ops",
+      "permute_optional_tag_fields",
+      "reorder_header_records"
+    ],
+    "oracle": "The POS field values in SAM al
+15:18:10 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+15:18:10 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 1
+  Mining SAM / round_trip_invariance...
+15:18:10 [INFO] mr_engine.llm_factory: Initialized Ollama model 'qwen3-coder:30b' at http://localhost:11434/v1
+15:18:10 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+15:18:10 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:10 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:10 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:10 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:10 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:18 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:18 GMT'), (b'Content-Length', b'1126')])
+15:18:18 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:18 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:18 [DEBUG] httpcore.http11: response_closed.started
+15:18:18 [DEBUG] httpcore.http11: response_closed.complete
+15:18:18 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:18 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:18 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:18 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:18 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:22 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:22 GMT'), (b'Content-Length', b'527')])
+15:18:22 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:22 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:22 [DEBUG] httpcore.http11: response_closed.started
+15:18:22 [DEBUG] httpcore.http11: response_closed.complete
+15:18:22 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:22 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:22 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:22 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:22 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:25 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:25 GMT'), (b'Content-Length', b'542')])
+15:18:25 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:25 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:25 [DEBUG] httpcore.http11: response_closed.started
+15:18:25 [DEBUG] httpcore.http11: response_closed.complete
+15:18:25 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:25 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:25 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:25 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:25 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:30 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:30 GMT'), (b'Content-Length', b'547')])
+15:18:30 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:30 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:30 [DEBUG] httpcore.http11: response_closed.started
+15:18:30 [DEBUG] httpcore.http11: response_closed.complete
+15:18:30 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:30 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:30 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:30 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:30 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:35 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:35 GMT'), (b'Content-Length', b'550')])
+15:18:35 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:35 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:35 [DEBUG] httpcore.http11: response_closed.started
+15:18:35 [DEBUG] httpcore.http11: response_closed.complete
+15:18:35 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:35 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:35 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:35 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:35 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:40 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:40 GMT'), (b'Content-Length', b'568')])
+15:18:40 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:40 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:40 [DEBUG] httpcore.http11: response_closed.started
+15:18:40 [DEBUG] httpcore.http11: response_closed.complete
+15:18:41 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:41 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:41 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:41 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:41 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:45 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:45 GMT'), (b'Content-Length', b'543')])
+15:18:45 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:45 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:45 [DEBUG] httpcore.http11: response_closed.started
+15:18:45 [DEBUG] httpcore.http11: response_closed.complete
+15:18:46 [DEBUG] httpcore.http11: send_request_headers.started request=<Request [b'POST']>
+15:18:46 [DEBUG] httpcore.http11: send_request_headers.complete
+15:18:46 [DEBUG] httpcore.http11: send_request_body.started request=<Request [b'POST']>
+15:18:46 [DEBUG] httpcore.http11: send_request_body.complete
+15:18:46 [DEBUG] httpcore.http11: receive_response_headers.started request=<Request [b'POST']>
+15:18:50 [DEBUG] httpcore.http11: receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 16 Apr 2026 20:18:50 GMT'), (b'Content-Length', b'543')])
+15:18:50 [DEBUG] httpcore.http11: receive_response_body.started request=<Request [b'POST']>
+15:18:50 [DEBUG] httpcore.http11: receive_response_body.complete
+15:18:50 [DEBUG] httpcore.http11: response_closed.started
+15:18:50 [DEBUG] httpcore.http11: response_closed.complete
+15:18:50 [DEBUG] mr_engine.registry: Skipping duplicate mr_id=97a5283cec91 (Invalid Character in Reference Sequence Name Field)
+15:18:50 [DEBUG] mr_engine.registry: Skipping duplicate mr_id=97a5283cec91 (Invalid CIGAR String with Delimiter Characters)
+15:18:50 [DEBUG] mr_engine.registry: Skipping duplicate mr_id=97a5283cec91 (Non-ASCII Character Outside Specified Fields)
+15:18:50 [INFO] mr_engine.registry: Dedup: skipped 3 duplicate MR(s)
+15:18:50 [INFO] mr_engine.registry: Triage result: 2 enforced, 2 quarantine
+15:18:50 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\data\mr_registry.json (4 MRs)
+  Phase B: OK  (10m 1s)
+
+
+------------------------------ Executive Summary ------------------------------
+
+                           Phase Results                           
++-----------------------------------------------------------------+
+| Phase        |  Status  |   Duration | Details                  |
+|--------------+----------+------------+--------------------------|
+| A: Ingest    |   PASS   |        0ms | 0 chunks                 |
+| B: Mine MRs  |   PASS   |     10m 1s | 2 enforced, 2 quarantine |
+| C: Execute   |   PASS   |        0ms | 0 tests, 0 bugs found    |
++-----------------------------------------------------------------+
+
+  Total Pipeline Duration:  10m 1s
+
++-----------------------------------------------------------------------------+
+| ALL CLEAR — No bugs detected across all parsers.                            |
++-----------------------------------------------------------------------------+
+15:18:51 [DEBUG] httpcore.connection: close.started
+15:18:51 [DEBUG] httpcore.connection: close.complete

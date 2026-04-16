@@ -98,8 +98,7 @@ def export_registry(registry: MRRegistry, path: str) -> None:
             "total": registry.total,
         },
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    _atomic_write_json(path, data)
 
     logger.info("Registry exported to %s (%d MRs)", path, registry.total)
 
@@ -144,7 +143,15 @@ def merge_registries(existing_path: str, new_registry: MRRegistry) -> None:
         "total": len(data["enforced"]) + len(data["quarantine"]),
     }
 
-    with open(existing_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    _atomic_write_json(existing_path, data)
 
     logger.info("Merged %d new MRs into %s", added, existing_path)
+
+
+def _atomic_write_json(path: str, data: dict) -> None:
+    """Write JSON atomically: write to tmp file then os.replace."""
+    import os
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, path)

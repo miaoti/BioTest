@@ -20,6 +20,7 @@ very top of main() before the lazy pysam import in parse_vcf/parse_sam.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -234,7 +235,18 @@ def main():
             )
             _cov_instance.start()
         except Exception as e:
-            print(f"Coverage setup warning: {e}", file=sys.stderr)
+            # Coverage was explicitly requested; failing silently would
+            # produce a harness result with no .coverage.* file and the
+            # host-side collector would record zero coverage, poisoning
+            # Phase D's SCC signal. Fail loudly instead.
+            print(f"Coverage setup FAILED (requested via --coverage): {e}", file=sys.stderr)
+            try:
+                (coverage_dir / f"coverage_setup_failed.{os.getpid()}.log").write_text(
+                    f"{type(e).__name__}: {e}\n", encoding="utf-8"
+                )
+            except Exception:
+                pass
+            sys.exit(2)
 
     try:
         _run_parse(fmt, input_path)

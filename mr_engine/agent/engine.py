@@ -118,10 +118,16 @@ def mine_mrs(
             )
             messages = [HumanMessage(content=correction_msg)]
 
-        # Run agent (with rate limit retry + tool_use_failed recovery)
+        # Run agent (with rate limit retry + tool_use_failed recovery).
+        # recursion_limit caps the number of ReAct tool-call hops per attempt;
+        # without it, slow local LLMs can spend 10+ min looping before hitting
+        # LangGraph's default of 25. 15 is enough for thorough spec lookup.
         raw_output: str | None = None
         try:
-            result = agent.invoke({"messages": messages})
+            result = agent.invoke(
+                {"messages": messages},
+                config={"recursion_limit": 15},
+            )
         except Exception as e:
             err_str = str(e).lower()
             if "429" in err_str or "rate" in err_str or "quota" in err_str or "503" in err_str:

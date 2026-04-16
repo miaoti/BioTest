@@ -133,9 +133,13 @@ def apply_quarantine(
     data["summary"]["enforced_count"] = len(new_enforced)
     data["summary"]["quarantine_count"] = len(quarantine)
 
-    # Save
-    with open(registry_path, "w", encoding="utf-8") as f:
+    # Save atomically: write to tmp file then os.replace to avoid
+    # leaving a truncated mr_registry.json on crash/power-loss.
+    import os
+    tmp_path = registry_path.with_suffix(registry_path.suffix + ".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_path, registry_path)
 
     demoted_count = len(demoted_ids)
     logger.info("Quarantine applied: %d MRs demoted", demoted_count)

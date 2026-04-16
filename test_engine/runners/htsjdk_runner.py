@@ -79,8 +79,18 @@ class HTSJDKRunner(ParserRunner):
         tmp_dir = tempfile.mkdtemp(prefix="biotest_")
         tmp_jar = Path(tmp_dir) / "harness.jar"
         tmp_input = Path(tmp_dir) / f"input.{format_type.lower()}"
-        shutil.copy2(self._jar_path, tmp_jar)
-        shutil.copy2(input_path, tmp_input)
+        try:
+            shutil.copy2(self._jar_path, tmp_jar)
+            shutil.copy2(input_path, tmp_input)
+        except OSError as e:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return RunnerResult(
+                success=False,
+                parser_name=self.name,
+                format_type=format_type,
+                error_type="crash",
+                stderr=f"Failed to stage harness/input in temp dir: {e}",
+            )
 
         _cov_exec_tmp = None  # Track temp exec file for post-run merge
         cmd = [self._java_cmd]

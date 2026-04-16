@@ -176,8 +176,19 @@ def run_phase_a(cfg: dict[str, Any]) -> PhaseAResult:
 # Phase B: MR Mining
 # ===========================================================================
 
-def run_phase_b(cfg: dict[str, Any], blindspot_context: str | None = None) -> PhaseBResult:
-    """Execute Phase B: mine MRs using the agentic RAG engine."""
+def run_phase_b(
+    cfg: dict[str, Any],
+    blindspot_context: str | None = None,
+    merge_mode: bool = False,
+) -> PhaseBResult:
+    """Execute Phase B: mine MRs using the agentic RAG engine.
+
+    Args:
+        cfg: Full config dict.
+        blindspot_context: Optional Phase D blindspot guidance appended to system prompt.
+        merge_mode: If True, APPEND newly mined MRs to existing registry (dedup by mr_id).
+                    If False (default), OVERWRITE registry with new MRs only.
+    """
     phase_cfg = cfg.get("phase_b", {})
     if not phase_cfg.get("enabled", True):
         return PhaseBResult(success=True)
@@ -186,7 +197,7 @@ def run_phase_b(cfg: dict[str, Any], blindspot_context: str | None = None) -> Ph
     try:
         from mr_engine.behavior import BehaviorTarget, get_all_targets
         from mr_engine.agent.engine import mine_mrs
-        from mr_engine.registry import triage, export_registry
+        from mr_engine.registry import triage, export_registry, merge_registries
 
         formats = phase_cfg.get("formats", ["VCF"])
         theme_names = phase_cfg.get("themes", [])
@@ -212,7 +223,12 @@ def run_phase_b(cfg: dict[str, Any], blindspot_context: str | None = None) -> Ph
         # Triage
         registry = triage(all_relations)
         out_path = str(PROJECT_ROOT / registry_path)
-        export_registry(registry, out_path)
+        if merge_mode:
+            # Phase D iteration: append new MRs to existing registry
+            merge_registries(out_path, registry)
+        else:
+            # Fresh start: overwrite registry with current batch only
+            export_registry(registry, out_path)
 
         return PhaseBResult(
             success=True,
@@ -406,19 +422,16 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
 
             console.print(f"\n  [bold cyan]--- Iteration {iteration + 1} ---[/]")
 
-            # Phase B: Mine MRs with blindspot context
+            # Phase B: Mine MRs with blindspot context.
+            # merge_mode=True: accumulate MRs across iterations (dedup by mr_id).
             console.print("  [dim]Mining MRs (Phase B)...[/]")
-            phase_b_result = run_phase_b(cfg, blindspot_context=blindspot_text)
+            phase_b_result = run_phase_b(
+                cfg,
+                blindspot_context=blindspot_text,
+                merge_mode=True,
+            )
             icon = "[green]OK[/]" if phase_b_result.success else "[red]FAIL[/]"
-            console.print(f"    B: {icon} ({phase_b_result.enforced} enforced)")
-
-            # Merge new MRs into existing registry (don't replace)
-            if phase_b_result.success and phase_b_result.total_mined > 0:
-                from mr_engine.registry import triage as _triage
-                # The run_phase_b already wrote to registry_path via export_registry.
-                # For iteration > 0, we want to merge not replace.
-                # run_phase_b already handles this by writing all relations.
-                pass
+            console.print(f"    B: {icon} ({phase_b_result.enforced} mined this round)")
 
             # Phase C: Execute tests (with Python coverage instrumentation)
             console.print("  [dim]Running tests (Phase C)...[/]")

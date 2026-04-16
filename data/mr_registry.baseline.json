@@ -1,0 +1,38 @@
+{
+  "enforced": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "VCF Header Meta-lines Order Invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "VCF file contains meta-information lines (##INFO, ##FORMAT, ##FILTER, etc.)",
+        "The ##fileformat line is present and correctly formatted"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "The biological meaning and semantic interpretation of the VCF file must remain unchanged after reordering the meta-information lines.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p12",
+          "quote": "[VCF v4.5 — The VCF specification] Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "[VCF v4.5 — Meta-information lines] Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": []
+    }
+  ],
+  "quarantine": [],
+  "summary": {
+    "enforced_count": 1,
+    "quarantine_count": 0,
+    "total": 1
+  }
+}

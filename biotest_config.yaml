@@ -44,16 +44,17 @@ phase_b:
   # Which formats to mine MRs for
   formats:
     - VCF
-    # - SAM  # Uncomment when SAM seeds are ready for testing
+    - SAM
 
-  # Behavior themes to target (subset of all 6 available)
-  # Full list: ordering_invariance, semantics_preserving_permutation,
-  #            normalization_invariance, rejection_invariance,
-  #            coordinate_indexing_invariance, round_trip_invariance
+  # Behavior themes to target — full 6-theme matrix. Bounded per-attempt
+  # via recursion_limit=15 in agent/engine.py so slow LLM loops terminate.
   themes:
     - ordering_invariance
-    # - semantics_preserving_permutation
-    # - normalization_invariance
+    - semantics_preserving_permutation
+    - normalization_invariance
+    - rejection_invariance
+    - coordinate_indexing_invariance
+    - round_trip_invariance
 
   # LLM configuration (reads API keys from .env)
   llm:
