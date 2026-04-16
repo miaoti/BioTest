@@ -31,6 +31,7 @@ def create_mr_agent(
     target: BehaviorTarget,
     spec_format: str,
     llm: BaseChatModel | None = None,
+    blindspot_context: str | None = None,
 ):
     """
     Create a configured ReAct agent for MR mining.
@@ -39,6 +40,7 @@ def create_mr_agent(
         target: Behavior target to investigate.
         spec_format: "VCF" or "SAM".
         llm: LangChain model instance. If None, loads from environment.
+        blindspot_context: Optional Phase D blindspot guidance to append.
 
     Returns:
         A LangGraph Runnable agent.
@@ -46,7 +48,7 @@ def create_mr_agent(
     if llm is None:
         llm = get_llm()
 
-    system_prompt = build_system_prompt(target, spec_format)
+    system_prompt = build_system_prompt(target, spec_format, blindspot_context)
 
     agent = create_react_agent(
         model=llm,
@@ -60,6 +62,7 @@ def mine_mrs(
     target: BehaviorTarget,
     spec_format: str,
     llm: BaseChatModel | None = None,
+    blindspot_context: str | None = None,
 ) -> CompilationResult:
     """
     Full MR mining pipeline: agent -> validate -> retry on failure.
@@ -68,11 +71,12 @@ def mine_mrs(
         target: Behavior target category.
         spec_format: "VCF" or "SAM".
         llm: Optional pre-configured LLM instance.
+        blindspot_context: Optional Phase D blindspot guidance.
 
     Returns:
         CompilationResult with validated MRs or final errors.
     """
-    agent = create_mr_agent(target, spec_format, llm)
+    agent = create_mr_agent(target, spec_format, llm, blindspot_context)
     spec_index = get_spec_index()
 
     user_message = (

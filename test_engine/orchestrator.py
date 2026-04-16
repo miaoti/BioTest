@@ -126,6 +126,11 @@ def _run_single_test(
             )
             result.total_tests += 1
 
+            # Determine failure type for quarantine tracking
+            _ft = None
+            if not oracle_result.passed:
+                _ft = oracle_result.error_type or "metamorphic"
+
             result.det_tracker.record(DETEvent(
                 mr_id=mr_id,
                 test_type="metamorphic",
@@ -133,6 +138,7 @@ def _run_single_test(
                 passed=oracle_result.passed,
                 difference_count=len(oracle_result.differences),
                 seed_id=seed_path.name,
+                failure_type=_ft,
             ))
 
             if not oracle_result.passed:
@@ -178,6 +184,7 @@ def _run_single_test(
                     len(d) for d in diff_result.pairwise_diffs.values()
                 ),
                 seed_id=seed_path.name,
+                failure_type="differential" if not diff_result.all_agree else None,
             ))
 
             if not diff_result.all_agree:

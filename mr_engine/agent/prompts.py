@@ -11,7 +11,11 @@ from mr_engine.behavior import BehaviorTarget, get_system_prompt_fragment
 from mr_engine.agent.transforms_menu import build_system_prompt_template
 
 
-def build_system_prompt(target: BehaviorTarget, spec_format: str) -> str:
+def build_system_prompt(
+    target: BehaviorTarget,
+    spec_format: str,
+    blindspot_context: str | None = None,
+) -> str:
     """
     Return the complete system prompt string for one mining run.
 
@@ -19,8 +23,9 @@ def build_system_prompt(target: BehaviorTarget, spec_format: str) -> str:
     derived from the live TRANSFORM_REGISTRY.
 
     Args:
-        target:      The behavior target category to investigate.
-        spec_format: "VCF" or "SAM".
+        target:            The behavior target category to investigate.
+        spec_format:       "VCF" or "SAM".
+        blindspot_context: Optional Phase D blindspot guidance to append.
 
     Returns:
         Complete system prompt string (plain text, no LangChain objects).
@@ -31,4 +36,9 @@ def build_system_prompt(target: BehaviorTarget, spec_format: str) -> str:
         behavior_target=target.value,
         behavior_description=get_system_prompt_fragment(target),
     )
-    return messages[0].content
+    prompt = messages[0].content
+
+    if blindspot_context:
+        prompt += "\n\n" + blindspot_context
+
+    return prompt

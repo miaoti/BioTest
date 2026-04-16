@@ -179,7 +179,9 @@ class TestAvailabilityGuards:
         assert isinstance(avail, bool)
 
     def test_pysam_run_when_unavailable(self):
-        """If pysam not installed, run() must return error, not crash."""
+        """If pysam not installed AND no Docker, run() must return error, not crash.
+        If Docker is available, the facade falls back to Docker (expected behavior).
+        """
         import test_engine.runners.pysam_runner as mod
         original = mod._pysam_available
         try:
@@ -187,8 +189,14 @@ class TestAvailabilityGuards:
             runner = PysamRunner()
             seed = SEEDS_DIR / "vcf" / "minimal_single.vcf"
             result = runner.run(seed, "VCF")
-            assert result.success is False
-            assert "not installed" in result.stderr
+            if runner._use_docker():
+                # Docker fallback is available — run should succeed
+                assert result.success is True
+                assert result.canonical_json is not None
+            else:
+                # Neither native nor Docker — must fail gracefully
+                assert result.success is False
+                assert "not available" in result.stderr or "not installed" in result.stderr
         finally:
             mod._pysam_available = original
 

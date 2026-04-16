@@ -29,9 +29,17 @@ HARNESS_JAR = HARNESSES_DIR / "java" / "build" / "libs" / "biotest-harness-all.j
 class HTSJDKRunner(ParserRunner):
     """Parser runner using HTSJDK via Java subprocess."""
 
-    def __init__(self, jar_path: Optional[Path] = None, java_cmd: str = JAVA_CMD):
+    def __init__(
+        self,
+        jar_path: Optional[Path] = None,
+        java_cmd: str = JAVA_CMD,
+        coverage_jvm_args: Optional[str] = None,
+        coverage_exec_dir: Optional[Path] = None,
+    ):
         self._jar_path = jar_path or HARNESS_JAR
         self._java_cmd = java_cmd
+        self._coverage_jvm_args = coverage_jvm_args
+        self._coverage_exec_dir = coverage_exec_dir
 
     @property
     def name(self) -> str:
@@ -74,12 +82,27 @@ class HTSJDKRunner(ParserRunner):
         shutil.copy2(self._jar_path, tmp_jar)
         shutil.copy2(input_path, tmp_input)
 
-        cmd = [
-            self._java_cmd,
-            "-jar", str(tmp_jar),
-            format_type.upper(),
-            str(tmp_input),
-        ]
+        _cov_exec_tmp = None  # Track temp exec file for post-run merge
+        cmd = [self._java_cmd]
+        # Inject coverage JVM args (e.g., JaCoCo agent) BEFORE -jar
+        if self._coverage_jvm_args:
+            import re
+            # Write exec to ASCII temp dir (avoids Unicode path issues),
+            # then merge back to persistent dir after the run
+            tmp_exec = Path(tmp_dir) / "jacoco.exec"
+            # Copy JaCoCo agent JAR to temp dir (same Unicode workaround as harness JAR)
+            agent_match = re.search(r'-javaagent:([^\s=]+)', self._coverage_jvm_args)
+            jvm_arg = self._coverage_jvm_args
+            if agent_match:
+                agent_src = Path(agent_match.group(1))
+                if agent_src.exists():
+                    tmp_agent = Path(tmp_dir) / "jacocoagent.jar"
+                    shutil.copy2(agent_src, tmp_agent)
+                    jvm_arg = jvm_arg.replace(agent_match.group(1), str(tmp_agent))
+            jvm_arg = jvm_arg.replace("{destfile}", str(tmp_exec))
+            cmd.extend(jvm_arg.split())
+            _cov_exec_tmp = tmp_exec
+        cmd.extend(["-jar", str(tmp_jar), format_type.upper(), str(tmp_input)])
 
         t0 = time.monotonic()
         try:
@@ -147,4 +170,18 @@ class HTSJDKRunner(ParserRunner):
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
         finally:
+            # Merge JaCoCo exec data to persistent dir before cleanup
+            if _cov_exec_tmp and _cov_exec_tmp.exists() and self._coverage_exec_dir:
+                try:
+                    dest = self._coverage_exec_dir.resolve()
+                    dest.mkdir(parents=True, exist_ok=True)
+                    dest_exec = dest / "jacoco.exec"
+                    if dest_exec.exists():
+                        # Append: read both and concatenate (JaCoCo exec format is appendable)
+                        with open(dest_exec, "ab") as out, open(_cov_exec_tmp, "rb") as inp:
+                            out.write(inp.read())
+                    else:
+                        shutil.copy2(_cov_exec_tmp, dest_exec)
+                except OSError as e:
+                    logger.warning("Failed to merge JaCoCo exec: %s", e)
             shutil.rmtree(tmp_dir, ignore_errors=True)

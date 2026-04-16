@@ -24,6 +24,7 @@ class DETEvent:
     passed: bool
     difference_count: int
     seed_id: str
+    failure_type: Optional[str] = None  # "crash" | "metamorphic" | "differential" | None
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
 

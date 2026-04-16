@@ -30,10 +30,28 @@ HARNESS_BIN = HARNESSES_DIR / "cpp" / "build" / "biotest_harness.exe"
 
 
 class SeqAn3Runner(ParserRunner):
-    """Parser runner using SeqAn3 via C++ subprocess (SAM only)."""
+    """Parser runner using SeqAn3 via C++ subprocess (SAM only).
 
-    def __init__(self, binary_path: Optional[Path] = None):
+    Supports two binaries:
+    - Standard binary: fast, no instrumentation (default)
+    - Coverage binary: compiled with --coverage (-fprofile-arcs -ftest-coverage)
+      for gcov/gcovr collection. Set coverage_binary_path in config.
+    """
+
+    def __init__(
+        self,
+        binary_path: Optional[Path] = None,
+        coverage_binary_path: Optional[Path] = None,
+    ):
         self._binary_path = binary_path or HARNESS_BIN
+        self._coverage_binary_path = coverage_binary_path
+
+    @property
+    def active_binary(self) -> Path:
+        """Return coverage binary if available, else standard binary."""
+        if self._coverage_binary_path and self._coverage_binary_path.exists():
+            return self._coverage_binary_path
+        return self._binary_path
 
     @property
     def name(self) -> str:
@@ -70,7 +88,7 @@ class SeqAn3Runner(ParserRunner):
                 stderr="SeqAn3 only supports SAM format",
             )
 
-        cmd = [str(self._binary_path), "SAM", str(input_path)]
+        cmd = [str(self.active_binary), "SAM", str(input_path)]
 
         t0 = time.monotonic()
         try:

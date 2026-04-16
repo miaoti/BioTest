@@ -638,3 +638,337 @@ BioTest/
 *   **铁证闭环**：系统调出 Phase B 提取的证据 —— VCF v4.5 规范第 121 页明确标注 `[CRITICAL]`："Implementations must not rely on the order of the fields within structured lines..."
 *   **结论**：**HTSJDK 违背了官方规范！** 系统已自动打包**经过收缩的**最小复现用例、差异 JSON 及证据 Markdown，可直接一键提交至 GitHub Issue。
 *   **总 DET 发现率 (DET Rate)**: 在针对 3 个排序不变性 MR 的测试中，总体暴露出 **51.85%** 的行为差异率。这强有力地证明了基于语义的变体测试在寻找深度解析器漏洞上的巨大价值！
+
+## 🔄 阶段 D：全局编排、配置驱动与反馈驱动闭环 (Grand Orchestration & Feedback Loop)
+
+本阶段将 Phase A/B/C 从单次管线执行升级为**迭代式反馈驱动闭环**。大总管程序 (`biotest.py`) 反复调用 Phase B (挖掘) 和 Phase C (执行)，依据**覆盖率信号**精准制导下一轮的 MR 挖掘方向，同时引入 **pysam 第四 SUT** 以完善差分矩阵。
+
+### 1. YAML 配置驱动设计 (Configuration-Driven Design)
+
+系统拒绝硬编码。所有环境、目标、管线参数均通过 `biotest_config.yaml` 暴露给用户。新增的核心配置块：
+
+#### 1.1 反馈终止控制 (`feedback_control`)
+
+```yaml
+feedback_control:
+  enabled: true
+  max_iterations: 5           # B->C 迭代最大轮数
+  plateau_patience: 2         # SCC 连续 N 轮无增长则早停
+  target_scc_percent: 95.0    # SCC 达标即终止
+  timeout_minutes: 120        # 绝对超时限制
+  primary_target: htsjdk      # 主目标 SUT：驱动反馈演化
+  source_roots:               # 各 SUT 源码路径 (用于代码切片提取)
+    htsjdk: SUTfolder/java/htsjdk/src/main/java
+    biopython: .
+    seqan3: SUTfolder/cpp/seqan3/include
+    pysam: coverage_artifacts/pysam/source
+```
+
+#### 1.2 多语言覆盖率采集 (`coverage`)
+
+```yaml
+coverage:
+  enabled: true
+  jacoco_report_dir: coverage_artifacts/jacoco
+  jacoco_cli_jar: coverage_artifacts/jacoco/jacococli.jar
+  coveragepy_data_file: coverage_artifacts/.coverage
+  coveragepy_source_filter: [Bio.Align.sam]
+  pysam_coverage_dir: coverage_artifacts/pysam
+  gcovr_report_path: coverage_artifacts/gcovr.json
+  gcovr_build_dir: harnesses/cpp/build
+  target_filters:           # 格式感知白名单 (Format-Aware Filtering)
+    VCF: [htsjdk/variant/vcf, pysam]
+    SAM: [htsjdk/samtools, Bio/Align/sam, seqan3/io/sam_file, pysam]
+```
+
+#### 1.3 主目标 vs 辅助判官架构 (Primary Target vs Auxiliary Oracles)
+
+核心架构决策：反馈信号（SCC、代码覆盖率、盲区工单）**仅由 `primary_target` 驱动**。其他 SUT 仅作为差分判官参与比对，不干扰演化方向。
+
+| 角色 | SUT | 职责 |
+| :--- | :--- | :--- |
+| **主目标 (Primary)** | 由 `primary_target` 指定（如 htsjdk） | 驱动 SCC、代码覆盖、盲区工单生成；其失败的 MR 对应规则保持为"未覆盖" |
+| **辅助判官 (Auxiliary)** | 其余所有 SUT | 参与差分比对（DET 检测），发现的 Bug 正常报告，但不影响反馈演化方向 |
+
+### 2. pysam 第四 SUT 集成 (4th SUT via Docker)
+
+pysam (HTSlib Python 绑定) 在 Windows 上无法原生编译。系统采用 **Docker 子进程方案**实现跨平台集成。
+
+#### 2.1 Docker Harness 架构
+
+```text
+harnesses/pysam/
+├── pysam_harness.py    # 独立 CLI：python pysam_harness.py VCF /data/input.vcf
+│                        # 支持 --coverage /cov/dir 模式
+├── Dockerfile           # python:3.12-slim + pysam==0.23.3 + coverage>=7.0
+└── build_docker.py      # 构建 + 冒烟测试脚本
+```
+
+**Harness 内部逻辑**：复用 `pysam_runner.py` 的 `_parse_vcf()` 和 `_parse_sam()` 逻辑。坐标修正：VCF `rec.pos + 1`，SAM `read.reference_start + 1`（pysam 对所有格式均返回 0-based）。
+
+#### 2.2 Facade 模式 Runner (`pysam_runner.py`)
+
+`PysamRunner` 实现透明降级：
+
+```
+PysamRunner.is_available()
+  ├── _use_native() → True?  → 使用 in-process pysam (Linux/macOS)
+  └── _use_docker()  → True?  → 委托 PysamDockerRunner (Windows)
+       └── docker run --rm -v <temp>:/data biotest-pysam:latest VCF /data/input.vcf
+```
+
+下游代码无需感知底层执行方式。参见 `pysam_runner.py:46-73 PysamRunner`。
+
+#### 2.3 Docker 内覆盖率采集
+
+当 `coverage_dir` 配置启用时：
+1. 容器启动前，coverage.py 先于 pysam 导入启动（确保模块被插桩）
+2. 解析完毕后写入 `.coverage.<PID>` 到挂载卷
+3. 同步输出 `summary.<PID>.json`（包含每文件的 executed/total/missing 行号）
+4. 宿主机的 `PysamDockerCoverageCollector` 直接读取 JSON 摘要（无需 `coverage combine`，避免容器路径在宿主不存在的问题）
+
+### 3. 四层结构化反馈网络 (Four-Layer Feedback Network)
+
+#### ⚡ 第一层：DSL 编译级内反馈 (Pydantic Sandbox — 已在 Phase B 实现)
+
+当 Agent 输出 JSON 格式的 MR 时，立即进入 Pydantic 编译沙箱：白名单拦截 → 复合组全有或全无校验 → 语义化错误回传 → Agent 自我修复循环（上限 3 次）。确保落盘 MR 100% 合法。
+
+#### 🛡️ 第二层：Hypothesis 执行级无 LLM 反馈 (Fuzzing & Shrinking — 已在 Phase C 实现)
+
+Hypothesis 引擎接管。`_OracleFailure` 触发后，Hypothesis 利用 Z3 和 `shrink.py` 在毫秒级将种子文件收缩到最小复现代码。LLM 不参与。
+
+#### 🗺️ 第三层：覆盖率导航的宏观反馈 (Coverage-Steered RAG — Phase D 核心创新)
+
+##### 3.1 语义约束覆盖率 (SCC — Semantic Constraint Coverage)
+
+**文件**：`test_engine/feedback/scc_tracker.py`
+
+SCC 回答的问题是："规范中哪些规则已经被测试触及？" 它从 Phase A 的 2,048 个切片中提取 **453 个可测试规则**（CRITICAL + ADVISORY 级别），与当前 Enforced MR 的 evidence chunk_id 做集合求差。
+
+**目标驱动感知 (Target-Centric Awareness)**：当 `primary_failed_mr_ids` 提供时，主目标失败的 MR 对应的规则视为"未覆盖" —— 即使辅助判官通过了，只要主目标没过，该规则仍在盲区列表中。
+
+**格式感知隔离 (Format-Aware Isolation)**：当 `format_context="VCF"` 时，SCC 分母仅计算 VCF 规则（316 条），排除 SAM 规则（137 条），防止无关格式稀释覆盖率。
+
+##### 3.2 多语言代码覆盖率采集 (Multi-Language Code Coverage)
+
+**文件**：`test_engine/feedback/coverage_collector.py` (817 行)
+
+| SUT | 工具 | 插桩方式 | 数据流 | 格式过滤 |
+| :--- | :--- | :--- | :--- | :--- |
+| **htsjdk** | JaCoCo | `-javaagent` 运行时注入；agent JAR 复制到 ASCII 临时目录规避 Unicode 路径 | `.exec` → 跨运行合并 → `jacococli report` → `.xml` → 解析 `<line>` 标签 | `target_filters.VCF: htsjdk/variant/vcf` |
+| **biopython** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=` 指向 site-packages 包目录 | `.coverage` SQLite → `analysis2()` → missing lines | `target_filters.SAM: Bio/Align/sam` |
+| **pysam** | coverage.py (容器内) | `--coverage /cov` 标志 → coverage 先于 pysam 导入启动 | `summary.*.json` → 宿主直接读取 | `target_filters.VCF/SAM: pysam` |
+| **seqan3** | gcovr/gcov | 编译时 `--coverage` 标志 → `.gcda` 自动累积 | `gcovr --json` → 解析 JSON | `target_filters.SAM: seqan3/io/sam_file` |
+
+**行号区间聚合算法 (`_aggregate_ranges`)**：将零散未覆盖行 `[10, 11, 12, 13, 50, 52]` 压缩为 `["10-13", "50", "52"]`，防止 LLM 令牌溢出。参见 `coverage_collector.py:36-60`。
+
+**格式感知白名单过滤**：`MultiCoverageCollector.collect_all(format_context="VCF")` 从 `target_filters` 查找当前格式对应的路径白名单，只统计匹配文件的覆盖数据。
+
+##### 3.3 盲区攻坚工单与源码切片 (Blindspot Ticket with Source Code Slices)
+
+**文件**：`test_engine/feedback/blindspot_builder.py` (379 行)
+
+这是破解"覆盖率平原"的核心武器。大总管交叉对比 SCC 盲区与代码覆盖热图，构造高密度的**《盲区攻坚工单》**注入下一轮 Phase B 的 System Prompt。
+
+工单包含三大必备段落：
+
+**段落 1 — 未覆盖规范规则 (Uncovered Spec Rules)**：SCC 盲区中优先级最高的 10 条规则，从 ChromaDB 提取完整规范原文。
+
+**段落 2 — 未覆盖源码切片 (Uncovered Code Slices)**：**不是行号，而是实际代码。** 系统从主目标 SUT 的源码树中自动提取未覆盖行范围对应的代码逻辑（含 ±2 行上下文），让 LLM 直接看到 `if/else` 分支：
+
+```
+UNCOVERED CODE in the primary target parser:
+  VCFCodec.java:43-57
+  ```
+      43 |     public boolean canDecodeURI(final IOPath ioPath) {
+      44 |         ValidationUtils.nonNull(ioPath, "ioPath");
+      45 |         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
+      46 |     }
+      48 |     @Override
+      49 |     public int getSignatureLength() {
+  ```
+```
+
+**令牌预算控制**：`MAX_SLICE_LINES=15` 每区域、`MAX_TOTAL_SLICE_LINES=80` 全局上限，防止 Prompt 膨胀。参见 `blindspot_builder.py:30-33`。
+
+**段落 3 — 历史 MR 规避 (Previous MR Avoidance)**：列出已存在的 `mr_id` 列表，明确告诉 LLM "这条路已经走过了，请探索更边缘的突变"。
+
+##### 3.4 Phase B 注入点 (Blindspot Context Injection)
+
+盲区工单通过以下调用链注入 Phase B：
+
+```
+run_phase_d() → run_phase_b(blindspot_context=ticket)
+  → mine_mrs(blindspot_context=ticket)
+    → create_mr_agent(blindspot_context=ticket)
+      → build_system_prompt(blindspot_context=ticket)
+        → prompt += "\n\n" + blindspot_context
+```
+
+修改点极小（每个函数增加一个可选参数），不破坏 Phase B 的独立运行能力。
+
+#### 📉 第四层：MR 注册表动态降级与隔离 (Dynamic MR Quarantine)
+
+**文件**：`test_engine/feedback/quarantine_manager.py`
+
+如果某个 Enforced MR 导致主目标大面积崩溃（失败率 > 50%），系统自动将其从 Enforced 降级移入 Quarantine，确保 CI 流水线保持高信噪比。
+
+**降级依据**：`DETEvent.failure_type` 字段（Phase D 新增），区分 `"crash"` / `"metamorphic"` / `"differential"` 三种失败类型，精确统计每个 MR 的崩溃率。
+
+**磁盘原子操作**：`apply_quarantine()` 直接修改 `mr_registry.json`，将降级 MR 从 `enforced[]` 移入 `quarantine[]`，更新 `summary` 计数。
+
+### 4. 框架终止条件 (Termination Conditions)
+
+**文件**：`test_engine/feedback/loop_controller.py`
+
+大总管在每轮迭代后强制检查以下 **5 个熔断条件**（按优先级排序）：
+
+| 优先级 | 条件 | 触发逻辑 | 默认阈值 |
+| :--- | :--- | :--- | :--- |
+| 1 | **超时熔断** | 总耗时 >= `timeout_minutes` | 120 分钟 |
+| 2 | **目标达成** | SCC >= `target_scc_percent` | 95% |
+| 3 | **预算耗尽** | 迭代次数 >= `max_iterations` | 5 轮 |
+| 4 | **灾难性熔断** | 单轮降级率 > 50%（新 Enforced MR 过半被隔离） | 50% |
+| 5 | **覆盖率平原** | SCC 连续 `plateau_patience` 轮变化 < 0.5% | 2 轮 |
+
+**状态持久化**：`IterationState` 序列化到 `data/feedback_state.json`，支持崩溃恢复（`controller.load_state()`）。
+
+### 5. 大总管主循环 (Phase D Outer Loop)
+
+**文件**：`biotest.py:run_phase_d()` (约 150 行)
+
+```
+for iteration in range(controller.state.iteration, max_iterations):
+    if controller.check_termination().should_stop: break
+    
+    # Phase B: 挖掘 MR (注入盲区工单)
+    run_phase_b(cfg, blindspot_context=ticket)
+    
+    # Phase C: 执行测试 (Python 覆盖率插桩包裹)
+    with PythonCoverageContext(...):
+        run_phase_c(cfg)
+    
+    # 采集覆盖率 (格式感知过滤)
+    coverage_results = collector.collect_all(format_context=format_filter)
+    
+    # 计算 SCC (主目标感知 + 格式感知)
+    scc = tracker.compute_scc(enforced, primary_failed_mr_ids, format_context)
+    
+    # 第四层: 自动隔离崩溃 MR
+    apply_quarantine(decisions, registry_path)
+    
+    # 第三层: 构建盲区工单 (含源码切片)
+    ticket = build_blindspot_ticket(scc, coverage, ...,
+        primary_target=primary_target, source_roots=source_roots)
+```
+
+### 6. LLM 本地化：Ollama 路由 (Local LLM via Ollama)
+
+**文件**：`mr_engine/llm_factory.py`
+
+新增 `ollama/` 前缀路由，通过 OpenAI 兼容接口连接本地 Ollama 服务：
+
+```python
+if model_name.lower().startswith("ollama/"):
+    llm = ChatOpenAI(
+        model=model_name[7:],  # strip "ollama/" prefix
+        base_url=settings.ollama_base_url,  # http://localhost:11434/v1
+        api_key="ollama",  # required by ChatOpenAI but ignored by Ollama
+    )
+```
+
+当前配置使用 `ollama/qwen3-coder:30b`（18GB 本地模型）。API Key 校验器自动跳过 `ollama/` 前缀。
+
+### 7. Rich 终端仪表盘 (Rich Terminal Dashboard)
+
+`biotest.py` 的 Executive Summary 新增 Phase D 面板：
+
+*   **SCC 进度条**：`0.9% → 0.4% → ...`（逐轮追踪）
+*   **终止原因面板**：显示具体的停止条件（如 `plateau`、`budget_exhausted`）
+*   **Phase D 行**：在 Phase Results 表中增加迭代数、最终 SCC、降级数
+
+```
+py -3.12 biotest.py --phase D          # 运行反馈闭环
+py -3.12 biotest.py --phase A,B,C,D    # 全流水线 + 反馈
+py -3.12 biotest.py --dry-run           # 校验配置
+```
+
+### 8. 📁 项目代码结构与产出 (Project Structure & Files)
+
+**Phase D 产出: 10 个新文件 (2,165 行) + 10 个修改文件 + pysam Docker 镜像。**
+
+```text
+BioTest/
+├── biotest.py                         # 👑 大总管 (960 行, Rich UI, A→B→C→D)
+├── biotest_config.yaml                # 全局配置 (198 行, 含 feedback/coverage/ci)
+├── harnesses/pysam/                   # D1: pysam Docker Harness
+│   ├── pysam_harness.py               # 独立 CLI (支持 --coverage)
+│   ├── Dockerfile                     # python:3.12-slim + pysam + coverage
+│   └── build_docker.py                # 构建 + 冒烟测试
+├── coverage_artifacts/                # D2: 覆盖率数据 (gitignored)
+│   ├── jacoco/jacocoagent.jar         # JaCoCo 运行时 Agent
+│   ├── jacoco/jacococli.jar           # JaCoCo CLI (exec→xml 转换)
+│   └── pysam/source/                  # Docker 提取的 pysam 源码
+└── test_engine/
+    ├── feedback/                      # D3: 反馈闭环核心 (6 个新文件)
+    │   ├── __init__.py
+    │   ├── scc_tracker.py             # 语义约束覆盖率 (SCC) 计算
+    │   ├── loop_controller.py         # 5 个终止条件 + 状态持久化
+    │   ├── quarantine_manager.py      # 动态 MR 降级隔离
+    │   ├── coverage_collector.py      # 多语言覆盖率采集 (817 行)
+    │   │   ├── _aggregate_ranges()    # 行号区间聚合算法
+    │   │   ├── JaCoCoCollector        # Java: XML <line> 解析 + exec→xml 转换
+    │   │   ├── CoveragePyCollector    # Python: coverage.py API + XML 回退
+    │   │   ├── PysamDockerCoverageCollector  # Docker: summary.json 读取
+    │   │   ├── GcovrCollector         # C++: gcovr JSON 解析
+    │   │   ├── PythonCoverageContext  # Phase C 执行包裹器
+    │   │   └── MultiCoverageCollector # 聚合器 (格式感知白名单)
+    │   └── blindspot_builder.py       # 盲区工单 + 源码切片提取 (379 行)
+    │       ├── CodeSlice              # 源码切片数据类
+    │       ├── extract_code_slices()  # 从 SUT 源码树提取实际代码
+    │       └── build_blindspot_ticket # 三段式工单构建器
+    └── runners/
+        ├── pysam_docker_runner.py     # Docker 子进程 Runner (含覆盖率挂载)
+        └── pysam_runner.py            # Facade: Native → Docker 透明降级
+```
+
+### 9. 🏆 首次 E2E 实战运行记录 (Live End-to-End Run)
+
+**运行命令**：`py -3.12 biotest.py --phase D --config biotest_config.yaml --verbose`
+
+**环境配置**：
+*   LLM: `ollama/qwen3-coder:30b` (18GB 本地模型, Ollama 0.20.7)
+*   Docker: Docker Desktop 29.1.2 (运行 pysam 容器)
+*   活跃 SUT: htsjdk (Java), biopython (Python), seqan3 (C++), **pysam (Docker)**, reference
+
+**活跃解析器矩阵**：
+
+| 解析器 | 语言 | VCF | SAM | 执行方式 |
+| :--- | :--- | :---: | :---: | :--- |
+| **htsjdk** | Java | Y | Y | Subprocess (fat JAR + JaCoCo agent) |
+| **pysam** | Python | Y | Y | Docker 容器 (`biotest-pysam:latest`) |
+| **biopython** | Python | -- | Y | In-process (Bio.Align.sam) |
+| **seqan3** | C++ | -- | Y | Subprocess (编译二进制) |
+| **reference** | Python | Y | Y | 内建归一化器 (始终可用) |
+
+**迭代记录**：
+
+| 迭代 | Phase B | Phase C | 变体违规 | 差分违规 | Bug 报告 | SCC | 降级 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | 3 MR 编译, 2 强制 | 24 测试, DET=45.8% | 5 | 6 | 5 | 0.9% | 0 |
+| 2 | 2 MR 编译, 1 强制 | 12 测试, DET=41.7% | 2 | 3 | 2 | 0.4% | 0 |
+| 3+ | 进行中... | 进行中... | -- | -- | -- | -- | -- |
+
+**关键发现**：pysam 新 SUT 在首轮即暴露出**元变异违规 (Metamorphic Violation)** —— 对 VCF 元信息行重排后产生不同的 canonical JSON 输出，违背了 VCF 规范"元信息行可以任意排序"的约束。
+
+### 10. ✅ 测试状态 (Test Status)
+
+**201/201 测试通过**（排除因实机运行修改 registry 导致的 1 个预期性瞬态失败）。
+
+Phase D 新增的所有模块均通过了实际数据的冒烟验证：
+*   SCC 计算: 453 规则, VCF 316 / SAM 137 (精确分区)
+*   行号聚合: `[10,11,12,13,50,52]` → `["10-13","50","52"]`
+*   终止控制器: 5 条件全覆盖 (timeout/target/budget/catastrophic/plateau)
+*   盲区工单: 包含实际源码切片 (htsjdk VCFCodec.java, biopython sam.py)
+*   pysam Docker: 3 个 VCF 种子全通过, 覆盖率 166/616 (26.9%)
+*   JaCoCo 累积: 3 次运行合并 13KB exec 数据

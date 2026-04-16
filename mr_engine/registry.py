@@ -102,3 +102,49 @@ def export_registry(registry: MRRegistry, path: str) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     logger.info("Registry exported to %s (%d MRs)", path, registry.total)
+
+
+def load_registry_from_file(path: str) -> dict:
+    """Load a registry from JSON file."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def merge_registries(existing_path: str, new_registry: MRRegistry) -> None:
+    """
+    Merge new MRs into an existing registry file, deduplicating by mr_id.
+
+    New MRs are appended to the existing file. Existing mr_ids are preserved.
+    """
+    try:
+        with open(existing_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {"enforced": [], "quarantine": [], "summary": {}}
+
+    existing_ids = {mr["mr_id"] for mr in data.get("enforced", [])}
+    existing_ids |= {mr["mr_id"] for mr in data.get("quarantine", [])}
+
+    added = 0
+    for mr in new_registry.enforced.values():
+        if mr.mr_id not in existing_ids:
+            data["enforced"].append(mr.model_dump())
+            existing_ids.add(mr.mr_id)
+            added += 1
+
+    for mr in new_registry.quarantine.values():
+        if mr.mr_id not in existing_ids:
+            data["quarantine"].append(mr.model_dump())
+            existing_ids.add(mr.mr_id)
+            added += 1
+
+    data["summary"] = {
+        "enforced_count": len(data["enforced"]),
+        "quarantine_count": len(data["quarantine"]),
+        "total": len(data["enforced"]) + len(data["quarantine"]),
+    }
+
+    with open(existing_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    logger.info("Merged %d new MRs into %s", added, existing_path)

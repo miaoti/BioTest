@@ -45,6 +45,9 @@ class LLMSettings(BaseSettings):
     # Local vLLM
     vllm_base_url: Optional[str] = None
 
+    # Local Ollama
+    ollama_base_url: Optional[str] = "http://localhost:11434/v1"
+
     @model_validator(mode="after")
     def _check_required_key(self) -> "LLMSettings":
         """Validate that the API key for the chosen provider is present."""
@@ -56,6 +59,10 @@ class LLMSettings(BaseSettings):
                     f"LLM_MODEL={self.llm_model} requires VLLM_BASE_URL to be set"
                 )
             # vLLM uses OpenAI-compatible endpoint — key is optional
+            return self
+
+        if model.startswith("ollama/"):
+            # Ollama is local — no API key required
             return self
 
         # Map model name prefixes/keywords to required keys
@@ -119,6 +126,20 @@ def get_llm(settings: Optional[LLMSettings] = None) -> BaseChatModel:
             **kwargs,
         )
         logger.info("Initialized vLLM model '%s' at %s", actual_model, settings.vllm_base_url)
+        return llm
+
+    # ── Ollama (OpenAI-compatible local) ──
+    if model_name.lower().startswith("ollama/"):
+        from langchain_openai import ChatOpenAI
+
+        actual_model = model_name[7:]  # strip "ollama/" prefix
+        llm = ChatOpenAI(
+            model=actual_model,
+            base_url=settings.ollama_base_url or "http://localhost:11434/v1",
+            api_key="ollama",  # required by ChatOpenAI but ignored by Ollama
+            **kwargs,
+        )
+        logger.info("Initialized Ollama model '%s' at %s", actual_model, settings.ollama_base_url)
         return llm
 
     # ── Google Gemini ──

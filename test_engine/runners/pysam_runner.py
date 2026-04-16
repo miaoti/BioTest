@@ -1,8 +1,13 @@
 """
-Pysam runner: Python in-process parser for VCF and SAM via HTSlib.
+Pysam runner: facade that tries native pysam first, then Docker fallback.
 
 CRITICAL: pysam uses 0-based coordinates for ALL formats (including VCF).
 The normalizer must add +1 to POS for both VCF and SAM.
+
+On Linux/macOS, pysam can be pip-installed and runs in-process.
+On Windows, pysam requires HTSlib (C library) which won't compile natively.
+In that case, the runner falls back to PysamDockerRunner which invokes
+a pre-built Docker container.
 """
 
 from __future__ import annotations
@@ -21,6 +26,7 @@ _pysam_available: Optional[bool] = None
 
 
 def _check_pysam() -> bool:
+    """Check if pysam is importable (pip-installed)."""
     global _pysam_available
     if _pysam_available is None:
         try:
@@ -31,8 +37,20 @@ def _check_pysam() -> bool:
     return _pysam_available
 
 
+def _get_docker_runner(coverage_dir=None):
+    """Lazy-load the Docker runner to avoid circular imports."""
+    from .pysam_docker_runner import PysamDockerRunner
+    return PysamDockerRunner(coverage_dir=coverage_dir)
+
+
 class PysamRunner(ParserRunner):
-    """Parser runner using pysam (HTSlib wrapper)."""
+    """
+    Facade runner: native pysam in-process if available, Docker fallback otherwise.
+    """
+
+    def __init__(self, coverage_dir: Optional[Path] = None):
+        self._docker_runner: Optional[ParserRunner] = None
+        self._coverage_dir = coverage_dir
 
     @property
     def name(self) -> str:
@@ -42,8 +60,18 @@ class PysamRunner(ParserRunner):
     def supported_formats(self) -> set[str]:
         return {"VCF", "SAM"}
 
-    def is_available(self) -> bool:
+    def _use_native(self) -> bool:
+        """Check if native pysam is importable."""
         return _check_pysam()
+
+    def _use_docker(self) -> bool:
+        """Check if Docker fallback is available."""
+        if self._docker_runner is None:
+            self._docker_runner = _get_docker_runner(coverage_dir=self._coverage_dir)
+        return self._docker_runner.is_available()
+
+    def is_available(self) -> bool:
+        return self._use_native() or self._use_docker()
 
     def run(
         self,
@@ -57,8 +85,15 @@ class PysamRunner(ParserRunner):
                 parser_name=self.name,
                 format_type=format_type,
                 error_type="parse_error",
-                stderr="pysam is not installed",
+                stderr=(
+                    "pysam is not available. Either pip install pysam (Linux/macOS) "
+                    "or build Docker image: python harnesses/pysam/build_docker.py"
+                ),
             )
+
+        # Dispatch to Docker if native pysam not available
+        if not self._use_native():
+            return self._docker_runner.run(input_path, format_type, timeout_s)
 
         t0 = time.monotonic()
         try:

@@ -57,7 +57,7 @@ phase_b:
 
   # LLM configuration (reads API keys from .env)
   llm:
-    model: moonshotai/kimi-k2-instruct   # Groq model
+    model: ollama/qwen3-coder:30b        # Local Ollama model
     temperature: 0.0
     max_retries: 3
 
@@ -93,6 +93,9 @@ phase_c:
       adapter: harnesses/java/build/libs/biotest-harness-all.jar
       java_cmd: java
       timeout_s: 60
+      # JaCoCo agent: append=true merges coverage across runs
+      coverage_jvm_args: "-javaagent:coverage_artifacts/jacoco/jacocoagent.jar=destfile={destfile},append=true"
+      coverage_exec_dir: coverage_artifacts/jacoco
 
     - name: biopython
       language: Python
@@ -106,7 +109,85 @@ phase_c:
       enabled: true
       sut_path: SUTfolder/cpp/seqan3
       adapter: harnesses/cpp/build/biotest_harness.exe
+      # Coverage binary: compiled with -fprofile-arcs -ftest-coverage
+      # Build: g++ --coverage -o biotest_harness_cov biotest_harness.cpp ...
+      coverage_binary: harnesses/cpp/build/biotest_harness_cov.exe
       timeout_s: 60
+
+    - name: pysam
+      language: Python
+      enabled: true
+      # No sut_path — runs via Docker container (Windows) or pip package (Linux)
+      timeout_s: 60
+      # Coverage: Docker harness writes .coverage.* fragments to this dir
+      coverage_dir: coverage_artifacts/pysam
+
+# ---------------------------------------------------------------------------
+# Phase D: Feedback-Driven Loop & Termination Control
+# ---------------------------------------------------------------------------
+feedback_control:
+  enabled: true
+  max_iterations: 5           # Maximum B->C loop iterations
+  plateau_patience: 2         # Stop if SCC unchanged for N consecutive rounds
+  target_scc_percent: 95.0    # Stop when SCC reaches this target
+  timeout_minutes: 120        # Absolute time limit for Phase D
+  # Primary Target: this SUT DRIVES the feedback loop.
+  # SCC, code coverage hints, and blindspot tickets are derived from
+  # this parser only. Other SUTs act as auxiliary differential oracles.
+  primary_target: htsjdk
+  # Source roots for code slice extraction (per SUT).
+  # The blindspot builder searches these dirs to find source files
+  # matching uncovered line ranges, then extracts actual code for the LLM.
+  source_roots:
+    htsjdk: SUTfolder/java/htsjdk/src/main/java
+    biopython: .  # Uses sys.path resolution (site-packages)
+    seqan3: SUTfolder/cpp/seqan3/include
+    pysam: coverage_artifacts/pysam/source
+
+# ---------------------------------------------------------------------------
+# Coverage Collection (Phase D)
+# ---------------------------------------------------------------------------
+coverage:
+  enabled: true
+  # JaCoCo for htsjdk
+  jacoco_report_dir: coverage_artifacts/jacoco
+  jacoco_cli_jar: coverage_artifacts/jacoco/jacococli.jar
+  jacoco_classfiles_dir: SUTfolder/java/htsjdk/build/classes
+  # coverage.py for Python SUTs (biopython)
+  coveragepy_data_file: coverage_artifacts/.coverage
+  coveragepy_source_filter:
+    - Bio.Align.sam
+  # pysam Docker coverage (fragments combined from mounted volume)
+  pysam_coverage_dir: coverage_artifacts/pysam
+  pysam_source_filter:
+    - pysam
+  # gcovr for seqan3 (requires harness compiled with --coverage)
+  gcovr_report_path: coverage_artifacts/gcovr.json
+  gcovr_build_dir: harnesses/cpp/build
+  gcovr_source_root: SUTfolder/cpp/seqan3/include
+
+  # Format-aware whitelist: only these paths are relevant per format.
+  # Prevents VCF coverage from polluting SAM feedback and vice versa.
+  # Paths are matched as substrings in package/file names across all SUTs.
+  target_filters:
+    VCF:
+      - htsjdk/variant/vcf
+      - htsjdk/variant/variantcontext
+      - pysam                          # pysam handles VCF via HTSlib
+    SAM:
+      - htsjdk/samtools
+      - Bio/Align/sam
+      - seqan3/io/sam_file
+      - format_sam
+      - cigar
+      - pysam                          # pysam handles SAM via HTSlib
+
+# ---------------------------------------------------------------------------
+# CI Integration (future)
+# ---------------------------------------------------------------------------
+ci_integration:
+  auto_open_issue: false
+  github_token_env: GITHUB_TOKEN
 
 # ---------------------------------------------------------------------------
 # Global Settings
