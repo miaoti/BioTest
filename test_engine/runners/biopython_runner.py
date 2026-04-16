@@ -106,29 +106,39 @@ class BiopythonRunner(ParserRunner):
             )
 
     def _parse_sam(self, path: Path) -> dict[str, Any]:
-        """Parse SAM via Biopython into canonical dict."""
+        """
+        Parse SAM via Biopython's AlignmentIterator into canonical dict.
+
+        Hybrid approach:
+        - POS is extracted from Biopython's parsed alignment object
+          (0-based coordinates[0][0]) and gets +1 for canonical 1-based.
+        - FLAG, MAPQ, QNAME, RNAME, SEQ are extracted from Biopython objects.
+        - CIGAR, RNEXT, PNEXT, TLEN, QUAL, and full TAGS are extracted from
+          the corresponding raw text line, because Biopython's Alignment API
+          does not expose these fields uniformly (it consumes MD/AS tags, and
+          hides mate-pair info).
+
+        If Biopython's AlignmentIterator fails on any record, we raise a
+        RuntimeError so the runner reports it as a crash/DET.
+        """
         from Bio.Align import sam as bio_sam
         import re
 
-        # Biopython's SAM parser
-        alignments = bio_sam.AlignmentIterator(str(path))
-
-        # We need to parse the raw file for header info since Biopython
-        # doesn't expose all header fields cleanly
+        # --- Pre-read raw lines for header + fallback field extraction ---
         header_lines: list[str] = []
         alignment_lines: list[str] = []
 
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
-                line = line.rstrip("\r\n")
-                if not line:
+                stripped = line.rstrip("\r\n")
+                if not stripped:
                     continue
-                if line.startswith("@"):
-                    header_lines.append(line)
+                if stripped.startswith("@"):
+                    header_lines.append(stripped)
                 else:
-                    alignment_lines.append(line)
+                    alignment_lines.append(stripped)
 
-        # Parse header directly from text (Biopython's header access is limited)
+        # --- Parse header from raw text (Biopython header access is limited) ---
         hd = None
         sq: list[dict[str, str]] = []
         rg: list[dict[str, str]] = []
@@ -139,9 +149,9 @@ class BiopythonRunner(ParserRunner):
             fields = hl.split("\t")
             rec_type = fields[0]
             tag_dict = {}
-            for f in fields[1:]:
-                if ":" in f:
-                    k, v = f.split(":", 1)
+            for fld in fields[1:]:
+                if ":" in fld:
+                    k, v = fld.split(":", 1)
                     tag_dict[k] = v
 
             if rec_type == "@HD":
@@ -157,76 +167,117 @@ class BiopythonRunner(ParserRunner):
 
         co.sort()
 
-        # Parse alignment records from raw text
-        # (using raw text because Biopython's alignment objects don't expose
-        # all SAM fields directly in a uniform way)
-        records = []
-        for line in alignment_lines:
-            cols = line.split("\t")
-            if len(cols) < 11:
-                continue
+        # --- Parse alignment records via Biopython's native iterator ---
+        records: list[dict[str, Any]] = []
 
-            qname = cols[0]
-            flag = int(cols[1])
-            rname = None if cols[2] == "*" else cols[2]
-            raw_pos = int(cols[3])
-            # SAM text is already 1-based; no Biopython conversion here
-            # since we're reading raw text, not Biopython objects
-            pos = None if raw_pos == 0 else raw_pos
-            mapq = int(cols[4])
+        try:
+            for idx, alignment in enumerate(bio_sam.AlignmentIterator(str(path))):
 
-            # CIGAR
-            cigar = None
-            if cols[5] != "*":
-                cigar = [{"op": m.group(2), "len": int(m.group(1))}
-                         for m in re.finditer(r"(\d+)([MIDNSHP=X])", cols[5])]
+                # ----------------------------------------------------------
+                # FROM BIOPYTHON: fields that Biopython actively parses
+                # ----------------------------------------------------------
 
-            rnext = None if cols[6] == "*" else cols[6]
-            raw_pnext = int(cols[7])
-            pnext = None if raw_pnext == 0 else raw_pnext
-            tlen = int(cols[8])
-            seq = None if cols[9] == "*" else cols[9]
-            qual = None if cols[10] == "*" else cols[10]
+                # POS: Biopython stores as 0-based in coordinates[0][0].
+                # CRITICAL: add +1 to convert to canonical 1-based.
+                bio_pos_0based = alignment.coordinates[0][0]
+                pos = int(bio_pos_0based) + 1  # 0-based -> 1-based
 
-            # Tags
-            tags = {}
-            for col in cols[11:]:
-                m = re.match(r"^([A-Za-z][A-Za-z0-9]):([AifZHB]):(.+)$", col)
-                if m:
-                    tag_name = m.group(1)
-                    tag_type = m.group(2)
-                    tag_val = m.group(3)
-                    if tag_type == "i":
-                        tag_val = int(tag_val)
-                    elif tag_type == "f":
-                        tag_val = float(tag_val)
-                    elif tag_type == "B":
-                        parts = tag_val.split(",")
-                        subtype = parts[0]
-                        vals = parts[1:]
-                        if subtype in ("c", "C", "s", "S", "i", "I"):
-                            tag_val = [int(v) for v in vals]
-                        elif subtype == "f":
-                            tag_val = [float(v) for v in vals]
-                        else:
-                            tag_val = vals
-                    tags[tag_name] = {"type": tag_type, "value": tag_val}
-            tags = dict(sorted(tags.items()))
+                # FLAG, MAPQ, QNAME, RNAME — directly on the object
+                flag = alignment.flag
+                mapq = alignment.mapq
+                qname = alignment.query.id
+                rname = alignment.target.id
 
-            records.append({
-                "QNAME": qname,
-                "FLAG": flag,
-                "RNAME": rname,
-                "POS": pos,
-                "MAPQ": mapq,
-                "CIGAR": cigar,
-                "RNEXT": rnext,
-                "PNEXT": pnext,
-                "TLEN": tlen,
-                "SEQ": seq,
-                "QUAL": qual,
-                "tags": tags,
-            })
+                # SEQ — from query sequence
+                seq_obj = alignment.query.seq
+                seq = str(seq_obj) if seq_obj is not None else None
+
+                # ----------------------------------------------------------
+                # FROM RAW TEXT: fields Biopython does not expose cleanly
+                # (CIGAR, RNEXT, PNEXT, TLEN, QUAL, full TAGS)
+                # ----------------------------------------------------------
+
+                if idx < len(alignment_lines):
+                    cols = alignment_lines[idx].split("\t")
+                else:
+                    cols = []
+
+                # CIGAR (col 5) — Biopython consumes it into coordinates
+                cigar = None
+                if len(cols) > 5 and cols[5] != "*":
+                    cigar = [{"op": m.group(2), "len": int(m.group(1))}
+                             for m in re.finditer(r"(\d+)([MIDNSHP=X])", cols[5])]
+
+                # RNEXT (col 6), PNEXT (col 7), TLEN (col 8)
+                rnext = None
+                if len(cols) > 6 and cols[6] != "*":
+                    rnext = cols[6]
+
+                raw_pnext = int(cols[7]) if len(cols) > 7 else 0
+                pnext = None if raw_pnext == 0 else raw_pnext
+
+                tlen = int(cols[8]) if len(cols) > 8 else 0
+
+                # QUAL (col 10) — Biopython converts to phred_quality ints;
+                # canonical schema expects the original ASCII string
+                qual = None
+                if len(cols) > 10 and cols[10] != "*":
+                    qual = cols[10]
+
+                # TAGS (cols 11+) — Biopython consumes some tags (MD -> alignment,
+                # AS -> score) so we extract ALL tags from raw text for completeness
+                tags: dict[str, Any] = {}
+                if len(cols) > 11:
+                    for col in cols[11:]:
+                        m = re.match(r"^([A-Za-z][A-Za-z0-9]):([AifZHB]):(.+)$", col)
+                        if m:
+                            tag_name = m.group(1)
+                            tag_type = m.group(2)
+                            tag_val: Any = m.group(3)
+                            if tag_type == "i":
+                                tag_val = int(tag_val)
+                            elif tag_type == "f":
+                                tag_val = float(tag_val)
+                            elif tag_type == "B":
+                                parts = tag_val.split(",")
+                                subtype = parts[0]
+                                vals = parts[1:]
+                                if subtype in ("c", "C", "s", "S", "i", "I"):
+                                    tag_val = [int(v) for v in vals]
+                                elif subtype == "f":
+                                    tag_val = [float(v) for v in vals]
+                                else:
+                                    tag_val = vals
+                            tags[tag_name] = {"type": tag_type, "value": tag_val}
+                tags = dict(sorted(tags.items()))
+
+                # Handle unmapped reads: if FLAG 0x4 is set, POS should be None
+                if flag & 0x4:
+                    pos = None
+                    rname = None
+
+                records.append({
+                    "QNAME": qname,
+                    "FLAG": flag,
+                    "RNAME": rname,
+                    "POS": pos,
+                    "MAPQ": mapq,
+                    "CIGAR": cigar,
+                    "RNEXT": rnext,
+                    "PNEXT": pnext,
+                    "TLEN": tlen,
+                    "SEQ": seq,
+                    "QUAL": qual,
+                    "tags": tags,
+                })
+
+        except Exception as e:
+            # If Biopython crashes on a (possibly mutated) SAM file,
+            # propagate as RuntimeError so the runner reports it as a
+            # crash/DET — this is a legitimate finding.
+            raise RuntimeError(
+                f"Biopython AlignmentIterator failed on record {len(records)}: {e}"
+            ) from e
 
         return {
             "format": "SAM",

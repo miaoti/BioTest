@@ -514,22 +514,14 @@ STRATEGY_MAP = {
 
 #### 4.2 Hypothesis 收缩的触发机制 (How Shrinking is Triggered)
 
-**关键架构决策**：在 `_run_single_test()` 内部，当 Oracle 判定失败时，不再仅打印日志，而是抛出自定义异常 `_OracleFailure(diffs, oracle_result)`。只有抛出此异常，Hypothesis 才能捕获失败并启动自动收缩：
+**关键架构决策**：在“神谕判定失败”与“Hypothesis 启动收缩寻找极小值”之间，构建了深度的三层异常信号传导机制：
 
-```
-Hypothesis @given 抽取 (seed_path, lines, rng_seed)
-    |
-    v
-_run_single_test(lines, rng_seed, ...)
-    |
-    ├── apply_mr_transforms(lines, steps, seed=rng_seed)  # 不再 seed=42
-    ├── MetamorphicOracle.check()
-    │   └── 失败? → build_bug_report() → raise _OracleFailure(diffs)
-    │                                           ↑
-    │                              Hypothesis 捕获此异常 → 开始 Phase.shrink
-    │                              自动简化输入 → 重复调用直到找到最小触发点
-    └── DifferentialOracle.check()
-```
+*   **Layer 1 - 自定义异常对象**：通过定制 `_OracleFailure` 异常携带完整的 `OracleResult` 与差异日志列表 `diffs`，通过对异常文本切片仅外放至多 5 条的判定结果差异串记录来确保系统报错清爽度。
+*   **Layer 2 - 延迟异常触发 (Deferred Raise)**：在核心管线 `_run_single_test()` 过程中，任意一个解析侧（Metamorphic）判负引发错误生成报案底档后，系统**不再第一时间**切断程序（抛出打断操作）。而是利用 `first_failure` 拦截装填首发失分项异常对象供下沉到 `Differential Oracle` 排查矩阵同步做判定处理并生成全谱系 Bug 报单，直至尾层 `finally` 被全清理打通结束时最后触发引发该拦压的终结致命引发动作（`raise first_failure`），确保了一站测试不中断的最大化爆出点发现量和报错量收成。
+*   **Layer 3 - Hypothesis 底座捕捉介入 (Phase.shrink)**：用受外圈 `@given` 装饰绑扎隔离的最外环逻辑 `_hypothesis_test()`。当该 `_OracleFailure` 从延时队列真正溢冒逃逸时，不在忽略名录且未接引处理就会被底层系统视作为本次引发测试翻车落败事件。直接将其引流到 Hypothesis 切入到独家的核心修剪功能池 `Phase.shrink`。在该模块自主缩水变体种子内容生成新的更简内容后回环重击至其再次复现同一落空报错点后视为取得此错极简靶向。将已成功复刻的小标的底子与 Bug 落地持久化存档报表提交到终端后将最纯化的引发结果退出最外层脱出警报通识传开。
+
+**完整收敛闭环 (Complete Signal Chain)**：
+`deep_equal() -> tuple(False, ...)` -> `Metamorphic/DifferentialOracle.check()` -> `_run_single_test()` captures & defers raise -> `Hypothesis` catches exception -> Phase.shrink repeated failures finding minimal -> escape to `_run_mr_with_hypothesis` catching minimal failure.
 
 #### 4.3 Z3 后置物理约束门控 (Z3 Post-Transform Guards)
 
@@ -554,10 +546,25 @@ Bug Report 目录中的 `x.vcf` 和 `T_x.vcf` 现在是**最小复现文件**，
 
 ### 5. 跨语言执行器与双重神谕 (Runners & Dual Oracles)
 
-*   **裁决一：Metamorphic Oracle (变体语义判定)**
-    `semantic(parse(x)) == semantic(parse(T(x)))` 验证单一解析器对等价变体的健壮性。
-*   **裁决二：Differential Oracle (跨界差分判定)**
-    寻找 DET (Difference-Exposing Tests)。如果各解析器对同一合法文件产生分歧，即捕获规范歧义或实现 Bug。
+系统设计了两个独立的测试神谕，它们均将底层判定委托给同一个核心裁决器 `deep_equal`。该核心使用规范化 JSON 进行语义级的对比判定。
+
+#### 5.1 核心裁决法官：The Core Judge (`deep_equal.py`)
+这是负责下定胜败的最终决策树工具。采用严密优先级的派发机制处理阻抗不同语言实现的表面不符表现形式：
+*   **跨类型数字提升 (Cross-Type Numeric Promotion)**：遭遇 `int` 对抗 `float` 精度对比判断（如 `MAPQ: 60` 对撞 `60.0`），自动将其同时提权转化为 float 后介入 `math.isclose()` 防止触发语言特性引起的伪阳错判点（False DETs）。
+*   **高危放宽校验区 (QUAL-specific tolerance)**：默认设定极微 `float_tol=1e-6`，但在处理 `QUAL` 或 `qual` 键值计算中遇到浮点流失点（如跨语言 Java `29.0` 和 Python 截断后的 `28.9999999`），系统自动启动由百万分之一退宽拉低到百分级宽网容错度网底（`QUAL_FLOAT_TOL` 为 0.01）防御误判。
+*   **字典与集合型态判定避坑 (Dict / Set)**：对字典采用忽略 Key 存在排序的做法进行集合合并推解对比值。针对 Set 采取数学相等推算差值。
+*   **严列定位防差判定 (List Elements)**：对于类似 CIGAR 解析形成的有序位次字典数组，实施严格按先后索引序长度核算判定。列表偏调、不匹配都会直接向上传红判定异动。
+
+#### 5.2 变体语义判定：Metamorphic Oracle (`metamorphic.py`)
+等价验证防线：确保同一解析器通过测试 `parse(x) == parse(T(x))` 对等价变体的健壮性。
+*   **执行流与单端闪断熔断 (Execution Flow & Crash early exit)**：分别提取同组 Runner 唤起新老版本文件（双次唤起提入格式内容），若任选一次测试端遭遇 timeout、crash 或者直接跑出解析出错异常，系统不会无底线追测深入比较 `deep_equal`。立下判定并通报异常快速反馈脱出。
+*   **解析端语言体隐匿无知感 (Parser-Agnostic)**：充当统一定尺中间件不在乎被比较调集调用底层逻辑体（比如是用 C++ 开发，Java 或是 Pysam / Biopython 提供），完全接受它们脱手抽象规范的提取格式 `canonical_json: dict` 实现评判任务。
+
+#### 5.3 跨界差分判定：Differential Oracle (`differential.py`)
+捕捉寻找偏露断口用例 (DET - Difference-Exposing Tests)：不同解析器接受同源数据格式应达成对结构理解一致的同频输出。
+*   **独家脱除单声防退机制 (Degenerate case guard)**：经过验证双检，发现目前环境配置未满两家的有效参判（比如不被 Pysam 接单的文件遇上被剔除了的生物库），由于无法对持产生比较单侧评级，系统径直做出返回退隐操作，送判为全通过且一致的结果以确保安全下发回溯。
+*   **全数矩阵巡防对抗列队 (O(n²) Pairwise check)**：按照判定包系统命名自动升位字母顺差排列确保循环对比位置定准无跳变，随后实施各组成团碰撞推测测验。由于无黄金标准只能双对测试且循环排测，不设提早发现不休不退席直接停职机制，非扫全 `deep_equal` 图谱后交出 `all_agree` 的所有名单比对反馈图库不可，精准呈现了不合异动的全部矩阵项。
+*   **暴露防线抓崩溃 (Crash asymmetry detection)**：任何比对一方突然挂科闪崩将视同严重对比差异事件把单边产生的对应 `stderr` 也记录到脱落列表呈现以展示其相较不和。
 
 ### 6. 故障分诊与最小化 Bug 报告生成 (Triage & Bug Reporting)
 
