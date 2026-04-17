@@ -206,6 +206,27 @@ class JaCoCoCollector(CoverageCollector):
         # Use format-specific filter if provided, else fall back to default whitelist
         active_filter = format_filter if format_filter else self.filter_packages
 
+        # Parse each entry into (package, file_prefixes) pairs.
+        # Syntax "pkg/path::PFX1,PFX2" -> exact package + file prefix whitelist.
+        # Syntax "pkg/path" -> exact package, all files.
+        parsed_rules: list[tuple[str, Optional[tuple[str, ...]]]] = []
+        for entry in active_filter:
+            if "::" in entry:
+                pkg, prefixes = entry.split("::", 1)
+                parsed_rules.append((pkg.strip(), tuple(p.strip() for p in prefixes.split(",") if p.strip())))
+            else:
+                parsed_rules.append((entry.strip(), None))
+
+        def package_matches(pkg_name: str) -> Optional[tuple[str, ...]]:
+            """Return file-prefix whitelist for this package, or None if excluded.
+
+            An empty tuple means 'all files included'; None means package excluded.
+            """
+            for rule_pkg, prefixes in parsed_rules:
+                if pkg_name == rule_pkg:
+                    return prefixes if prefixes is not None else ()
+            return None
+
         try:
             tree = ET.parse(report)
             root = tree.getroot()
@@ -216,12 +237,16 @@ class JaCoCoCollector(CoverageCollector):
 
             for pkg in root.findall(".//package"):
                 pkg_name = pkg.get("name", "")
-                # Whitelist filtering
-                if not any(wl in pkg_name for wl in active_filter):
+                file_prefixes = package_matches(pkg_name)
+                if file_prefixes is None:
                     continue
 
                 for src in pkg.findall("sourcefile"):
                     src_name = src.get("name", "")
+                    # Apply sourcefile-name prefix filter if rule specified one
+                    if file_prefixes and not any(src_name.startswith(p) for p in file_prefixes):
+                        continue
+
                     missed_lines: list[int] = []
 
                     # Extract per-line coverage from <line> tags
@@ -238,7 +263,9 @@ class JaCoCoCollector(CoverageCollector):
                             else:
                                 total_covered += 1
 
-                    # If no <line> tags, fall back to <counter type="LINE">
+                    # If no <line> tags, fall back to <counter type="LINE"> at the
+                    # sourcefile level only (not recursive — avoids double-counting
+                    # method-level counters).
                     if not src.findall("line"):
                         for counter in src.findall("counter"):
                             if counter.get("type") == "LINE":
@@ -352,14 +379,17 @@ class CoveragePyCollector(CoverageCollector):
             ):
                 continue
 
-            analysis = cov.analysis2(filepath)
-            # analysis2 returns: (filename, executed_lines, excluded_lines,
-            #                      missing_lines, formatted_missing)
-            executed = analysis[1]
-            missing = analysis[3] if len(analysis) > 3 else analysis[2]
+            # analysis2 returns: (filename, statements, excluded, missing,
+            #                      formatted_missing). statements is the
+            # full list of TRACKED executable lines, not executed ones.
+            # Executed = statements - missing.
+            _, statements, _excluded, missing, *_ = cov.analysis2(filepath)
+            stmt_count = len(statements)
+            miss_count = len(missing)
+            covered_count = stmt_count - miss_count
 
-            total_covered += len(executed)
-            total_missed += len(missing)
+            total_covered += covered_count
+            total_missed += miss_count
 
             if missing:
                 short_name = Path(filepath).name
@@ -699,38 +729,107 @@ class PythonCoverageContext:
                 logger.debug("No source dirs resolved for coverage, skipping")
                 return self
 
-            # Evict target modules from sys.modules so coverage.py can
-            # instrument them when they are re-imported during Phase C.
-            to_evict = [m for m in list(sys.modules.keys()) if any(
-                p.replace("/", ".").replace("\\", ".").rstrip(".py") in m
-                for p in self._source_filter
-            )]
+            # Intentionally DO NOT delete the .coverage data file between
+            # iterations — coverage.py appends so Phase D feedback sees
+            # cumulative line coverage across iterations, matching JaCoCo's
+            # append=true semantics. Cross-run clearing is handled by
+            # scripts/clean_artifacts.py.
+
+            # Evict target modules AND their parent packages from sys.modules
+            # so coverage.py's tracer instruments them when they are re-imported
+            # during Phase C. Parent eviction is needed because `from Bio.Align
+            # import sam` resolves via the cached Bio.Align attribute chain;
+            # evicting only the leaf module can leave the import short-
+            # circuited through the cached parent.
+            module_roots: set[str] = set()
+            for pattern in self._source_filter:
+                norm = pattern.replace("/", ".").replace("\\", ".")
+                if norm.endswith(".py"):
+                    norm = norm[:-3]
+                parts = norm.split(".")
+                for i in range(1, len(parts) + 1):
+                    module_roots.add(".".join(parts[:i]))
+
+            to_evict = [m for m in list(sys.modules.keys())
+                        if any(m == r or m.startswith(r + ".") for r in module_roots)]
             for m in to_evict:
                 del sys.modules[m]
 
-            # Reset runner availability caches to force re-import
+            # Reset runner availability caches so runners re-import under the
+            # tracer the first time they are asked whether they're available.
             try:
                 import test_engine.runners.biopython_runner as _br
                 _br._biopython_available = None
             except ImportError:
                 pass
 
+            # Use source_pkgs (cover the whole Bio.Align package) alongside
+            # source=source_dirs. source_pkgs is more reliable on Windows
+            # and with submodule-level imports. Explicit concurrency='thread'
+            # ensures tracing follows into ThreadPoolExecutor workers that
+            # runners (e.g. BiopythonRunner) use.
+            source_pkgs: list[str] = []
+            for pattern in self._source_filter:
+                norm = pattern.replace("/", ".").replace("\\", ".")
+                if norm.endswith(".py"):
+                    norm = norm[:-3]
+                parts = norm.split(".")
+                # Use parent package (e.g. 'Bio.Align') for broad coverage
+                if len(parts) >= 2:
+                    source_pkgs.append(".".join(parts[:-1]))
+                else:
+                    source_pkgs.append(norm)
+
             self._cov = coverage.Coverage(
                 data_file=self._data_file,
                 source=source_dirs,
+                source_pkgs=source_pkgs or None,
+                concurrency=["thread"],
+                config_file=False,  # ignore any stray .coveragerc
             )
             self._cov.start()
-            logger.info("Python coverage started (data_file=%s, source=%s)",
-                        self._data_file, source_dirs)
+            logger.info(
+                "Python coverage started (data_file=%s, source=%s, source_pkgs=%s, evicted=%d modules)",
+                self._data_file, source_dirs, source_pkgs, len(to_evict),
+            )
         except ImportError:
             logger.debug("coverage.py not installed, Python coverage disabled")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._cov:
-            self._cov.stop()
-            self._cov.save()
-            logger.info("Python coverage saved to %s", self._data_file)
+            try:
+                self._cov.stop()
+                self._cov.save()
+                # Emit a diagnostic so silent failures are visible.
+                data = self._cov.get_data()
+                traced = 0
+                for fp in data.measured_files():
+                    if data.lines(fp):
+                        traced += 1
+                logger.info(
+                    "Python coverage saved to %s (%d files traced with >0 lines)",
+                    self._data_file, traced,
+                )
+                if traced == 0:
+                    logger.warning(
+                        "Python coverage ran but traced 0 lines — likely a "
+                        "tracer-install race. Check that target modules are "
+                        "imported inside the coverage context."
+                    )
+                    # Delete the empty data file so downstream collectors
+                    # report 'not available' rather than reading a file full
+                    # of zero-line entries that then get misinterpreted.
+                    from pathlib import Path as _P
+                    try:
+                        _p = _P(self._data_file)
+                        if _p.exists():
+                            _p.unlink()
+                            logger.debug("Removed empty coverage file %s", _p)
+                    except OSError:
+                        pass
+            except Exception as e:
+                logger.error("Python coverage save failed: %s", e)
         return False  # Don't suppress exceptions
 
 
@@ -739,10 +838,18 @@ class PythonCoverageContext:
 # ---------------------------------------------------------------------------
 
 class MultiCoverageCollector:
-    """Aggregates all per-SUT coverage collectors with graceful degradation."""
+    """Aggregates per-SUT coverage collectors with graceful degradation.
+
+    Per Flow.md Phase D §1.3 "Primary Target vs Auxiliary Oracles", coverage
+    is collected ONLY for the primary target SUT. Other SUTs participate
+    purely as differential oracles; measuring their coverage would waste
+    work and add noise to the feedback signal. Each collector is tagged
+    with its SUT name so `collect_all(primary_target=...)` can filter.
+    """
 
     def __init__(self, cfg: dict[str, Any]):
-        self.collectors: list[CoverageCollector] = []
+        # list of (sut_name, collector) so we can filter by primary target.
+        self.collectors: list[tuple[str, CoverageCollector]] = []
         self._target_filters: dict[str, list[str]] = cfg.get("target_filters", {})
         self._build_collectors(cfg)
 
@@ -754,12 +861,12 @@ class MultiCoverageCollector:
         # JaCoCo for htsjdk
         jacoco_dir = cfg.get("jacoco_report_dir")
         if jacoco_dir:
-            self.collectors.append(JaCoCoCollector(
+            self.collectors.append(("htsjdk", JaCoCoCollector(
                 report_dir=Path(jacoco_dir),
                 filter_packages=cfg.get("jacoco_filter_packages"),
                 cli_jar=Path(cfg["jacoco_cli_jar"]) if cfg.get("jacoco_cli_jar") else None,
                 classfiles_dir=Path(cfg["jacoco_classfiles_dir"]) if cfg.get("jacoco_classfiles_dir") else None,
-            ))
+            )))
 
         # coverage.py for Python SUTs
         coveragepy_file = cfg.get("coveragepy_data_file", ".coverage")
@@ -767,43 +874,57 @@ class MultiCoverageCollector:
         if source_filter:
             for src in source_filter:
                 name = "biopython" if "Bio" in src else "pysam"
-                self.collectors.append(CoveragePyCollector(
+                self.collectors.append((name, CoveragePyCollector(
                     parser_name=name,
                     coverage_file=Path(coveragepy_file),
                     source_filter=[src],
-                ))
+                )))
 
         # pysam Docker coverage (fragments from mounted volume)
         pysam_cov_dir = cfg.get("pysam_coverage_dir")
         if pysam_cov_dir:
-            self.collectors.append(PysamDockerCoverageCollector(
+            self.collectors.append(("pysam", PysamDockerCoverageCollector(
                 coverage_dir=Path(pysam_cov_dir),
                 source_filter=cfg.get("pysam_source_filter", ["pysam"]),
-            ))
+            )))
 
         # gcovr for seqan3
         gcovr_report = cfg.get("gcovr_report_path")
         if gcovr_report:
-            self.collectors.append(GcovrCollector(
+            self.collectors.append(("seqan3", GcovrCollector(
                 report_path=Path(gcovr_report),
                 filter_dirs=cfg.get("gcovr_filter_dirs", []),
                 build_dir=Path(cfg["gcovr_build_dir"]) if cfg.get("gcovr_build_dir") else None,
                 source_root=Path(cfg["gcovr_source_root"]) if cfg.get("gcovr_source_root") else None,
-            ))
+            )))
 
-    def collect_all(self, format_context: str = "") -> list[CoverageResult]:
-        """Collect from all available collectors, skip failures gracefully.
+    def collect_all(
+        self,
+        format_context: str = "",
+        primary_target: str = "",
+    ) -> list[CoverageResult]:
+        """Collect coverage scoped to the primary target SUT.
 
         Args:
             format_context: Current format being tested ("VCF" or "SAM").
                             If set, coverage is filtered to format-relevant
-                            paths only via target_filters config.
+                            paths via target_filters config.
+            primary_target: If set (e.g. "htsjdk"), only that SUT's
+                            collector runs. Other SUTs are skipped because
+                            Phase D's feedback signal is driven solely by
+                            the primary target (Flow.md §1.3). Leave empty
+                            to fall back to all-SUT collection (legacy).
         """
         # Resolve format-specific whitelist
         fmt_filter = self._target_filters.get(format_context.upper()) if format_context else None
 
+        active: list[tuple[str, CoverageCollector]] = [
+            (n, c) for (n, c) in self.collectors
+            if (not primary_target) or n == primary_target
+        ]
+
         results = []
-        for collector in self.collectors:
+        for sut_name, collector in active:
             if collector.is_available():
                 try:
                     results.append(collector.collect(format_filter=fmt_filter))

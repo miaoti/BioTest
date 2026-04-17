@@ -87,7 +87,20 @@
       "Bash(curl -sL \"https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar\" -o jacocoagent.jar)",
       "Bash(curl -sL \"https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.12-nodeps.jar\" -o jacococli.jar)",
       "Bash(xargs cat *)",
-      "Bash(grep -E \"\\(pass$|pass\\\\s*$\\)\")"
+      "Bash(grep -E \"\\(pass$|pass\\\\s*$\\)\")",
+      "Bash(tasklist)",
+      "Bash(g++ -std=c++20 -O0 -I ../../SUTfolder/cpp/seqan3/include seqan3_smoke.cpp -o build/seqan3_smoke.exe)",
+      "Bash(g++ -std=c++23 -O0 -I ../../SUTfolder/cpp/seqan3/include seqan3_smoke.cpp -o build/seqan3_smoke.exe)",
+      "Bash(g++ -std=c++20 -O0 -g -fprofile-arcs -ftest-coverage harnesses/cpp/biotest_harness.cpp -o harnesses/cpp/build/biotest_harness_cov.exe)",
+      "Bash(harnesses/cpp/build/biotest_harness_cov.exe SAM seeds/sam/spec_example.sam)",
+      "Bash(where gcovr *)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs -I{} taskkill //PID {} //F)",
+      "Bash(grep -v \"^$\")",
+      "WebFetch(domain:api.github.com)",
+      "Bash(awk '{print $5, $9}')",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

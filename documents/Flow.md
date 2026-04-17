@@ -229,6 +229,64 @@ py -3.12 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
 
 * **目的**: 极深度测试解析器对于序列长度一致性（SEQ length == sum of M/I/S/=/X）检查的边界条件。
 
+#### 🆕 arsenal expansion (v2 — 2026 live-run response)
+
+Original arsenal was **13 transforms (9 VCF + 4 SAM)**. The first Phase D
+run plateaued at SCC 0.6% because the whitelist couldn't reach BCF
+binary, CSQ annotations, or variant normalization — three clusters that
+dominated the blindspot list. V2 adds **6 new VCF transforms (total
+19)**, each backed by published literature:
+
+**10. `trim_common_affixes`** [VCF record]
+* **Rationale**: REF=AA,ALT=AC at POS=100 is semantically identical to
+  REF=A,ALT=C at POS=101 (Tan 2015 parsimony). Any parser claiming spec
+  compliance must treat the pair as the same variant.
+* **Preconditions**: biallelic record with shared prefix or suffix base.
+
+**11. `left_align_indel`** [VCF record, conservative]
+* **Rationale**: Indels inside homopolymer runs have multiple equivalent
+  positions. Left-aligned canonical form is the normalization target
+  (Tan 2015 §2.1). Without a reference FASTA we conservatively
+  activate only when `REF[0]==REF[-1]`.
+* **Preconditions**: indel in homopolymer context, `POS>=2`.
+
+**12. `split_multi_allelic`** [VCF record]
+* **Rationale**: `chr1 100 A T,C` is the same variant set as two rows
+  `chr1 100 A T` + `chr1 100 A C` with synchronized `Number=A/R` arrays
+  and GT remapping (Danecek & McCarthy 2017, `bcftools norm`).
+* **Preconditions**: `alt_count >= 2`.
+* **Z3 guard**: each produced record must have `alt_count == 1` and
+  `Number=A` arrays of length 1 (reuses `check_info_number_a`).
+
+**13. `vcf_bcf_round_trip`** [VCF whole-file]
+* **Rationale**: VCF and BCF are semantically identical per VCF v4.5 §6.
+  Round-trip `VCF → BCF → VCF` must preserve canonical content; any
+  difference exposes a codec bug (float precision, string encoding,
+  dictionary remapping).
+* **Implementation**: delegates to `pysam.VariantFile` natively on
+  Linux, or to the `biotest-pysam:latest` Docker image on Windows via
+  `harnesses/pysam/pysam_harness.py --mode bcf_roundtrip`.
+* **Preconditions**: BCF-capable codec available in the SUT chain.
+
+**14. `permute_bcf_header_dictionary`** [VCF whole-file]
+* **Rationale**: Per VCF v4.5 §6.2.1, BCF dictionary index assignment
+  is implementation-defined. A parser that treats dictionary index `i`
+  as authoritative without consulting the header exposes a bug.
+* **Preconditions**: header has 2+ `##contig` / `##INFO` / `##FORMAT`
+  entries; BCF codec available.
+
+**15. `permute_csq_annotations`** [VCF record]
+* **Rationale**: VEP/SnpEff's CSQ and ANN INFO fields carry
+  comma-separated transcript annotations. Per VEP docs, record order is
+  not required to follow any specific sequence. Permutes
+  comma-separated RECORDS only; NEVER permutes pipe-delimited SUB-
+  FIELDS (those are positional per the `##INFO=<ID=CSQ,Description=
+  "...Format: Allele|Gene|...">` header).
+* **Preconditions**: INFO has CSQ or ANN key with 2+ comma-separated
+  records.
+* **Safety invariant**: pipe count per record must equal before/after
+  (self-checked; violation raises `ValueError`).
+
 #### 📚 文献支撑与合理性分析 (Citations & References)
 
 这些原子操作绝非随机臆造，而是根植于明确的生物信息学标准与变体检测理论。这种设计保证了我们的测试生成具有严格的**生物学语义等价性 (Biological Semantic Equivalence)**。
@@ -239,6 +297,10 @@ py -3.12 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
 | `shuffle_meta_lines` | VCF 头部元数据除 `##fileformat` 外，均不应受出现顺序的影响。 | [1] VCF v4.5 Spec, Section 1.2: "The order of header lines... is not significant." |
 | `split_or_merge_adjacent_cigar_ops` | CIGAR 算子合并（如 `2M1M -> 3M`）在比对路径上是语义恒等的。 | [2] SAM Spec, Section 1.4.6: Defines operators.<br>[3] HTSlib: Internal normalization logic natively supports this equivalence. |
 | `permute_Number_A_R_fields` | 必须保证 Per-allele 数据的维度随 ALT 同步变化，这在实际 GATK 注释中是极易出错的边界。 | [4] GATK Best Practices: Specifically warns about allele-specific annotation alignment errors. |
+| `trim_common_affixes`, `left_align_indel` | 变异的规范化表示：通过前/后缀修剪 + 左对齐，消除同一生物变异的多种等价编码，符合 `bcftools norm` / `vt normalize` 的标准算法。 | [5] Tan, Abecasis, Kang 2015. "Unified representation of genetic variants." *Bioinformatics* 31(13):2202–2204 |
+| `split_multi_allelic` | `bcftools norm --multiallelics` 明确定义 `ALT=A,C` 与两行分别 `ALT=A`、`ALT=C` + 同步 Number=A/R 数组 + 重映射 GT 为相同变异集合。 | [6] Danecek & McCarthy 2017. "BCFtools/csq: haplotype-aware variant consequences." *Bioinformatics* 33(13):2037–2039 |
+| `vcf_bcf_round_trip`, `permute_bcf_header_dictionary` | VCF 文本与 BCF 二进制编码在语义上等价；后者使用字典索引编码头部条目，索引分配由实现决定。 | [1] VCF v4.5 §6 "BCF specification" + §6.2.1 "Dictionaries" |
+| `permute_csq_annotations` | VEP/SnpEff 的 CSQ/ANN 字段携带多条转录本注释（以逗号分隔），记录的顺序不是规范性的。一些下游工具错误地依赖 `[0]` 为"主要后果"，可被此 MR 暴露。 | [7] Ensembl VEP output docs; [8] Cingolani et al. 2012. *Fly* 6(2):80-92 |
 
 **核心参考文献 (References):**
 
@@ -248,7 +310,15 @@ py -3.12 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
 
 3. **Giannoulatou, E., et al. (2014)**. *Metamorphic testing of next-generation sequencing software.* Bioinformatics, 30(11), 1583-1590.
 
-4. **Tumhan, F., et al. (2022)**. *Metamorphic Testing for Bioinformatics Software: A Systematic Mapping Study.* Software Quality Journal.
+4. **Turnham, F., et al. (2022)**. *Metamorphic Testing for Bioinformatics Software: A Systematic Mapping Study.* Software Quality Journal.
+
+5. **Tan, A., Abecasis, G. R., Kang, H. M. (2015)**. *Unified representation of genetic variants.* Bioinformatics 31(13):2202–2204. doi:10.1093/bioinformatics/btv112 — canonical variant normalization.
+
+6. **Danecek, P., McCarthy, S. A. (2017)**. *BCFtools/csq: haplotype-aware variant consequences.* Bioinformatics 33(13):2037–2039. doi:10.1093/bioinformatics/btx100 — multi-allelic split/join semantics.
+
+7. **Ensembl Variant Effect Predictor (VEP) output documentation.** `ensembl.org/info/docs/tools/vep/vep_formats.html` — CSQ field record order and sub-field positional layout.
+
+8. **Cingolani, P., Platts, A., et al. (2012)**. *A program for annotating and predicting the effects of single nucleotide polymorphisms, SnpEff.* Fly, 6(2), 80–92 — SnpEff ANN format spec.
 
 ### 3. 目标行为分类与任务下发 (Comprehensive Behavior Targets)
 
@@ -445,15 +515,36 @@ BioTest/
 
 ### 1. 真实生物学种子注入与语料库管理 (Seed Corpus Management)
 
-要让测试具有“生物学现实意义”并发现深层 Bug，我们不能仅凭空捏造随机乱码，必须构建一个多层级的种子库（Seed Corpus）：
+要让测试具有"生物学现实意义"并发现深层 Bug，我们不能仅凭空捏造随机乱码，必须构建一个多层级的种子库（Seed Corpus）：
 
-*   **第一层：规范基准种子 (Spec Example Seeds / Tier 1)**
-    直接从 Phase A 解析的 `VCFv4.5.pdf` 和 `SAMv1.pdf` 中提取官方给出的示例片段（例如 3-sample, multi-ALT 示例）。这保证了对标准格式的基础覆盖。手工构造极简基准种子（如 `minimal_multisample.vcf` 和 `minimal_tags.sam`）用于冒烟测试。
-*   **第二层：真实世界种子 (Public Real-world Seeds / Tier 2)**
-    *   **IGSR (1000 Genomes)**：拉取真实的 VCF 变体发布数据，以及 BAM/CRAM 比全文件（转为 SAM）。
-    *   **GIAB (Genome in a Bottle)**：拉取 NIST 发布的高置信度基准测试集。
-*   **第三层：极限界限种子 (Generated Corner-case Seeds / Tier 3)**
+*   **第一层：规范基准种子 (Spec Example Seeds / Tier 1)** — 3 个手工构造文件，提交到 git
+    - `seeds/vcf/minimal_single.vcf`, `minimal_multisample.vcf`, `spec_example.vcf`
+    - 用于冒烟测试，覆盖最小 VCF v4.3 结构
+*   **第二层：真实世界公共测试语料 (Public Real-world Seeds / Tier 2)** — ~30 个文件，通过 `seeds/fetch_real_world.py` 按需下载（`.gitignore` 中排除以保持仓库体积）
+    - **htsjdk test resources** (Apache 2.0): 多样本 + 结构变异 + NaN QUAL + gVCF (`<NON_REF>`) + dbSNP/ClinVar INFO 标签
+    - **bcftools test suite** (MIT-equivalent): 规范化边界、CSQ 注释、concat/merge/isec 输入
+    - **hts-specs test corpus** (MIT-equivalent): VCF v4.1/v4.2/v4.3/v4.5 的 spec 合规性测试
+    - **GATK test resources** (Apache 2.0): Funcotator SnpEff ANN、gVCF、feature-source 测试
+    - 详细清单与多样性矩阵见 `seeds/SOURCES.md`
+    - 每文件上限 500 KB (保证 Phase C 迭代速度)
+*   **第三层：极限界限种子 (Generated Corner-case Seeds / Tier 3)** — 规划中
     利用 Z3 生成满足极端物理约束的头部/记录，或引入 KLEE 符号执行引擎生成种子文件。
+
+**多样性轴覆盖**（每个轴均至少有一个 Tier-2 种子命中）：
+1. VCF 规范版本 (v4.1/v4.2/v4.3/v4.5)
+2. 结构变异 (`<DEL>`, `<INV>`, `<DUP>`, `<BND>`)
+3. gVCF (`<NON_REF>`) — 用于 `inject_equivalent_missing_values`
+4. CSQ (VEP) / ANN (SnpEff) 注释 — 用于 `permute_csq_annotations`
+5. 相位 vs 非相位基因型
+6. 深层 FORMAT (`GT:GQ:DP:AD:PL`)
+7. NaN QUAL / 缺失值
+8. 多等位基因记录 — 用于 `split_multi_allelic`
+9. 可左对齐的 indel (同聚核苷酸运行) — 用于 `left_align_indel`
+10. BCF 编解码练习 — 用于 `vcf_bcf_round_trip` 及 `permute_bcf_header_dictionary`
+11. 丰富的 dbSNP/ClinVar 注释标签
+12. 多体（polysomy）基因型
+
+每轴对应的代表文件与相关 transform 见 `seeds/SOURCES.md` 的多样性矩阵。
 
 ### 2. 跨语言解析器的“归一化”适配 (Canonical Normalization Adapters)
 

@@ -110,8 +110,16 @@ phase_c:
       enabled: true
       sut_path: SUTfolder/cpp/seqan3
       adapter: harnesses/cpp/build/biotest_harness.exe
-      # Coverage binary: compiled with -fprofile-arcs -ftest-coverage
-      # Build: g++ --coverage -o biotest_harness_cov biotest_harness.cpp ...
+      # Coverage binary: built with -fprofile-arcs -ftest-coverage.
+      # Build (current Windows/MinGW toolchain, traces harness only):
+      #   g++ -std=c++20 -O0 -g -fprofile-arcs -ftest-coverage \
+      #       harnesses/cpp/biotest_harness.cpp \
+      #       -o harnesses/cpp/build/biotest_harness_cov.exe
+      # NOTE: biotest_harness.cpp currently parses SAM as plain text and
+      # does not link seqan3 (seqan3 requires C++23 + Linux ABI — BAM struct
+      # packing fails on MinGW). Until the harness is rewritten under WSL2
+      # to call seqan3::sam_file_input, gcovr coverage reflects only the
+      # harness text parser, not seqan3. See harnesses/cpp/README.md.
       coverage_binary: harnesses/cpp/build/biotest_harness_cov.exe
       timeout_s: 60
 
@@ -132,6 +140,11 @@ feedback_control:
   plateau_patience: 2         # Stop if SCC unchanged for N consecutive rounds
   target_scc_percent: 95.0    # Stop when SCC reaches this target
   timeout_minutes: 120        # Absolute time limit for Phase D
+  catastrophic_threshold: 0.5 # Fraction of enforced MRs demoted → halt
+  catastrophic_min_sample: 5  # Halt only arms when enforced_count >= N
+                              # (prevents spurious halts when Phase B mined
+                              # only 1-2 MRs — 100% demotion of a tiny
+                              # sample isn't statistically meaningful)
   # Primary Target: this SUT DRIVES the feedback loop.
   # SCC, code coverage hints, and blindspot tickets are derived from
   # this parser only. Other SUTs act as auxiliary differential oracles.
@@ -169,14 +182,24 @@ coverage:
 
   # Format-aware whitelist: only these paths are relevant per format.
   # Prevents VCF coverage from polluting SAM feedback and vice versa.
-  # Paths are matched as substrings in package/file names across all SUTs.
+  #
+  # Syntax: entries may be one of
+  #   - "pkg/path"                  — exact package match, all files included
+  #   - "pkg/path::PFX1,PFX2"       — exact package match, but only sourcefiles
+  #                                   whose name starts with PFX1 or PFX2
+  #   - "substring"                 — any path containing this substring
+  #                                   (used for Python / C++ where package
+  #                                   structure is flat)
+  # The `::` prefix filter is critical for htsjdk/samtools because that
+  # package mixes SAM + BAM + CRAM + CSI classes; the SAM entry narrows
+  # to SAM*.java / Sam*.java only.
   target_filters:
     VCF:
       - htsjdk/variant/vcf
-      - htsjdk/variant/variantcontext
+      - htsjdk/variant/variantcontext::VCF,Variant
       - pysam                          # pysam handles VCF via HTSlib
     SAM:
-      - htsjdk/samtools
+      - htsjdk/samtools::SAM,Sam
       - Bio/Align/sam
       - seqan3/io/sam_file
       - format_sam

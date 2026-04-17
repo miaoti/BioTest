@@ -97,22 +97,65 @@ def gather_coverage() -> dict:
         "gcovr_seqan3": None,
     }
 
-    # JaCoCo (htsjdk)
+    # JaCoCo (htsjdk) — applies the same VCF/SAM-scoped target_filters the
+    # runtime collector uses, so the post-run report matches Phase D's feedback
+    # signal rather than showing a diluted all-classes number.
     jacoco_xml = ROOT / "coverage_artifacts" / "jacoco" / "jacoco.xml"
     jacoco_exec = ROOT / "coverage_artifacts" / "jacoco" / "jacoco.exec"
     if jacoco_xml.exists():
         try:
             import xml.etree.ElementTree as ET
+            import yaml
+
+            # Read target_filters from config for a single source of truth.
+            cfg_path = ROOT / "biotest_config.yaml"
+            with cfg_path.open("r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+            target_filters = (cfg.get("coverage") or {}).get("target_filters") or {}
+            # Use only the format(s) actually exercised in this run. If
+            # phase_c.format_filter is set, scope the denominator to that
+            # format; otherwise union all formats.
+            run_fmt = ((cfg.get("phase_c") or {}).get("format_filter") or "").upper()
+            if run_fmt and run_fmt in target_filters:
+                raw_entries = list(target_filters[run_fmt])
+                result.setdefault("jacoco_htsjdk_meta", {})["format_scope"] = run_fmt
+            else:
+                raw_entries = list(target_filters.get("VCF", [])) + list(target_filters.get("SAM", []))
+                result.setdefault("jacoco_htsjdk_meta", {})["format_scope"] = "VCF+SAM"
+
+            # Parse "pkg::PFX1,PFX2" entries into (package, prefixes) rules.
+            rules: list[tuple[str, tuple[str, ...]]] = []
+            for entry in raw_entries:
+                if "::" in entry:
+                    pkg, pfxs = entry.split("::", 1)
+                    rules.append((pkg.strip(), tuple(p.strip() for p in pfxs.split(",") if p.strip())))
+                else:
+                    rules.append((entry.strip(), ()))
+
+            def match_pkg(name: str):
+                for rp, pfx in rules:
+                    if name == rp:
+                        return pfx
+                return None
+
             tree = ET.parse(jacoco_xml)
             root = tree.getroot()
             covered = missed = 0
             for pkg in root.findall(".//package"):
                 name = pkg.get("name", "")
-                if "htsjdk/variant/vcf" not in name and "htsjdk/samtools" not in name:
+                prefixes = match_pkg(name)
+                if prefixes is None:
                     continue
-                for counter in pkg.findall('.//counter[@type="LINE"]'):
-                    covered += int(counter.get("covered", 0))
-                    missed += int(counter.get("missed", 0))
+                for src in pkg.findall("sourcefile"):
+                    src_name = src.get("name", "")
+                    if prefixes and not any(src_name.startswith(p) for p in prefixes):
+                        continue
+                    # Per-sourcefile LINE counter (not recursive — avoids
+                    # double counting method-level counters).
+                    for counter in src.findall("counter"):
+                        if counter.get("type") == "LINE":
+                            covered += int(counter.get("covered", 0))
+                            missed += int(counter.get("missed", 0))
             total = covered + missed
             pct = (covered / total * 100) if total > 0 else 0.0
             result["jacoco_htsjdk"] = {"covered": covered, "total": total, "pct": pct}
@@ -122,7 +165,12 @@ def gather_coverage() -> dict:
         size_kb = jacoco_exec.stat().st_size / 1024
         result["jacoco_htsjdk"] = {"exec_size_kb": size_kb, "note": "XML not yet generated"}
 
-    # coverage.py (biopython)
+    # coverage.py (biopython).
+    # NOTE: cov.analysis2 returns (filename, statements, excluded, missing,
+    # formatted_missing). `statements` is the full set of tracked
+    # executable lines (not executed ones). Executed = statements - missing.
+    # Prior versions here used len(analysis[1]) as "covered" which always
+    # produced a 50% nonsense when nothing ran (covered = missed = all stmts).
     cov_file = ROOT / "coverage_artifacts" / ".coverage"
     if cov_file.exists():
         try:
@@ -133,9 +181,11 @@ def gather_coverage() -> dict:
             for fp in cov.get_data().measured_files():
                 if "Bio" not in fp:
                     continue
-                analysis = cov.analysis2(fp)
-                covered += len(analysis[1])
-                missed += len(analysis[3] if len(analysis) > 3 else analysis[2])
+                _, statements, _excluded, missing, *_ = cov.analysis2(fp)
+                stmt_count = len(statements)
+                miss_count = len(missing)
+                covered += stmt_count - miss_count
+                missed += miss_count
             total = covered + missed
             pct = (covered / total * 100) if total > 0 else 0.0
             result["coveragepy_biopython"] = {"covered": covered, "total": total, "pct": pct}
@@ -285,32 +335,75 @@ def build_report() -> str:
             lines.append(f"| {t} | {total} | {fails} | {rate:.1f}% |")
     lines.append("")
 
-    # --- Code Coverage ---
-    lines.append("## Code Coverage by SUT")
+    # --- Code Coverage (primary SUT only, per Flow.md Phase D §1.3) ---
+    # Read primary_target from config so the report reflects the actual
+    # SUT that drove this run's feedback loop.
+    try:
+        import yaml as _yaml
+        _cfg = _yaml.safe_load((ROOT / "biotest_config.yaml").read_text(encoding="utf-8")) or {}
+        primary_target = ((_cfg.get("feedback_control") or {}).get("primary_target") or "").lower()
+        run_fmt = ((_cfg.get("phase_c") or {}).get("format_filter") or "").upper()
+    except Exception:
+        primary_target = ""
+        run_fmt = ""
+
+    sut_key_map = {
+        "htsjdk": ("htsjdk (Java)", "jacoco_htsjdk"),
+        "biopython": ("biopython (Python)", "coveragepy_biopython"),
+        "pysam": ("pysam (Docker)", "pysam_docker"),
+        "seqan3": ("seqan3 (C++)", "gcovr_seqan3"),
+    }
+
+    header_suffix = ""
+    if primary_target:
+        header_suffix = f" — Primary Target: {primary_target}"
+        if run_fmt:
+            header_suffix += f" (format scope: {run_fmt})"
+    lines.append(f"## Code Coverage{header_suffix}")
     lines.append("")
-    cov_rows = []
-    for sut, key in [
-        ("htsjdk (Java)", "jacoco_htsjdk"),
-        ("biopython (Python)", "coveragepy_biopython"),
-        ("pysam (Docker)", "pysam_docker"),
-        ("seqan3 (C++)", "gcovr_seqan3"),
-    ]:
+    if primary_target:
+        lines.append(
+            f"_Per Flow.md Phase D §1.3, feedback-driven runs measure coverage "
+            f"for the **primary target only** (`{primary_target}`). Other SUTs "
+            f"participate as differential oracles and are intentionally not "
+            f"instrumented for coverage._"
+        )
+        lines.append("")
+
+    active_rows: list[tuple[str, str, str, str]] = []
+    if primary_target and primary_target in sut_key_map:
+        sut, key = sut_key_map[primary_target]
         data = coverage.get(key)
         if data is None:
-            cov_rows.append((sut, "not collected", "--", "--"))
+            active_rows.append((sut, "not collected", "--", "primary target had no data"))
         elif "error" in data:
-            cov_rows.append((sut, f"error: {data['error'][:50]}", "--", "--"))
+            active_rows.append((sut, f"error: {data['error'][:50]}", "--", "--"))
         elif "covered" in data:
-            cov_rows.append((sut, f"{data['pct']:.1f}%",
-                            f"{data['covered']}/{data['total']}", "OK"))
+            active_rows.append((sut, f"{data['pct']:.1f}%",
+                               f"{data['covered']}/{data['total']}", "OK"))
         elif "exec_size_kb" in data:
-            cov_rows.append((sut, "exec-only", f"{data['exec_size_kb']:.1f} KB", "no XML"))
+            active_rows.append((sut, "exec-only", f"{data['exec_size_kb']:.1f} KB", "no XML"))
         else:
-            cov_rows.append((sut, "?", "?", "?"))
+            active_rows.append((sut, "?", "?", "?"))
+    else:
+        # No primary_target configured — fall back to all-SUTs view.
+        for sut, key in sut_key_map.values():
+            data = coverage.get(key)
+            if data is None:
+                active_rows.append((sut, "not collected", "--", "--"))
+            elif "error" in data:
+                active_rows.append((sut, f"error: {data['error'][:50]}", "--", "--"))
+            elif "covered" in data:
+                active_rows.append((sut, f"{data['pct']:.1f}%",
+                                   f"{data['covered']}/{data['total']}", "OK"))
+            elif "exec_size_kb" in data:
+                active_rows.append((sut, "exec-only", f"{data['exec_size_kb']:.1f} KB", "no XML"))
+            else:
+                active_rows.append((sut, "?", "?", "?"))
 
     lines.append("| SUT | Coverage | Lines | Status |")
     lines.append("|-----|----------|-------|--------|")
-    for row in cov_rows:
+    for row in active_rows:
         lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} |")
     lines.append("")
 

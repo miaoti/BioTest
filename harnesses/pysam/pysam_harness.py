@@ -187,8 +187,152 @@ def _run_parse(fmt: str, input_path: Path) -> None:
     json.dump(result, sys.stdout, indent=2, ensure_ascii=False)
 
 
+# ---------------------------------------------------------------------------
+# BCF round-trip modes (for the vcf_bcf_round_trip and
+# permute_bcf_header_dictionary transforms in mr_engine/transforms/vcf.py)
+# ---------------------------------------------------------------------------
+
+def bcf_roundtrip(input_vcf: Path, output_vcf: Path) -> None:
+    """Serialize input_vcf -> BCF -> read back -> emit VCF to output_vcf.
+
+    Tests the BCF2 binary codec round-trip invariance per VCF v4.5 §6.
+    The output VCF must be semantically identical to the input; any
+    difference beyond float precision implies a codec bug in pysam/HTSlib.
+    """
+    import pysam
+    import tempfile
+
+    tmp_bcf = Path(tempfile.mkstemp(suffix=".bcf")[1])
+    try:
+        # Read VCF
+        src = pysam.VariantFile(str(input_vcf))
+        # Write as BCF, carrying the same header
+        bcf_out = pysam.VariantFile(str(tmp_bcf), "wb", header=src.header)
+        try:
+            for rec in src:
+                bcf_out.write(rec)
+        finally:
+            bcf_out.close()
+            src.close()
+
+        # Read BCF back, re-emit as VCF text
+        bcf_in = pysam.VariantFile(str(tmp_bcf))
+        vcf_out = pysam.VariantFile(str(output_vcf), "w", header=bcf_in.header)
+        try:
+            for rec in bcf_in:
+                vcf_out.write(rec)
+        finally:
+            vcf_out.close()
+            bcf_in.close()
+    finally:
+        try:
+            tmp_bcf.unlink()
+        except OSError:
+            pass
+
+
+def bcf_header_reorder(
+    input_vcf: Path, output_vcf: Path, seed: int = 0
+) -> None:
+    """Shuffle the BCF header dictionary order, then round-trip back to VCF.
+
+    The reorder is performed on the *text* header before the BCF write so
+    pysam's codec re-assigns dictionary indices. The body is re-serialized
+    via pysam so indices in the binary match the reordered header. The
+    final VCF must still be semantically identical to the input — if a
+    downstream consumer treats the new dictionary index as authoritative
+    without consulting the header, a difference surfaces.
+    """
+    import pysam
+    import random
+    import re
+    import tempfile
+
+    rng = random.Random(seed)
+
+    # Extract header lines from the input VCF, shuffle contigs / INFO /
+    # FORMAT / FILTER entries, keep ##fileformat first and the #CHROM line
+    # last.
+    raw = input_vcf.read_text(encoding="utf-8").splitlines(keepends=True)
+    fileformat_line = None
+    chrom_line = None
+    other_meta: list[str] = []
+    body: list[str] = []
+    in_header = True
+    for line in raw:
+        if not in_header:
+            body.append(line)
+            continue
+        if line.startswith("##fileformat"):
+            fileformat_line = line
+        elif line.startswith("#CHROM"):
+            chrom_line = line
+            in_header = False
+        elif line.startswith("##"):
+            other_meta.append(line)
+        else:
+            # no #CHROM line yet but past ## — shouldn't happen in valid VCF
+            body.append(line)
+            in_header = False
+
+    # Bucket and shuffle per dictionary class, then recombine
+    bucket = {"contig": [], "INFO": [], "FORMAT": [], "FILTER": [], "other": []}
+    for line in other_meta:
+        m = re.match(r"##(contig|INFO|FORMAT|FILTER)=", line)
+        if m:
+            bucket[m.group(1)].append(line)
+        else:
+            bucket["other"].append(line)
+    for key in ("contig", "INFO", "FORMAT", "FILTER"):
+        rng.shuffle(bucket[key])
+
+    reordered_header = []
+    if fileformat_line:
+        reordered_header.append(fileformat_line)
+    # Interleave: contigs first, then INFO, FORMAT, FILTER, other
+    for key in ("contig", "INFO", "FORMAT", "FILTER", "other"):
+        reordered_header.extend(bucket[key])
+    if chrom_line:
+        reordered_header.append(chrom_line)
+
+    tmp_vcf = Path(tempfile.mkstemp(suffix=".vcf")[1])
+    tmp_bcf = Path(tempfile.mkstemp(suffix=".bcf")[1])
+    try:
+        tmp_vcf.write_text("".join(reordered_header + body), encoding="utf-8")
+        # Write reordered VCF -> BCF (codec re-indexes dictionaries)
+        src = pysam.VariantFile(str(tmp_vcf))
+        bcf_out = pysam.VariantFile(str(tmp_bcf), "wb", header=src.header)
+        try:
+            for rec in src:
+                bcf_out.write(rec)
+        finally:
+            bcf_out.close()
+            src.close()
+        # Read BCF back -> final VCF
+        bcf_in = pysam.VariantFile(str(tmp_bcf))
+        vcf_out = pysam.VariantFile(str(output_vcf), "w", header=bcf_in.header)
+        try:
+            for rec in bcf_in:
+                vcf_out.write(rec)
+        finally:
+            vcf_out.close()
+            bcf_in.close()
+    finally:
+        for p in (tmp_vcf, tmp_bcf):
+            try:
+                p.unlink()
+            except OSError:
+                pass
+
+
 def main():
-    # Parse args: [--coverage /cov/dir] FORMAT INPUT_FILE
+    # Argument grammar supported:
+    #   [--coverage /cov/dir] VCF|SAM <input_file>
+    #       -> parse to canonical JSON on stdout (existing path)
+    #   --mode bcf_roundtrip <input_vcf> <output_vcf>
+    #       -> VCF -> BCF -> VCF, emits round-tripped VCF to output_vcf
+    #   --mode bcf_header_reorder [--seed N] <input_vcf> <output_vcf>
+    #       -> shuffle BCF dictionary order then round-trip
     args = sys.argv[1:]
     coverage_dir = None
 
@@ -199,9 +343,59 @@ def main():
         coverage_dir = Path(args[1])
         args = args[2:]
 
+    # BCF subcommands bypass the canonical-JSON path entirely. They write
+    # a VCF file to disk; the caller reads that file back to compare with
+    # the original via its normal oracle pipeline.
+    if args and args[0] == "--mode":
+        if len(args) < 2:
+            print("--mode requires a mode name", file=sys.stderr)
+            sys.exit(1)
+        mode = args[1]
+        rest = args[2:]
+        try:
+            if mode == "bcf_roundtrip":
+                if len(rest) != 2:
+                    print(
+                        "bcf_roundtrip usage: --mode bcf_roundtrip "
+                        "<input_vcf> <output_vcf>",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                bcf_roundtrip(Path(rest[0]), Path(rest[1]))
+            elif mode == "bcf_header_reorder":
+                seed = 0
+                if rest and rest[0] == "--seed":
+                    if len(rest) < 2:
+                        print("--seed requires an integer", file=sys.stderr)
+                        sys.exit(1)
+                    try:
+                        seed = int(rest[1])
+                    except ValueError:
+                        print(f"--seed expected int, got {rest[1]!r}", file=sys.stderr)
+                        sys.exit(1)
+                    rest = rest[2:]
+                if len(rest) != 2:
+                    print(
+                        "bcf_header_reorder usage: --mode bcf_header_reorder "
+                        "[--seed N] <input_vcf> <output_vcf>",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                bcf_header_reorder(Path(rest[0]), Path(rest[1]), seed=seed)
+            else:
+                print(f"Unknown --mode: {mode}", file=sys.stderr)
+                sys.exit(1)
+        except Exception as e:
+            print(f"BCF mode error ({mode}): {e}", file=sys.stderr)
+            sys.exit(1)
+        return
+
     if len(args) != 2:
         print(
-            f"Usage: {sys.argv[0]} [--coverage /cov/dir] <VCF|SAM> <input_file>",
+            f"Usage: {sys.argv[0]} [--coverage /cov/dir] <VCF|SAM> <input_file>\n"
+            f"   OR  {sys.argv[0]} --mode bcf_roundtrip <input_vcf> <output_vcf>\n"
+            f"   OR  {sys.argv[0]} --mode bcf_header_reorder [--seed N] "
+            f"<input_vcf> <output_vcf>",
             file=sys.stderr,
         )
         sys.exit(1)

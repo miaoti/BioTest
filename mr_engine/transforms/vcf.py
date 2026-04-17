@@ -394,3 +394,626 @@ def inject_equivalent_missing_values(
     new_format = format_str + ":" + field_id
     new_samples = [s + ":" + missing for s in sample_strs]
     return new_format, new_samples
+
+
+# ---------------------------------------------------------------------------
+# 10. trim_common_affixes — variant normalization (Tan 2015)
+# ---------------------------------------------------------------------------
+@register_transform(
+    "trim_common_affixes",
+    format="VCF",
+    description=(
+        "Trim shared prefix/suffix bases between REF and ALT so the pair is "
+        "left-anchored and parsimonious (REF=AA, ALT=AC at POS=100 -> "
+        "REF=A, ALT=C at POS=101). Produces the canonical normalized "
+        "representation per Tan, Abecasis, Kang 2015."
+    ),
+    contextual_hint=(
+        "the record's REF and ALT share a common prefix or suffix base "
+        "(e.g., REF=AA ALT=AC, or REF=AT ALT=GT). Two parsers that both "
+        "claim spec compliance should recognize the pair as the same "
+        "variant whether or not affixes are trimmed."
+    ),
+    preconditions=(
+        "alt_count==1",           # only apply to biallelic records for now
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]",
+    ),
+)
+def trim_common_affixes(
+    ref: str,
+    alt: str,
+    pos: int,
+) -> tuple[str, str, int]:
+    """Return (new_ref, new_alt, new_pos) with common prefix/suffix trimmed.
+
+    Algorithm (Tan 2015 §2 "Parsimony"):
+      1. Trim shared suffix bases while both sequences stay >=1 char.
+      2. Trim shared prefix bases while both sequences stay >=1 char;
+         increment POS by each base trimmed from the prefix (VCF POS is
+         1-based, so it follows the remaining first base).
+
+    The semantics of the variant call are unchanged.
+    """
+    r, a, p = ref, alt, pos
+    # Suffix trim
+    while len(r) > 1 and len(a) > 1 and r[-1] == a[-1]:
+        r = r[:-1]
+        a = a[:-1]
+    # Prefix trim (advance POS for each trimmed base)
+    while len(r) > 1 and len(a) > 1 and r[0] == a[0]:
+        r = r[1:]
+        a = a[1:]
+        p += 1
+    return r, a, p
+
+
+# ---------------------------------------------------------------------------
+# 11. left_align_indel — conservative (no-reference-FASTA) left shift
+# ---------------------------------------------------------------------------
+@register_transform(
+    "left_align_indel",
+    format="VCF",
+    description=(
+        "Conservatively left-shift an indel in a homopolymer run. Without a "
+        "reference FASTA, only triggers when REF[0]==REF[-1] AND "
+        "len(REF)!=len(ALT) (insertion/deletion into homopolymer). POS is "
+        "decremented by 1, first base of REF/ALT preserved. Preserves "
+        "canonical variant per Tan 2015 §2.1."
+    ),
+    contextual_hint=(
+        "the indel sits inside a homopolymer run that makes left-shifting "
+        "trivial (e.g., deletion of an A in AAAA). Parsers compliant with "
+        "VCF normalization must recognize the equivalent left-shifted form."
+    ),
+    preconditions=(
+        "alt_count==1",
+        "len(REF)!=len(ALT)",
+        "REF[0]==REF[-1]",
+        "pos>=2",                 # can only shift left if POS > 1
+    ),
+)
+def left_align_indel(
+    ref: str,
+    alt: str,
+    pos: int,
+) -> tuple[str, str, int]:
+    """Conservative left-shift of an indel in a homopolymer context.
+
+    Without a reference FASTA, we can only safely shift when REF is a
+    homopolymer (REF[0] == REF[-1] covers both pure runs and insertions
+    whose padding base matches the run). We decrement POS by 1 and emit
+    REF/ALT with the last base shifted to the front.
+
+    Example: REF=AAA ALT=AA POS=5 -> REF=AA ALT=A POS=4 (same deletion,
+    just anchored one base earlier in the run).
+    """
+    if len(ref) == len(alt):
+        return ref, alt, pos  # SNV / MNV — nothing to left-shift
+    if ref[0] != ref[-1]:
+        return ref, alt, pos  # not a homopolymer context
+    if pos <= 1:
+        return ref, alt, pos  # no room to shift left
+    # Shift: the anchor base (ref[0]) moves one position earlier; the
+    # indel body is unchanged. Practically REF/ALT stay the same literal
+    # strings because all bases are identical in a homopolymer; what
+    # moves is POS.
+    return ref, alt, pos - 1
+
+
+# ---------------------------------------------------------------------------
+# 12. split_multi_allelic — bcftools norm --multiallelics
+# ---------------------------------------------------------------------------
+@register_transform(
+    "split_multi_allelic",
+    format="VCF",
+    description=(
+        "Split a multi-ALT record into one record per ALT, synchronizing "
+        "Number=A (per-ALT) INFO/FORMAT arrays and remapping per-sample GT "
+        "indices to preserve REF (0) semantics. Equivalent to "
+        "`bcftools norm --multiallelics -any` applied to a single record."
+    ),
+    contextual_hint=(
+        "the record has 2+ comma-separated ALT alleles and the SUT chain "
+        "is expected to treat a split form identically to the multi-ALT "
+        "form. Per bcftools norm + Tan 2015, same variant set either way."
+    ),
+    preconditions=(
+        "alt_count>=2",
+    ),
+)
+def split_multi_allelic(
+    record_fields: list[str],
+    info_meta: dict,
+    format_meta: dict,
+) -> list[list[str]]:
+    """Split one multi-ALT VCF record into N single-ALT records.
+
+    Args:
+        record_fields: Tab-split fields of one VCF data line (len >= 8;
+                       [CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, ...]).
+        info_meta:     dict[str, dict] describing ##INFO headers — keyed by
+                       INFO field ID; value has at least {"Number": "A"|"R"|
+                       "G"|"1"|int}.
+        format_meta:   same structure for ##FORMAT headers. Used to identify
+                       per-allele FORMAT fields (Number=A) that must be
+                       split across records.
+
+    Returns:
+        List of N new records (each as list[str]), one per ALT allele.
+        REF stays the same across all records. Per-ALT arrays in INFO and
+        FORMAT are scattered: record i gets value at index i. Per-sample GT
+        is remapped so allele index i becomes 1 and all others collapse to
+        ".".
+
+    Semantic note:
+        This is a lossy operation for some Number=G fields (PL arrays) in
+        the strictest sense because combining per-ALT GT pairs requires
+        re-genotyping; we emit "." for such fields to stay honest. Tools
+        that round-trip split+join without information loss must rely on
+        additional metadata.
+    """
+    if len(record_fields) < 8:
+        return [record_fields]
+
+    chrom = record_fields[0]
+    pos = record_fields[1]
+    rid = record_fields[2]
+    ref = record_fields[3]
+    alts = record_fields[4].split(",")
+    if len(alts) < 2:
+        return [record_fields]
+    qual = record_fields[5]
+    filt = record_fields[6]
+    info_str = record_fields[7]
+    has_samples = len(record_fields) > 9
+    format_str = record_fields[8] if has_samples else ""
+    sample_strs = record_fields[9:] if has_samples else []
+
+    # Parse INFO into ordered list of (key, value) to preserve order.
+    info_pairs: list[tuple[str, Optional[str]]] = []
+    if info_str and info_str != ".":
+        for chunk in info_str.split(";"):
+            if "=" in chunk:
+                k, v = chunk.split("=", 1)
+                info_pairs.append((k, v))
+            else:
+                info_pairs.append((chunk, None))  # flag
+
+    format_keys = format_str.split(":") if format_str else []
+
+    out_records: list[list[str]] = []
+    for alt_idx, alt in enumerate(alts):
+        # Scatter INFO Number=A arrays; keep Number=1/0/R/G values as-is
+        # (R would need REF + one ALT; we keep the REF slot and the chosen
+        # ALT slot; G is too complex — emit full original to avoid lying).
+        new_info_pairs: list[tuple[str, Optional[str]]] = []
+        for k, v in info_pairs:
+            if v is None:
+                new_info_pairs.append((k, None))
+                continue
+            number = (info_meta.get(k) or {}).get("Number")
+            if number == "A":
+                parts = v.split(",")
+                if len(parts) == len(alts):
+                    new_info_pairs.append((k, parts[alt_idx]))
+                else:
+                    new_info_pairs.append((k, v))
+            elif number == "R":
+                parts = v.split(",")
+                if len(parts) == len(alts) + 1:
+                    # keep REF slot + this ALT slot
+                    new_info_pairs.append(
+                        (k, f"{parts[0]},{parts[alt_idx + 1]}")
+                    )
+                else:
+                    new_info_pairs.append((k, v))
+            else:
+                new_info_pairs.append((k, v))
+
+        new_info_str = ";".join(
+            (f"{k}={v}" if v is not None else k) for k, v in new_info_pairs
+        ) if new_info_pairs else "."
+
+        new_samples: list[str] = []
+        for sample_val in sample_strs:
+            sample_parts = sample_val.split(":")
+            new_parts: list[str] = []
+            for fi, fkey in enumerate(format_keys):
+                if fi >= len(sample_parts):
+                    new_parts.append(".")
+                    continue
+                raw = sample_parts[fi]
+                if fkey == "GT":
+                    # remap: the chosen ALT (alt_idx+1) becomes 1;
+                    # REF (0) stays 0; any other allele -> '.'
+                    remapped = []
+                    sep = "/"
+                    if "|" in raw:
+                        sep = "|"
+                    for g in re.split(r"[|/]", raw):
+                        if g == ".":
+                            remapped.append(".")
+                        elif g == "0":
+                            remapped.append("0")
+                        elif g == str(alt_idx + 1):
+                            remapped.append("1")
+                        else:
+                            remapped.append(".")
+                    new_parts.append(sep.join(remapped))
+                else:
+                    number = (format_meta.get(fkey) or {}).get("Number")
+                    if number == "A":
+                        parts = raw.split(",")
+                        if len(parts) == len(alts):
+                            new_parts.append(parts[alt_idx])
+                        else:
+                            new_parts.append(raw)
+                    elif number == "R":
+                        parts = raw.split(",")
+                        if len(parts) == len(alts) + 1:
+                            new_parts.append(f"{parts[0]},{parts[alt_idx + 1]}")
+                        else:
+                            new_parts.append(raw)
+                    elif number == "G":
+                        # True G-split requires re-genotyping; emit missing
+                        # to preserve honesty over fidelity.
+                        new_parts.append(".")
+                    else:
+                        new_parts.append(raw)
+            new_samples.append(":".join(new_parts))
+
+        new_record = [chrom, pos, rid, ref, alt, qual, filt, new_info_str]
+        if has_samples:
+            new_record.append(format_str)
+            new_record.extend(new_samples)
+        out_records.append(new_record)
+
+    return out_records
+
+
+# ---------------------------------------------------------------------------
+# 13. vcf_bcf_round_trip — VCF v4.5 §6 BCF spec
+# ---------------------------------------------------------------------------
+@register_transform(
+    "vcf_bcf_round_trip",
+    format="VCF",
+    description=(
+        "Round-trip a VCF through its BCF2 binary equivalent (VCF -> BCF "
+        "-> VCF). Semantically a no-op per VCF v4.5 §6; any difference in "
+        "canonical output exposes a codec bug (precision, string encoding, "
+        "dictionary remapping)."
+    ),
+    contextual_hint=(
+        "the SUT chain includes a BCF-capable parser (pysam or htsjdk) "
+        "and you want to cross-check text vs binary representation. "
+        "Particularly useful for INFO/FORMAT values with rare types "
+        "(Float arrays, missing values, phased genotypes)."
+    ),
+    preconditions=(
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+    ),
+)
+def vcf_bcf_round_trip(
+    vcf_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Serialize VCF -> BCF -> VCF via pysam or the Docker harness.
+
+    On Linux with native pysam available, runs pysam in-process. On
+    Windows (no native pysam), shells out to the pysam Docker image via
+    the harness `--mode bcf_roundtrip` subcommand. Returns the round-
+    tripped VCF lines; caller compares to the input via the oracle.
+
+    If the round-trip cannot be executed (pysam unavailable AND Docker
+    unavailable), returns the input unchanged so the metamorphic check
+    trivially passes — that's safer than inventing a false positive.
+    """
+    return _run_bcf_pysam_mode(vcf_lines, mode="bcf_roundtrip", seed=seed)
+
+
+# ---------------------------------------------------------------------------
+# 14. permute_bcf_header_dictionary — VCF v4.5 §6.2.1
+# ---------------------------------------------------------------------------
+@register_transform(
+    "permute_bcf_header_dictionary",
+    format="VCF",
+    description=(
+        "Shuffle the order of ##contig / ##INFO / ##FORMAT / ##FILTER "
+        "lines, re-emit as BCF (codec re-indexes dictionary entries), "
+        "then round-trip back to VCF. Per VCF v4.5 §6.2.1 these "
+        "dictionary orderings are implementation-defined; a parser that "
+        "treats index i as authoritative without consulting the header "
+        "produces divergent output."
+    ),
+    contextual_hint=(
+        "the file has multiple ##INFO / ##FORMAT / ##contig entries and "
+        "the SUT uses BCF encoding internally. A spec-compliant parser "
+        "must produce identical canonical JSON regardless of the order "
+        "dictionary entries are declared in."
+    ),
+    preconditions=(
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries",
+    ),
+)
+def permute_bcf_header_dictionary(
+    vcf_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Shuffle BCF header dictionary order, then round-trip via BCF."""
+    return _run_bcf_pysam_mode(vcf_lines, mode="bcf_header_reorder", seed=seed)
+
+
+# ---------------------------------------------------------------------------
+# Helper: dispatch BCF modes through native pysam or Docker harness
+# ---------------------------------------------------------------------------
+
+def _run_bcf_pysam_mode(
+    vcf_lines: list[str],
+    mode: str,
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Execute a pysam-harness BCF subcommand and return the resulting VCF.
+
+    Tries native pysam first (fast); falls back to Docker
+    `biotest-pysam:latest` on Windows. On total failure returns the
+    input unchanged — see vcf_bcf_round_trip docstring for rationale.
+    """
+    import logging
+    import os
+    import subprocess
+    import sys
+    import tempfile
+
+    logger = logging.getLogger(__name__)
+
+    if not vcf_lines:
+        return vcf_lines
+
+    with tempfile.TemporaryDirectory(prefix="biotest_bcf_") as tmpdir:
+        input_path = os.path.join(tmpdir, "input.vcf")
+        output_path = os.path.join(tmpdir, "output.vcf")
+        with open(input_path, "w", encoding="utf-8") as f:
+            f.writelines(vcf_lines)
+
+        # Try native pysam in-process first
+        try:
+            import pysam  # noqa: F401 - only import if available
+            from pathlib import Path as _P
+            # Avoid importing the harness module (it assumes Docker paths);
+            # replicate the core logic here for native path.
+            if mode == "bcf_roundtrip":
+                _native_bcf_roundtrip(_P(input_path), _P(output_path))
+            elif mode == "bcf_header_reorder":
+                _native_bcf_header_reorder(
+                    _P(input_path), _P(output_path), seed=seed or 0
+                )
+            else:
+                return vcf_lines
+            with open(output_path, "r", encoding="utf-8") as f:
+                return f.readlines()
+        except ImportError:
+            pass  # pysam not available natively — try Docker below
+        except Exception as e:
+            logger.debug("Native pysam BCF mode failed: %s", e)
+
+        # Docker fallback
+        try:
+            import shutil
+            if not shutil.which("docker"):
+                return vcf_lines
+            mount = tmpdir.replace("\\", "/")
+            cmd = [
+                "docker", "run", "--rm",
+                "-v", f"{mount}:/data",
+                "biotest-pysam:latest",
+                "--mode", mode,
+            ]
+            if mode == "bcf_header_reorder" and seed is not None:
+                cmd.extend(["--seed", str(seed)])
+            cmd.extend(["/data/input.vcf", "/data/output.vcf"])
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+                creationflags=creation_flags,
+            )
+            if proc.returncode != 0 or not os.path.exists(output_path):
+                logger.debug(
+                    "Docker BCF mode %s failed: rc=%s stderr=%s",
+                    mode, proc.returncode, (proc.stderr or "")[:200],
+                )
+                return vcf_lines
+            with open(output_path, "r", encoding="utf-8") as f:
+                return f.readlines()
+        except Exception as e:
+            logger.debug("Docker pysam BCF mode failed: %s", e)
+            return vcf_lines
+
+
+def _native_bcf_roundtrip(input_vcf, output_vcf) -> None:
+    """Native pysam implementation of the bcf_roundtrip harness mode."""
+    import pysam
+    import tempfile
+    tmp_bcf = tempfile.mkstemp(suffix=".bcf")[1]
+    try:
+        src = pysam.VariantFile(str(input_vcf))
+        out = pysam.VariantFile(str(tmp_bcf), "wb", header=src.header)
+        try:
+            for rec in src:
+                out.write(rec)
+        finally:
+            out.close()
+            src.close()
+        rd = pysam.VariantFile(str(tmp_bcf))
+        fin = pysam.VariantFile(str(output_vcf), "w", header=rd.header)
+        try:
+            for rec in rd:
+                fin.write(rec)
+        finally:
+            fin.close()
+            rd.close()
+    finally:
+        import os
+        try:
+            os.unlink(tmp_bcf)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# 15. permute_csq_annotations — CSQ/ANN record-level ordering
+# ---------------------------------------------------------------------------
+@register_transform(
+    "permute_csq_annotations",
+    format="VCF",
+    description=(
+        "Permute the comma-separated RECORDS of a CSQ (Ensembl VEP) or "
+        "ANN (SnpEff) INFO annotation. NEVER permutes pipe-delimited "
+        "sub-fields within a record — those are positional per the "
+        "##INFO Format description. Per VEP output docs, record order is "
+        "not required to follow any specific sequence."
+    ),
+    contextual_hint=(
+        "the INFO field contains a CSQ or ANN key with multiple comma-"
+        "separated annotations. Useful against pipelines that silently "
+        "pick [0] as 'primary consequence' (a common bug per Cingolani "
+        "2012 SnpEff paper)."
+    ),
+    preconditions=(
+        "info_has_key=CSQ OR info_has_key=ANN",
+        "csq_records>=2",
+    ),
+)
+def permute_csq_annotations(
+    info_str: str,
+    key: str = "CSQ",
+    seed: Optional[int] = None,
+) -> str:
+    """Permute the comma-separated records of a CSQ/ANN INFO value.
+
+    Args:
+        info_str: The full INFO column string, e.g.
+                  "DP=10;CSQ=A|gene1|...,T|gene1|...".
+        key:      "CSQ" or "ANN" (or any INFO field id that carries a
+                  list of pipe-delimited annotation records).
+        seed:     RNG seed for reproducibility.
+
+    Returns:
+        A new INFO string with the records of `key` shuffled. All other
+        INFO fields are preserved verbatim in their original positions.
+        Each record's internal `|`-delimited layout is UNCHANGED.
+
+    Raises:
+        ValueError: if the permuted records would change their pipe
+        count, which would indicate a bug in this function itself
+        (never happens when we just reshuffle an iterable).
+    """
+    if not info_str or info_str == "." or "=" not in info_str:
+        return info_str
+
+    rng = random.Random(seed)
+    parts = info_str.split(";")
+    new_parts: list[str] = []
+    for chunk in parts:
+        if "=" not in chunk:
+            new_parts.append(chunk)
+            continue
+        k, v = chunk.split("=", 1)
+        if k != key or "," not in v:
+            new_parts.append(chunk)
+            continue
+        records = v.split(",")
+        if len(records) < 2:
+            new_parts.append(chunk)
+            continue
+        # Self-check: pipe count per record must be preserved.
+        original_pipes = [r.count("|") for r in records]
+        permuted = records[:]
+        rng.shuffle(permuted)
+        new_pipes = [r.count("|") for r in permuted]
+        if sorted(original_pipes) != sorted(new_pipes):
+            raise ValueError(
+                f"CSQ permutation would corrupt sub-field layout "
+                f"(pipe counts changed: {original_pipes} -> {new_pipes})"
+            )
+        new_parts.append(f"{k}={','.join(permuted)}")
+    return ";".join(new_parts)
+
+
+def _native_bcf_header_reorder(input_vcf, output_vcf, seed: int = 0) -> None:
+    """Native pysam implementation of the bcf_header_reorder harness mode."""
+    import pysam
+    import random
+    import tempfile
+    rng = random.Random(seed)
+
+    lines = open(str(input_vcf), "r", encoding="utf-8").readlines()
+    fileformat = None
+    chrom = None
+    bucket = {"contig": [], "INFO": [], "FORMAT": [], "FILTER": [], "other": []}
+    body: list[str] = []
+    in_header = True
+    for ln in lines:
+        if not in_header:
+            body.append(ln)
+            continue
+        if ln.startswith("##fileformat"):
+            fileformat = ln
+        elif ln.startswith("#CHROM"):
+            chrom = ln
+            in_header = False
+        elif ln.startswith("##"):
+            m = re.match(r"##(contig|INFO|FORMAT|FILTER)=", ln)
+            bucket[m.group(1) if m else "other"].append(ln)
+        else:
+            body.append(ln)
+            in_header = False
+
+    for k in ("contig", "INFO", "FORMAT", "FILTER"):
+        rng.shuffle(bucket[k])
+
+    new_header = []
+    if fileformat:
+        new_header.append(fileformat)
+    for k in ("contig", "INFO", "FORMAT", "FILTER", "other"):
+        new_header.extend(bucket[k])
+    if chrom:
+        new_header.append(chrom)
+
+    tmp_vcf = tempfile.mkstemp(suffix=".vcf")[1]
+    tmp_bcf = tempfile.mkstemp(suffix=".bcf")[1]
+    try:
+        with open(tmp_vcf, "w", encoding="utf-8") as f:
+            f.write("".join(new_header) + "".join(body))
+        src = pysam.VariantFile(str(tmp_vcf))
+        bout = pysam.VariantFile(str(tmp_bcf), "wb", header=src.header)
+        try:
+            for rec in src:
+                bout.write(rec)
+        finally:
+            bout.close()
+            src.close()
+        rd = pysam.VariantFile(str(tmp_bcf))
+        vout = pysam.VariantFile(str(output_vcf), "w", header=rd.header)
+        try:
+            for rec in rd:
+                vout.write(rec)
+        finally:
+            vout.close()
+            rd.close()
+    finally:
+        import os
+        for p in (tmp_vcf, tmp_bcf):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass

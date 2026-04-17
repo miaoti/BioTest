@@ -78,6 +78,10 @@ class LoopController:
         self.target_scc_percent = cfg.get("target_scc_percent", 95.0)
         self.timeout_minutes = cfg.get("timeout_minutes", 120)
         self.catastrophic_threshold = cfg.get("catastrophic_threshold", 0.5)
+        # Minimum enforced-MR count before the catastrophic fuse is armed.
+        # With only 1-2 MRs the demotion ratio is statistically meaningless
+        # (one bad MR = 50-100%). We require a real sample before halting.
+        self.catastrophic_min_sample = cfg.get("catastrophic_min_sample", 5)
         self.state = IterationState(start_time=time.monotonic())
 
     @property
@@ -126,18 +130,24 @@ class LoopController:
                 reason=f"budget_exhausted (iteration={self.state.iteration} >= {self.max_iterations})",
             )
 
-        # 4. Catastrophic halt (only after at least 1 iteration)
+        # 4. Catastrophic halt (only after at least 1 iteration AND enough
+        #    enforced MRs to make the ratio statistically meaningful).
+        #    With fewer than catastrophic_min_sample MRs, a single failure
+        #    could trip the fuse (e.g., 1-of-1 = 100%). That yields false
+        #    halts when Phase B happens to mine few MRs but the tool is
+        #    working correctly.
         if self.state.demoted_history and self.state.enforced_history:
             latest_demoted = self.state.demoted_history[-1]
             latest_enforced = self.state.enforced_history[-1]
-            if latest_enforced > 0:
+            if (latest_enforced >= self.catastrophic_min_sample
+                    and latest_enforced > 0):
                 demotion_rate = latest_demoted / latest_enforced
                 if demotion_rate > self.catastrophic_threshold:
                     return TerminationResult(
                         should_stop=True,
                         reason=(
                             f"catastrophic_halt (demotion_rate={demotion_rate:.0%} > "
-                            f"{self.catastrophic_threshold:.0%})"
+                            f"{self.catastrophic_threshold:.0%}, n={latest_enforced})"
                         ),
                     )
 

@@ -219,6 +219,19 @@ def run_phase_b(
                 result = mine_mrs(target, fmt, blindspot_context=blindspot_context)
                 if result.success and result.relations:
                     all_relations.extend(result.relations)
+                    console.print(
+                        f"    [green]OK[/] mined {len(result.relations)} MR(s) "
+                        f"for {fmt}/{target.value}"
+                    )
+                else:
+                    # Surface the reason instead of silently skipping. This
+                    # bug caused 9/12 themes to produce 0 MRs without any
+                    # visible diagnostic.
+                    detail = (result.error_detail or "no relations returned")
+                    console.print(
+                        f"    [yellow]0 MRs[/] for {fmt}/{target.value}: "
+                        f"{detail[:120]}"
+                    )
 
         # Triage
         registry = triage(all_relations)
@@ -400,6 +413,36 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
         if format_context:
             console.print(f"  [dim]Format context:[/] [bold]{format_context}[/] (feedback scoped to this format)")
 
+        # Guard: primary_target must actually support the format being tested.
+        # Otherwise coverage collection for primary would record no data,
+        # SCC would be 0 forever, and quarantine decisions meaningless.
+        # This matters because biopython and seqan3 are SAM-only.
+        _SUT_FORMATS = {
+            "htsjdk": {"VCF", "SAM"},
+            "pysam": {"VCF", "SAM"},
+            "biopython": {"SAM"},
+            "seqan3": {"SAM"},
+            "reference": {"VCF", "SAM"},
+        }
+        if primary_target and format_context:
+            supported = _SUT_FORMATS.get(primary_target, set())
+            if supported and format_context.upper() not in supported:
+                console.print(
+                    f"  [red bold]Configuration error:[/] "
+                    f"primary_target=[bold]{primary_target}[/] does not support "
+                    f"format=[bold]{format_context}[/] (supports: "
+                    f"{sorted(supported) or 'unknown'}). "
+                    f"Feedback signal would be garbage. Aborting Phase D."
+                )
+                return PhaseDResult(
+                    success=False,
+                    error=(
+                        f"primary_target={primary_target} does not support "
+                        f"format={format_context} (supports {sorted(supported)})"
+                    ),
+                    duration_s=0.0,
+                )
+
         registry_path = PROJECT_ROOT / cfg.get("phase_b", {}).get(
             "registry_path", "data/mr_registry.json"
         )
@@ -453,8 +496,11 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 f"{phase_c_result.bugs_found} bugs)"
             )
 
-            # Collect code coverage (format-filtered, graceful failure)
-            coverage_results = coverage_collector.collect_all(format_context=format_context)
+            # Collect code coverage — primary SUT only (Flow.md Phase D §1.3)
+            coverage_results = coverage_collector.collect_all(
+                format_context=format_context,
+                primary_target=primary_target or "",
+            )
             if coverage_results:
                 console.print(f"    Coverage: {len(coverage_results)} SUT(s) collected")
 
@@ -496,6 +542,7 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
             decisions = evaluate_quarantine(
                 phase_c_result.det_tracker or _build_empty_tracker(),
                 registry_data,
+                primary_target=primary_target or "",
             )
             demoted = apply_quarantine(
                 [d for d in decisions if d.demoted],

@@ -52,6 +52,12 @@ from mr_engine.transforms.vcf import (
     permute_sample_columns,
     shuffle_info_field_kv,
     inject_equivalent_missing_values,
+    trim_common_affixes,
+    left_align_indel,
+    split_multi_allelic,
+    vcf_bcf_round_trip,
+    permute_bcf_header_dictionary,
+    permute_csq_annotations,
 )
 from mr_engine.transforms.sam import (
     permute_optional_tag_fields,
@@ -506,4 +512,206 @@ def _dispatch_toggle_clipping(
             result.append(new_line + "\n" if line.endswith("\n") else new_line)
         else:
             result.append(line)
+    return result
+
+
+# ===========================================================================
+# VCF variant-normalization transforms (record-level)
+# ===========================================================================
+
+@_register("trim_common_affixes")
+def _dispatch_trim_common_affixes(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Record-level: trim shared REF/ALT prefix+suffix for biallelic records."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if not stripped.startswith("#") and "\t" in stripped:
+            cols = stripped.split("\t")
+            if len(cols) >= 5 and "," not in cols[4]:
+                # biallelic only (MR precondition)
+                try:
+                    pos = int(cols[1])
+                except ValueError:
+                    result.append(line)
+                    continue
+                new_ref, new_alt, new_pos = trim_common_affixes(
+                    cols[3], cols[4], pos,
+                )
+                cols[1] = str(new_pos)
+                cols[3] = new_ref
+                cols[4] = new_alt
+                new_line = "\t".join(cols)
+                result.append(new_line + "\n" if line.endswith("\n") else new_line)
+                continue
+        result.append(line)
+    return result
+
+
+@_register("left_align_indel")
+def _dispatch_left_align_indel(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Record-level: conservative left-shift of indels in homopolymer runs."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if not stripped.startswith("#") and "\t" in stripped:
+            cols = stripped.split("\t")
+            if len(cols) >= 5 and "," not in cols[4]:
+                try:
+                    pos = int(cols[1])
+                except ValueError:
+                    result.append(line)
+                    continue
+                new_ref, new_alt, new_pos = left_align_indel(
+                    cols[3], cols[4], pos,
+                )
+                cols[1] = str(new_pos)
+                cols[3] = new_ref
+                cols[4] = new_alt
+                new_line = "\t".join(cols)
+                result.append(new_line + "\n" if line.endswith("\n") else new_line)
+                continue
+        result.append(line)
+    return result
+
+
+@_register("split_multi_allelic")
+def _dispatch_split_multi_allelic(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Record-level: split multi-ALT records into per-ALT records.
+
+    Z3 guard: after split, each per-ALT record must have exactly 1 ALT
+    and Number=A INFO arrays of length 1. Violations discard the sample
+    inside Hypothesis @given context.
+    """
+    # Parse header to build info_meta / format_meta dicts
+    info_meta: dict = {}
+    format_meta: dict = {}
+    for line in lines:
+        s = line.rstrip("\n\r")
+        if s.startswith("##INFO=<") or s.startswith("##FORMAT=<"):
+            m = re.match(
+                r"##(INFO|FORMAT)=<([^>]*)>", s,
+            )
+            if not m:
+                continue
+            bucket = info_meta if m.group(1) == "INFO" else format_meta
+            fields = _parse_kv(m.group(2))
+            fid = fields.get("ID", "")
+            if fid:
+                bucket[fid] = fields
+        elif s.startswith("#CHROM"):
+            break
+
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if not stripped.startswith("#") and "\t" in stripped:
+            cols = stripped.split("\t")
+            if len(cols) >= 5 and "," in cols[4]:
+                new_records = split_multi_allelic(cols, info_meta, format_meta)
+                # Z3 guard: verify each produced record has alt_count == 1
+                # and that Number=A INFO fields are length 1.
+                for nr in new_records:
+                    if len(nr) >= 8 and "," in nr[4]:
+                        logger.debug("split_multi_allelic Z3: ALT still comma-joined")
+                        _h_assume(False)
+                    for key_val in (nr[7] or "").split(";"):
+                        if "=" not in key_val:
+                            continue
+                        k, v = key_val.split("=", 1)
+                        if (info_meta.get(k) or {}).get("Number") == "A":
+                            vals = v.split(",")
+                            if not check_info_number_a(1, vals):
+                                logger.debug(
+                                    "split_multi_allelic Z3: Number=A mismatch "
+                                    "on key %s: %d vals for 1 ALT",
+                                    k, len(vals),
+                                )
+                                _h_assume(False)
+                for nr in new_records:
+                    new_line = "\t".join(nr)
+                    result.append(
+                        new_line + "\n" if line.endswith("\n") else new_line
+                    )
+                continue
+        result.append(line)
+    return result
+
+
+# ===========================================================================
+# VCF BCF-codec transforms (whole-file, delegate to pysam/Docker)
+# ===========================================================================
+
+@_register("vcf_bcf_round_trip")
+def _dispatch_vcf_bcf_round_trip(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """File-level: VCF -> BCF -> VCF via pysam or Docker harness."""
+    return vcf_bcf_round_trip(lines, seed=seed)
+
+
+@_register("permute_bcf_header_dictionary")
+def _dispatch_permute_bcf_header_dictionary(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """File-level: shuffle BCF header dictionary order, then round-trip."""
+    return permute_bcf_header_dictionary(lines, seed=seed)
+
+
+# ===========================================================================
+# VCF CSQ/ANN record-level permutation
+# ===========================================================================
+
+@_register("permute_csq_annotations")
+def _dispatch_permute_csq_annotations(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Record-level: permute comma-separated CSQ/ANN records in INFO.
+
+    Detects whether the header declares CSQ or ANN, then applies the
+    record-level permutation to the matching key in each data line's
+    INFO column. Pipe-delimited sub-fields are preserved verbatim per
+    the ##INFO Format description.
+    """
+    has_csq = False
+    has_ann = False
+    for line in lines:
+        s = line.rstrip("\n\r")
+        if s.startswith("##INFO=<ID=CSQ"):
+            has_csq = True
+        elif s.startswith("##INFO=<ID=ANN"):
+            has_ann = True
+        elif s.startswith("#CHROM"):
+            break
+
+    if not (has_csq or has_ann):
+        return list(lines)  # precondition not met — no-op
+
+    rng = random.Random(seed)
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if not stripped.startswith("#") and "\t" in stripped:
+            cols = stripped.split("\t")
+            if len(cols) >= 8 and cols[7] != ".":
+                child_seed = rng.randint(0, 2**31)
+                new_info = cols[7]
+                if has_csq and "CSQ=" in new_info:
+                    new_info = permute_csq_annotations(
+                        new_info, key="CSQ", seed=child_seed,
+                    )
+                if has_ann and "ANN=" in new_info:
+                    new_info = permute_csq_annotations(
+                        new_info, key="ANN", seed=child_seed ^ 0xABCD,
+                    )
+                cols[7] = new_info
+                new_line = "\t".join(cols)
+                result.append(new_line + "\n" if line.endswith("\n") else new_line)
+                continue
+        result.append(line)
     return result

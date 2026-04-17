@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-29.1-blue?logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-201%20passing-brightgreen?logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-225%20passing-brightgreen?logo=pytest" />
   <img src="https://img.shields.io/badge/SUTs-4%20parsers-purple" />
   <img src="https://img.shields.io/badge/License-MIT-green" />
 </p>
@@ -83,6 +83,17 @@ py -3.12 -m test_engine list-parsers
 # Expected: htsjdk AVAILABLE, pysam AVAILABLE, biopython AVAILABLE, seqan3 AVAILABLE, reference AVAILABLE
 ```
 
+### Populate the Seed Corpus
+
+```bash
+# Downloads ~30 curated real-world VCF seeds from htsjdk / bcftools /
+# hts-specs / GATK public test suites into seeds/vcf/ (gitignored).
+# Tier-1 hand-crafted seeds are already in the repo.
+py -3.12 seeds/fetch_real_world.py
+```
+
+See [`seeds/SOURCES.md`](seeds/SOURCES.md) for the full provenance manifest and diversity-axis coverage matrix.
+
 ### Set Up Local LLM (Optional)
 
 ```bash
@@ -116,7 +127,7 @@ py -3.12 biotest.py --config my_config.yaml --verbose
 ### Run Tests
 
 ```bash
-# All 201 tests
+# All 225 tests
 py -3.12 -m pytest tests/ -v --ignore=tests/test_integration.py --ignore=tests/test_golden_retrieval.py
 
 # Specific module
@@ -227,9 +238,9 @@ BioTest/
 |-- mr_engine/                    # Phase B: MR Mining
 |   |-- llm_factory.py            #   Multi-model routing (Ollama/Groq/OpenAI/Gemini/Anthropic)
 |   |-- behavior.py               #   6 BehaviorTarget enums + descriptions
-|   |-- transforms/               #   13 atomic transform functions
-|   |   |-- __init__.py           #     TRANSFORM_REGISTRY + decorator
-|   |   |-- vcf.py                #     9 VCF transforms
+|   |-- transforms/               #   19 atomic transform functions
+|   |   |-- __init__.py           #     TRANSFORM_REGISTRY (decorator + hints + preconditions)
+|   |   |-- vcf.py                #     15 VCF transforms (9 original + 6 new)
 |   |   +-- sam.py                #     4 SAM transforms
 |   |-- agent/                    #   LangChain ReAct Agent
 |   |   |-- tools.py              #     query_spec_database tool
@@ -329,11 +340,11 @@ BioTest/
 
 ---
 
-## The 13 Atomic Transforms
+## The 19 Atomic Transforms
 
-These are the building blocks for metamorphic test generation. Each transform preserves biological semantics while changing textual representation.
+Each transform preserves biological semantics while changing the textual (or binary) representation. Originals (13) cover ordering and CIGAR normalization; the v2 arsenal expansion (6 new) adds variant normalization, BCF codec round-trips, and CSQ/ANN annotation ordering — each backed by published literature (Tan 2015, Danecek & McCarthy 2017, VCF v4.5 §6, Ensembl VEP docs).
 
-### VCF Transforms (9)
+### VCF Transforms (15)
 
 | # | Transform | Scope | Description |
 |:-:|-----------|:-----:|-------------|
@@ -346,17 +357,36 @@ These are the building blocks for metamorphic test generation. Each transform pr
 | 7 | `permute_sample_columns` | File | Shuffle sample columns across header + all data rows |
 | 8 | `shuffle_info_field_kv` | Record | Shuffle semicolon-separated INFO key=value pairs |
 | 9 | `inject_equivalent_missing_values` | Record | Append declared-but-missing FORMAT field (semantic no-op) |
+| 10 | `trim_common_affixes` | Record | Trim shared REF/ALT prefix/suffix (Tan 2015 parsimony) |
+| 11 | `left_align_indel` | Record | Conservative left-shift of indels in homopolymer runs (Tan 2015) |
+| 12 | `split_multi_allelic` | Record | Split multi-ALT record into per-ALT records (bcftools norm) |
+| 13 | `vcf_bcf_round_trip` | File | Round-trip VCF → BCF → VCF via pysam (VCF v4.5 §6) |
+| 14 | `permute_bcf_header_dictionary` | File | Shuffle BCF header dictionary order then round-trip |
+| 15 | `permute_csq_annotations` | Record | Permute CSQ/ANN record order (VEP/SnpEff) — RECORDS only, never sub-fields |
 
-> Transforms 3-6 form a **compound group** (`alt_permutation`) and must always appear together.
+> Transforms 3–6 form a **compound group** (`alt_permutation`) and must always appear together.
 
 ### SAM Transforms (4)
 
 | # | Transform | Scope | Description |
 |:-:|-----------|:-----:|-------------|
-| 10 | `permute_optional_tag_fields` | Record | Shuffle optional TAG:TYPE:VALUE fields (cols 12+) |
-| 11 | `split_or_merge_adjacent_cigar_ops` | Record | Split `10M` -> `4M6M` or merge `4M6M` -> `10M` |
-| 12 | `reorder_header_records` | Header | Shuffle `@SQ`/`@RG` lines (keep `@HD` first) |
-| 13 | `toggle_cigar_hard_soft_clipping` | Record | Convert H<->S clipping with SEQ/QUAL sync |
+| 16 | `permute_optional_tag_fields` | Record | Shuffle optional TAG:TYPE:VALUE fields (cols 12+) |
+| 17 | `split_or_merge_adjacent_cigar_ops` | Record | Split `10M` -> `4M6M` or merge `4M6M` -> `10M` |
+| 18 | `reorder_header_records` | Header | Shuffle `@SQ`/`@RG` lines (keep `@HD` first) |
+| 19 | `toggle_cigar_hard_soft_clipping` | Record | Convert H<->S clipping with SEQ/QUAL sync |
+
+### Seed corpus
+
+The test corpus has two tiers:
+
+- **Tier-1 hand-crafted** (3 files, committed): `seeds/vcf/minimal_*.vcf`, `spec_example.vcf`, matching SAM files.
+- **Tier-2 real-world** (~30 files, gitignored, fetched on demand): curated from htsjdk, bcftools, hts-specs, and GATK public test suites. Full provenance + diversity-axis matrix in [`seeds/SOURCES.md`](seeds/SOURCES.md).
+
+Populate Tier-2 with:
+```
+py -3.12 seeds/fetch_real_world.py
+```
+Per-file cap: 500 KB. Preflight check requires ≥15 VCF seeds before Phase D.
 
 ---
 

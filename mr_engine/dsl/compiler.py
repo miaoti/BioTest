@@ -70,15 +70,29 @@ def compile_mr_output(
             raw_json=raw_text,
         )
 
-    # Step 2: Parse JSON
+    # Step 2: Parse JSON. Local LLMs (especially qwen3-coder) sometimes emit
+    # JSON strings containing raw control characters (e.g., an unescaped
+    # newline inside a "quote" field). strict=False relaxes the parser to
+    # accept those; we then re-validate structure in subsequent steps.
     try:
-        data = json.loads(json_str)
+        data = json.loads(json_str, strict=False)
     except json.JSONDecodeError as e:
-        return CompilationResult(
-            success=False,
-            error_detail=f"JSON parse error at position {e.pos}: {e.msg}",
-            raw_json=json_str,
-        )
+        # Last-resort cleanup: strip unescaped control characters from
+        # string literals so malformed quotes don't kill an otherwise
+        # valid MR array.
+        cleaned = _strip_raw_control_chars_in_strings(json_str)
+        try:
+            data = json.loads(cleaned, strict=False)
+            logger.warning(
+                "Recovered JSON via control-char cleanup (%d -> %d chars)",
+                len(json_str), len(cleaned),
+            )
+        except json.JSONDecodeError as e2:
+            return CompilationResult(
+                success=False,
+                error_detail=f"JSON parse error at position {e2.pos}: {e2.msg}",
+                raw_json=json_str,
+            )
 
     # Normalize: accept array or {"relations": [...]}
     if isinstance(data, list):
@@ -215,6 +229,40 @@ def _hydrate_evidence(
         ))
 
     return hydrated, errors
+
+
+def _strip_raw_control_chars_in_strings(s: str) -> str:
+    """Replace raw control chars inside JSON string literals with spaces.
+
+    Walks the string tracking whether we're inside a double-quoted literal
+    (respecting backslash escapes). Inside such a literal, raw control
+    bytes (tabs, newlines, carriage returns, etc.) are replaced with a
+    single space so json.loads can complete. Outside literals, whitespace
+    is preserved as-is.
+    """
+    out = []
+    in_str = False
+    escape = False
+    for ch in s:
+        if in_str:
+            if escape:
+                out.append(ch)
+                escape = False
+            elif ch == "\\":
+                out.append(ch)
+                escape = True
+            elif ch == '"':
+                out.append(ch)
+                in_str = False
+            elif ord(ch) < 0x20:
+                out.append(" ")  # kill raw control char
+            else:
+                out.append(ch)
+        else:
+            out.append(ch)
+            if ch == '"':
+                in_str = True
+    return "".join(out)
 
 
 def _extract_json(text: str) -> str | None:

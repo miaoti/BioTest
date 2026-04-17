@@ -131,9 +131,16 @@ def check_seeds() -> CheckResult:
     vcf_count = len(list(vcf_dir.glob("*.vcf"))) if vcf_dir.exists() else 0
     sam_count = len(list(sam_dir.glob("*.sam"))) if sam_dir.exists() else 0
     total = vcf_count + sam_count
-    if total < 6:
-        return CheckResult("Seed corpus", False, f"{vcf_count} VCF + {sam_count} SAM",
-                           "Download: `py -3.12 seeds/fetch_real_world.py`")
+    # Bar: need the 3 hand-crafted Tier-1 VCFs + at least a handful of
+    # Tier-2 real-world VCFs to exercise meaningful diversity. Bumped
+    # from the old ">= 6" threshold after the corpus expansion.
+    if vcf_count < 15:
+        return CheckResult(
+            "Seed corpus",
+            False,
+            f"{vcf_count} VCF + {sam_count} SAM (need >=15 VCF)",
+            "Run: `py -3.12 seeds/fetch_real_world.py` to populate Tier-2 seeds",
+        )
     return CheckResult("Seed corpus", True,
                        f"{vcf_count} VCF + {sam_count} SAM seeds")
 

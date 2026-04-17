@@ -36,6 +36,7 @@ def evaluate_quarantine(
     det_tracker: DETTracker,
     registry_data: dict[str, Any],
     crash_threshold: float = 0.5,
+    primary_target: str = "",
 ) -> list[QuarantineDecision]:
     """
     Evaluate each enforced MR for potential quarantine demotion.
@@ -43,36 +44,58 @@ def evaluate_quarantine(
     An MR is demoted if its failure rate exceeds crash_threshold.
     Failure rate = (tests where passed=False) / total_tests for that MR.
 
+    Per Flow.md Phase D §1.3, when primary_target is set the decision is
+    driven ONLY by events involving the primary target (metamorphic
+    failures on that SUT, or differential failures where it crashed).
+    Auxiliary SUT failures are reported in bug reports but do NOT demote
+    MRs — a good MR that merely exposes a biopython bug shouldn't be
+    removed from the htsjdk-focused feedback loop.
+
     Args:
-        det_tracker: DETTracker with recorded events.
+        det_tracker: DETTracker with recorded events from Phase C.
         registry_data: Loaded registry JSON dict.
         crash_threshold: Fraction of failures that triggers demotion.
+        primary_target: If set (e.g. "htsjdk"), restrict counting to
+                        events where this SUT is among the parser_names
+                        and the failure involves that SUT.
 
     Returns:
         List of quarantine decisions (one per enforced MR).
     """
     decisions = []
-    by_mr = det_tracker.det_rate_by_mr()
+
+    # Filter events to primary-target-relevant ones when primary_target set.
+    if primary_target:
+        relevant_events = [
+            e for e in det_tracker.events
+            if primary_target in (e.parser_names or [])
+        ]
+    else:
+        relevant_events = list(det_tracker.events)
+
+    # Recompute per-MR stats over the filtered event set.
+    stats_by_mr: dict[str, dict[str, int]] = {}
+    for e in relevant_events:
+        bucket = stats_by_mr.setdefault(e.mr_id, {"total": 0, "failures": 0, "crashes": 0})
+        bucket["total"] += 1
+        if not e.passed:
+            bucket["failures"] += 1
+            if getattr(e, "failure_type", None) == "crash":
+                bucket["crashes"] += 1
 
     for mr_dict in registry_data.get("enforced", []):
         mr_id = mr_dict.get("mr_id", "")
         mr_name = mr_dict.get("mr_name", "")
-        stats = by_mr.get(mr_id, {})
+        stats = stats_by_mr.get(mr_id, {"total": 0, "failures": 0, "crashes": 0})
 
-        total = stats.get("total", 0)
-        failures = stats.get("failures", 0)
-
-        # Count crashes specifically (events with failure_type="crash")
-        crash_count = sum(
-            1 for e in det_tracker.events
-            if e.mr_id == mr_id
-            and not e.passed
-            and getattr(e, "failure_type", None) == "crash"
-        )
+        total = stats["total"]
+        failures = stats["failures"]
+        crash_count = stats["crashes"]
 
         failure_rate = failures / total if total > 0 else 0.0
         demoted = total > 0 and failure_rate > crash_threshold
 
+        scope_label = f"primary={primary_target}" if primary_target else "all SUTs"
         decisions.append(QuarantineDecision(
             mr_id=mr_id,
             mr_name=mr_name,
@@ -82,9 +105,9 @@ def evaluate_quarantine(
             failure_rate=failure_rate,
             demoted=demoted,
             reason=(
-                f"failure_rate={failure_rate:.2f} > {crash_threshold}"
+                f"failure_rate={failure_rate:.2f} > {crash_threshold} ({scope_label})"
                 if demoted
-                else f"failure_rate={failure_rate:.2f} <= {crash_threshold}"
+                else f"failure_rate={failure_rate:.2f} <= {crash_threshold} ({scope_label})"
             ),
         ))
 

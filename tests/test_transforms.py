@@ -20,6 +20,10 @@ from mr_engine.transforms.vcf import (
     remap_gt,
     shuffle_info_field_kv,
     shuffle_meta_lines,
+    trim_common_affixes,
+    left_align_indel,
+    split_multi_allelic,
+    permute_csq_annotations,
 )
 from mr_engine.transforms.sam import (
     permute_optional_tag_fields,
@@ -34,9 +38,12 @@ from mr_engine.transforms.sam import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_13_transforms(self):
+    def test_whitelist_has_19_transforms(self):
+        # 13 originals + 6 new (trim_common_affixes, left_align_indel,
+        # split_multi_allelic, vcf_bcf_round_trip,
+        # permute_bcf_header_dictionary, permute_csq_annotations)
         wl = get_whitelist()
-        assert len(wl) == 13
+        assert len(wl) == 19, f"Expected 19 transforms, got {len(wl)}: {wl}"
 
     def test_all_transforms_are_callable(self):
         for name, meta in TRANSFORM_REGISTRY.items():
@@ -311,6 +318,121 @@ class TestToggleClipping:
         cigar, seq, qual = toggle_cigar_hard_soft_clipping("10M", "ACGTACGTAC", "IIIIIIIIII")
         assert cigar == "10M"
         assert seq == "ACGTACGTAC"
+
+
+# ===========================================================================
+# Variant normalization (Tan 2015)
+# ===========================================================================
+
+class TestTrimCommonAffixes:
+    def test_suffix_trim(self):
+        # REF=AA, ALT=AC at POS=100 -> REF=A, ALT=C at POS=101
+        assert trim_common_affixes("AA", "AC", 100) == ("A", "C", 101)
+
+    def test_prefix_trim(self):
+        # REF=AT, ALT=GT share suffix -> trimmed REF=A, ALT=G, POS unchanged
+        assert trim_common_affixes("AT", "GT", 100) == ("A", "G", 100)
+
+    def test_snv_unchanged(self):
+        # Single-base SNV has no shared affix, returns unchanged
+        assert trim_common_affixes("A", "C", 100) == ("A", "C", 100)
+
+    def test_deterministic(self):
+        # Pure function — same input always gives same output
+        r1 = trim_common_affixes("AAAA", "AATA", 50)
+        r2 = trim_common_affixes("AAAA", "AATA", 50)
+        assert r1 == r2
+
+
+class TestLeftAlignIndel:
+    def test_homopolymer_shift(self):
+        # REF=AAA, ALT=AA at POS=5 -> shift POS to 4 (homopolymer run)
+        new_ref, new_alt, new_pos = left_align_indel("AAA", "AA", 5)
+        assert new_pos == 4
+        assert new_ref == "AAA"
+        assert new_alt == "AA"
+
+    def test_snv_no_shift(self):
+        # Equal-length (SNV) is never shifted
+        assert left_align_indel("A", "T", 100) == ("A", "T", 100)
+
+    def test_pos_boundary(self):
+        # POS=1 cannot shift left
+        assert left_align_indel("AAA", "AA", 1) == ("AAA", "AA", 1)
+
+    def test_non_homopolymer_no_shift(self):
+        # REF=AT, ALT=ATT — REF[0]!=REF[-1], not safe to shift
+        assert left_align_indel("AT", "ATT", 5) == ("AT", "ATT", 5)
+
+
+class TestSplitMultiAllelic:
+    def test_two_alts_split(self):
+        # ALT=T,C -> two records, each with one ALT
+        rec = "chr1\t100\t.\tA\tT,C\t50\tPASS\tAC=1,2;AN=4\tGT\t0/1\t1/2".split("\t")
+        info_meta = {"AC": {"Number": "A"}, "AN": {"Number": "1"}}
+        fmt_meta = {"GT": {"Number": "1"}}
+        result = split_multi_allelic(rec, info_meta, fmt_meta)
+        assert len(result) == 2
+        assert result[0][4] == "T"
+        assert result[1][4] == "C"
+        # Number=A field AC split: T gets 1, C gets 2
+        assert "AC=1" in result[0][7]
+        assert "AC=2" in result[1][7]
+        # Number=1 field AN preserved in both
+        assert "AN=4" in result[0][7]
+        assert "AN=4" in result[1][7]
+
+    def test_gt_remap_preserves_ref(self):
+        # Sample 0/2 in multi-ALT -> "0/." in ALT=T record, "0/1" in ALT=C record
+        rec = "chr1\t100\t.\tA\tT,C\t50\tPASS\t.\tGT\t0/2\t1/1".split("\t")
+        info_meta = {}
+        fmt_meta = {"GT": {"Number": "1"}}
+        result = split_multi_allelic(rec, info_meta, fmt_meta)
+        # First sample (0/2): in T record becomes 0/., in C record becomes 0/1
+        assert result[0][9] == "0/."    # T record, 0=REF stays, 2 is not this ALT
+        assert result[1][9] == "0/1"    # C record, 2 becomes 1
+
+    def test_single_alt_passthrough(self):
+        # Single ALT returns one record unchanged
+        rec = "chr1\t100\t.\tA\tT\t50\tPASS\tAC=1\tGT\t0/1".split("\t")
+        result = split_multi_allelic(rec, {"AC": {"Number": "A"}}, {"GT": {}})
+        assert len(result) == 1
+
+
+# ===========================================================================
+# CSQ/ANN annotation ordering
+# ===========================================================================
+
+class TestPermuteCsqAnnotations:
+    INFO = "DP=10;AF=0.5;CSQ=A|gene1|syn,T|gene2|missense,G|gene3|stop;AC=1"
+
+    def test_deterministic(self):
+        r1 = permute_csq_annotations(self.INFO, seed=42)
+        r2 = permute_csq_annotations(self.INFO, seed=42)
+        assert r1 == r2
+
+    def test_preserves_pipe_count(self):
+        # Each CSQ record's sub-field layout must stay intact
+        result = permute_csq_annotations(self.INFO, seed=7)
+        csq = [c for c in result.split(";") if c.startswith("CSQ=")][0]
+        records = csq[len("CSQ="):].split(",")
+        assert all(r.count("|") == 2 for r in records)
+
+    def test_non_csq_fields_preserved(self):
+        # DP, AF, AC are not touched
+        result = permute_csq_annotations(self.INFO, seed=0)
+        parts = {p.split("=")[0]: p for p in result.split(";")}
+        assert parts["DP"] == "DP=10"
+        assert parts["AF"] == "AF=0.5"
+        assert parts["AC"] == "AC=1"
+
+    def test_empty_info_unchanged(self):
+        assert permute_csq_annotations(".") == "."
+        assert permute_csq_annotations("") == ""
+
+    def test_single_record_unchanged(self):
+        # Only one comma-less record — nothing to permute
+        assert permute_csq_annotations("CSQ=A|x|y") == "CSQ=A|x|y"
 
 
 # ===========================================================================

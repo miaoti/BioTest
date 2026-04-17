@@ -1,97 +1,109 @@
 {
-  "enforced": [
-    {
-      "mr_id": "d42536fded28",
-      "mr_name": "BOM at Start of SAM File",
-      "scope": "SAM.header",
-      "preconditions": [
-        "A SAM file that begins with a byte order mark (BOM)"
-      ],
-      "transform_steps": [
-        "permute_optional_tag_fields"
-      ],
-      "oracle": "A compliant SAM parser must reject or flag the file due to the presence of a BOM at the start of the file, as per the specification rule that SAM files must not begin with a byte order mark.",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p3",
-          "quote": "SAM file contents are 7-bit US-ASCII, except for certain field values as individually specified which may contain other Unicode characters encoded in UTF-8.\nAlternatively and equivalently, SAM files are encoded in UTF-8 but non-ASCII characters are permitted only within certain field values as explicitly specified in the descriptions of those fields.%\nHence in particular SAM files must not begin with a byte order mark~(BOM) and lines of text are delimited by ASCII line terminator characters only.",
-          "rule_severity": "CRITICAL",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": []
-    },
-    {
-      "mr_id": "31e4b85ca55b",
-      "mr_name": "INFO field key-value pair ordering invariance",
-      "scope": "VCF.record",
-      "preconditions": [
-        "The VCF file contains INFO fields with semicolon-separated key-value pairs"
-      ],
-      "transform_steps": [
-        "shuffle_info_field_kv"
-      ],
-      "oracle": "The biological meaning and interpretation of the INFO field values must remain unchanged after shuffling the order of key-value pairs",
-      "evidence": [
-        {
-          "chunk_id": "VCFv4.5.tex::The VCF specification::p11",
-          "quote": "[VCF v4.5 — The VCF specification] Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
-          "rule_severity": "CRITICAL",
-          "section_id": "The VCF specification"
-        }
-      ],
-      "ambiguity_flags": []
-    }
-  ],
+  "enforced": [],
   "quarantine": [
     {
-      "mr_id": "97a5283cec91",
-      "mr_name": "Invalid Character in Read Name Field",
-      "scope": "SAM.record",
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary ordering invariance",
+      "scope": "VCF.header",
       "preconditions": [
-        "A SAM record with a valid read name field (column 1) that contains an invalid character such as '@'"
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
       ],
       "transform_steps": [
-        "permute_optional_tag_fields"
+        "permute_bcf_header_dictionary"
       ],
-      "oracle": "A compliant SAM parser must reject or flag the record due to the presence of the invalid '@' character in the read name field, as per the specification rule that read names may contain any printable ASCII characters in the range \"[!-~]\" apart from '@'.",
+      "oracle": "The parser must produce identical canonical output regardless of the order of dictionary entries in BCF header lines.",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p21",
-          "quote": "Query or read names may contain any printable ASCII characters in the range \"[!-~]\" apart from `\"@\"', so that SAM alignment lines can be easily distinguished from header lines.",
+          "chunk_id": "VCFv4.5.tex::BCF2 records::p1422",
+          "quote": "It is recommended to respect the ordering as specified in the input VCF/BCF2 file, but parsers should not rely on a specific ordering.",
           "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
+          "section_id": "BCF2 records"
         }
       ],
       "ambiguity_flags": []
     },
     {
-      "mr_id": "8e42aa5acf0a",
-      "mr_name": "SAM Coordinate System Invariance",
-      "scope": "SAM.record",
+      "mr_id": "2af5800ea12a",
+      "mr_name": "Permutation of ALT alleles and associated fields",
+      "scope": "VCF.record",
       "preconditions": [
-        "The SAM file contains alignment records with POS field values",
-        "The POS field represents 1-based genomic coordinates as per SAM specification"
+        "alt_count>=2",
+        "info_has_key=AC OR info_has_key=AF",
+        "format_has_key=GT"
       ],
       "transform_steps": [
-        "toggle_cigar_hard_soft_clipping",
-        "split_or_merge_adjacent_cigar_ops",
-        "permute_optional_tag_fields",
-        "reorder_header_records"
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
       ],
-      "oracle": "The POS field values in SAM alignment records must remain consistent with 1-based coordinate system regardless of CIGAR operation transformations or field reordering, as the POS field is defined as 1-based in the SAM specification",
+      "oracle": "The allele count (AC) and allele frequency (AF) values must remain consistent with the new ALT ordering, and GT field values must be remapped to reflect the new ALT indices while preserving the reference allele (0) semantics.",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p16",
-          "quote": "[SAM v1 — The SAM Format Specification] [1-based coordinate system] A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is $[3,7]$. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
+          "chunk_id": "VCFv4.5.tex::Data lines::p226",
+          "quote": "AC\t\t    A\t\t    Integer\t    Allele count in genotypes, for each ALT allele, in the same order as listed",
           "rule_severity": "INFORMATIONAL",
-          "section_id": "The SAM Format Specification"
+          "section_id": "Data lines"
         },
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p17",
-          "quote": "[SAM v1 — The SAM Format Specification] [0-based coordinate system] A coordinate system where the first base of a sequence is zero. In this coordinate system, a region is specified by a half-closed-half-open interval. For example, the region between the 3rd and the 7th bases inclusive is $[2,7)$. The BAM format uses the 0-based coordinate system.",
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p409",
+          "quote": "AC\t\t    A\t\t    Integer\t    Allele count in genotypes, for each ALT allele, in the same order as listed",
           "rule_severity": "INFORMATIONAL",
-          "section_id": "The SAM Format Specification"
+          "section_id": "Fixed fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p413",
+          "quote": "AF\t\t    A\t\t    Float\t\t    Allele frequency for each ALT allele in the same order as listed (estimated from primary data, not called genotypes)",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Fixed fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p448",
+          "quote": "LAA\t\t    .\t\t\t    Integer\t    1-based indices into ALT, indicating which alleles are relevant (local) for the current sample",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Genotype fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p265",
+          "quote": "LAA\t\t    .\t\t\t    Integer\t    1-based indices into ALT, indicating which alleles are relevant (local) for the current sample",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "BCF round-trip preserves string encoding",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "String values in BCF2 records maintain their type=7 encoding with appropriate length after round-trip, and single characters are represented as strings with length=1",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1322",
+          "quote": "In BCF2 strings are type=7 with an appropriate length. Single characters are represented as strings with length=1. Type codes 4,6,8–15 are reserved for future use.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Type encoding::p1469",
+          "quote": "In BCF2 strings are type=7 with an appropriate length. Single characters are represented as strings with length=1. Type codes 4,6,8–15 are reserved for future use.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Type encoding"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::BCF2 records::p1428",
+          "quote": "In BCF2 strings are type=7 with an appropriate length. Single characters are represented as strings with length=1. Type codes 4,6,8–15 are reserved for future use.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "BCF2 records"
         }
       ],
       "ambiguity_flags": []
@@ -101,44 +113,48 @@
       "mr_name": "VCF Header Meta-lines Order Invariance",
       "scope": "VCF.header",
       "preconditions": [
-        "VCF file contains meta-information lines",
-        "##fileformat line is present at the start"
+        "VCF file contains meta-information lines (##INFO, ##FORMAT, ##FILTER, etc.)",
+        "The ##fileformat line is present and correctly formatted"
       ],
       "transform_steps": [
         "shuffle_meta_lines"
       ],
-      "oracle": "The biological meaning and validity of the VCF file must remain unchanged after reordering meta-information lines",
+      "oracle": "The biological meaning and semantic interpretation of the VCF file must remain unchanged after reordering the meta-information lines.",
       "evidence": [
         {
-          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
-          "quote": "Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
-          "rule_severity": "CRITICAL",
-          "section_id": "Meta-information lines"
-        },
-        {
           "chunk_id": "VCFv4.5.tex::The VCF specification::p12",
-          "quote": "Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
+          "quote": "[VCF v4.5 — The VCF specification] Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
           "rule_severity": "CRITICAL",
           "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "[VCF v4.5 — Meta-information lines] Meta-information lines are optional, but if they are present then they must be completely well-formed.\nOther than |##fileformat|, they may appear in any order.\nNote that BCF, the binary counterpart of VCF, requires that all entries are present.\nIt is recommended to include meta-information lines describing the entries used in the body of the VCF file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
         }
       ],
       "ambiguity_flags": []
     },
     {
       "mr_id": "bc124d1e4573",
-      "mr_name": "INFO field structure key-value ordering invariance",
+      "mr_name": "Header field ordering invariance",
       "scope": "VCF.header",
-      "preconditions": [
-        "The VCF file contains ##INFO meta-lines with key-value pairs"
-      ],
+      "preconditions": [],
       "transform_steps": [
         "permute_structured_kv_order"
       ],
-      "oracle": "The biological meaning and interpretation of the INFO field definitions must remain unchanged after reordering key-value pairs within ##INFO lines",
+      "oracle": "The parser must produce semantically equivalent output regardless of the order of key-value pairs within structured meta-information lines.",
       "evidence": [
         {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p121",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        },
+        {
           "chunk_id": "VCFv4.5.tex::The VCF specification::p11",
-          "quote": "[VCF v4.5 — The VCF specification] Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
           "rule_severity": "CRITICAL",
           "section_id": "The VCF specification"
         }
@@ -147,8 +163,8 @@
     }
   ],
   "summary": {
-    "enforced_count": 2,
-    "quarantine_count": 4,
-    "total": 6
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
   }
 }

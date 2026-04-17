@@ -112,15 +112,23 @@ Target  : {behavior_target}
 {behavior_description}
 
 =========================================================
-RETRIEVAL RULES
+RETRIEVAL RULES — STAY BOUNDED
 =========================================================
 1. Call `query_spec_database` with `format_filter="{spec_format}"`.
 2. Trust ONLY results where `above_threshold` is false (distance < 0.39).
 3. If no results pass the threshold, rephrase your query and retry.
-4. Keep querying until you have at least one CRITICAL-severity chunk per MR.
-5. Copy the `chunk_id` VERBATIM from the result.  Real example:
+4. **Hard cap: at most 5 tool calls total, then produce your JSON output.**
+   Each call should ask a DIFFERENT question — don't repeat the same query.
+5. Prefer CRITICAL-severity chunks; if none appear after 5 calls, return
+   either the best ADVISORY-backed MR you have OR an empty array `[]`.
+   NEVER keep querying forever — LangGraph will abort the run.
+6. Copy the `chunk_id` VERBATIM from the result.  Real example:
        "VCFv4.5.tex::Meta-information lines::p122"
    Do NOT paraphrase, abbreviate, or invent chunk_ids.
+
+STOP CONDITION (MUST FOLLOW): after 3-5 tool calls, emit the JSON array
+and do NOT call the tool again. An empty array `[]` is a valid answer if
+no MR passes the constraints — that's better than looping forever.
 
 =========================================================
 ATOMIC TRANSFORMS MENU (WHITELIST)
@@ -153,6 +161,25 @@ Return ONLY a raw JSON array — no prose, no markdown fences:
 ]
 
 =========================================================
+PRECONDITION DISCIPLINE
+=========================================================
+Some transforms only apply when the seed satisfies specific conditions
+(see each entry's "Preconditions:" line in the menu above). Do NOT
+propose a transform whose precondition is guaranteed to fail on the
+current corpus. Examples of common gotchas:
+  - permute_csq_annotations requires INFO to contain CSQ or ANN.
+  - split_multi_allelic requires ALT with 2+ alleles (comma-separated).
+  - vcf_bcf_round_trip / permute_bcf_header_dictionary require the SUT
+    chain to include a BCF-capable codec (pysam or htsjdk).
+  - left_align_indel conservatively activates only when REF[0]==REF[-1]
+    and len(REF)!=len(ALT) (indel in a homopolymer context).
+  - trim_common_affixes requires REF/ALT to share a common prefix or
+    suffix base (e.g., REF=AA,ALT=AC).
+Match the transform's precondition to the Evidence and to the seed
+corpus. Propose an empty array [] rather than a transform that will
+trivially no-op on every seed.
+
+=========================================================
 CRITICAL RULES
 =========================================================
 - `transform_steps` values MUST match whitelist names exactly (case-sensitive).
@@ -179,6 +206,20 @@ def _escape_menu(text: str) -> str:
     return text.replace("{", "{{").replace("}", "}}")
 
 
+def _render_hint_and_preconditions(
+    meta: TransformMeta, indent: str
+) -> list[str]:
+    """Render the optional contextual_hint and preconditions lines."""
+    out: list[str] = []
+    if meta.contextual_hint:
+        hint = f"Use when: {meta.contextual_hint}"
+        wrapped = textwrap.fill(hint, width=78 - len(indent))
+        out.extend(indent + ln for ln in wrapped.splitlines())
+    if meta.preconditions:
+        out.append(indent + "Preconditions: " + ", ".join(meta.preconditions))
+    return out
+
+
 def _render_compound(members: list[tuple[str, TransformMeta]]) -> str:
     """Render the compound ALT-permutation group as an indented block."""
     lines: list[str] = [f"  {COMPOUND_HEADER}"]
@@ -187,6 +228,7 @@ def _render_compound(members: list[tuple[str, TransformMeta]]) -> str:
         wrapped = textwrap.fill(meta.description, width=68)
         # 8-space indent under the function name
         lines.append("\n".join("        " + ln for ln in wrapped.splitlines()))
+        lines.extend(_render_hint_and_preconditions(meta, indent="        "))
     lines.append(
         "      NOTE: ALL FOUR names must appear in transform_steps together."
     )
@@ -197,7 +239,11 @@ def _render_single(name: str, meta: TransformMeta) -> str:
     """Render one standalone transform as a name + indented description."""
     wrapped = textwrap.fill(meta.description, width=70)
     desc = "\n".join("      " + ln for ln in wrapped.splitlines())
-    return f"  [{meta.format}] {name}\n{desc}"
+    extra_lines = _render_hint_and_preconditions(meta, indent="      ")
+    out = f"  [{meta.format}] {name}\n{desc}"
+    if extra_lines:
+        out += "\n" + "\n".join(extra_lines)
+    return out
 
 
 def build_transforms_menu(spec_format: str | None = None) -> str:

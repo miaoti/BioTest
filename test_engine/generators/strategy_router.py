@@ -29,6 +29,12 @@ def _build_map() -> dict[str, Callable]:
         st_permute_sample_columns,
         st_alt_permutation,
         st_inject_missing_values,
+        st_trim_common_affixes,
+        st_left_align_indel,
+        st_split_multi_allelic,
+        st_vcf_bcf_round_trip,
+        st_permute_bcf_header_dictionary,
+        st_permute_csq_annotations,
     )
     from .sam_strategies import (
         st_permute_optional_tags,
@@ -50,6 +56,18 @@ def _build_map() -> dict[str, Callable]:
         "permute_ALT": st_alt_permutation,
         "remap_GT": st_alt_permutation,
         "permute_Number_A_R_fields": st_alt_permutation,
+
+        # VCF variant normalization (Tan 2015)
+        "trim_common_affixes": st_trim_common_affixes,
+        "left_align_indel": st_left_align_indel,
+        "split_multi_allelic": st_split_multi_allelic,
+
+        # VCF BCF codec transforms (VCF v4.5 §6)
+        "vcf_bcf_round_trip": st_vcf_bcf_round_trip,
+        "permute_bcf_header_dictionary": st_permute_bcf_header_dictionary,
+
+        # VCF CSQ/ANN annotation ordering (VEP/SnpEff)
+        "permute_csq_annotations": st_permute_csq_annotations,
 
         # SAM transforms
         "permute_optional_tag_fields": st_permute_optional_tags,
