@@ -62,6 +62,65 @@ from mr_engine.transforms import TRANSFORM_REGISTRY, TransformMeta, get_whitelis
 
 
 # ---------------------------------------------------------------------------
+# Runtime-gated preconditions
+# ---------------------------------------------------------------------------
+#
+# Some transform preconditions describe RUNTIME capabilities (an external
+# binary must exist, a SUT must implement a specific method, etc). When
+# the current environment doesn't satisfy them, the transform would
+# silently no-op if the LLM picked it — wasting an MR slot. We filter
+# those transforms OUT of the prompt menu entirely, so the LLM never
+# proposes them in the first place.
+#
+# Other preconditions (e.g. "info_has_key=CSQ", "alt_count>=2") are
+# SAMPLE-level: they describe what the input file must look like for
+# the transform to make sense. Those stay in the menu as advisory
+# "Preconditions:" lines — the LLM uses them as guidance, they're not
+# programmatically filtered.
+#
+# To add a new runtime-gated precondition: (a) put its name here, and
+# (b) ensure the capability-computation side (biotest.py's
+# _compute_runtime_capabilities) either includes or excludes the tag
+# based on the current runtime state.
+KNOWN_RUNTIME_PRECONDITIONS: frozenset[str] = frozenset({
+    "primary_sut_has_writer",       # Primary target's runner must set
+                                    # supports_write_roundtrip=True. Gates
+                                    # sut_write_roundtrip from appearing
+                                    # in the menu when the primary parser
+                                    # lacks a writer API entirely.
+    "pysam_runtime_reachable",      # Native pysam OR Docker harness OK.
+                                    # Gates vcf_bcf_round_trip, permute_bcf_
+                                    # header_dictionary.
+    "htsjdk_runtime_reachable",     # Java + harness JAR reachable.
+    "bcf_codec_available",          # Either pysam or htsjdk provides BCF.
+})
+
+
+def _transform_passes_runtime_filter(
+    meta: TransformMeta,
+    runtime_capabilities: set[str] | frozenset[str] | None,
+) -> bool:
+    """Return True if `meta` can actually execute in the current runtime.
+
+    When `runtime_capabilities` is None, filtering is disabled (legacy
+    behaviour — every registered transform is offered to the LLM). When
+    a capability set is provided, any transform whose preconditions
+    reference a KNOWN_RUNTIME_PRECONDITIONS tag NOT in the set is
+    filtered out.
+
+    Sample-level preconditions ("alt_count>=2", "info_has_key=CSQ") are
+    invisible to this filter and continue to render as advisory text
+    inside the prompt menu.
+    """
+    if runtime_capabilities is None:
+        return True  # legacy path — no filtering
+    for pc in meta.preconditions:
+        if pc in KNOWN_RUNTIME_PRECONDITIONS and pc not in runtime_capabilities:
+            return False
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Compound-step configuration
 # ---------------------------------------------------------------------------
 
@@ -246,7 +305,10 @@ def _render_single(name: str, meta: TransformMeta) -> str:
     return out
 
 
-def build_transforms_menu(spec_format: str | None = None) -> str:
+def build_transforms_menu(
+    spec_format: str | None = None,
+    runtime_capabilities: set[str] | frozenset[str] | None = None,
+) -> str:
     """
     Generate the human-readable ATOMIC_TRANSFORMS_LIST menu string.
 
@@ -255,6 +317,14 @@ def build_transforms_menu(spec_format: str | None = None) -> str:
     spec_format : str | None
         "VCF" or "SAM" to show only relevant transforms.
         None (default) shows all transforms.
+    runtime_capabilities : set[str] | None
+        When provided, transforms whose preconditions name a known
+        runtime-gated tag (see KNOWN_RUNTIME_PRECONDITIONS) not in this
+        set are filtered OUT of the menu. Used to prevent the LLM from
+        proposing a transform that would silently no-op in the current
+        environment (e.g. sut_write_roundtrip on a primary SUT without
+        `supports_write_roundtrip=True`). None (default) preserves the
+        legacy behaviour of showing all transforms.
 
     Returns
     -------
@@ -264,11 +334,16 @@ def build_transforms_menu(spec_format: str | None = None) -> str:
     """
     compound_members: list[tuple[str, TransformMeta]] = []
     standalone:       list[tuple[str, TransformMeta]] = []
+    filtered_out_names: list[str] = []   # for trailing "valid names" list
 
     for name in sorted(TRANSFORM_REGISTRY.keys()):
         meta = TRANSFORM_REGISTRY[name]
         # Format filter: pass if no filter, or if filter matches the entry
         if spec_format and spec_format not in meta.format:
+            continue
+        # Runtime-capability filter: hide transforms we can't execute.
+        if not _transform_passes_runtime_filter(meta, runtime_capabilities):
+            filtered_out_names.append(name)
             continue
         if meta.group == COMPOUND_GROUP_ID:
             compound_members.append((name, meta))
@@ -287,11 +362,25 @@ def build_transforms_menu(spec_format: str | None = None) -> str:
     for name, meta in standalone:
         sections.append(_render_single(name, meta))
 
-    # Machine-readable name list at the end (copy-paste anchor for the LLM)
-    all_names = ", ".join(get_whitelist())
+    # Machine-readable name list at the end (copy-paste anchor for the LLM).
+    # Only list the SHOWN transforms — a hidden name would be an invitation
+    # to propose it, defeating the filter.
+    visible_names = sorted(
+        [n for n, _ in compound_members] + [n for n, _ in standalone]
+    )
+    all_names = ", ".join(visible_names) if visible_names else "(none available)"
     sections.append(
         f"Valid names (copy exactly, case-sensitive):\n  {all_names}"
     )
+
+    # Log-only hint listing what got filtered out — helps operators
+    # debug "why didn't the LLM pick my new transform?" cases.
+    if filtered_out_names:
+        sections.append(
+            "Note: the following transforms were hidden because the current "
+            "runtime does not satisfy their preconditions: "
+            + ", ".join(sorted(filtered_out_names))
+        )
 
     raw_menu = "\n\n".join(sections)
     return _escape_menu(raw_menu)   # safe to embed in any format template
@@ -301,7 +390,10 @@ def build_transforms_menu(spec_format: str | None = None) -> str:
 # LangChain ChatPromptTemplate integration
 # ---------------------------------------------------------------------------
 
-def build_system_prompt_template(spec_format: str | None = None) -> ChatPromptTemplate:
+def build_system_prompt_template(
+    spec_format: str | None = None,
+    runtime_capabilities: set[str] | frozenset[str] | None = None,
+) -> ChatPromptTemplate:
     """
     Build a LangChain ChatPromptTemplate with the transforms menu pre-baked.
 
@@ -316,31 +408,16 @@ def build_system_prompt_template(spec_format: str | None = None) -> ChatPromptTe
         If given, the menu is filtered to that format's transforms only.
         The runtime variable {spec_format} in the prompt still accepts any
         value at invocation time.
-
-    Returns
-    -------
-    ChatPromptTemplate
-        Expects three runtime variables at format_messages() call time:
-          spec_format          str   "VCF" | "SAM"
-          behavior_target      str   BehaviorTarget.value
-          behavior_description str   get_system_prompt_fragment(target)
-
-    Example
-    -------
-        from mr_engine.behavior import BehaviorTarget, get_system_prompt_fragment
-
-        template = build_system_prompt_template(spec_format="VCF")
-
-        messages = template.format_messages(
-            spec_format="VCF",
-            behavior_target=BehaviorTarget.ORDERING_INVARIANCE.value,
-            behavior_description=get_system_prompt_fragment(
-                BehaviorTarget.ORDERING_INVARIANCE
-            ),
-        )
-        system_text = messages[0].content   # pass to create_react_agent
+    runtime_capabilities : set[str] | None
+        Set of runtime-gated capability tags currently satisfied (e.g.
+        `{"primary_sut_has_writer", "pysam_runtime_reachable"}`). Passed
+        to build_transforms_menu to hide transforms whose preconditions
+        can't be met in this environment. See KNOWN_RUNTIME_PRECONDITIONS.
     """
-    menu = build_transforms_menu(spec_format=spec_format)
+    menu = build_transforms_menu(
+        spec_format=spec_format,
+        runtime_capabilities=runtime_capabilities,
+    )
 
     # partial_variables fills {transforms_menu} before LangChain's parser
     # inspects the remaining placeholders — no double-parsing, no escaping clash.

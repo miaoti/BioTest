@@ -55,8 +55,8 @@ class ReferenceRunner(ParserRunner):
                     success=False,
                     parser_name=self.name,
                     format_type=format_type,
-                    error_type="parse_error",
-                    stderr=f"Unsupported format: {format_type}",
+                    error_type="ineligible",
+                    stderr=f"Reference runner does not support format {format_type!r}",
                 )
 
             duration = (time.monotonic() - t0) * 1000

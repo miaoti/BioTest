@@ -58,6 +58,7 @@ from mr_engine.transforms.vcf import (
     vcf_bcf_round_trip,
     permute_bcf_header_dictionary,
     permute_csq_annotations,
+    sut_write_roundtrip,
 )
 from mr_engine.transforms.sam import (
     permute_optional_tag_fields,
@@ -73,11 +74,38 @@ from mr_engine.transforms.sam import (
 
 _DISPATCH: dict[str, callable] = {}
 
+# Transforms that need a reference to the primary SUT runner at call
+# time (e.g. sut_write_roundtrip dispatches to runner.run_write_roundtrip).
+# The vast majority of transforms are SUT-agnostic text operations — they
+# live in _DISPATCH only. Runner-aware ones register into BOTH so
+# `apply_transform` knows to pass the hook as a kwarg.
+_DISPATCH_NEEDS_HOOK: set[str] = set()
 
-def _register(name: str):
-    """Decorator to register a dispatch wrapper."""
+# Transforms that must know the seed's format ("VCF" or "SAM") at call
+# time so the same transform can serve both (currently: sut_write_roundtrip).
+_DISPATCH_NEEDS_FORMAT: set[str] = set()
+
+
+def _register(
+    name: str,
+    *,
+    needs_runner_hook: bool = False,
+    needs_format_context: bool = False,
+):
+    """Decorator to register a dispatch wrapper.
+
+    Set `needs_runner_hook=True` for transforms that must call into a
+    runner instance at invocation time. Set `needs_format_context=True`
+    for transforms whose behaviour depends on the seed's format ("VCF"
+    or "SAM"). These flags control the positional arguments forwarded
+    to the wrapper by `apply_transform`.
+    """
     def decorator(fn):
         _DISPATCH[name] = fn
+        if needs_runner_hook:
+            _DISPATCH_NEEDS_HOOK.add(name)
+        if needs_format_context:
+            _DISPATCH_NEEDS_FORMAT.add(name)
         return fn
     return decorator
 
@@ -86,6 +114,9 @@ def apply_transform(
     name: str,
     file_lines: list[str],
     seed: Optional[int] = None,
+    *,
+    runner_hook=None,
+    format_context: Optional[str] = None,
 ) -> list[str]:
     """
     Apply a named transform to a complete file (as a list of lines).
@@ -98,6 +129,12 @@ def apply_transform(
         name: Transform name from TRANSFORM_REGISTRY.
         file_lines: All lines of the input file (with or without trailing newlines).
         seed: RNG seed for reproducibility.
+        runner_hook: Optional ParserRunner injected by the orchestrator
+                     for transforms that need a SUT to call into (see
+                     `needs_runner_hook` in `_register`). Ignored by
+                     transforms that don't opt in.
+        format_context: "VCF" or "SAM" — passed through to transforms
+                     registered with `needs_format_context=True`.
 
     Returns:
         New list of file lines after transformation.
@@ -107,6 +144,14 @@ def apply_transform(
             f"No dispatch wrapper for transform '{name}'. "
             f"Available: {sorted(_DISPATCH.keys())}"
         )
+    needs_hook = name in _DISPATCH_NEEDS_HOOK
+    needs_fmt = name in _DISPATCH_NEEDS_FORMAT
+    if needs_hook and needs_fmt:
+        return _DISPATCH[name](file_lines, seed, runner_hook, format_context)
+    if needs_hook:
+        return _DISPATCH[name](file_lines, seed, runner_hook)
+    if needs_fmt:
+        return _DISPATCH[name](file_lines, seed, format_context)
     return _DISPATCH[name](file_lines, seed)
 
 
@@ -114,6 +159,9 @@ def apply_mr_transforms(
     file_lines: list[str],
     transform_steps: list[str],
     seed: Optional[int] = None,
+    *,
+    runner_hook=None,
+    format_context: Optional[str] = None,
 ) -> list[str]:
     """
     Apply a sequence of transforms (from an MR) to a file.
@@ -125,6 +173,13 @@ def apply_mr_transforms(
         file_lines: Input file lines.
         transform_steps: List of transform names from the MR.
         seed: Base RNG seed.
+        runner_hook: Passed through to `apply_transform` for runner-aware
+                     transforms. The orchestrator resolves this to the
+                     primary SUT (or first writer-capable SUT when no
+                     primary is set) and injects it here.
+        format_context: "VCF" or "SAM" — passed through to transforms
+                     that opted into format awareness (currently
+                     `sut_write_roundtrip`).
 
     Returns:
         Transformed file lines.
@@ -137,7 +192,11 @@ def apply_mr_transforms(
     # Sequential application of independent transforms
     result = list(file_lines)
     for step_name in transform_steps:
-        result = apply_transform(step_name, result, seed)
+        result = apply_transform(
+            step_name, result, seed,
+            runner_hook=runner_hook,
+            format_context=format_context,
+        )
     return result
 
 
@@ -661,6 +720,31 @@ def _dispatch_permute_bcf_header_dictionary(
 ) -> list[str]:
     """File-level: shuffle BCF header dictionary order, then round-trip."""
     return permute_bcf_header_dictionary(lines, seed=seed)
+
+
+@_register(
+    "sut_write_roundtrip",
+    needs_runner_hook=True,
+    needs_format_context=True,
+)
+def _dispatch_sut_write_roundtrip(
+    lines: list[str],
+    seed: Optional[int],
+    runner_hook,
+    format_context: Optional[str],
+) -> list[str]:
+    """File-level: parse+serialize via the runner injected by the orchestrator.
+
+    This is the ONLY writer transform in the menu — the per-SUT writer
+    dispatch (htsjdk vs pysam vs Rust) and per-format dispatch (VCF vs
+    SAM) both happen inside the runner, not here. Adding a new writer
+    SUT means implementing runner.run_write_roundtrip; zero changes
+    land in the transform / dispatch / strategy layers.
+    """
+    fmt = (format_context or "VCF").upper()
+    return sut_write_roundtrip(
+        lines, seed=seed, runner=runner_hook, format_type=fmt,
+    )
 
 
 # ===========================================================================

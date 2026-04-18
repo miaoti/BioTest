@@ -61,3 +61,20 @@ def st_toggle_clipping(draw, corpus: SeedCorpus):
     rng_seed = draw(st.integers(0, 2**32 - 1))
     return {"transform": "toggle_cigar_hard_soft_clipping", "seed_path": seed_path,
             "lines": lines, "rng_seed": rng_seed}
+
+
+@composite
+def st_sut_write_roundtrip(draw, corpus: SeedCorpus):
+    """SAM-flavored strategy for sut_write_roundtrip.
+
+    Twin of the VCF-flavored strategy in vcf_strategies — the router
+    picks which of the two to use based on the MR's primary format.
+    The runner called from dispatch handles the actual SAM writer
+    (htsjdk SAMFileWriterFactory, pysam AlignmentFile, ...).
+    """
+    seed_path = draw(st.sampled_from(corpus.sam_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    assume(any(l.startswith("@HD") or l.startswith("@SQ") for l in lines))
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {"transform": "sut_write_roundtrip", "seed_path": seed_path,
+            "lines": lines, "rng_seed": rng_seed}

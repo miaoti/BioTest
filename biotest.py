@@ -30,6 +30,20 @@ from typing import Any, Optional
 import yaml
 
 # ---------------------------------------------------------------------------
+# Force UTF-8 stdout on Windows so the final summary (and any logged MR /
+# spec text containing unicode like ≥, →, or Chinese comments from the
+# LLM) doesn't crash the process with UnicodeEncodeError under cp1252.
+# Must run BEFORE the rich Console is constructed — rich caches the
+# encoding of the underlying file at init time.
+# ---------------------------------------------------------------------------
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# ---------------------------------------------------------------------------
 # Rich console setup
 # ---------------------------------------------------------------------------
 
@@ -68,6 +82,79 @@ def load_config(path: Path) -> dict[str, Any]:
         sys.exit(1)
 
     return cfg
+
+
+# ---------------------------------------------------------------------------
+# Runtime-capability resolver
+# ---------------------------------------------------------------------------
+#
+# Reads class-level attributes on the registered runner classes to derive
+# which `transforms_menu.KNOWN_RUNTIME_PRECONDITIONS` tags the current
+# environment satisfies. The result is handed to Phase B's mining prompt
+# so the LLM never sees transforms whose runtime preconditions aren't
+# met (otherwise the transform would silently no-op and waste an MR slot
+# — see sut_write_roundtrip for the motivating case).
+#
+# This is READ-ONLY inspection of runner class attributes — no runner
+# instances are constructed, no subprocesses spawned. Fast and safe to
+# call at Phase B time.
+
+def _compute_runtime_capabilities(
+    primary_target: str,
+    available_suts: list[str],
+) -> set[str]:
+    """Return the set of runtime capability tags currently satisfied.
+
+    Tags map 1:1 with `transforms_menu.KNOWN_RUNTIME_PRECONDITIONS`:
+      - `primary_sut_has_writer`  — primary runner class sets
+                                    `supports_write_roundtrip = True`.
+      - `pysam_runtime_reachable` — pysam SUT is enabled.
+      - `htsjdk_runtime_reachable` — htsjdk SUT is enabled.
+      - `bcf_codec_available`    — either pysam or htsjdk is enabled.
+    """
+    caps: set[str] = set()
+
+    # Import runner classes lazily (they pull in subprocess/Docker
+    # modules — keep the biotest.py top-level light).
+    from test_engine.runners.htsjdk_runner import HTSJDKRunner
+    from test_engine.runners.pysam_runner import PysamRunner
+    from test_engine.runners.biopython_runner import BiopythonRunner
+    from test_engine.runners.seqan3_runner import SeqAn3Runner
+    from test_engine.runners.htslib_runner import HTSlibRunner
+    from test_engine.runners.reference_runner import ReferenceRunner
+
+    _SUT_CLASSES = {
+        "htsjdk": HTSJDKRunner,
+        "pysam": PysamRunner,
+        "biopython": BiopythonRunner,
+        "seqan3": SeqAn3Runner,
+        "htslib": HTSlibRunner,
+        "reference": ReferenceRunner,
+    }
+
+    enabled = set(available_suts or [])
+
+    # Reachability tags per enabled SUT. Conservative: we tag it as
+    # "reachable" if it's enabled in config — the runner's own
+    # is_available() will catch missing binaries at Phase C time.
+    if "pysam" in enabled:
+        caps.add("pysam_runtime_reachable")
+    if "htsjdk" in enabled:
+        caps.add("htsjdk_runtime_reachable")
+
+    # BCF codec is provided by pysam (via libhts). htsjdk's BCF support
+    # is in a separate package we don't currently invoke for our BCF
+    # round-trip transform, so we key this strictly off pysam.
+    if "pysam" in enabled:
+        caps.add("bcf_codec_available")
+
+    # Primary SUT writer: inspect the CLASS attribute, not an instance,
+    # so no harness process starts here.
+    primary_cls = _SUT_CLASSES.get(primary_target)
+    if primary_cls and getattr(primary_cls, "supports_write_roundtrip", False):
+        caps.add("primary_sut_has_writer")
+
+    return caps
 
 
 # ===========================================================================
@@ -122,6 +209,17 @@ class PhaseDResult:
     total_demoted: int = 0
     termination_reason: str = ""
     scc_history: list[float] = field(default_factory=list)
+    # Code coverage tracking — primary-SUT, format-scoped. Each list
+    # entry is the primary target's line-coverage percentage at the end
+    # of that iteration. `final_coverage_pct` / `final_coverage_covered`
+    # / `final_coverage_total` hold the last snapshot, used by the
+    # Executive Summary.
+    coverage_history: list[float] = field(default_factory=list)
+    final_coverage_pct: float = 0.0
+    final_coverage_covered: int = 0
+    final_coverage_total: int = 0
+    coverage_target: str = ""  # primary SUT name (e.g. "htsjdk")
+    coverage_language: str = ""  # "Java" / "Python" / "C++"
     duration_s: float = 0.0
     error: Optional[str] = None
 
@@ -199,9 +297,55 @@ def run_phase_b(
         from mr_engine.agent.engine import mine_mrs
         from mr_engine.registry import triage, export_registry, merge_registries
 
-        formats = phase_cfg.get("formats", ["VCF"])
+        # Single-source-of-truth format: `phase_c.format_filter` is the
+        # ONE knob (see biotest_config.yaml). If the user explicitly
+        # overrides `phase_b.formats`, honor that; otherwise derive.
+        phase_c_filter = (cfg.get("phase_c", {}).get("format_filter") or "").upper()
+        phase_b_formats_override = phase_cfg.get("formats")
+
+        if phase_b_formats_override:
+            # Explicit override — use as-is, then apply the filter guard.
+            formats = list(phase_b_formats_override)
+        elif phase_c_filter:
+            # Derive from the Phase C filter (the usual path).
+            formats = [phase_c_filter]
+            console.print(
+                f"  [dim]Phase B format derived from phase_c.format_filter=[bold]"
+                f"{phase_c_filter}[/][/]"
+            )
+        else:
+            # No filter anywhere → mine VCF by default (historical behavior).
+            formats = ["VCF"]
+
         theme_names = phase_cfg.get("themes", [])
         registry_path = phase_cfg.get("registry_path", "data/mr_registry.json")
+
+        # Even when `formats` was set explicitly, the Phase C filter still
+        # clamps it. This is the wasted-LLM-calls guard: you can't mine
+        # SAM MRs that will never be tested in a VCF-only run.
+        if phase_c_filter:
+            dropped = [f for f in formats if f.upper() != phase_c_filter]
+            formats = [f for f in formats if f.upper() == phase_c_filter]
+            if dropped:
+                console.print(
+                    f"  [dim]Scoping Phase B to phase_c.format_filter=[bold]"
+                    f"{phase_c_filter}[/] — dropping {dropped} from mining to "
+                    f"avoid off-scope MRs.[/]"
+                )
+            if not formats:
+                console.print(
+                    f"  [red bold]Configuration error:[/] phase_c.format_filter="
+                    f"{phase_c_filter} but phase_b.formats={phase_b_formats_override!r} "
+                    f"has no overlap. Nothing to mine. Aborting Phase B."
+                )
+                return PhaseBResult(
+                    success=False,
+                    error=(
+                        f"phase_c.format_filter={phase_c_filter} has no overlap "
+                        f"with phase_b.formats={phase_b_formats_override!r}"
+                    ),
+                    duration_s=time.monotonic() - t0,
+                )
 
         # Resolve themes to BehaviorTarget enums
         all_targets = get_all_targets()
@@ -212,11 +356,41 @@ def run_phase_b(
 
         themes_tested = [t.value for t in targets]
         all_relations = []
+        theme_errors: list[str] = []
+
+        # Primary target + available SUTs are surfaced to the mining
+        # prompt so the LLM can align SUT-specific transforms (e.g.
+        # sut_write_roundtrip) with the actual SUT this run is
+        # measuring, and hide transforms whose runtime preconditions
+        # aren't satisfied.
+        primary_target_for_prompt = (
+            cfg.get("feedback_control", {}).get("primary_target", "") or ""
+        )
+        available_suts_for_prompt = [
+            s["name"]
+            for s in cfg.get("phase_c", {}).get("suts", [])
+            if s.get("enabled", True) and s.get("name")
+        ]
+        runtime_caps_for_prompt = _compute_runtime_capabilities(
+            primary_target=primary_target_for_prompt,
+            available_suts=available_suts_for_prompt,
+        )
+        if runtime_caps_for_prompt:
+            console.print(
+                f"  [dim]Runtime capabilities for Phase B menu: "
+                f"{sorted(runtime_caps_for_prompt)}[/]"
+            )
 
         for fmt in formats:
             for target in targets:
                 console.print(f"  [dim]Mining {fmt} / {target.value}...[/]")
-                result = mine_mrs(target, fmt, blindspot_context=blindspot_context)
+                result = mine_mrs(
+                    target, fmt,
+                    blindspot_context=blindspot_context,
+                    primary_target=primary_target_for_prompt,
+                    available_suts=available_suts_for_prompt,
+                    runtime_capabilities=runtime_caps_for_prompt,
+                )
                 if result.success and result.relations:
                     all_relations.extend(result.relations)
                     console.print(
@@ -224,14 +398,17 @@ def run_phase_b(
                         f"for {fmt}/{target.value}"
                     )
                 else:
-                    # Surface the reason instead of silently skipping. This
-                    # bug caused 9/12 themes to produce 0 MRs without any
-                    # visible diagnostic.
+                    # Surface the reason instead of silently skipping.
                     detail = (result.error_detail or "no relations returned")
                     console.print(
                         f"    [yellow]0 MRs[/] for {fmt}/{target.value}: "
                         f"{detail[:120]}"
                     )
+                    # An explicit LLM error (rate limit / billing / API)
+                    # counts as a theme failure; "success=True but 0
+                    # relations" is legitimate (LLM said "no MRs apply").
+                    if not result.success:
+                        theme_errors.append(f"{fmt}/{target.value}: {detail[:80]}")
 
         # Triage
         registry = triage(all_relations)
@@ -243,13 +420,38 @@ def run_phase_b(
             # Fresh start: overwrite registry with current batch only
             export_registry(registry, out_path)
 
+        # Phase B FAILS when EVERY theme errored AND no prior MRs exist.
+        # Mining 0 MRs is fine if we merged into a non-empty registry
+        # (Phase D iteration) or if the LLM genuinely found nothing for
+        # this theme. But "every theme blew up with an API error" is NOT
+        # a pass — it's the primary symptom of the "fake run" concern.
+        total_themes = max(len(formats) * len(targets), 1)
+        all_themes_errored = len(theme_errors) == total_themes
+        enforced_in_registry = len(registry.enforced)
+        # If we merged into an existing registry, check its combined size.
+        if merge_mode:
+            try:
+                import json as _j
+                existing = _j.loads(Path(out_path).read_text(encoding="utf-8"))
+                enforced_in_registry = len(existing.get("enforced", []))
+            except Exception:
+                pass
+        phase_b_real_pass = (
+            (not all_themes_errored) or enforced_in_registry > 0
+        )
+
         return PhaseBResult(
-            success=True,
+            success=phase_b_real_pass,
             themes_tested=themes_tested,
             total_mined=len(all_relations),
             enforced=len(registry.enforced),
             quarantine=len(registry.quarantine),
             duration_s=time.monotonic() - t0,
+            error=(
+                None if phase_b_real_pass
+                else f"All {total_themes} themes errored: "
+                     + "; ".join(theme_errors[:3])
+            ),
         )
     except Exception as e:
         return PhaseBResult(
@@ -274,6 +476,7 @@ def _build_runners(cfg: dict[str, Any]) -> list:
     from test_engine.runners.biopython_runner import BiopythonRunner
     from test_engine.runners.seqan3_runner import SeqAn3Runner
     from test_engine.runners.pysam_runner import PysamRunner
+    from test_engine.runners.htslib_runner import HTSlibRunner
     from test_engine.runners.reference_runner import ReferenceRunner
 
     sut_cfgs = cfg.get("phase_c", {}).get("suts", [])
@@ -292,6 +495,13 @@ def _build_runners(cfg: dict[str, Any]) -> list:
         "pysam": lambda c: PysamRunner(
             coverage_dir=Path(c["coverage_dir"]) if c.get("coverage_dir") else None,
         ),
+        # htslib is the CLI gold standard (samtools + bcftools). Acts as
+        # the tie-breaker voter in the consensus oracle — see
+        # test_engine/oracles/consensus.py.
+        "htslib": lambda c: HTSlibRunner(
+            bcftools_path=c.get("bcftools_path"),
+            samtools_path=c.get("samtools_path"),
+        ),
     }
 
     runners = []
@@ -303,7 +513,16 @@ def _build_runners(cfg: dict[str, Any]) -> list:
         if factory:
             runners.append(factory(sut))
 
-    # Always add the reference runner as baseline (not a SUT)
+    # Auto-enable htslib when the binaries are on PATH and no explicit
+    # entry appears in the config. The CLI is strictly additive — it
+    # only activates the tie-breaker branch in consensus.py, nothing
+    # else changes when it's absent.
+    if not any(getattr(r, "name", "") == "htslib" for r in runners):
+        auto = HTSlibRunner()
+        if auto.is_available():
+            runners.append(auto)
+
+    # Always add the reference runner as baseline (not a SUT, not a voter)
     runners.append(ReferenceRunner())
 
     return runners
@@ -344,20 +563,36 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
         sam_seeds = len(corpus.sam_seeds)
         total_seeds = vcf_seeds + sam_seeds
 
+        primary_target_c = cfg.get("phase_d", {}).get("primary_target", "") or ""
+        # Phase D primary_target is still under feedback_control in the YAML.
+        if not primary_target_c:
+            primary_target_c = cfg.get("feedback_control", {}).get("primary_target", "") or ""
+
         result = run_test_suite(
             runners=available,
             registry_path=registry_path,
             seeds_dir=seeds_dir,
             output_dir=output_dir,
             format_filter=format_filter,
+            primary_target=primary_target_c,
         )
 
         # Export DET report
         det_report.parent.mkdir(parents=True, exist_ok=True)
         result.det_tracker.export(str(det_report))
 
+        # Phase C PASSES when we actually ran tests. An empty registry
+        # (0 enforced MRs) means Phase C had NOTHING to execute — that
+        # looks like a pass in the old code ("no failures") but it's
+        # the "fake run" symptom: the upstream mining step failed and
+        # we're silently rubber-stamping it.
+        real_pass = result.total_tests > 0
+        err = None if real_pass else (
+            "Phase C executed 0 tests — registry has no enforced MRs to run. "
+            "Phase B probably produced no output (check LLM errors)."
+        )
         return PhaseCResult(
-            success=True,
+            success=real_pass,
             total_tests=result.total_tests,
             metamorphic_failures=result.metamorphic_failures,
             differential_failures=result.differential_failures,
@@ -369,6 +604,7 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
             runners_used=[r.name for r in available],
             duration_s=time.monotonic() - t0,
             det_tracker=result.det_tracker,
+            error=err,
         )
     except Exception as e:
         return PhaseCResult(
@@ -396,6 +632,7 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
         from test_engine.feedback.coverage_collector import MultiCoverageCollector
         from test_engine.feedback.blindspot_builder import build_blindspot_ticket
         from test_engine.feedback.quarantine_manager import evaluate_quarantine, apply_quarantine
+        from test_engine.feedback.rule_attempts import RuleAttemptTracker
         from mr_engine.registry import triage, merge_registries
 
         controller = LoopController(feedback_cfg)
@@ -447,14 +684,36 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
             "registry_path", "data/mr_registry.json"
         )
         state_path = PROJECT_ROOT / "data" / "feedback_state.json"
+        attempts_path = PROJECT_ROOT / "data" / "rule_attempts.json"
 
         # Resume from crash if state file exists
         if state_path.exists():
             controller.load_state(state_path)
             logger.info("Resumed Phase D from iteration %d", controller.state.iteration)
 
+        # Per-rule failure/cooldown tracker. Persists across Phase D runs
+        # so an unrecoverable session picks up where it left off.
+        attempt_tracker = RuleAttemptTracker.load(attempts_path)
+        if attempt_tracker.records:
+            logger.info(
+                "Loaded rule_attempts: %d rules tracked, %d currently cooling",
+                len(attempt_tracker.records),
+                len(attempt_tracker.currently_cooled_ids(controller.state.iteration)),
+            )
+
+        # Track SCC covered-ids across iterations so we can tell the
+        # attempt tracker which rules just became covered.
+        prev_covered_rules: set[str] = set()
         blindspot_text: str | None = None
         total_demoted = 0
+
+        # Per-iteration primary-SUT code coverage history. Used by the
+        # Executive Summary to show progression (e.g. 25% -> 28% -> 31%).
+        coverage_history: list[float] = []
+        final_cov_pct = 0.0
+        final_cov_covered = 0
+        final_cov_total = 0
+        final_cov_language = ""
 
         for iteration in range(controller.state.iteration, controller.max_iterations):
             # Check termination before each iteration
@@ -501,22 +760,94 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 format_context=format_context,
                 primary_target=primary_target or "",
             )
-            if coverage_results:
-                console.print(f"    Coverage: {len(coverage_results)} SUT(s) collected")
 
-            # Compute SCC (target-centric: primary target failures demote rules)
+            # Primary-SUT coverage snapshot for THIS iteration. Pick the
+            # matching collector (there should be exactly one when a
+            # primary_target is set). Persist history + final values on
+            # the PhaseDResult so the Executive Summary can render them.
+            iter_cov_pct = 0.0
+            iter_cov_covered = 0
+            iter_cov_total = 0
+            iter_cov_language = ""
+            iter_cov_uncovered: list[str] = []
+            for cov in coverage_results:
+                if primary_target and cov.parser_name != primary_target:
+                    continue
+                if not cov.available:
+                    continue
+                iter_cov_pct = cov.line_coverage_pct
+                iter_cov_covered = cov.covered_lines
+                iter_cov_total = cov.total_lines
+                iter_cov_language = cov.language
+                iter_cov_uncovered = list(cov.uncovered_regions or [])
+                break
+
+            if coverage_results:
+                cov_label = (
+                    f"{primary_target}={iter_cov_pct:.1f}% "
+                    f"({iter_cov_covered}/{iter_cov_total} lines)"
+                    if iter_cov_total else "no primary-SUT data"
+                )
+                console.print(
+                    f"    Coverage: {len(coverage_results)} SUT(s) collected -> {cov_label}"
+                )
+
+            # Capture primary-SUT coverage into Phase D's running history.
+            coverage_history.append(iter_cov_pct)
+            if iter_cov_total:
+                final_cov_pct = iter_cov_pct
+                final_cov_covered = iter_cov_covered
+                final_cov_total = iter_cov_total
+                final_cov_language = iter_cov_language or final_cov_language
+
+            # Persist a per-iteration coverage snapshot. Overwritten each
+            # iteration with the latest state so the JSON always reflects
+            # the most recent numbers (plus the full history list).
+            cov_report = {
+                "primary_target": primary_target,
+                "format_context": format_context,
+                "iteration": iteration + 1,
+                "final_coverage_pct": final_cov_pct,
+                "final_coverage_covered": final_cov_covered,
+                "final_coverage_total": final_cov_total,
+                "final_coverage_language": final_cov_language,
+                "coverage_history": coverage_history,
+                "uncovered_regions_sample": iter_cov_uncovered[:20],
+            }
+            (PROJECT_ROOT / "data" / "coverage_report.json").write_text(
+                _json.dumps(cov_report, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            # Compute SCC (target-centric: primary target failures demote rules,
+            # UNLESS another parser endorsed the MR per cross-validation "良民证")
             registry_data = _json.loads(registry_path.read_text(encoding="utf-8"))
             primary_failed_mr_ids: set[str] = set()
             if primary_target and phase_c_result.det_tracker:
+                # First pass: collect endorsements across ALL parsers.
+                endorsed_mrs: set[str] = set()
+                for event in phase_c_result.det_tracker.events:
+                    if (event.test_type == "metamorphic"
+                            and event.passed
+                            and event.parser_names):
+                        endorsed_mrs.add(event.mr_id)
+                # Second pass: only count a primary failure as blind-spot
+                # evidence when NO parser endorsed the MR.
                 for event in phase_c_result.det_tracker.events:
                     if (not event.passed
                             and primary_target in event.parser_names
-                            and event.test_type == "metamorphic"):
+                            and event.test_type == "metamorphic"
+                            and event.mr_id not in endorsed_mrs):
                         primary_failed_mr_ids.add(event.mr_id)
                 if primary_failed_mr_ids:
                     console.print(
                         f"    [dim]{primary_target} failed {len(primary_failed_mr_ids)} MR(s) "
-                        f"— rules stay as blind spots[/]"
+                        f"with no cross-parser endorsement — those rules stay as blind spots[/]"
+                    )
+                if endorsed_mrs:
+                    console.print(
+                        f"    [dim]{len(endorsed_mrs)} MR(s) endorsed by >=1 parser - "
+                        f"kept in SCC via cross-validation rule[/]"
                     )
 
             scc_report = scc_tracker.compute_scc(
@@ -525,6 +856,29 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 format_context=format_context,
             )
             scc_report.export(PROJECT_ROOT / "data" / "scc_report.json")
+
+            # ── Record attempt outcomes against the cooldown tracker ──
+            # Rules that just became covered get their failure history
+            # wiped; rules that were shown but stayed uncovered get their
+            # failure_count incremented and enter cooldown. This is what
+            # prevents "dying on the hardest 5 rules forever" (惩罚/冷却).
+            now_covered = set(scc_report.covered_rules)
+            newly_covered = now_covered - prev_covered_rules
+            outcomes = attempt_tracker.record_outcome(
+                iteration=iteration + 1,
+                newly_covered_chunk_ids=newly_covered,
+            )
+            prev_covered_rules = now_covered
+            if outcomes:
+                covered_now = sum(1 for o in outcomes.values() if o["outcome"].startswith("covered"))
+                uncovered_now = sum(1 for o in outcomes.values() if o["outcome"] == "uncovered")
+                if uncovered_now:
+                    console.print(
+                        f"    [dim]Cooldown: {uncovered_now} rule(s) stayed uncovered "
+                        f"and entered backoff; {covered_now} cleared.[/]"
+                    )
+                logger.info("Rule attempt outcomes: %s", outcomes)
+            attempt_tracker.save(attempts_path)
 
             scc_color = (
                 "green" if scc_report.scc_percent >= 95
@@ -581,6 +935,10 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                     if root.exists():
                         active_source_roots.append(root)
 
+            max_rules_per_iter = int(
+                feedback_cfg.get("max_rules_per_iteration", 5)
+            )
+
             ticket = build_blindspot_ticket(
                 scc_report=scc_report,
                 coverage_results=coverage_results,
@@ -589,8 +947,19 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 iteration=iteration + 1,
                 primary_target=primary_target,
                 source_roots=active_source_roots,
+                format_context=format_context or "",
+                max_rules_per_iteration=max_rules_per_iter,
+                attempt_tracker=attempt_tracker,
             )
             blindspot_text = ticket.to_prompt_fragment()
+            attempt_tracker.save(attempts_path)
+            if ticket.total_uncovered:
+                console.print(
+                    f"    [dim]Queue: Total Blindspots = {ticket.total_uncovered} | "
+                    f"Injecting Top {ticket.shown_uncovered} into this ticket | "
+                    f"{ticket.remaining_uncovered} rules remaining "
+                    f"({ticket.cooling_count} cooling down).[/]"
+                )
 
         # Final termination check
         final_term = controller.check_termination()
@@ -605,6 +974,12 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
             total_demoted=total_demoted,
             termination_reason=reason,
             scc_history=controller.state.scc_history,
+            coverage_history=coverage_history,
+            final_coverage_pct=final_cov_pct,
+            final_coverage_covered=final_cov_covered,
+            final_coverage_total=final_cov_total,
+            coverage_target=primary_target or "",
+            coverage_language=final_cov_language,
             duration_s=time.monotonic() - t0,
         )
     except Exception as e:
@@ -671,6 +1046,15 @@ def print_config_summary(cfg: dict[str, Any]):
     spec_str = ", ".join(f"{s['format']} v{s['version']}" for s in specs)
     table.add_row("Spec Versions", spec_str or "default")
 
+    # Effective test format (single source of truth for this run).
+    # Derived from phase_c.format_filter; highlighted so the operator can
+    # verify at a glance exactly which format the run will exercise.
+    fmt_filter = cfg.get("phase_c", {}).get("format_filter")
+    if fmt_filter:
+        table.add_row("Test Format", f"[bold green]{fmt_filter}[/] (cascades to B, C, D)")
+    else:
+        table.add_row("Test Format", "[yellow]ALL[/] (phase_c.format_filter=null)")
+
     # Themes
     themes = cfg.get("phase_b", {}).get("themes", ["all"])
     table.add_row("MR Themes", ", ".join(themes))
@@ -688,6 +1072,8 @@ def print_config_summary(cfg: dict[str, Any]):
         phases.append("B")
     if cfg.get("phase_c", {}).get("enabled", True):
         phases.append("C")
+    if cfg.get("feedback_control", {}).get("enabled", True):
+        phases.append("D")
     table.add_row("Enabled Phases", " -> ".join(phases))
 
     console.print(table)
@@ -850,6 +1236,28 @@ def print_executive_summary(
         ))
         console.print()
 
+    # ---- Code Coverage Panel (primary SUT only, format-scoped) ----
+    if phase_d and phase_d.final_coverage_total:
+        cov_text = " -> ".join(f"{c:.1f}%" for c in phase_d.coverage_history) \
+                   if phase_d.coverage_history else f"{phase_d.final_coverage_pct:.1f}%"
+        cov_color = (
+            "green" if phase_d.final_coverage_pct >= 70
+            else "yellow" if phase_d.final_coverage_pct >= 30
+            else "red"
+        )
+        console.print(Panel(
+            f"[bold]Primary SUT:[/] {phase_d.coverage_target} "
+            f"([dim]{phase_d.coverage_language}[/])\n"
+            f"[bold]Coverage Progression:[/] {cov_text}\n"
+            f"[bold]Final Coverage:[/] [{cov_color}]"
+            f"{phase_d.final_coverage_pct:.1f}%[/] "
+            f"({phase_d.final_coverage_covered}/{phase_d.final_coverage_total} "
+            f"format-scoped lines)",
+            title="Code Coverage",
+            border_style="magenta",
+        ))
+        console.print()
+
     # ---- Final Verdict ----
     d_ok = phase_d.success if phase_d else True
     all_ok = phase_a.success and phase_b.success and phase_c.success and d_ok
@@ -893,7 +1301,13 @@ def run_pipeline(cfg: dict[str, Any], phase_filter: Optional[str] = None):
     phase_c_result = PhaseCResult(success=True)
     phase_d_result = PhaseDResult(success=True, termination_reason="not_requested")
 
-    phases_to_run = {"A", "B", "C"}
+    # Default: run ALL four phases. Phase D (feedback-driven loop) was
+    # historically omitted from the default set and had to be opted
+    # into with --phase D, which meant "python biotest.py" produced a
+    # suspiciously fast "PASS" without actually exercising the feedback
+    # loop. A user running the tool without flags expects the full
+    # pipeline to run — that's what --phase is for opting OUT of, not IN.
+    phases_to_run = {"A", "B", "C", "D"}
     if phase_filter:
         phases_to_run = {p.strip().upper() for p in phase_filter.split(",")}
 

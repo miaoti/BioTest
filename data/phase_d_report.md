@@ -1,50 +1,33 @@
-# Phase D End-to-End Run Report — 2026-04-16 22:18:33
+# Phase D End-to-End Run Report — 2026-04-17 01:31:06
 
 ## Executive Summary
 
-- Iterations completed: **3**
-- Total MRs enforced: **1** (quarantined: 2)
-- Total tests: **28** (DET rate: **53.6%**)
-- Bug reports: **33**
-- SCC: **0.63%** (2/316 rules)
+- Iterations completed: **2**
+- Total MRs enforced: **0** (quarantined: 5)
+- Total tests: **0** (DET rate: **0.0%**)
+- Bug reports: **75**
+- SCC: **0.00%** (0/316 rules)
 
 ## SCC Progression Across Iterations
 
 | Iteration | SCC % | Enforced MRs | Demoted |
 |-----------|-------|--------------|---------|
-| 1 | 0.63% | 2 | 1 |
-| 2 | 0.63% | 1 | 0 |
-| 3 | 0.63% | 1 | 0 |
+| 1 | 0.00% | 2 | 2 |
+| 2 | 0.00% | 0 | 0 |
 
 ## MR Registry
 
-- Enforced: **1**
-- Quarantined: **2**
+- Enforced: **0**
+- Quarantined: **5**
 
-**Transform Step Distribution (top 10):**
 
-| Transform | Count |
-|-----------|-------|
-| `shuffle_meta_lines` | 1 |
-
-**Enforced MRs:**
-
-| mr_id | mr_name |
-|-------|---------|
-| `ffbe4a62d130` | VCF Header Meta-lines Order Invariance |
 
 ## Phase C Test Execution
 
-- Total tests: **28**
-- Disagreements: **15**
-- DET rate: **53.6%**
+- Total tests: **0**
+- Disagreements: **0**
+- DET rate: **0.0%**
 
-**By Test Type:**
-
-| Type | Total | Failures | DET % |
-|------|-------|----------|-------|
-| metamorphic | 21 | 8 | 38.1% |
-| differential | 7 | 7 | 100.0% |
 
 ## Code Coverage — Primary Target: htsjdk (format scope: VCF)
 
@@ -79,20 +62,20 @@ _Per Flow.md Phase D §1.3, feedback-driven runs measure coverage for the **prim
 
 ## Bug Reports
 
-- Total: **33**
+- Total: **75**
 
 **By Classification:**
-- `metamorphic_violation`: 18
-- `crash`: 15
+- `metamorphic_violation`: 30
+- `crash`: 45
 
 **By Parser:**
-- `pysam`: 20
-- `reference`: 6
-- `htsjdk`: 7
+- `pysam`: 34
+- `reference`: 11
+- `htsjdk`: 30
 
 **By Severity:**
-- `CRITICAL`: 33
+- `CRITICAL`: 75
 
 **Top 5 MRs by Failure Count:**
-- VCF Header Meta-lines Order Invariance: 24
-- Ordering invariance of meta-information lines: 9
+- Header field ordering invariance: 41
+- VCF Header Meta-lines Order Invariance: 34

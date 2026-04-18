@@ -151,15 +151,34 @@ class JaCoCoCollector(CoverageCollector):
         return xml_report.exists() or exec_report.exists()
 
     def _ensure_xml(self) -> Optional[Path]:
-        """Convert jacoco.exec -> jacoco.xml if needed."""
+        """Convert jacoco.exec -> jacoco.xml if needed.
+
+        If a cached XML exists AND is older than the backing .exec file,
+        invalidate it so the conversion below regenerates a fresh report.
+        Without this guard, repeated Phase C / Phase D iterations that
+        append new blocks into jacoco.exec were being reported against a
+        stale XML snapshot — coverage from the most recent runs was
+        literally invisible. This is a bug-fix; the happy path (XML
+        exists and is current) still short-circuits to the fast return.
+        """
         import shutil
         import subprocess
 
         xml_path = self.report_dir / "jacoco.xml"
+        exec_path = self.report_dir / "jacoco.exec"
+
+        # Cache invalidation: if .exec was touched after .xml was written,
+        # the XML is stale — drop it so we regenerate below.
+        if xml_path.exists() and exec_path.exists():
+            try:
+                if exec_path.stat().st_mtime > xml_path.stat().st_mtime:
+                    xml_path.unlink()
+            except OSError as e:
+                logger.warning("Could not check JaCoCo XML freshness: %s", e)
+
         if xml_path.exists():
             return xml_path
 
-        exec_path = self.report_dir / "jacoco.exec"
         if not exec_path.exists():
             return None
 

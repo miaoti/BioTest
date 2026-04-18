@@ -229,13 +229,17 @@ py -3.12 -m spec_ingestor.main --query "What are valid CIGAR operations?" --filt
 
 * **目的**: 极深度测试解析器对于序列长度一致性（SEQ length == sum of M/I/S/=/X）检查的边界条件。
 
-#### 🆕 arsenal expansion (v2 — 2026 live-run response)
+#### 🆕 arsenal expansion (v2 + v3 — 2026 live-run response)
 
 Original arsenal was **13 transforms (9 VCF + 4 SAM)**. The first Phase D
 run plateaued at SCC 0.6% because the whitelist couldn't reach BCF
 binary, CSQ annotations, or variant normalization — three clusters that
-dominated the blindspot list. V2 adds **6 new VCF transforms (total
-19)**, each backed by published literature:
+dominated the blindspot list. **V2** adds 6 new VCF transforms (total
+19), each backed by published literature. **V3** then adds a single
+format-agnostic writer transform (`sut_write_roundtrip`, total **20**)
+that covers VCF *and* SAM write paths without per-format duplicates —
+the orchestrator dispatches to whichever runner / whichever format the
+current MR demands at run time. All are grounded in published literature:
 
 **10. `trim_common_affixes`** [VCF record]
 * **Rationale**: REF=AA,ALT=AC at POS=100 is semantically identical to
@@ -287,6 +291,35 @@ dominated the blindspot list. V2 adds **6 new VCF transforms (total
 * **Safety invariant**: pipe count per record must equal before/after
   (self-checked; violation raises `ValueError`).
 
+**20. `sut_write_roundtrip`** [VCF + SAM, file-level]
+* **Rationale**: Chen, Kuo, Liu, Tse (2018) §3.2 —
+  `parse(write(parse(x))) == parse(x)` is a canonical round-trip MR
+  for any parser/serializer pair. Any diff between the original
+  canonical JSON and the re-parsed rewritten-file canonical JSON
+  exposes a writer-side bug that parse-only transforms cannot reach.
+* **Implementation**: the transform itself is runtime-dispatched —
+  registered once with `format="VCF/SAM"` in the arsenal menu, then at
+  Phase C dispatch time the orchestrator (1) resolves the primary SUT's
+  runner, (2) threads the current seed's format ("VCF" or "SAM") in via
+  `format_context`, and (3) the dispatch wrapper calls
+  `runner.run_write_roundtrip(input_path, format_type)`. The runner
+  picks its own writer (e.g. htsjdk `VCFWriter` for VCF /
+  `SAMFileWriterFactory` for SAM, pysam `VariantFile("w")` for VCF /
+  `AlignmentFile("wh")` for SAM) and returns the rewritten text. The
+  re-serialized file is fed back into the normal consensus + metamorphic
+  pipeline — writer coverage accrues as a side-effect of real MRs, not
+  as a hand-enumerated coverage hack.
+* **Preconditions**: `primary_sut_has_writer` — at least one enabled
+  SUT's `ParserRunner` sets `supports_write_roundtrip = True`. When
+  none do, the runtime-gated prompt filter (Phase D §5.5) hides this
+  transform from the LLM menu entirely so it never ends up in an MR.
+* **SUT onboarding cost**: adding a writer to a SUT is a *runner-class*
+  change only — a subclass implements `run_write_roundtrip` and flips
+  the opt-in flag. Zero edits to the transform library, dispatch, or
+  strategy router. Collapses the earlier per-SUT
+  `htsjdk_write_roundtrip` / `pysam_vcf_write_roundtrip` pair into one
+  entry; the LLM menu has one writer transform forever.
+
 #### 📚 文献支撑与合理性分析 (Citations & References)
 
 这些原子操作绝非随机臆造，而是根植于明确的生物信息学标准与变体检测理论。这种设计保证了我们的测试生成具有严格的**生物学语义等价性 (Biological Semantic Equivalence)**。
@@ -301,6 +334,7 @@ dominated the blindspot list. V2 adds **6 new VCF transforms (total
 | `split_multi_allelic` | `bcftools norm --multiallelics` 明确定义 `ALT=A,C` 与两行分别 `ALT=A`、`ALT=C` + 同步 Number=A/R 数组 + 重映射 GT 为相同变异集合。 | [6] Danecek & McCarthy 2017. "BCFtools/csq: haplotype-aware variant consequences." *Bioinformatics* 33(13):2037–2039 |
 | `vcf_bcf_round_trip`, `permute_bcf_header_dictionary` | VCF 文本与 BCF 二进制编码在语义上等价；后者使用字典索引编码头部条目，索引分配由实现决定。 | [1] VCF v4.5 §6 "BCF specification" + §6.2.1 "Dictionaries" |
 | `permute_csq_annotations` | VEP/SnpEff 的 CSQ/ANN 字段携带多条转录本注释（以逗号分隔），记录的顺序不是规范性的。一些下游工具错误地依赖 `[0]` 为"主要后果"，可被此 MR 暴露。 | [7] Ensembl VEP output docs; [8] Cingolani et al. 2012. *Fly* 6(2):80-92 |
+| `sut_write_roundtrip` | `parse(write(parse(x))) == parse(x)` 是一个经典的 round-trip 变异关系。它暴露只有解析路径永远触不到的 writer/serializer 缺陷（如 FORMAT 字段顺序、BCF dictionary 编码、CIGAR 再序列化）。Format-agnostic：VCF 与 SAM 共用一个入口，runner 根据 `format_type` 分流到自己的写入 API。 | [9] Chen, Kuo, Liu, Tse (2018) §3.2 "Metamorphic Testing: A Review of Challenges and Opportunities" *ACM Computing Surveys* 51(1):4 — 经典 round-trip MR 模式；[3] Giannoulatou et al. (2014) — 生物格式解析器 round-trip 先例 |
 
 **核心参考文献 (References):**
 
@@ -567,7 +601,7 @@ BioTest/
 
 ### 3. Transform Dispatch：变异调度桥接器 (KEY DESIGN CHALLENGE)
 
-Phase B 产出的 `transform_steps` 是字符串（如 `"shuffle_meta_lines"`），而这 13 个原子函数拥有完全不同的入参签名。我们在 `generators/dispatch.py` 中构建了一个统一接口 `apply_transform(name, file_lines, seed)`，按以下 5 种粒度进行动态调度：
+Phase B 产出的 `transform_steps` 是字符串（如 `"shuffle_meta_lines"`），而这 20 个原子函数拥有完全不同的入参签名。我们在 `generators/dispatch.py` 中构建了一个统一接口 `apply_transform(name, file_lines, seed, *, runner_hook=None, format_context=None)`，按以下 6 种粒度进行动态调度：
 
 | 调度粒度 (Level) | 适用转换函数 (Transforms) | 期望提取输入 (Input) | 调度策略 (How to apply) |
 | :--- | :--- | :--- | :--- |
@@ -576,23 +610,46 @@ Phase B 产出的 `transform_steps` 是字符串（如 `"shuffle_meta_lines"`）
 | **字段级 (Field)** | `shuffle_info_field_kv`, `permute_Number_...` | `str` (特定列的值) | 切分至特定的格式列，解析后塞回原位 |
 | **多字段级(CIGAR)** | `split_or_merge_cigar...`, `toggle_cigar...` | CIGAR/SEQ/QUAL | 提取多列比对特征，转换并重建字符串长度同步 |
 | **复合级(Compound)**| `choose_permutation` + `permute_ALT` + `remap_GT`... | Record (单条变体) | 协同执行：先生成 `π`，然后在同一记录上绑定执行 |
+| **Runner-aware + Format-aware (writer)** | `sut_write_roundtrip` | `list[str]` (全文行) + 主 SUT 的 `ParserRunner` 实例 + 当前格式 | Dispatch 向装饰器声明 `needs_runner_hook=True` 与 `needs_format_context=True`，wrapper 从 orchestrator 接收 `runner_hook` 和 `format_context` 两个 kwarg，调用 `runner.run_write_roundtrip(path, fmt)` 并把 rewritten text 切回 `list[str]` 返回 |
+
+**SUT 写入协议 (runner hook 结构)**。`sut_write_roundtrip` 之所以能保持格式无关，是因为两个简单约定：
+
+1. `ParserRunner` 基类声明可选方法 `run_write_roundtrip(path, format_type) -> RunnerResult`，默认 `NotImplementedError`；同时暴露 `supports_write_roundtrip: bool = False`。
+2. 具体 SUT runner（如 htsjdk / pysam）在构造阶段声明支持的格式（VCF、SAM 或两者），在 `run_write_roundtrip` 内部按照 `format_type.upper()` 分流到 `VCFWriter` / `SAMFileWriterFactory` 或 `VariantFile("w")` / `AlignmentFile("wh")`，对不支持的格式返回 `error_type="ineligible"`（transform 层 gracefully no-op）。
+
+这意味着：**引入一个新的可写 SUT 的代价只是一个 runner 子类**。Transform library、dispatch、strategy router、orchestrator 都无需变动。
 
 ### 4. Hypothesis 与 Z3 驱动的变体生成引擎 (Generation Engine)
 
 #### 4.1 策略路由器与 `@given` 驱动的双模主循环 (Strategy Router & Dual-Mode Orchestrator)
 
-Phase B 输出的 `transform_steps` 只是字符串名（如 `"shuffle_meta_lines"`）。系统必须自动找到对应的 Hypothesis 策略并接入主循环。`strategy_router.py` 负责将全部 13 个变换名映射到 `@composite` 策略工厂：
+Phase B 输出的 `transform_steps` 只是字符串名（如 `"shuffle_meta_lines"`）。系统必须自动找到对应的 Hypothesis 策略并接入主循环。`strategy_router.py` 负责将全部 20 个变换名映射到 `@composite` 策略工厂：
 
 ```python
+# 单作用域：一个 transform 只服务于一个格式
 STRATEGY_MAP = {
     "shuffle_meta_lines":       st_shuffle_meta_lines,    # VCF
     "permute_structured_kv...": st_permute_structured_kv, # VCF
     "permute_ALT":              st_alt_permutation,       # VCF (compound)
     "remap_GT":                 st_alt_permutation,       # VCF (compound)
     "permute_optional_tag...":  st_permute_optional_tags, # SAM
-    ...  # 全部 13 个名字均有对应策略
+    ...  # 其它 19 个常规 transform
 }
+
+# 格式作用域：同一 transform 根据 fmt 映射到 VCF 或 SAM 变体
+FORMAT_SCOPED_MAP = {
+    ("sut_write_roundtrip", "VCF"): st_sut_write_roundtrip_vcf,
+    ("sut_write_roundtrip", "SAM"): st_sut_write_roundtrip_sam,
+}
+
+def get_strategy(name, fmt=None):
+    # 格式作用域优先；查不到再回落到单作用域表
+    if fmt and (strat := FORMAT_SCOPED_MAP.get((name, fmt.upper()))):
+        return strat
+    return STRATEGY_MAP.get(name)
 ```
+
+**格式作用域查表原因**：`sut_write_roundtrip` 在 MR 注册表里以单条 `format="VCF/SAM"` 存在，但在 Phase C 的 Hypothesis 抽样阶段，VCF MR 应该从 `corpus.vcf_seeds` 中取种子，SAM MR 应该从 `corpus.sam_seeds` 取。两个策略的前提 (`assume(any("##fileformat=VCF" ...))` vs `assume(any(l.startswith("@HD")))`）完全不同，所以必须按 `fmt` 分流到不同的 `@composite` 策略工厂。`orchestrator._run_mr_with_hypothesis` 把当前 MR 的 `fmt` 传入 `get_strategy(name, fmt=fmt)`，单作用域 transform 则忽略这个参数，零行为改变。
 
 `orchestrator.py` 据此实现**双模执行**（`use_hypothesis=True|False`）：
 
@@ -651,11 +708,31 @@ Bug Report 目录中的 `x.vcf` 和 `T_x.vcf` 现在是**最小复现文件**，
 *   **执行流与单端闪断熔断 (Execution Flow & Crash early exit)**：分别提取同组 Runner 唤起新老版本文件（双次唤起提入格式内容），若任选一次测试端遭遇 timeout、crash 或者直接跑出解析出错异常，系统不会无底线追测深入比较 `deep_equal`。立下判定并通报异常快速反馈脱出。
 *   **解析端语言体隐匿无知感 (Parser-Agnostic)**：充当统一定尺中间件不在乎被比较调集调用底层逻辑体（比如是用 C++ 开发，Java 或是 Pysam / Biopython 提供），完全接受它们脱手抽象规范的提取格式 `canonical_json: dict` 实现评判任务。
 
-#### 5.3 跨界差分判定：Differential Oracle (`differential.py`)
-捕捉寻找偏露断口用例 (DET - Difference-Exposing Tests)：不同解析器接受同源数据格式应达成对结构理解一致的同频输出。
-*   **独家脱除单声防退机制 (Degenerate case guard)**：经过验证双检，发现目前环境配置未满两家的有效参判（比如不被 Pysam 接单的文件遇上被剔除了的生物库），由于无法对持产生比较单侧评级，系统径直做出返回退隐操作，送判为全通过且一致的结果以确保安全下发回溯。
-*   **全数矩阵巡防对抗列队 (O(n²) Pairwise check)**：按照判定包系统命名自动升位字母顺差排列确保循环对比位置定准无跳变，随后实施各组成团碰撞推测测验。由于无黄金标准只能双对测试且循环排测，不设提早发现不休不退席直接停职机制，非扫全 `deep_equal` 图谱后交出 `all_agree` 的所有名单比对反馈图库不可，精准呈现了不合异动的全部矩阵项。
-*   **暴露防线抓崩溃 (Crash asymmetry detection)**：任何比对一方突然挂科闪崩将视同严重对比差异事件把单边产生的对应 `stderr` 也记录到脱落列表呈现以展示其相较不和。
+#### 5.3 跨界差分判定：Differential Oracle (`differential.py` + `consensus.py`)
+
+差分判官从 v2 开始采用 **多数投票共识**（Majority-Voting Consensus）而不是简单的两两对比。核心思想：**单个 SUT 有 bug 不应该污染整体判断**。
+
+**共识投票规则 (`get_consensus_output`)**：
+1. 将所有解析器的规范化输出按语义等价分桶（`deep_equal`）。
+2. 严格多数桶（`> N/2`）直接胜出 → 它就是 "正确答案"。
+3. 若无严格多数，**htslib（gold-standard tie-breaker）** 所在的桶自动胜出。htslib = bcftools（VCF）/ samtools（SAM），是 hts-specs 维护组的官方 CLI，其输出最接近规范的权威解读。
+4. 若无多数且无 htslib 裁决 → `INCONCLUSIVE`。不追责任何 SUT。
+
+**格式感知资格过滤 (Format-Aware Eligibility)**：
+投票前先按文件格式过滤 SUT。若 SUT 不支持当前格式，其输出**完全丢弃**（不算"不同票"也不算"失败"，叫 `ineligible_parsers`）。这样 VCF 运行中 biopython/seqan3（SAM-only）保持静默，不会把 3/4 的多数搞成 3/5 的平局。判定规则：
+- SUT 自报 `error_type="ineligible"` → 丢弃。
+- `eligibility_map[parser_name]` 不包含当前 `format_context` → 丢弃。
+
+**每个解析器的失败归类 (per-parser failure_cause)**：
+| `failure_cause`      | 语义                                               | 问责方        |
+| :------------------- | :------------------------------------------------- | :------------ |
+| `against_consensus`  | 主 SUT 在 x 和 T(x) 上都与共识相悖                 | SUT           |
+| `non_conformance`    | 仅单侧与共识相悖（x 或 T(x) 其一对，另一错）       | SUT（非 MR）   |
+| `mr_invalid`         | htslib 标记 T(x) 为 malformed，或 共识 (x) ≠ 共识 (T(x)) | **MR → 隔离** |
+| `inconclusive`       | 无多数且无 htslib tie-breaker                      | 无人          |
+| `crash` / `timeout`  | 解析器崩溃                                         | 通常是 SUT    |
+
+**htslib 不合法信号 (Reliability guard)**：若 htslib 因 "invalid/malformed" 报错，系统置位 `htslib_rejected_as_invalid`，quarantine 据此直接隔离 MR——上游参考实现说文件格式错了，就是 MR 出了问题。
 
 ### 6. 故障分诊与最小化 Bug 报告生成 (Triage & Bug Reporting)
 
@@ -818,6 +895,32 @@ PysamRunner.is_available()
 3. 同步输出 `summary.<PID>.json`（包含每文件的 executed/total/missing 行号）
 4. 宿主机的 `PysamDockerCoverageCollector` 直接读取 JSON 摘要（无需 `coverage combine`，避免容器路径在宿主不存在的问题）
 
+### 2.5 HTSlib CLI 第五 SUT：Gold-Standard Tie-Breaker
+
+**文件**：`test_engine/runners/htslib_runner.py` + `harnesses/htslib/README.md`
+
+为共识投票引入**权威裁决者**：`samtools` / `bcftools`。这两个 CLI 是 hts-specs 工作组自己维护的参考实现，其输出离规范最近——在 2-vs-2 平票场景下，它所在的桶自动胜出。
+
+与其他 SUT 的角色对比：
+
+| SUT         | 语言 | 底层库            | 投票角色              |
+| :---------- | :--- | :---------------- | :-------------------- |
+| htsjdk      | Java | (自持)            | 普通票                |
+| pysam       | Py   | libhts (C)        | 普通票                |
+| biopython   | Py   | (自持，SAM-only)  | 普通票（SAM 运行）    |
+| seqan3      | C++  | (自持，SAM-only)  | 普通票（SAM 运行）    |
+| **htslib**  | CLI  | **libhts (C)**    | **Tie-breaker**       |
+| reference   | Py   | (我们的正则解析器) | 普通票（独立实现）    |
+
+**dispatch 逻辑**：
+- VCF → `bcftools view <file>`，重序列化后的文本再喂进 `normalize_vcf_text` 得到 canonical JSON。
+- SAM → `samtools view -h <file>`，同理经 `normalize_sam_text`。
+- 格式不支持 或 对应 CLI 不在 PATH → 返回 `error_type="ineligible"`（不是 parse_error）。共识投票直接**丢弃**该结果，不计入失败也不计入不同票。
+
+**平台支持**：Linux / macOS 原生。Windows 需走 WSL2 或包装 Docker。`HTSlibRunner(bcftools_path=..., samtools_path=...)` 支持显式指定路径。
+
+**Reliability guard**：若 bcftools/samtools 以 "invalid / malformed / truncated / could not parse" 退出，设置 `htslib_rejected_as_invalid=True` —— 共识告诉 quarantine："这 MR 生成的文件连 gold-standard CLI 都拒收了，直接降级。"
+
 ### 3. 四层结构化反馈网络 (Four-Layer Feedback Network)
 
 #### ⚡ 第一层：DSL 编译级内反馈 (Pydantic Sandbox — 已在 Phase B 实现)
@@ -902,11 +1005,77 @@ run_phase_d() → run_phase_b(blindspot_context=ticket)
 
 **文件**：`test_engine/feedback/quarantine_manager.py`
 
-如果某个 Enforced MR 导致主目标大面积崩溃（失败率 > 50%），系统自动将其从 Enforced 降级移入 Quarantine，确保 CI 流水线保持高信噪比。
+共识投票重构后，降级逻辑升级为 **交叉验证"良民证"规则**：先看有没有任何一个解析器（htsjdk / pysam / biopython / seqan3 / htslib / reference）在任意 seed 上通过了这个 MR 的 metamorphic 检查。只要有一家投过 `passed=True`，这条 MR 就有"良民证"——**不隔离**，继续贡献 SCC。
 
-**降级依据**：`DETEvent.failure_type` 字段（Phase D 新增），区分 `"crash"` / `"metamorphic"` / `"differential"` 三种失败类型，精确统计每个 MR 的崩溃率。
+> 逻辑理由：合法的 metamorphic relation 是"至少有一个合规实现能遵守"的规则。主 SUT 的单独失败只证明它自己有 bug，不证明 MR 错了。辅助 SUT 的 bug 更不能拖 MR 下水。
+
+**只有在"零良民证"的前提下**才应用以下降级阈值：
+1. `failure_cause == "mr_invalid"` 事件 ≥ 3 次：htslib 说 T(x) 不合法，或共识 (x) ≠ 共识 (T(x)) → 降级。
+2. 主 SUT `against_consensus` 率 > `crash_threshold`（默认 0.5）：主 SUT 在这条 MR 上系统性跑偏。
+3. 主 SUT `crash_rate` > `crash_threshold`：解析器爆炸，说明输出格式坏了。
+
+SCC 计算同步采用"良民证"规则：`biotest.py` 在组装 `primary_failed_mr_ids` 时，会先扫描所有 parser 的 `passed=True` 事件，把被背书的 MR 从"盲区"名单里排除，避免一条优质 MR 因主 SUT 单点故障就被迫进入 blind spot。
 
 **磁盘原子操作**：`apply_quarantine()` 直接修改 `mr_registry.json`，将降级 MR 从 `enforced[]` 移入 `quarantine[]`，更新 `summary` 计数。
+
+#### 🎯 第五层：盲区工单优先队列 + 冷却机制 (Top-K Prioritized Queue + Cooldown)
+
+**文件**：`test_engine/feedback/blindspot_builder.py` + `test_engine/feedback/rule_attempts.py`
+
+每轮 Phase D 面对 300+ 条未覆盖规则，把它们全塞给 LLM 会导致 qwen3 / Llama 3.3 70B 幻觉、输出空白或违反 Pydantic 验证。解决方法：**少食多餐**（prioritized queueing），每次只挑 Top K 条（`max_rules_per_iteration`，默认 5），其余排队等下一轮。
+
+**排序五维键**（ascending，第一个有差异的维度胜出）：
+1. **格式过滤**（`format_penalty`）：off-format 规则强制靠后（VCF 跑不可能选 SAM 规则）。
+2. **失败次数**（`failure_count`）：屡败屡战的规则沉底，让新规则先上。
+3. **-复杂度**（`-complexity`）：复杂度高的规则优先。复杂度 = 文本长度 + 关键词密度（`MUST/SHALL/when/BCF/dictionary/…`）+ 枚举/表格标记 + 跨节引用数。
+4. **-邻近度**（`-proximity`）：规则 token 与当前主 SUT 未覆盖源码 token 的 Jaccard 相似度。相似度高 → 这条规则可能就藏在那段没覆盖的 `if/else` 里。
+5. **严重度**（`severity_rank`）：CRITICAL < ADVISORY < MAY。
+
+**Top-K 窗口 + 冷却过滤**：
+- 每轮组装 ticket 时，从排序后的队列里依次取。若某条规则当前处于 `cooled_until_iteration ≥ current_iter` 状态，**跳过**，`cooling_count` 加 1。队列账本：`total_uncovered = shown + remaining`，`remaining` 包含正在冷却的规则——它们没被删除，只是延期。
+- Ticket 被送给 LLM 之前，`tracker.record_attempt(iter, top_k_chunk_ids)` 记录本轮"秀过场"的规则。
+- Phase D 本轮跑完 B → C、算完 SCC 之后，`tracker.record_outcome(iter, newly_covered_chunk_ids)` 打分：
+  - 在 `newly_covered` 里 → **清零**（covered）。
+  - 不在 → `failure_count += 1`，`cooled_until_iteration = iter + cooldown_duration(failure_count)`。
+- **冷却时长（指数退避，有上限）**：1 次失败 → 跳 1 轮，2 次 → 跳 2 轮，3 次 → 跳 4 轮，4+ 次 → 跳 4 轮（`MAX_COOLDOWN_ITERATIONS = 4`）。
+- 持久化：`data/rule_attempts.json`。Phase D 重启时加载，跨会话保留冷却状态。
+
+**示例**：队列 312 条，iter 1 挑 Top 5 塞给 LLM → 没一条被覆盖 → iter 2 这 5 条进入冷却 → 系统自动往下挑 "第 6–10 名"。避免"死磕最难的 5 条"。
+
+**运行日志格式**：
+```
+Total Blindspots: 312 | Injecting Top 5 into this ticket | 307 rules remaining in queue (2 cooling down).
+```
+
+**System prompt 明确指示 LLM**：
+```
+FOCUS EXCLUSIVELY on the rules below. Do NOT attempt to cover the entire spec in one go.
+Quality of MRs for these specific rules is the priority. Deferred rules will resurface in
+the next iteration's ticket.
+```
+
+#### 🧭 第六层：运行时感知菜单过滤器 (Runtime-Gated Transform Menu)
+
+**文件**：`mr_engine/agent/transforms_menu.py` + `biotest.py::_compute_runtime_capabilities()`
+
+写入型 MR（基于 `sut_write_roundtrip`）只有在"至少有一个已启用 SUT 的 `ParserRunner` 声明 `supports_write_roundtrip = True`"的时候才值得让 LLM 考虑。否则 LLM 选了也白选：dispatch 找不到 writer-capable runner，transform gracefully no-op，浪费一个 MR slot。
+
+于是 Phase D 在进入 Phase B 之前先做一次 runtime capability 计算：
+
+```python
+# biotest.py — Phase D 每轮 Phase B 之前
+runtime_capabilities = _compute_runtime_capabilities(enabled_suts, primary_target)
+# -> {"primary_sut_has_writer", "has_bcf_codec", ...}
+```
+
+然后 `transforms_menu.get_transform_menu(runtime_capabilities=...)` 在渲染 LLM 菜单时会：
+1. **隐藏**任何前置条件属于 `KNOWN_RUNTIME_PRECONDITIONS` 且当前 runtime 不满足的 transform（避免 LLM 挑错）；
+2. 在渲染末尾加一段 "Note: the following transforms were hidden because the current runtime lacks X"，提示 LLM 隐藏项的存在，防止它误以为菜单就是全部；
+3. `Valid names:` 行也只列出可用名字，LLM 结构化输出里如果混入隐藏名字会被 Pydantic 直接拒收。
+
+**配合 transform 的 preconditions**：`sut_write_roundtrip` 在注册时写了 `preconditions=("primary_sut_has_writer",)`。由 `KNOWN_RUNTIME_PRECONDITIONS` 把这个 token 映射到 "主 SUT 的 ParserRunner 实例 `supports_write_roundtrip=True`" 这个 runtime 检查上。未来新增"runtime-gated transform"只需扩展这张映射表，prompt 层零改动。
+
+**效果**：用户在配置里启用纯解析 SUT（例如没有写功能的 `ReferenceRunner`）时，`sut_write_roundtrip` 自动从 LLM 菜单消失；用户把 `supports_write_roundtrip=True` 的 runner（htsjdk / pysam / 新加的 writer）启用后，菜单自动复活。整个框架对"新 SUT 支持 writer"这一事件的反应是零配置的。
 
 ### 4. 框架终止条件 (Termination Conditions)
 
@@ -953,22 +1122,28 @@ for iteration in range(controller.state.iteration, max_iterations):
         primary_target=primary_target, source_roots=source_roots)
 ```
 
-### 6. LLM 本地化：Ollama 路由 (Local LLM via Ollama)
+### 6. LLM 多路由 + 速率限制退避 (Multi-provider LLM + Rate-Limit Backoff)
 
-**文件**：`mr_engine/llm_factory.py`
+**文件**：`mr_engine/llm_factory.py` + `mr_engine/agent/engine.py`
 
-新增 `ollama/` 前缀路由，通过 OpenAI 兼容接口连接本地 Ollama 服务：
+**默认模型从 `ollama/qwen3-coder:30b` 切到 `llama-3.3-70b-versatile`（Groq 免费层）**。原因：本地 30B 在扩展盲区工单 + 五维排序 prompt 下频繁触发 `GraphRecursionError`（ReAct 陷入工具调用死循环）和 Pydantic 验证失败（输出 JSON 带非法换行）。Groq 的 Llama 70B 容错显著更好。
 
-```python
-if model_name.lower().startswith("ollama/"):
-    llm = ChatOpenAI(
-        model=model_name[7:],  # strip "ollama/" prefix
-        base_url=settings.ollama_base_url,  # http://localhost:11434/v1
-        api_key="ollama",  # required by ChatOpenAI but ignored by Ollama
-    )
-```
+`llm_factory.py` 支持的 provider（按前缀路由）：
 
-当前配置使用 `ollama/qwen3-coder:30b`（18GB 本地模型）。API Key 校验器自动跳过 `ollama/` 前缀。
+| `LLM_MODEL` 示例            | Provider  | API Key 环境变量      |
+| :-------------------------- | :-------- | :-------------------- |
+| `llama-3.3-70b-versatile`   | Groq      | `GROQ_API_KEY`        |
+| `gpt-4o` / `o3-mini`        | OpenAI    | `OPENAI_API_KEY`      |
+| `claude-3-5-sonnet-...`     | Anthropic | `ANTHROPIC_API_KEY`   |
+| `gemini-1.5-pro`            | Google    | `GOOGLE_API_KEY`      |
+| `ollama/qwen3-coder:30b`    | Ollama    | (local, 无需 key)     |
+| `vllm/<name>`               | vLLM      | (optional)            |
+
+**速率限制退避（`_invoke_with_rate_limit`）**：Groq 免费层有日配额，命中 429 时：
+1. 优先解析 provider 返回的 Retry-After / "try again in 37.23s" / "1m30s" / `retry_after` JSON 字段，按提示休眠 + 0.5~2 秒抖动。
+2. 若无提示则指数退避：30s → 60s → 120s → 240s（上限 10 分钟），最多重试 4 次。
+3. 识别模式：字符串包含 `429 | 503 | rate limit | quota | too many requests | try again in | capacity`，或异常对象的 `status_code ∈ {429, 503}`。
+4. 重试耗尽后，此轮 theme 标记为 `Rate limit budget exhausted` 但**不中断整个 Phase B**，下一个 theme 继续。
 
 ### 7. Rich 终端仪表盘 (Rich Terminal Dashboard)
 
@@ -1054,7 +1229,7 @@ BioTest/
 
 ### 10. ✅ 测试状态 (Test Status)
 
-**201/201 测试通过**（排除因实机运行修改 registry 导致的 1 个预期性瞬态失败）。
+**292/292 测试通过**（+ 2 个受环境限制 skip，如 Docker 不可用时）。
 
 Phase D 新增的所有模块均通过了实际数据的冒烟验证：
 *   SCC 计算: 453 规则, VCF 316 / SAM 137 (精确分区)
@@ -1063,3 +1238,20 @@ Phase D 新增的所有模块均通过了实际数据的冒烟验证：
 *   盲区工单: 包含实际源码切片 (htsjdk VCFCodec.java, biopython sam.py)
 *   pysam Docker: 3 个 VCF 种子全通过, 覆盖率 166/616 (26.9%)
 *   JaCoCo 累积: 3 次运行合并 13KB exec 数据
+
+### 11. 🧭 SUT 写入协议扩展指南 (Onboarding a Writer-Capable SUT)
+
+新增一个可以做 parse + write round-trip 的 SUT 时，**不需要修改** transform library、dispatch、strategy router、orchestrator 里的任何一行代码。只需做两件事：
+
+1. **Runner 端**：在 SUT 对应的 `ParserRunner` 子类里实现 `run_write_roundtrip(input_path, format_type="VCF") -> RunnerResult`，并把类属性 `supports_write_roundtrip` 置为 `True`。方法内部按 `format_type.upper()` 分流到 SUT 的 VCF / SAM 写入 API；不支持的格式返回 `error_type="ineligible"` 即可。
+2. **Harness 端（若 SUT 是 subprocess / Docker）**：在原有 harness 的 CLI 里加一个 `--mode write_roundtrip <FORMAT> <file_path>` 参数，在容器 / JVM 里做 parse + serialize，把序列化后的文件文本打印到 stdout。Runner 端 subprocess 包装器读取 stdout，塞进 `RunnerResult.canonical_json["rewritten_text"]` 返回。
+
+**参考实现**：
+
+| SUT     | Runner 文件                                      | Harness 文件                               | 写入 API                                                       |
+| :------ | :----------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------- |
+| htsjdk  | `test_engine/runners/htsjdk_runner.py`           | `harnesses/java/BioTestHarness.java`       | `VCFWriter` + `SAMFileWriterFactory`                           |
+| pysam   | `test_engine/runners/pysam_runner.py`            | `harnesses/pysam/pysam_harness.py`         | `pysam.VariantFile("w")` + `pysam.AlignmentFile("wh")`         |
+| htslib  | `test_engine/runners/htslib_runner.py`           | (CLI 本身就是 round-trip)                  | `bcftools view -O v` / `samtools view -h`                      |
+
+**菜单自动生效**：Phase D 每轮在进入 Phase B 之前通过 `_compute_runtime_capabilities` 扫描所有启用 SUT，凡是有任何 runner 的 `supports_write_roundtrip=True`，就会在 runtime capabilities 集合里注入 `primary_sut_has_writer`，从而让 `sut_write_roundtrip` transform 出现在 LLM 的菜单里。无写入能力时自动隐藏，LLM 永远不会白选。

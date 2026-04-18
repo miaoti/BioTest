@@ -2,8 +2,8 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-29.1-blue?logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-225%20passing-brightgreen?logo=pytest" />
-  <img src="https://img.shields.io/badge/SUTs-4%20parsers-purple" />
+  <img src="https://img.shields.io/badge/Tests-292%20passing-brightgreen?logo=pytest" />
+  <img src="https://img.shields.io/badge/SUTs-6%20parsers-purple" />
   <img src="https://img.shields.io/badge/License-MIT-green" />
 </p>
 
@@ -19,374 +19,239 @@
 
 **Automated Metamorphic & Differential Testing for Bioinformatics File Format Parsers**
 
-BioTest is a fully automated pipeline that mines test rules from genomics specifications (VCF v4.5, SAM v1), then cross-examines real-world parsers (HTSJDK, Biopython, pysam, SeqAn3) to find conformance bugs — backed by spec evidence.
+BioTest mines test rules from the VCF/SAM specs, applies semantics-preserving
+transforms to real files, and cross-executes them on multiple parsers
+(HTSJDK, pysam, Biopython, SeqAn3, htslib CLI, reference). Disagreements
+become bug reports backed by spec evidence.
 
 ---
 
-## Architecture Overview
+## Pipeline at a Glance
 
 ```
-          biotest.py (Grand Orchestrator)  +  biotest_config.yaml
-                           |
-          +----------------+----------------+----------------+
-          |                |                |                |
-      Phase A          Phase B          Phase C          Phase D
-    Spec Ingest       MR Mining      Cross-Execution   Feedback Loop
-          |                |                |                |
-   VCFv4.5.tex      LLM Agent +       4 SUTs +         SCC Tracker +
-   SAMv1.tex        RAG Query        Dual Oracles      Code Coverage
-          |                |                |                |
-     ChromaDB        MR Registry      Bug Reports      Blindspot
-   (2,048 chunks)   (Enforced/       DET Report       Ticket with
-                    Quarantine)                       Code Slices
-                         ^                                  |
-                         |                                  |
-                         +---- Coverage-Steered Feedback ---+
+Phase A  Spec Ingest     VCF/SAM .tex  →  ChromaDB vector store of testable rules
+Phase B  MR Mining       LLM + RAG     →  Metamorphic Relations (transform + target)
+Phase C  Cross-Execution apply(T, x)   →  run every parser, vote, diff, shrink
+Phase D  Feedback Loop   coverage      →  Top-K blindspot tickets → next B round
 ```
 
-| Phase | Module | What it does |
-|:-----:|--------|-------------|
-| **A** | `spec_ingestor/` | Fetches VCF/SAM LaTeX specs from GitHub, parses them into semantic chunks, tags normative rules (MUST/SHALL/SHOULD), and indexes into ChromaDB |
-| **B** | `mr_engine/` | LLM agent autonomously queries the knowledge base, extracts Metamorphic Relations, validates against a 13-transform whitelist, hydrates evidence from ChromaDB, triages into Enforced/Quarantine tiers |
-| **C** | `test_engine/` | Applies transforms to seed files, runs through 4 real parsers (HTSJDK, Biopython, pysam, SeqAn3), compares outputs with dual oracles (metamorphic + differential), generates bug reports |
-| **D** | `test_engine/feedback/` | Iterative feedback loop: computes SCC (Semantic Constraint Coverage), collects multi-language code coverage (JaCoCo/coverage.py/gcovr), extracts uncovered source code slices, builds blindspot tickets to steer next-iteration MR mining, auto-quarantines failing MRs, enforces 5 termination conditions |
+| Phase | Module              | What it produces                                                             |
+|:-----:|---------------------|------------------------------------------------------------------------------|
+| A     | `spec_ingestor/`    | `data/chroma_db/` vector store + `data/parsed/*.json` testable rules         |
+| B     | `mr_engine/`        | `data/mr_registry.json` (Enforced + Quarantine tiers)                        |
+| C     | `test_engine/`      | Bug reports under `bug_reports/` + `data/det_report.json`                    |
+| D     | `test_engine/feedback/` | `data/scc_report.json`, `data/feedback_state.json`, blindspot tickets    |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-
 ```bash
-# Python 3.12 (required for binary wheel compatibility)
-py -3.12 --version
+# 1. Prerequisites
+py -3.12 --version      # Python 3.12
+java -version           # Java 21
+docker --version        # Docker (needed for pysam on Windows)
 
-# Java 21 (for HTSJDK harness)
-java -version
-
-# Docker (for pysam runner on Windows)
-docker --version
-
-# Install dependencies
+# 2. Install
 py -3.12 -m pip install -r requirements.txt
-py -3.12 -m pip install rich pyyaml hypothesis z3-solver biopython numpy coverage
-```
+py -3.12 harnesses/pysam/build_docker.py      # Build pysam container
 
-### Build pysam Docker Image (Windows)
+# 3. Configure LLM (one of: Groq, OpenAI, Anthropic, Google, DeepSeek, Ollama)
+#    Set LLM_MODEL=... and the corresponding *_API_KEY in .env
 
-```bash
-# Build the Docker container for pysam (HTSlib cannot compile on Windows natively)
-docker build -t biotest-pysam:latest harnesses/pysam/
-
-# Verify all parsers are available
-py -3.12 -m test_engine list-parsers
-# Expected: htsjdk AVAILABLE, pysam AVAILABLE, biopython AVAILABLE, seqan3 AVAILABLE, reference AVAILABLE
-```
-
-### Populate the Seed Corpus
-
-```bash
-# Downloads ~30 curated real-world VCF seeds from htsjdk / bcftools /
-# hts-specs / GATK public test suites into seeds/vcf/ (gitignored).
-# Tier-1 hand-crafted seeds are already in the repo.
+# 4. Populate Tier-2 seeds (optional, ~30 curated real-world files)
 py -3.12 seeds/fetch_real_world.py
+
+# 5. Run
+py -3.12 biotest.py                       # Full A → B → C
+py -3.12 biotest.py --phase C             # Only Phase C (re-use registry)
+py -3.12 biotest.py --phase A,B,C,D       # Include feedback loop
+py -3.12 biotest.py --dry-run             # Validate config only
 ```
 
-See [`seeds/SOURCES.md`](seeds/SOURCES.md) for the full provenance manifest and diversity-axis coverage matrix.
-
-### Set Up Local LLM (Optional)
-
+Tests:
 ```bash
-# Install Ollama and pull qwen3-coder:30b for local Phase B mining
-ollama pull qwen3-coder:30b
-# Verify: curl http://localhost:11434/v1/models
-```
-
-### Run the Pipeline
-
-```bash
-# Full pipeline (A -> B -> C)
-py -3.12 biotest.py
-
-# Phase C only (uses existing MR registry, fastest)
-py -3.12 biotest.py --phase C
-
-# Phase D: Feedback-driven loop (iterates B->C with coverage steering)
-py -3.12 biotest.py --phase D
-
-# Full pipeline with feedback loop
-py -3.12 biotest.py --phase A,B,C,D
-
-# Dry run (validate config without executing)
-py -3.12 biotest.py --dry-run
-
-# Custom config + verbose logging
-py -3.12 biotest.py --config my_config.yaml --verbose
-```
-
-### Run Tests
-
-```bash
-# All 225 tests
-py -3.12 -m pytest tests/ -v --ignore=tests/test_integration.py --ignore=tests/test_golden_retrieval.py
-
-# Specific module
-py -3.12 -m pytest tests/test_dispatch.py -v
-py -3.12 -m pytest tests/test_orchestrator_mocked.py -v
+py -3.12 -m pytest tests/ --ignore=tests/test_golden_retrieval.py
 ```
 
 ---
 
 ## Adding a New Parser (SUT)
 
-> **If you want to test a parser that is not already included, you must write a
-> Harness (Canonical Adapter) for it and register it in `biotest_config.yaml`.**
+Parsers speak different languages and expose different APIs, so each one
+needs a thin **Harness** that exposes a uniform contract:
 
-BioTest compares parsers by converting their outputs into a common **Canonical
-JSON** format. Each parser speaks a different language and exposes a different
-API, so a thin wrapper — called a **Harness** — is required to bridge the gap.
+> **parse contract.** Given a file path and a format (`VCF` or `SAM`),
+> return a JSON object matching `test_engine/canonical/schema.py`. Exit 0 on
+> success, non-zero on error.
 
-### What a Harness Does
+### Step 1 — write the Harness
 
-```
-Input:  file path (VCF or SAM)
-          |
-          v
-  [ Call the SUT's native API to parse the file ]
-          |
-          v
-  [ Convert the SUT's in-memory objects to Canonical JSON ]
-          |
-          v
-Output: JSON to stdout  (exit 0 = success, non-zero = error)
-```
+| SUT language  | What to write                                      | Example                                |
+|:-------------:|----------------------------------------------------|----------------------------------------|
+| Java          | `.java` → fat JAR                                  | `harnesses/java/BioTestHarness.java`   |
+| Python (pip)  | `ParserRunner` subclass (in-process)               | `test_engine/runners/biopython_runner.py` |
+| Python (Docker) | CLI script + Dockerfile                          | `harnesses/pysam/`                     |
+| C / C++       | Binary that reads a file, prints canonical JSON    | `harnesses/cpp/biotest_harness.cpp`    |
+| Rust / Go / … | Same as C++: a process contract, JSON on stdout    | (follow the C++ pattern)               |
 
-Without a Harness, there is no way to compare a Java `VariantContext` object
-against a Python `AlignmentIterator` object — the Harness normalizes both
-into the same JSON schema so `deep_equal` can do the comparison.
+> **Coordinate trap.** Canonical JSON uses 1-based positions. If your SUT is
+> 0-based internally (pysam, SeqAn3, Biopython), **add +1** to POS/PNEXT in
+> the harness before printing.
 
-### Step-by-step
-
-**1. Write the Harness**
-
-| SUT Language | What to write | Example |
-|:------------:|---------------|---------|
-| Java | A `.java` file compiled into a fat JAR | `harnesses/java/BioTestHarness.java` |
-| C / C++ | A `.cpp` file compiled into an executable | `harnesses/cpp/biotest_harness.cpp` |
-| Python (pip) | A runner class extending `ParserRunner` | `test_engine/runners/biopython_runner.py` |
-| Python (Docker) | A harness script + Dockerfile | `harnesses/pysam/` (for libs needing Linux) |
-| Rust / Go / other | A binary that reads a file and prints JSON to stdout | (same pattern as C++) |
-
-The Harness must output JSON conforming to the canonical schema defined in
-`test_engine/canonical/schema.py` (`CanonicalVcf` / `CanonicalSam`).
-
-**2. Register it in `biotest_config.yaml`**
+### Step 2 — register it in `biotest_config.yaml`
 
 ```yaml
 phase_c:
   suts:
-    # ... existing SUTs ...
-
-    - name: my_new_parser          # unique name
-      language: Rust               # for display only
+    - name: my_parser
+      language: Rust
       enabled: true
-      sut_path: SUTfolder/rust/my_parser   # where the source lives
-      adapter: harnesses/rust/my_parser    # path to compiled binary
+      adapter: harnesses/rust/my_parser   # path to binary
       timeout_s: 60
 ```
 
-**3. (If subprocess-based) Add a runner class**
+### Step 3 — add a runner class (if subprocess-based)
 
-For Java/C++/Rust SUTs that run as external processes, create a new runner in
-`test_engine/runners/` following the pattern of `htsjdk_runner.py` or
-`seqan3_runner.py`. For Python libraries, follow `biopython_runner.py`.
+Create `test_engine/runners/my_parser_runner.py` by mirroring
+`htsjdk_runner.py` (Java) or `seqan3_runner.py` (C++). Python libraries
+follow `biopython_runner.py`.
 
-**4. Run the pipeline**
+### Step 4 — run
 
 ```bash
 py -3.12 biotest.py --phase C
 ```
 
-The orchestrator will automatically include your new SUT in both the
-metamorphic and differential oracles.
-
-### Coordinate Trap
-
-Be aware of the **0-based vs 1-based coordinate trap**. The canonical JSON
-uses 1-based positions (matching the VCF/SAM spec text). If your SUT converts
-to 0-based internally (like pysam and SeqAn3 do), your Harness **must add +1**
-before outputting POS and PNEXT. See the
-[Coordinate Normalization](#coordinate-normalization) table below.
+The new SUT joins both the metamorphic and differential oracles automatically.
 
 ---
 
-## Project Structure
+## Adding **Write** Support to a SUT
+
+The framework exposes a single format-agnostic transform — `sut_write_roundtrip`
+— that parses a file with the primary SUT, re-serializes it through that same
+SUT's public writer, and feeds the rewritten text back into the oracle
+pipeline. Per Chen, Kuo, Liu, Tse (2018) §3.2 this is the canonical
+`parse(write(parse(x))) == parse(x)` metamorphic relation.
+
+If your SUT exposes a writer (VCF or SAM or both), you opt in by implementing
+**two things** on your `ParserRunner` subclass:
+
+```python
+# test_engine/runners/my_parser_runner.py
+class MyParserRunner(ParserRunner):
+    supports_write_roundtrip: bool = True        # ← 1. opt-in flag
+
+    def run_write_roundtrip(                      # ← 2. writer contract
+        self,
+        input_path: Path,
+        format_type: str = "VCF",
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        # Call your parser's public writer.
+        # Handle fmt = "VCF" and/or "SAM" — return an "ineligible" RunnerResult
+        # for formats your SUT can't write (framework treats that as a no-op).
+        rewritten_text: str = ...
+        return RunnerResult(
+            success=True,
+            canonical_json={"rewritten_text": rewritten_text},
+            parser_name=self.name,
+            format_type=format_type.upper(),
+        )
+```
+
+That's the entire contract. You do **not** register a new transform, add a
+new Hypothesis strategy, or edit the dispatch plumbing — the framework
+already handles all of that for any runner whose `supports_write_roundtrip`
+is True.
+
+### How the pieces connect
 
 ```
-BioTest/
-|
-|-- biotest.py                    # Grand Orchestrator (960 lines, Rich UI, A->B->C->D)
-|-- biotest_config.yaml           # Pipeline configuration (198 lines)
-|
-|-- spec_ingestor/                # Phase A: Spec Ingestion
-|   |-- config.py                 #   Constants (GitHub repo, ChromaDB settings)
-|   |-- ingestor.py               #   GitHub API spec fetcher
-|   |-- parser.py                 #   LaTeX parser + semantic chunker
-|   |-- indexer.py                #   ChromaDB SpecIndex (query + index)
-|   +-- main.py                   #   CLI: step_ingest / step_parse / step_index
-|
-|-- mr_engine/                    # Phase B: MR Mining
-|   |-- llm_factory.py            #   Multi-model routing (Ollama/Groq/OpenAI/Gemini/Anthropic)
-|   |-- behavior.py               #   6 BehaviorTarget enums + descriptions
-|   |-- transforms/               #   19 atomic transform functions
-|   |   |-- __init__.py           #     TRANSFORM_REGISTRY (decorator + hints + preconditions)
-|   |   |-- vcf.py                #     15 VCF transforms (9 original + 6 new)
-|   |   +-- sam.py                #     4 SAM transforms
-|   |-- agent/                    #   LangChain ReAct Agent
-|   |   |-- tools.py              #     query_spec_database tool
-|   |   |-- prompts.py            #     System prompt builder (+ blindspot injection)
-|   |   |-- transforms_menu.py    #     Transform menu for LLM
-|   |   +-- engine.py             #     mine_mrs() with retry loop + blindspot_context
-|   |-- dsl/                      #   Pydantic DSL Compiler
-|   |   |-- models.py             #     MetamorphicRelation, Evidence, compute_mr_id
-|   |   +-- compiler.py           #     JSON extraction + validation + hydration
-|   +-- registry.py               #   Enforced/Quarantine triage + merge + export
-|
-|-- test_engine/                  # Phase C: Cross-Execution
-|   |-- config.py                 #   Paths, timeouts, parser matrix
-|   |-- orchestrator.py           #   Main test loop (Hypothesis + Static dual-mode)
-|   |-- __main__.py               #   CLI: python -m test_engine run / list-parsers
-|   |-- canonical/                #   Canonical JSON normalization
-|   |   |-- schema.py             #     Pydantic models (CanonicalVcf, CanonicalSam)
-|   |   |-- vcf_normalizer.py     #     Raw VCF text -> canonical JSON
-|   |   +-- sam_normalizer.py     #     Raw SAM text -> canonical JSON
-|   |-- runners/                  #   Multi-language parser runners (5 SUTs)
-|   |   |-- base.py               #     ParserRunner ABC + RunnerResult
-|   |   |-- htsjdk_runner.py      #     Java subprocess (fat JAR + JaCoCo coverage)
-|   |   |-- biopython_runner.py   #     Python in-process (SAM, hybrid approach)
-|   |   |-- pysam_runner.py       #     Facade: native pysam -> Docker fallback
-|   |   |-- pysam_docker_runner.py#     Docker subprocess (VCF+SAM, with coverage)
-|   |   |-- seqan3_runner.py      #     C++ subprocess (SAM, optional coverage binary)
-|   |   +-- reference_runner.py   #     Built-in Python parser (always available)
-|   |-- generators/               #   Test generation engine
-|   |   |-- dispatch.py           #     Transform dispatcher (13 wrappers + Z3 guards)
-|   |   |-- strategy_router.py    #     Transform name -> Hypothesis strategy
-|   |   |-- seeds.py              #     Seed corpus loader
-|   |   |-- vcf_strategies.py     #     Hypothesis strategies for VCF
-|   |   |-- sam_strategies.py     #     Hypothesis strategies for SAM
-|   |   |-- z3_constraints.py     #     Z3 constraint guards
-|   |   +-- shrink.py             #     Custom shrink hooks
-|   |-- oracles/                  #   Dual oracle system
-|   |   |-- deep_equal.py         #     Semantic comparison (float tolerance, QUAL)
-|   |   |-- metamorphic.py        #     Oracle 1: parse(x) == parse(T(x))
-|   |   |-- differential.py       #     Oracle 2: HTSJDK(x) == pysam(x) == ...
-|   |   +-- det_tracker.py        #     DET rate tracking (+ failure_type field)
-|   |-- triage/                   #   Bug report generation
-|   |   |-- classifier.py         #     4 failure types
-|   |   |-- report_builder.py     #     Auto-generates BUG-{timestamp}/ (with shrink)
-|   |   +-- evidence_formatter.py #     Spec evidence -> Markdown
-|   +-- feedback/                 #   Phase D: Feedback Loop (6 files)
-|       |-- scc_tracker.py        #     Semantic Constraint Coverage computation
-|       |-- loop_controller.py    #     5 termination conditions + state persistence
-|       |-- quarantine_manager.py #     Dynamic MR demotion (Enforced -> Quarantine)
-|       |-- coverage_collector.py #     Multi-language coverage (JaCoCo/coverage.py/gcovr)
-|       +-- blindspot_builder.py  #     Blindspot ticket + source code slice extraction
-|
-|-- harnesses/                    # External parser harnesses
-|   |-- java/
-|   |   |-- BioTestHarness.java   #   HTSJDK -> canonical JSON (425 lines)
-|   |   +-- build/libs/
-|   |       +-- biotest-harness-all.jar  # Fat JAR (HTSJDK bundled)
-|   |-- cpp/
-|   |   +-- biotest_harness.cpp   #   SeqAn3 -> canonical JSON (248 lines)
-|   +-- pysam/                    #   pysam Docker harness
-|       |-- pysam_harness.py      #     Standalone CLI (VCF+SAM, --coverage mode)
-|       |-- Dockerfile            #     python:3.12-slim + pysam + coverage
-|       +-- build_docker.py       #     Build + smoke test script
-|
-|-- seeds/                        # Test seed corpus (6 files)
-|   |-- vcf/                      #   3 VCF seeds (spec example, multi-sample, minimal)
-|   +-- sam/                      #   3 SAM seeds (spec example, tags, complex CIGAR)
-|
-|-- data/                         # Persistent data
-|   |-- chroma_db/                #   ChromaDB vector store (2,048 chunks)
-|   |-- parsed/                   #   VCF/SAM parsed chunks JSON (453 testable rules)
-|   |-- mr_registry.json          #   Mined MR registry (Enforced + Quarantine)
-|   |-- det_report.json           #   DET rate report
-|   |-- scc_report.json           #   Semantic Constraint Coverage report
-|   +-- feedback_state.json       #   Phase D iteration state (crash recovery)
-|
-|-- coverage_artifacts/           # Phase D: Coverage data (gitignored)
-|   |-- jacoco/                   #   JaCoCo agent JAR + exec data + XML reports
-|   |-- pysam/                    #   Docker coverage fragments + extracted source
-|   +-- .coverage                 #   coverage.py data (biopython)
-|
-|-- bug_reports/                  # Auto-generated bug report bundles
-|   +-- BUG-{timestamp}/
-|       |-- x.vcf                 #   Shrunk minimal reproduction seed
-|       |-- T_x.vcf               #   Shrunk minimal reproduction variant
-|       |-- canonical_outputs/    #   Parser JSON comparison
-|       |-- logs/                 #   Diffs + stderr
-|       |-- evidence.md           #   Spec citations from Phase B
-|       +-- summary.json          #   Classification metadata
-|
-|-- tests/                        # 201 tests (12 test files)
-|
-+-- SUTfolder/                    # Systems Under Test (gitignored)
-    |-- java/htsjdk/              #   HTSJDK (Java, VCF+SAM)
-    |-- python/biopython/         #   Biopython (Python, SAM)
-    +-- cpp/seqan3/               #   SeqAn3 (C++, SAM)
+Phase B menu  →  sut_write_roundtrip (format: VCF/SAM)
+                       │
+Phase C run   →  strategy picks seed from the MR's format corpus
+                       │
+                 orchestrator resolves primary SUT's runner
+                       │
+                 dispatch  ──►  runner.run_write_roundtrip(path, fmt)
+                       │
+                 rewritten text  ──►  normal consensus / metamorphic oracle
 ```
+
+The `format_type` argument tells your runner whether the seed is VCF or SAM;
+the orchestrator feeds it from the MR's declared scope. One transform serves
+both formats — no per-format duplicates to maintain.
+
+### Reference implementations
+
+| SUT         | Writer API                                                     | Source                                         |
+|:------------|:---------------------------------------------------------------|:-----------------------------------------------|
+| **htsjdk**  | `VCFWriter` + `SAMFileWriterFactory`                           | `harnesses/java/BioTestHarness.java`           |
+| **pysam**   | `pysam.VariantFile("w")` + `pysam.AlignmentFile("wh")`         | `harnesses/pysam/pysam_harness.py`             |
+| **htslib**  | `bcftools view` / `samtools view` (already a round-trip)       | `test_engine/runners/htslib_runner.py`         |
+
+### Opt-out is silent
+
+If your SUT has no writer, leave `supports_write_roundtrip = False` (the
+default). The framework's runtime-capability filter hides
+`sut_write_roundtrip` from the Phase B menu when no primary SUT supports it,
+so no MR will ever target your read-only runner for write testing.
 
 ---
 
-## The 19 Atomic Transforms
+## The 20 Atomic Transforms
 
-Each transform preserves biological semantics while changing the textual (or binary) representation. Originals (13) cover ordering and CIGAR normalization; the v2 arsenal expansion (6 new) adds variant normalization, BCF codec round-trips, and CSQ/ANN annotation ordering — each backed by published literature (Tan 2015, Danecek & McCarthy 2017, VCF v4.5 §6, Ensembl VEP docs).
+Each transform preserves biological semantics while changing the textual (or
+binary) representation. All are grounded in published literature — see
+`documents/Flow.md` for full citations.
 
-### VCF Transforms (15)
+### VCF (15)
 
-| # | Transform | Scope | Description |
-|:-:|-----------|:-----:|-------------|
-| 1 | `shuffle_meta_lines` | Header | Shuffle `##` meta-information lines (keep `##fileformat` first) |
-| 2 | `permute_structured_kv_order` | Header | Reorder key=value pairs inside `##INFO=<...>` structured lines |
-| 3 | `choose_permutation` | Record | Generate random permutation array `[0..n-1]` |
-| 4 | `permute_ALT` | Record | Reorder ALT alleles by permutation |
-| 5 | `remap_GT` | Record | Update GT indices to match new ALT order (REF=0 never changes) |
-| 6 | `permute_Number_A_R_fields` | Record | Reorder Number=A/R INFO values to match ALT permutation |
-| 7 | `permute_sample_columns` | File | Shuffle sample columns across header + all data rows |
-| 8 | `shuffle_info_field_kv` | Record | Shuffle semicolon-separated INFO key=value pairs |
-| 9 | `inject_equivalent_missing_values` | Record | Append declared-but-missing FORMAT field (semantic no-op) |
-| 10 | `trim_common_affixes` | Record | Trim shared REF/ALT prefix/suffix (Tan 2015 parsimony) |
-| 11 | `left_align_indel` | Record | Conservative left-shift of indels in homopolymer runs (Tan 2015) |
-| 12 | `split_multi_allelic` | Record | Split multi-ALT record into per-ALT records (bcftools norm) |
-| 13 | `vcf_bcf_round_trip` | File | Round-trip VCF → BCF → VCF via pysam (VCF v4.5 §6) |
-| 14 | `permute_bcf_header_dictionary` | File | Shuffle BCF header dictionary order then round-trip |
-| 15 | `permute_csq_annotations` | Record | Permute CSQ/ANN record order (VEP/SnpEff) — RECORDS only, never sub-fields |
+| # | Transform                         | Scope     | Purpose                                                       |
+|:-:|:----------------------------------|:---------:|:--------------------------------------------------------------|
+| 1 | `shuffle_meta_lines`              | Header    | Shuffle `##` lines (keep `##fileformat` first)                |
+| 2 | `permute_structured_kv_order`     | Header    | Reorder `key=value` inside `##INFO=<…>`                       |
+| 3–6 | `choose_permutation` + `permute_ALT` + `remap_GT` + `permute_Number_A_R_fields` | Record | **Compound**: reorder ALT alleles, update GT and Number=A/R |
+| 7 | `permute_sample_columns`          | File      | Shuffle sample columns across header + data                   |
+| 8 | `shuffle_info_field_kv`           | Record    | Shuffle INFO `k=v` pairs in each record                       |
+| 9 | `inject_equivalent_missing_values`| Record    | Add a declared-but-missing FORMAT field                       |
+| 10| `trim_common_affixes`             | Record    | Trim shared REF/ALT prefix/suffix (Tan 2015)                  |
+| 11| `left_align_indel`                | Record    | Left-shift indels in homopolymer runs (Tan 2015)              |
+| 12| `split_multi_allelic`             | Record    | Split multi-ALT into per-ALT records (bcftools norm)          |
+| 13| `vcf_bcf_round_trip`              | File      | VCF → BCF → VCF via pysam                                     |
+| 14| `permute_bcf_header_dictionary`   | File      | Shuffle BCF dict order, round-trip                            |
+| 15| `permute_csq_annotations`         | Record    | Permute CSQ/ANN record order (VEP/SnpEff)                     |
 
-> Transforms 3–6 form a **compound group** (`alt_permutation`) and must always appear together.
+### SAM (4)
 
-### SAM Transforms (4)
+| #  | Transform                           | Scope   | Purpose                                               |
+|:--:|:------------------------------------|:-------:|:------------------------------------------------------|
+| 16 | `permute_optional_tag_fields`       | Record  | Shuffle optional `TAG:TYPE:VALUE` fields              |
+| 17 | `split_or_merge_adjacent_cigar_ops` | Record  | `10M` ↔ `4M6M` (Z3-guarded for CIGAR/SEQ length)      |
+| 18 | `reorder_header_records`            | Header  | Shuffle `@SQ`/`@RG` (keep `@HD` first)                |
+| 19 | `toggle_cigar_hard_soft_clipping`   | Record  | Convert `H` ↔ `S` with SEQ/QUAL sync                  |
 
-| # | Transform | Scope | Description |
-|:-:|-----------|:-----:|-------------|
-| 16 | `permute_optional_tag_fields` | Record | Shuffle optional TAG:TYPE:VALUE fields (cols 12+) |
-| 17 | `split_or_merge_adjacent_cigar_ops` | Record | Split `10M` -> `4M6M` or merge `4M6M` -> `10M` |
-| 18 | `reorder_header_records` | Header | Shuffle `@SQ`/`@RG` lines (keep `@HD` first) |
-| 19 | `toggle_cigar_hard_soft_clipping` | Record | Convert H<->S clipping with SEQ/QUAL sync |
+### VCF + SAM (1)
 
-### Seed corpus
+| #  | Transform                | Scope | Purpose                                                                |
+|:--:|:-------------------------|:-----:|:-----------------------------------------------------------------------|
+| 20 | `sut_write_roundtrip`    | File  | `parse(write(parse(x))) == parse(x)` — runner picks VCF or SAM writer |
 
-The test corpus has two tiers:
+---
 
-- **Tier-1 hand-crafted** (3 files, committed): `seeds/vcf/minimal_*.vcf`, `spec_example.vcf`, matching SAM files.
-- **Tier-2 real-world** (~30 files, gitignored, fetched on demand): curated from htsjdk, bcftools, hts-specs, and GATK public test suites. Full provenance + diversity-axis matrix in [`seeds/SOURCES.md`](seeds/SOURCES.md).
+## Seed Corpus
 
-Populate Tier-2 with:
-```
-py -3.12 seeds/fetch_real_world.py
-```
-Per-file cap: 500 KB. Preflight check requires ≥15 VCF seeds before Phase D.
+Two tiers:
+
+- **Tier-1 (committed, ~6 files)**: hand-crafted minimal examples under
+  `seeds/vcf/` and `seeds/sam/` — enough for smoke tests.
+- **Tier-2 (gitignored, ~30 files)**: curated real-world seeds from htsjdk,
+  bcftools, hts-specs, GATK. Pull with `py -3.12 seeds/fetch_real_world.py`.
+  Full provenance + diversity axes in `seeds/SOURCES.md`. Per-file cap 500 KB.
+
+Phase D preflight requires ≥ 15 VCF seeds.
 
 ---
 
@@ -396,228 +261,157 @@ Per-file cap: 500 KB. Preflight check requires ≥15 VCF seeds before Phase D.
 phase_a:
   specs:
     - { file: VCFv4.5.tex, format: VCF, version: "4.5" }
-    - { file: SAMv1.tex, format: SAM, version: "1.6" }
+    - { file: SAMv1.tex,   format: SAM, version: "1.6" }
 
 phase_b:
   formats: [VCF]
-  themes: [ordering_invariance]
+  themes:  [ordering_invariance]
   llm:
-    model: ollama/qwen3-coder:30b    # Local Ollama (also supports Groq, OpenAI, Gemini, Anthropic)
+    model: deepseek-chat     # also: groq/*, gpt-4o, gemini-*, claude-*, ollama/*
 
 phase_c:
   format_filter: VCF
   suts:
-    - { name: htsjdk, adapter: harnesses/java/build/libs/biotest-harness-all.jar }
+    - { name: htsjdk,    adapter: harnesses/java/build/libs/biotest-harness-all.jar }
     - { name: biopython }
-    - { name: seqan3, adapter: harnesses/cpp/build/biotest_harness.exe }
-    - { name: pysam, coverage_dir: coverage_artifacts/pysam }  # Docker on Windows
+    - { name: seqan3,    adapter: harnesses/cpp/build/biotest_harness.exe }
+    - { name: pysam,     coverage_dir: coverage_artifacts/pysam }
+    - { name: htslib }    # gold-standard tie-breaker
 
-# Phase D: Feedback-driven loop
 feedback_control:
   enabled: true
   max_iterations: 5
-  plateau_patience: 2
   target_scc_percent: 95.0
-  timeout_minutes: 120
-  primary_target: htsjdk            # This SUT drives feedback evolution
-  source_roots:                     # For source code slice extraction
-    htsjdk: SUTfolder/java/htsjdk/src/main/java
-    seqan3: SUTfolder/cpp/seqan3/include
-    pysam: coverage_artifacts/pysam/source
+  primary_target: htsjdk
+  max_rules_per_iteration: 5      # Top-K blindspot window
 
 coverage:
   enabled: true
-  target_filters:                   # Format-aware whitelist filtering
-    VCF: [htsjdk/variant/vcf, pysam]
-    SAM: [htsjdk/samtools, Bio/Align/sam, seqan3/io/sam_file, pysam]
+  target_filters:
+    VCF: [htsjdk/variant/vcf, htsjdk/variant/variantcontext/writer, pysam]
+    SAM: [htsjdk/samtools,    Bio/Align/sam, seqan3/io/sam_file, pysam]
 ```
 
 ---
 
 ## Dual Oracle System
 
-BioTest uses two complementary oracles to detect bugs:
+Two complementary oracles, layered on **majority-voting consensus**:
 
-### Oracle 1: Metamorphic
+### Oracle 1 — Metamorphic (per-parser)
 
 ```
 semantic( parse(x) )  ==  semantic( parse(T(x)) )
 ```
 
-For a **single parser**, the original seed and a semantics-preserving transform must produce equivalent output. If they differ, the parser has a conformance bug.
+Each per-parser outcome is tagged with one `failure_cause`:
 
-### Oracle 2: Differential
+| `failure_cause`     | Meaning                                                      | Blamed               |
+|:--------------------|:-------------------------------------------------------------|:---------------------|
+| `against_consensus` | SUT disagreed with majority on BOTH `x` and `T(x)`           | the SUT              |
+| `non_conformance`   | SUT matched consensus on one side, diverged on the other     | the SUT (not MR)     |
+| `mr_invalid`        | htslib rejected `T(x)` or `consensus(x) ≠ consensus(T(x))`   | the MR → quarantine  |
+| `inconclusive`      | No majority, no htslib tie-breaker                           | nobody               |
+| `crash` / `timeout` | Parser died                                                  | usually the SUT      |
 
-```
-HTSJDK(x)  ==  Biopython(x)  ==  pysam(x)  ==  SeqAn3(x)
-```
+### Oracle 2 — Differential (consensus)
 
-For the **same input**, all parsers must agree. Any disagreement is a Difference-Exposing Test (DET).
+Group parser outputs by semantic equivalence; the bucket holding a strict
+majority wins. On a 2-vs-2 tie, **htslib** (bcftools/samtools, the upstream
+hts-specs reference) is the gold-standard tie-breaker. A SUT whose format
+eligibility excludes the current file is silent — not a dissenting vote.
 
 ### DET Rate
 
 ```
-DET Rate = (tests with disagreement) / (total tests)
+DET Rate = tests with disagreement / total tests
 ```
 
-Tracked per MR and per parser pair. Exported to `data/det_report.json`.
+Exported to `data/det_report.json`, tracked per MR and per parser pair.
 
 ---
 
-## Phase D: Feedback-Driven Loop
+## SUT Matrix
 
-Phase D wraps B and C into an iterative loop steered by coverage signals:
+| SUT         | Language | VCF | SAM | Coverage          | Role                                   |
+|:------------|:---------|:---:|:---:|:------------------|:---------------------------------------|
+| **htsjdk**  | Java     | ✓   | ✓   | JaCoCo            | Regular voter                          |
+| **pysam**   | Python   | ✓   | ✓   | coverage.py       | Regular voter                          |
+| **biopython** | Python | —   | ✓   | coverage.py       | Regular voter (SAM)                    |
+| **seqan3**  | C++      | —   | ✓   | gcovr/gcov        | Regular voter (SAM)                    |
+| **htslib**  | CLI      | ✓   | ✓   | —                 | **Tie-breaker (gold standard)**        |
+| reference   | Python   | ✓   | ✓   | —                 | Independent canonical impl.            |
 
-```
-for each iteration (up to max_iterations):
-    Phase B: mine MRs (with blindspot context from previous iteration)
-    Phase C: execute tests (with coverage instrumentation)
-    |
-    +-> Compute SCC (Semantic Constraint Coverage)
-    +-> Collect code coverage (JaCoCo / coverage.py / gcovr)
-    +-> Extract uncovered source code slices from primary target
-    +-> Auto-quarantine MRs with >50% crash rate
-    +-> Build blindspot ticket for next iteration
-    |
-    Check 5 termination conditions:
-      1. Timeout          2. SCC target reached
-      3. Budget exhausted  4. Catastrophic demotion
-      5. SCC plateau (no improvement for N rounds)
-```
+Coordinate normalization (all handled inside harnesses):
 
-### Primary Target vs Auxiliary Oracles
-
-The feedback loop is driven by a single **primary target** SUT (configurable). Other SUTs participate in differential testing but do not steer MR evolution. If the primary target fails an MR, that spec rule stays as a "blind spot" regardless of whether other parsers passed it.
-
-### Blindspot Tickets with Source Code Slices
-
-The blindspot builder doesn't just report "line 105-110 uncovered" -- it extracts the **actual source code** at those lines so the LLM can see the concrete `if/else` branches:
-
-```
-UNCOVERED CODE in the primary target parser:
-  VCFCodec.java:43-57
-      43 |     public boolean canDecodeURI(final IOPath ioPath) {
-      44 |         ValidationUtils.nonNull(ioPath, "ioPath");
-      45 |         return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
-      46 |     }
-```
-
-### Coverage Matrix
-
-| SUT | Tool | Instrumentation | Format Filters |
-|-----|------|-----------------|---------------|
-| **htsjdk** | JaCoCo | `-javaagent` runtime injection | VCF: `htsjdk/variant/vcf` |
-| **biopython** | coverage.py | `cov.start()/stop()` wrapping Phase C | SAM: `Bio/Align/sam` |
-| **pysam** | coverage.py (Docker) | `--coverage` flag, writes to mounted volume | VCF+SAM: `pysam` |
-| **seqan3** | gcovr/gcov | Compile with `--coverage` | SAM: `seqan3/io/sam_file` |
+| Parser      | SAM POS | VCF POS | Harness action       |
+|:------------|:-------:|:-------:|:---------------------|
+| htsjdk      | 1-based | 1-based | —                    |
+| pysam       | 0-based | 0-based | **+1** for both      |
+| Biopython   | 0-based | n/a     | **+1**               |
+| SeqAn3      | 0-based | n/a     | **+1**               |
 
 ---
 
-## Real Bug Found
+## Phase D Essentials
 
-BioTest discovered that **HTSJDK rejects VCF files where structured meta-line fields appear in non-standard order**:
+Phase D wraps B and C into an iterative loop driven by code coverage on the
+**primary target** SUT.
 
 ```
-##INFO=<Type=Integer,Number=1,ID=DP,Description="Total Depth">
-         ^^^^^^^^^^^^^^^^^^^^^^^^^
-         HTSJDK expects ID first, but spec says order doesn't matter
+for iteration in range(max_iterations):
+    Phase B   mine MRs (with Top-K blindspot ticket from previous round)
+    Phase C   execute  →  consensus + metamorphic + differential
+              ├─ SCC computed with the 良民证 rule (any parser's endorsement vetoes demotion)
+              ├─ coverage collected from the primary target only
+              ├─ uncovered source slices extracted per rule
+              ├─ rule_attempts tracker updated (failure_count, exponential cooldown)
+              └─ quarantine auto-demotion when NO parser endorsed
+    check 5 termination conditions: timeout / SCC target / budget / catastrophic demote / plateau
 ```
 
-**Spec citation** (VCF v4.5, Section "Meta-information lines"):
+### Prioritized Blindspot Queue
 
-> *"Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering."*
+Uncovered rules are scored by
+`(format_match, failure_count, −complexity, −proximity, severity, chunk_id)`
+and only the Top K (default 5) land in the LLM prompt each iteration.
+Covered rules are wiped; shown-but-still-uncovered rules enter exponential
+cooldown (1 → 2 → 4 → 4 iterations). State at `data/rule_attempts.json`.
 
-The bug report was auto-generated with: original seed, transformed variant, parser stack trace, canonical JSON diff, and spec evidence.
+Operator log per iteration:
+```
+Total Blindspots: 312 | Injecting Top 5 into this ticket | 307 remaining (2 cooling down).
+```
+
+### Runtime-Gated Transform Menu
+
+The LLM only sees transforms whose preconditions the current runtime can
+satisfy. `sut_write_roundtrip` is hidden from the menu unless at least one
+enabled SUT declares `supports_write_roundtrip = True`, so the LLM never
+picks a writer MR it would have to skip at Phase C.
 
 ---
 
-## Coordinate Normalization
-
-Different parsers use different coordinate conventions internally. The canonical normalizers handle this:
-
-| Parser | SAM POS | VCF POS | Adapter Action |
-|--------|:-------:|:-------:|---------------|
-| **HTSJDK** (Java) | 1-based | 1-based | No adjustment |
-| **Biopython** (Python) | 0-based | N/A | **+1** |
-| **pysam** (Python) | 0-based | **0-based** | **+1 for both** |
-| **SeqAn3** (C++) | 0-based | N/A | **+1** |
-
----
-
-## Parser Availability
-
-| Runner | VCF | SAM | Status | Execution Method |
-|--------|:---:|:---:|:------:|-----------------|
-| **HTSJDK** | Yes | Yes | Available | Java subprocess (fat JAR + JaCoCo agent) |
-| **pysam** | Yes | Yes | Available | Docker container (`biotest-pysam:latest`) or native pip |
-| **Biopython** | - | Yes | Available | Python in-process (hybrid: Biopython objects + raw text) |
-| **SeqAn3** | - | Yes | Available | C++ subprocess (compiled binary) |
-| **Reference** | Yes | Yes | Always | Built-in Python normalizer (not a SUT) |
-
----
-
-## Test Suite
-
-**201 tests in 12 files, executing in < 1 second**
-
-| Category | Tests | Coverage |
-|----------|:-----:|----------|
-| **Phase B: Transforms** | 42 | All 13 atomic transforms (determinism, correctness, invariants) |
-| **Phase B: DSL Models** | 17 | Pydantic validation, hashing, compound-step rules |
-| **Phase B: Registry** | 11 | Triage, dedup, JSON export |
-| **Phase C: Deep Equal** | 22 | Dict/set/float/nested/multiset comparison |
-| **Phase C: Canonical** | 16 | VCF + SAM normalizers, schema validation |
-| **Phase C: Dispatch** | 11 | All transform granularity levels + compound group |
-| **Hardening: Runners** | 13 | Timeout, crash stderr, availability guards, Docker facade |
-| **Hardening: Generators** | 25 | Z3 CIGAR constraints, INFO/FLAG validation, shrink hooks |
-| **Hardening: Triage** | 18 | Concurrent report builder, evidence Markdown, classifier |
-| **Hardening: E2E Mocked** | 8 | Full pipeline with DummyRunners, exact DET rate verification |
-| **Phase D: Feedback** | 18+ | SCC tracker, loop controller, coverage aggregation (smoke-tested) |
-
----
-
-## Code Metrics
-
-| Module | Files | Lines | Purpose |
-|--------|:-----:|------:|---------|
-| `spec_ingestor/` | 8 | 976 | Phase A: Spec Ingestion |
-| `mr_engine/` | 16 | 2,479 | Phase B: MR Mining (+ Ollama LLM route) |
-| `test_engine/` (Phase C) | 23 | 3,900+ | Cross-Execution, Runners, Oracles, Triage |
-| `test_engine/feedback/` | 6 | 1,682 | Phase D: SCC, Coverage, Blindspot, Quarantine |
-| `biotest.py` | 1 | 960 | Grand Orchestrator (A->B->C->D + Rich UI) |
-| `harnesses/` | 5 | 952 | Java (425) + C++ (248) + pysam Docker (279) |
-| `tests/` | 12 | 3,000+ | Test suite (201 tests) |
-| **Total** | **71+** | **14,000+** | |
-
----
-
-## Dependencies
-
-### Python (3.12)
+## Project Layout (abridged)
 
 ```
-# Phase A
-requests, pylatexenc, chromadb, openai, tiktoken
-
-# Phase B
-pydantic, pydantic-settings, langchain-core, langgraph
-langchain-openai, langchain-google-genai, langchain-anthropic
-
-# Phase C
-hypothesis, z3-solver, numpy, biopython, jsonschema
-
-# Phase D
-rich, pyyaml, coverage
-```
-
-### System
-
-```
-Java 21            # HTSJDK harness
-Docker 29+         # pysam runner (required on Windows)
-Ollama 0.20+       # Local LLM for Phase B mining (optional, alternative to cloud APIs)
-CMake 4.3+         # SeqAn3 build (optional)
-g++ 15+ (C++20)    # SeqAn3 compilation (optional)
+biotest.py                         Grand orchestrator + Rich UI
+biotest_config.yaml                Pipeline configuration
+spec_ingestor/                     Phase A
+mr_engine/                         Phase B (agent + transforms + DSL + registry)
+  transforms/{vcf,sam}.py          20 atomic transforms + @register_transform
+test_engine/                       Phase C (oracles, runners, generators, triage)
+  runners/{base,htsjdk,pysam,biopython,seqan3,htslib,reference}_runner.py
+  generators/{dispatch,strategy_router,vcf_strategies,sam_strategies}.py
+  canonical/{schema,vcf_normalizer,sam_normalizer}.py
+  oracles/{metamorphic,differential,deep_equal}.py
+  feedback/{scc_tracker,loop_controller,coverage_collector,blindspot_builder}.py
+harnesses/java/BioTestHarness.java htsjdk (VCF + SAM, parse + write_roundtrip)
+harnesses/pysam/pysam_harness.py   pysam  (VCF + SAM, parse + write_roundtrip)
+harnesses/cpp/biotest_harness.cpp  SeqAn3 (SAM parse)
+seeds/vcf/, seeds/sam/             Tier-1 committed seeds
+tests/                             pytest suite
+documents/Flow.md                  full architecture for Phases A/B/C/D
 ```
 
 ---

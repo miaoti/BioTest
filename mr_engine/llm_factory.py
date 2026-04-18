@@ -32,21 +32,45 @@ class LLMSettings(BaseSettings):
         extra="ignore",
     )
 
-    llm_model: str = "gemini-1.5-pro"
+    llm_model: str = "gemini-2.5-flash"
     llm_temperature: float = 0.0
     llm_max_tokens: int = 4096
+
+    # Comma-separated list of fallback models. When the primary model's
+    # rate-limit / quota budget is exhausted, the agent rebuilds itself
+    # against the next entry in this list. Distinct providers and
+    # distinct models per provider both get independent quota buckets.
+    # Default chain: Gemini (different Google model slots) → Groq (smaller
+    # free-tier models with their own per-model quotas).
+    llm_fallback_models: str = (
+        "gemini-2.0-flash,"
+        "gemini-2.5-flash-lite,"
+        "llama-3.1-8b-instant,"
+        "gemma2-9b-it,"
+        "mixtral-8x7b-32768"
+    )
 
     # Provider API keys (optional — only the one matching llm_model is required)
     google_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
     groq_api_key: Optional[str] = None
+    deepseek_api_key: Optional[str] = None
 
     # Local vLLM
     vllm_base_url: Optional[str] = None
 
     # Local Ollama
     ollama_base_url: Optional[str] = "http://localhost:11434/v1"
+
+    # DeepSeek (OpenAI-compatible endpoint, distinct provider)
+    deepseek_base_url: Optional[str] = "https://api.deepseek.com/v1"
+
+    def fallback_model_list(self) -> list[str]:
+        """Parse comma-separated fallback chain; strip blanks."""
+        if not self.llm_fallback_models:
+            return []
+        return [m.strip() for m in self.llm_fallback_models.split(",") if m.strip()]
 
     @model_validator(mode="after")
     def _check_required_key(self) -> "LLMSettings":
@@ -67,6 +91,9 @@ class LLMSettings(BaseSettings):
 
         # Map model name prefixes/keywords to required keys
         checks: list[tuple[list[str], str, Optional[str]]] = [
+            # DeepSeek checked BEFORE OpenAI because deepseek-* models go
+            # through the DeepSeek endpoint, not api.openai.com.
+            (["deepseek"], "DEEPSEEK_API_KEY", self.deepseek_api_key),
             (["gemini", "google"], "GOOGLE_API_KEY", self.google_api_key),
             (["gpt", "o1", "o3", "openai"], "OPENAI_API_KEY", self.openai_api_key),
             (["claude", "anthropic"], "ANTHROPIC_API_KEY", self.anthropic_api_key),
@@ -95,12 +122,19 @@ def get_llm_settings() -> LLMSettings:
     return LLMSettings()
 
 
-def get_llm(settings: Optional[LLMSettings] = None) -> BaseChatModel:
+def get_llm(
+    settings: Optional[LLMSettings] = None,
+    model_override: Optional[str] = None,
+) -> BaseChatModel:
     """
     Factory: return a configured LangChain BaseChatModel.
 
     Args:
         settings: Pre-built settings. If None, loads from environment.
+        model_override: If provided, use this model name instead of
+                        `settings.llm_model`. Used by the fallback chain
+                        in `mr_engine.agent.engine._rotate_llm` to swap
+                        providers mid-theme without re-reading .env.
 
     Returns:
         A ready-to-use LangChain chat model instance.
@@ -108,7 +142,7 @@ def get_llm(settings: Optional[LLMSettings] = None) -> BaseChatModel:
     if settings is None:
         settings = get_llm_settings()
 
-    model_name = settings.llm_model
+    model_name = model_override or settings.llm_model
     kwargs: dict = {
         "temperature": settings.llm_temperature,
         "max_tokens": settings.llm_max_tokens,
@@ -140,6 +174,28 @@ def get_llm(settings: Optional[LLMSettings] = None) -> BaseChatModel:
             **kwargs,
         )
         logger.info("Initialized Ollama model '%s' at %s", actual_model, settings.ollama_base_url)
+        return llm
+
+    # ── DeepSeek (OpenAI-compatible at api.deepseek.com) ──
+    # Accepts two name forms:
+    #   "deepseek-chat"  / "deepseek-reasoner"   → sent as-is
+    #   "deepseek/chat"  / "deepseek/reasoner"   → strip prefix, send as "deepseek-<name>"
+    if any(kw in model_name.lower() for kw in ("deepseek",)):
+        from langchain_openai import ChatOpenAI
+
+        actual_model = model_name
+        if model_name.lower().startswith("deepseek/"):
+            actual_model = "deepseek-" + model_name.split("/", 1)[1]
+        llm = ChatOpenAI(
+            model=actual_model,
+            base_url=settings.deepseek_base_url or "https://api.deepseek.com/v1",
+            api_key=settings.deepseek_api_key,
+            **kwargs,
+        )
+        logger.info(
+            "Initialized DeepSeek model '%s' at %s",
+            actual_model, settings.deepseek_base_url,
+        )
         return llm
 
     # ── Google Gemini ──

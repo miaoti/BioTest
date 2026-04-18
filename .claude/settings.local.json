@@ -100,7 +100,25 @@
       "WebFetch(domain:api.github.com)",
       "Bash(awk '{print $5, $9}')",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(curl -s -m 3 http://localhost:11434/api/tags)",
+      "Bash(curl -sSf http://localhost:11434/v1/models)",
+      "Bash(rm -f data/feedback_state.json data/rule_attempts.json data/det_report*.json data/scc_report.json)",
+      "Bash(py -3.12 biotest.py --verbose)",
+      "Bash(rm -f data/feedback_state.json data/rule_attempts.json data/det_report*.json data/scc_report.json data/mr_registry.json)",
+      "Bash(unzip -l harnesses/java/build/libs/biotest-harness-all.jar)",
+      "Bash(javac --version)",
+      "Bash(jar --version)",
+      "Bash(javac -cp \"build/libs/biotest-harness-all.jar\" -d \"build/classes\" BioTestHarness.java)",
+      "Bash(jar uf *)",
+      "Bash(unzip -l ../libs/biotest-harness-all.jar)",
+      "Bash(javap -cp harnesses/java/build/libs/biotest-harness-all.jar BioTestHarness)",
+      "Bash(javap -p -cp harnesses/java/build/libs/biotest-harness-all.jar BioTestHarness)",
+      "Bash(javap -p -cp build/libs/biotest-harness-all.jar BioTestHarness)",
+      "Bash(mkdir -p /tmp/biotest_pysam_rt)",
+      "Bash(cp seeds/vcf/minimal_single.vcf /tmp/biotest_pysam_rt/in.vcf)",
+      "Bash(pwd -W)",
+      "Bash(javac -cp \"build/libs/biotest-harness-all.jar\" -d build/classes BioTestHarness.java)"
     ]
   }
 }

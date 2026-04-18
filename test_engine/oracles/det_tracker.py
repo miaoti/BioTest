@@ -17,7 +17,27 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DETEvent:
-    """A single test execution event."""
+    """A single test execution event.
+
+    `failure_cause` refines `failure_type` with the consensus-oracle
+    verdict and is what quarantine_manager consults when deciding
+    whether to demote an MR. Populated for metamorphic + differential
+    events; None when the test passed.
+
+    Values:
+      - "against_consensus"  — the primary SUT disagreed with the
+        majority-vote consensus. Counts AGAINST the primary's own
+        conformance record, not against the MR.
+      - "mr_invalid"         — htslib rejected the transformed file as
+        malformed, or the consensus said the transform does NOT preserve
+        semantics. Counts AGAINST the MR → quarantine.
+      - "non_conformance"    — the primary matched consensus on one
+        input (x or T(x)) but not the other. Bug in the primary SUT
+        specific to that input, NOT an MR violation.
+      - "inconclusive"       — no majority and no htslib tie-breaker.
+        Does NOT count against anybody.
+      - "crash" / "timeout"  — unchanged pre-existing failure_types.
+    """
     mr_id: str
     test_type: str           # "metamorphic" | "differential"
     parser_names: list[str]
@@ -25,6 +45,8 @@ class DETEvent:
     difference_count: int
     seed_id: str
     failure_type: Optional[str] = None  # "crash" | "metamorphic" | "differential" | None
+    failure_cause: Optional[str] = None  # see docstring above
+    primary_target: Optional[str] = None
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
 

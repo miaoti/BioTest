@@ -65,11 +65,12 @@ class BiopythonRunner(ParserRunner):
             )
 
         if format_type.upper() != "SAM":
+            # Ineligible, not malformed. Consensus discards this signal.
             return RunnerResult(
                 success=False,
                 parser_name=self.name,
                 format_type=format_type,
-                error_type="parse_error",
+                error_type="ineligible",
                 stderr="Biopython only supports SAM format",
             )
 

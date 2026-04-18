@@ -37,22 +37,79 @@ class CheckResult:
         return out
 
 
-def check_ollama() -> CheckResult:
+def check_llm_provider() -> CheckResult:
+    """Check that the LLM provider configured in .env is reachable.
+
+    Works for any provider llm_factory.py supports:
+      - ollama/<model>  → probe http://localhost:11434/v1/models
+      - llama-* / mixtral-* / gemma-* / kimi-* → Groq API key required
+      - gpt-* / o3-* / openai-* → OpenAI API key required
+      - claude-* / anthropic-* → Anthropic API key required
+      - gemini-* / google-* → Google API key required
+      - vllm/<model> → probe VLLM_BASE_URL if set
+    """
     try:
-        import requests
-        resp = requests.get("http://localhost:11434/v1/models", timeout=5)
-        if resp.status_code != 200:
-            return CheckResult("Ollama API", False, f"HTTP {resp.status_code}",
-                               "Start Ollama: `ollama serve` in a separate terminal")
-        data = resp.json()
-        models = [m.get("id", "") for m in data.get("data", [])]
-        if any("qwen3-coder:30b" in m for m in models):
-            return CheckResult("Ollama API", True, f"qwen3-coder:30b loaded")
-        return CheckResult("Ollama API", False, f"Available models: {models}",
-                           "Pull model: `ollama pull qwen3-coder:30b`")
+        sys.path.insert(0, str(ROOT))
+        from mr_engine.llm_factory import get_llm_settings
+        settings = get_llm_settings()
+        model = (settings.llm_model or "").lower()
     except Exception as e:
-        return CheckResult("Ollama API", False, str(e),
-                           "Start Ollama: `ollama serve`")
+        return CheckResult(
+            "LLM provider", False, f"Could not load LLM settings: {e}",
+            "Check .env: LLM_MODEL must be set",
+        )
+
+    # Local Ollama
+    if model.startswith("ollama/"):
+        try:
+            import requests
+            resp = requests.get("http://localhost:11434/v1/models", timeout=5)
+            if resp.status_code != 200:
+                return CheckResult("LLM provider (Ollama)", False, f"HTTP {resp.status_code}",
+                                   "Start Ollama: `ollama serve`")
+            data = resp.json()
+            models = [m.get("id", "") for m in data.get("data", [])]
+            wanted = model[len("ollama/"):]
+            if any(wanted in m for m in models):
+                return CheckResult("LLM provider (Ollama)", True, f"{wanted} loaded")
+            return CheckResult("LLM provider (Ollama)", False,
+                               f"Model {wanted} not found. Available: {models}",
+                               f"Pull model: `ollama pull {wanted}`")
+        except Exception as e:
+            return CheckResult("LLM provider (Ollama)", False, str(e),
+                               "Start Ollama: `ollama serve`")
+
+    # Cloud providers — just confirm the matching API key is present.
+    # DeepSeek checked BEFORE the Groq bucket that also listed "deepseek-":
+    # deepseek-chat / deepseek-reasoner go through api.deepseek.com now.
+    provider_map: list[tuple[tuple[str, ...], str, str]] = [
+        (("deepseek-", "deepseek/"), "DeepSeek", "deepseek_api_key"),
+        (("gpt-", "o1-", "o3-", "openai"), "OpenAI", "openai_api_key"),
+        (("claude-", "anthropic-"), "Anthropic", "anthropic_api_key"),
+        (("gemini-", "google-"), "Google", "google_api_key"),
+        (("llama-", "mixtral-", "gemma-", "qwen-", "kimi-", "allam-",
+          "meta-llama-", "groq/"), "Groq", "groq_api_key"),
+    ]
+    for prefixes, label, attr in provider_map:
+        if any(model.startswith(p) for p in prefixes):
+            key = getattr(settings, attr, None)
+            if key:
+                return CheckResult(f"LLM provider ({label})", True,
+                                   f"{settings.llm_model} — API key set")
+            env_name = attr.upper()
+            return CheckResult(
+                f"LLM provider ({label})", False,
+                f"{env_name} not set",
+                f"Add {env_name}=<your-key> to .env",
+            )
+
+    if model.startswith("vllm/"):
+        return CheckResult("LLM provider (vLLM)", True, f"{model} (assuming reachable)")
+
+    return CheckResult(
+        "LLM provider", False, f"Unknown model prefix: {settings.llm_model}",
+        "Configure LLM_MODEL to a known provider in .env",
+    )
 
 
 def check_docker() -> CheckResult:
@@ -171,8 +228,13 @@ def check_llm_smoke() -> CheckResult:
         resp = llm.invoke("Say 'ok' and nothing else.")
         content = getattr(resp, "content", "") or ""
         if content.strip():
+            model_label = (
+                getattr(llm, "model_name", None)
+                or getattr(llm, "model", None)
+                or type(llm).__name__
+            )
             return CheckResult("LLM smoke test", True,
-                               f"model={llm.model_name}, response={content[:50]!r}")
+                               f"model={model_label}, response={content[:50]!r}")
         return CheckResult("LLM smoke test", False, "empty response",
                            "Check Ollama model loaded: `ollama list`")
     except Exception as e:
@@ -184,7 +246,7 @@ def main():
     print("Phase D pre-flight checks:\n")
 
     checks = [
-        check_ollama(),
+        check_llm_provider(),
         check_docker(),
         check_htsjdk_jar(),
         check_seqan3_binary(),

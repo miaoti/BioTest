@@ -41,6 +41,12 @@ class HTSJDKRunner(ParserRunner):
         self._coverage_jvm_args = coverage_jvm_args
         self._coverage_exec_dir = coverage_exec_dir
 
+    # Opt-in to the base class write-roundtrip contract. The implementation
+    # below (run_write_roundtrip) shells out to BioTestHarness.jar's
+    # `--mode write_roundtrip` CLI — see harnesses/java/BioTestHarness.java
+    # (writeRoundtripVcf + forceVcfVersionToV42).
+    supports_write_roundtrip: bool = True
+
     @property
     def name(self) -> str:
         return "htsjdk"
@@ -194,4 +200,136 @@ class HTSJDKRunner(ParserRunner):
                         shutil.copy2(_cov_exec_tmp, dest_exec)
                 except OSError as e:
                     logger.warning("Failed to merge JaCoCo exec: %s", e)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def run_write_roundtrip(
+        self,
+        input_path: Path,
+        format_type: str = "VCF",
+        timeout_s: float = SUBPROCESS_TIMEOUT_S,
+    ) -> RunnerResult:
+        """Parse + re-serialize via htsjdk's native writer.
+
+        Supports both VCF (VCFWriter / VariantContextWriterBuilder) and
+        SAM (SAMFileWriterFactory / SAMTextWriter). Returns a
+        RunnerResult whose `canonical_json["rewritten_text"]` holds the
+        rewritten file text. Writer / encoder classes hit here are
+        invisible to parse-only flows.
+        """
+        fmt = format_type.upper()
+        if fmt not in ("VCF", "SAM"):
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr=f"HTSJDKRunner.run_write_roundtrip: unknown format {fmt}",
+            )
+
+        if not self.is_available():
+            return RunnerResult(
+                success=False,
+                parser_name=self.name,
+                format_type=fmt,
+                error_type="parse_error",
+                stderr="HTSJDK harness not available (check Java and JAR)",
+            )
+
+        ext = ".vcf" if fmt == "VCF" else ".sam"
+        tmp_dir = tempfile.mkdtemp(prefix="biotest_rt_")
+        tmp_jar = Path(tmp_dir) / "harness.jar"
+        tmp_input = Path(tmp_dir) / f"input{ext}"
+        try:
+            shutil.copy2(self._jar_path, tmp_jar)
+            shutil.copy2(input_path, tmp_input)
+        except OSError as e:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return RunnerResult(
+                success=False,
+                parser_name=self.name,
+                format_type=fmt,
+                error_type="crash",
+                stderr=f"Failed to stage harness/input in temp dir: {e}",
+            )
+
+        _cov_exec_tmp = None
+        cmd: list[str] = [self._java_cmd]
+        if self._coverage_jvm_args:
+            import re
+            tmp_exec = Path(tmp_dir) / "jacoco.exec"
+            agent_match = re.search(r'-javaagent:([^\s=]+)', self._coverage_jvm_args)
+            jvm_arg = self._coverage_jvm_args
+            if agent_match:
+                agent_src = Path(agent_match.group(1))
+                if agent_src.exists():
+                    tmp_agent = Path(tmp_dir) / "jacocoagent.jar"
+                    shutil.copy2(agent_src, tmp_agent)
+                    jvm_arg = jvm_arg.replace(agent_match.group(1), str(tmp_agent))
+            jvm_arg = jvm_arg.replace("{destfile}", str(tmp_exec))
+            cmd.extend(jvm_arg.split())
+            _cov_exec_tmp = tmp_exec
+        cmd.extend([
+            "-jar", str(tmp_jar),
+            "--mode", "write_roundtrip",
+            fmt,
+            str(tmp_input),
+        ])
+
+        t0 = time.monotonic()
+        try:
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, encoding="utf-8",
+                timeout=timeout_s, creationflags=creation_flags,
+            )
+            duration = (time.monotonic() - t0) * 1000
+
+            if proc.returncode != 0:
+                return RunnerResult(
+                    success=False,
+                    parser_name=self.name,
+                    format_type=fmt,
+                    exit_code=proc.returncode,
+                    stderr=proc.stderr,
+                    error_type="crash",
+                    duration_ms=duration,
+                )
+
+            return RunnerResult(
+                success=True,
+                # Embed raw text in canonical_json["rewritten_text"] so
+                # the signature still returns a RunnerResult.
+                canonical_json={"rewritten_text": proc.stdout},
+                parser_name=self.name,
+                format_type=fmt,
+                exit_code=0,
+                stderr=proc.stderr,
+                duration_ms=duration,
+            )
+        except subprocess.TimeoutExpired:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="timeout",
+                stderr=f"HTSJDK write_roundtrip timed out after {timeout_s}s",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="crash", stderr=str(e),
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        finally:
+            if _cov_exec_tmp and _cov_exec_tmp.exists() and self._coverage_exec_dir:
+                try:
+                    dest = self._coverage_exec_dir.resolve()
+                    dest.mkdir(parents=True, exist_ok=True)
+                    dest_exec = dest / "jacoco.exec"
+                    if dest_exec.exists():
+                        with open(dest_exec, "ab") as out, open(_cov_exec_tmp, "rb") as inp:
+                            out.write(inp.read())
+                    else:
+                        shutil.copy2(_cov_exec_tmp, dest_exec)
+                except OSError as e:
+                    logger.warning("Failed to merge JaCoCo exec (roundtrip): %s", e)
             shutil.rmtree(tmp_dir, ignore_errors=True)

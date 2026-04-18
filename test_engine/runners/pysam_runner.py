@@ -48,6 +48,12 @@ class PysamRunner(ParserRunner):
     Facade runner: native pysam in-process if available, Docker fallback otherwise.
     """
 
+    # Opt-in to write_roundtrip contract. Routes to native pysam's
+    # VariantFile writer when available, otherwise to the Docker
+    # harness's `--mode vcf_write_roundtrip` CLI (see
+    # harnesses/pysam/pysam_harness.py::vcf_write_roundtrip).
+    supports_write_roundtrip: bool = True
+
     def __init__(self, coverage_dir: Optional[Path] = None):
         self._docker_runner: Optional[ParserRunner] = None
         self._coverage_dir = coverage_dir
@@ -79,6 +85,15 @@ class PysamRunner(ParserRunner):
         format_type: str,
         timeout_s: float = 30.0,
     ) -> RunnerResult:
+        if format_type.upper() not in self.supported_formats:
+            return RunnerResult(
+                success=False,
+                parser_name=self.name,
+                format_type=format_type,
+                error_type="ineligible",
+                stderr=f"pysam runner does not support format {format_type!r}",
+            )
+
         if not self.is_available():
             return RunnerResult(
                 success=False,
@@ -126,6 +141,125 @@ class PysamRunner(ParserRunner):
                 format_type=format_type,
                 error_type="crash",
                 stderr=str(e),
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+
+    def run_write_roundtrip(
+        self,
+        input_path: Path,
+        format_type: str = "VCF",
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        """Parse + re-serialize via pysam's VariantFile / AlignmentFile writer.
+
+        VCF routes through `pysam.VariantFile` (native) or
+        `--mode vcf_write_roundtrip` (Docker); SAM routes through
+        `pysam.AlignmentFile` (native) or `--mode sam_write_roundtrip`
+        (Docker). Returns a RunnerResult whose
+        `canonical_json["rewritten_text"]` is the rewritten file text.
+        """
+        fmt = format_type.upper()
+        if fmt not in ("VCF", "SAM"):
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr=f"PysamRunner.run_write_roundtrip: unknown format {fmt}",
+            )
+
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=fmt, error_type="parse_error",
+                stderr="pysam runtime (native or Docker) not available",
+            )
+
+        import os
+        import subprocess
+        import sys
+        import tempfile
+
+        t0 = time.monotonic()
+        ext = ".vcf" if fmt == "VCF" else ".sam"
+
+        # --- Native pysam in-process (fast path) ---
+        if self._use_native():
+            try:
+                import pysam
+                with tempfile.TemporaryDirectory(prefix="biotest_pysam_rt_") as tmpdir:
+                    out_path = os.path.join(tmpdir, f"out{ext}")
+                    if fmt == "VCF":
+                        src = pysam.VariantFile(str(input_path))
+                        writer = pysam.VariantFile(out_path, "w", header=src.header)
+                    else:  # SAM
+                        src = pysam.AlignmentFile(str(input_path), "r", check_sq=False)
+                        writer = pysam.AlignmentFile(out_path, "wh", template=src)
+                    try:
+                        for rec in src:
+                            writer.write(rec)
+                    finally:
+                        writer.close()
+                        src.close()
+                    with open(out_path, "r", encoding="utf-8") as f:
+                        text = f.read()
+                return RunnerResult(
+                    success=True,
+                    canonical_json={"rewritten_text": text},
+                    parser_name=self.name, format_type=fmt, exit_code=0,
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+            except Exception as e:
+                return RunnerResult(
+                    success=False, parser_name=self.name, format_type=fmt,
+                    error_type="crash", stderr=f"native pysam roundtrip: {e}",
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+
+        # --- Docker fallback (Windows) ---
+        mode_flag = "vcf_write_roundtrip" if fmt == "VCF" else "sam_write_roundtrip"
+        with tempfile.TemporaryDirectory(prefix="biotest_pysam_rt_") as tmpdir:
+            in_path = os.path.join(tmpdir, f"in{ext}")
+            out_path = os.path.join(tmpdir, f"out{ext}")
+            import shutil as _sh
+            _sh.copy2(input_path, in_path)
+
+            mount = tmpdir.replace("\\", "/")
+            cmd = [
+                "docker", "run", "--rm",
+                "-v", f"{mount}:/data",
+                "biotest-pysam:latest",
+                "--mode", mode_flag,
+                f"/data/in{ext}", f"/data/out{ext}",
+            ]
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+            try:
+                proc = subprocess.run(
+                    cmd, capture_output=True, text=True,
+                    encoding="utf-8", timeout=timeout_s,
+                    creationflags=creation_flags,
+                )
+            except subprocess.TimeoutExpired:
+                return RunnerResult(
+                    success=False, parser_name=self.name, format_type=fmt,
+                    error_type="timeout",
+                    stderr=f"pysam docker roundtrip timed out after {timeout_s}s",
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+            if proc.returncode != 0 or not os.path.exists(out_path):
+                return RunnerResult(
+                    success=False, parser_name=self.name, format_type=fmt,
+                    exit_code=proc.returncode, error_type="crash",
+                    stderr=(proc.stderr or "")[:500],
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+            with open(out_path, "r", encoding="utf-8") as f:
+                text = f.read()
+            return RunnerResult(
+                success=True,
+                canonical_json={"rewritten_text": text},
+                parser_name=self.name, format_type=fmt, exit_code=0,
+                stderr=proc.stderr,
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
 

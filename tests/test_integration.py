@@ -439,9 +439,11 @@ class TestPromptIntegration:
         for target in get_all_targets():
             for fmt in ["VCF", "SAM"]:
                 prompt = build_system_prompt(target, fmt)
-                # Must contain the whitelist
-                assert "shuffle_meta_lines" in prompt
-                assert "permute_optional_tag_fields" in prompt
+                # Format-appropriate whitelist entry must appear.
+                if fmt == "VCF":
+                    assert "shuffle_meta_lines" in prompt
+                else:  # SAM
+                    assert "permute_optional_tag_fields" in prompt
                 # Must ask for mr_name, NOT mr_id
                 assert "mr_name" in prompt
                 assert "mr_id" not in prompt.split("Output")[1] if "Output" in prompt else True
@@ -449,6 +451,138 @@ class TestPromptIntegration:
                 assert fmt in prompt
                 # Must contain behavior description
                 assert target.value in prompt
+
+    def test_primary_target_block_appears_when_set(self):
+        # When the caller passes primary_target, the prompt gains a
+        # SUT-SELECTION RULE header that the LLM uses to align
+        # SUT-specific transforms (e.g. htsjdk_write_roundtrip) with
+        # the actual target. Without this header the LLM would have to
+        # infer the target from the menu's contextual hints alone.
+        from mr_engine.behavior import BehaviorTarget
+        from mr_engine.agent.prompts import build_system_prompt
+
+        prompt = build_system_prompt(
+            BehaviorTarget.ROUND_TRIP_INVARIANCE, "VCF",
+            primary_target="htsjdk",
+            available_suts=["htsjdk", "pysam", "reference"],
+        )
+        assert "PRIMARY TARGET FOR THIS RUN" in prompt
+        assert "htsjdk" in prompt
+        # With the Option-C collapse, the per-SUT SUT-SELECTION RULE is
+        # gone; the prompt now carries a single WRITER-TRANSFORM NOTE
+        # explaining that sut_write_roundtrip is SUT-agnostic.
+        assert "WRITER-TRANSFORM NOTE" in prompt
+        assert "sut_write_roundtrip" in prompt
+        # Available SUT list must render.
+        assert "Available SUTs in this runtime: htsjdk, pysam, reference" in prompt
+
+    def test_no_primary_target_block_when_unset(self):
+        # Legacy path: when no primary_target is given, the new header
+        # must NOT appear (preserves old prompt shape for callers that
+        # predate this wiring, e.g. standalone smoke tests).
+        from mr_engine.behavior import BehaviorTarget
+        from mr_engine.agent.prompts import build_system_prompt
+
+        prompt = build_system_prompt(
+            BehaviorTarget.ROUND_TRIP_INVARIANCE, "VCF",
+        )
+        assert "PRIMARY TARGET FOR THIS RUN" not in prompt
+        assert "WRITER-TRANSFORM NOTE" not in prompt
+
+    def test_writer_transform_hidden_when_primary_lacks_writer(self):
+        # When runtime_capabilities does NOT include primary_sut_has_writer,
+        # sut_write_roundtrip must be filtered out of the LLM's transform
+        # menu — otherwise the LLM would pick it, the transform would
+        # no-op (runner lacks a writer), and an MR slot would be wasted.
+        from mr_engine.behavior import BehaviorTarget
+        from mr_engine.agent.prompts import build_system_prompt
+
+        # Runtime does NOT satisfy primary_sut_has_writer.
+        prompt_hidden = build_system_prompt(
+            BehaviorTarget.ROUND_TRIP_INVARIANCE, "VCF",
+            primary_target="biopython",           # biopython: no writer
+            available_suts=["biopython", "reference"],
+            runtime_capabilities={"pysam_runtime_reachable"},  # no "primary_sut_has_writer"
+        )
+        # The transform name must NOT appear as a menu entry. It DOES
+        # appear in the filtered-out note we render at the bottom — so
+        # the test guards by requiring it's in the "hidden" list rather
+        # than in the "Valid names" list.
+        assert "Valid names" in prompt_hidden
+        # Split out the two sections and assert the filter behaviour.
+        valid_block = prompt_hidden.split("Valid names")[1].split("Note:")[0]
+        assert "sut_write_roundtrip" not in valid_block
+        # Sanity: the hidden-list footer names it.
+        assert "sut_write_roundtrip" in prompt_hidden
+        assert "hidden because the current runtime" in prompt_hidden
+
+    def test_writer_transform_shown_when_primary_has_writer(self):
+        # When runtime satisfies primary_sut_has_writer, the writer
+        # transform MUST appear in the "Valid names" menu block.
+        from mr_engine.behavior import BehaviorTarget
+        from mr_engine.agent.prompts import build_system_prompt
+
+        prompt_shown = build_system_prompt(
+            BehaviorTarget.ROUND_TRIP_INVARIANCE, "VCF",
+            primary_target="htsjdk",
+            available_suts=["htsjdk", "pysam"],
+            runtime_capabilities={
+                "primary_sut_has_writer",
+                "pysam_runtime_reachable",
+                "htsjdk_runtime_reachable",
+                "bcf_codec_available",
+            },
+        )
+        valid_block = prompt_shown.split("Valid names")[1].split("Note:")[0]
+        assert "sut_write_roundtrip" in valid_block
+
+    def test_compute_runtime_capabilities_from_class_attrs(self):
+        # Direct check of biotest._compute_runtime_capabilities —
+        # confirms it reads the class-level supports_write_roundtrip
+        # attr rather than instantiating runners (no subprocesses).
+        from biotest import _compute_runtime_capabilities
+
+        # htsjdk primary + pysam available → full capability set.
+        caps = _compute_runtime_capabilities(
+            primary_target="htsjdk",
+            available_suts=["htsjdk", "pysam", "reference"],
+        )
+        assert "primary_sut_has_writer" in caps
+        assert "pysam_runtime_reachable" in caps
+        assert "htsjdk_runtime_reachable" in caps
+        assert "bcf_codec_available" in caps
+
+        # biopython primary (no writer) — primary_sut_has_writer absent.
+        caps = _compute_runtime_capabilities(
+            primary_target="biopython",
+            available_suts=["biopython", "reference"],
+        )
+        assert "primary_sut_has_writer" not in caps
+        # Also: no pysam in available list → no pysam tags.
+        assert "pysam_runtime_reachable" not in caps
+        assert "bcf_codec_available" not in caps
+
+    def test_bcf_transforms_hidden_without_pysam(self):
+        # vcf_bcf_round_trip and permute_bcf_header_dictionary are gated
+        # on pysam_runtime_reachable + bcf_codec_available. In an env
+        # without pysam, they MUST be filtered out.
+        from mr_engine.behavior import BehaviorTarget
+        from mr_engine.agent.prompts import build_system_prompt
+
+        prompt = build_system_prompt(
+            BehaviorTarget.ROUND_TRIP_INVARIANCE, "VCF",
+            primary_target="htsjdk",
+            available_suts=["htsjdk", "reference"],      # no pysam
+            runtime_capabilities={
+                "primary_sut_has_writer",
+                "htsjdk_runtime_reachable",
+            },
+        )
+        valid_block = prompt.split("Valid names")[1].split("Note:")[0]
+        assert "vcf_bcf_round_trip" not in valid_block
+        assert "permute_bcf_header_dictionary" not in valid_block
+        # But sut_write_roundtrip is present (primary htsjdk has writer).
+        assert "sut_write_roundtrip" in valid_block
 
 
 if __name__ == "__main__":

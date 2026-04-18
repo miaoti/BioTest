@@ -190,6 +190,26 @@ def st_permute_bcf_header_dictionary(draw, corpus: SeedCorpus):
 
 
 # ---------------------------------------------------------------------------
+# SUT-agnostic write-roundtrip strategy
+# ---------------------------------------------------------------------------
+
+@composite
+def st_sut_write_roundtrip(draw, corpus: SeedCorpus):
+    """Precondition: any valid VCF.
+
+    The ACTUAL SUT that performs the write is chosen by the orchestrator
+    (from `primary_target`) and injected into dispatch as `runner_hook`,
+    so the strategy itself stays SUT-agnostic.
+    """
+    seed_path = draw(st.sampled_from(corpus.vcf_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    assume(any(l.startswith("##fileformat=VCF") for l in lines))
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {"transform": "sut_write_roundtrip", "seed_path": seed_path,
+            "lines": lines, "rng_seed": rng_seed}
+
+
+# ---------------------------------------------------------------------------
 # CSQ/ANN annotation ordering strategy
 # ---------------------------------------------------------------------------
 

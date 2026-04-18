@@ -69,6 +69,11 @@ BEHAVIOR_TRANSFORM_HINTS: dict[BehaviorTarget, list[str]] = {
         "toggle_cigar_hard_soft_clipping",
         # VCF⇄BCF codec round-trip (VCF v4.5 §6)
         "vcf_bcf_round_trip",
+        # SUT-agnostic writer round-trip (Chen et al. 2018 §3.2). One
+        # transform, runtime-dispatched to whichever SUT is primary.
+        # Replaces the old htsjdk_write_roundtrip / pysam_vcf_write_roundtrip
+        # pair. See mr_engine/transforms/vcf.py::sut_write_roundtrip.
+        "sut_write_roundtrip",
     ],
 }
 

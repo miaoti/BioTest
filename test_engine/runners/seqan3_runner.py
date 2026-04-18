@@ -80,11 +80,14 @@ class SeqAn3Runner(ParserRunner):
             )
 
         if format_type.upper() != "SAM":
+            # Ineligible (not malformed) — this runner class has declared
+            # supported_formats={"SAM"}. Consensus must NOT count this
+            # as a vote.
             return RunnerResult(
                 success=False,
                 parser_name=self.name,
                 format_type=format_type,
-                error_type="parse_error",
+                error_type="ineligible",
                 stderr="SeqAn3 only supports SAM format",
             )
 

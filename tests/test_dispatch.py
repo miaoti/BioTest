@@ -220,6 +220,124 @@ class TestVcfDispatchNew:
         )
         assert isinstance(result, list)
 
+    def test_sut_write_roundtrip_without_runner_hook_is_safe_noop(self):
+        # The generic writer transform is runner-aware (needs_runner_hook=True).
+        # When dispatch is called WITHOUT a runner (e.g. from smoke tests
+        # or from code paths that don't thread a runner through), the
+        # transform must gracefully no-op and return the input — NOT
+        # crash. This preserves the all-or-nothing safe-default policy
+        # we use elsewhere (vcf_bcf_round_trip, etc.).
+        lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        result = apply_transform("sut_write_roundtrip", lines, seed=42)
+        # runner_hook omitted → None → no-op → input returned unchanged.
+        assert result == lines
+
+    def test_sut_write_roundtrip_with_runner_hook_dispatches(self):
+        # When a real runner with supports_write_roundtrip=True is
+        # passed, dispatch must call runner.run_write_roundtrip and
+        # return its output split into lines.
+        from test_engine.runners.base import RunnerResult
+
+        class FakeWriterRunner:
+            name = "fake"
+            supports_write_roundtrip = True
+            def run_write_roundtrip(self, path, fmt="VCF"):
+                return RunnerResult(
+                    success=True,
+                    canonical_json={"rewritten_text": (
+                        "##fileformat=VCFv4.2\n"
+                        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                    )},
+                    parser_name="fake", format_type="VCF",
+                )
+
+        lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        result = apply_transform(
+            "sut_write_roundtrip", lines, seed=42,
+            runner_hook=FakeWriterRunner(),
+        )
+        # Output must come from the FakeWriterRunner, not the input.
+        assert any("##fileformat=VCFv4.2" in (l or "") for l in result)
+        assert all("spec" not in (l or "") for l in result[:2])
+
+    def test_sut_write_roundtrip_non_writer_runner_is_noop(self):
+        # A runner with supports_write_roundtrip=False must be treated
+        # like no runner at all (no crash, return input unchanged).
+        class FakeReadOnlyRunner:
+            name = "read-only"
+            supports_write_roundtrip = False
+            def run_write_roundtrip(self, *a, **kw):  # pragma: no cover
+                raise AssertionError("should not be called")
+
+        lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        result = apply_transform(
+            "sut_write_roundtrip", lines, seed=42,
+            runner_hook=FakeReadOnlyRunner(),
+        )
+        assert result == lines
+
+    def test_sut_write_roundtrip_forwards_format_context(self):
+        # format_context must flow from apply_transform through the
+        # dispatch wrapper into runner.run_write_roundtrip. Without it,
+        # SAM seeds would route to the VCF writer and vice-versa.
+        from test_engine.runners.base import RunnerResult
+
+        captured: dict = {}
+
+        class FmtCapturingRunner:
+            name = "fmt-capture"
+            supports_write_roundtrip = True
+            def run_write_roundtrip(self, path, fmt="VCF"):
+                captured["fmt"] = fmt
+                body = "@HD\tVN:1.6\n" if fmt == "SAM" else "##fileformat=VCFv4.2\n"
+                return RunnerResult(
+                    success=True,
+                    canonical_json={"rewritten_text": body},
+                    parser_name="fmt-capture", format_type=fmt,
+                )
+
+        sam_lines = _read_lines(SEEDS_DIR / "sam" / "minimal_tags.sam")
+        apply_transform(
+            "sut_write_roundtrip", sam_lines, seed=7,
+            runner_hook=FmtCapturingRunner(),
+            format_context="SAM",
+        )
+        assert captured["fmt"] == "SAM"
+
+        vcf_lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        apply_transform(
+            "sut_write_roundtrip", vcf_lines, seed=7,
+            runner_hook=FmtCapturingRunner(),
+            format_context="VCF",
+        )
+        assert captured["fmt"] == "VCF"
+
+
+class TestStrategyRouter:
+    def test_sut_write_roundtrip_format_scoped_lookup(self):
+        # The router must return DIFFERENT strategy factories for the
+        # same transform name depending on the fmt arg. The VCF variant
+        # samples from corpus.vcf_seeds, the SAM variant from
+        # corpus.sam_seeds — so mis-routing would assume() into a
+        # discard every call.
+        from test_engine.generators.strategy_router import get_strategy
+
+        vcf_strategy = get_strategy("sut_write_roundtrip", fmt="VCF")
+        sam_strategy = get_strategy("sut_write_roundtrip", fmt="SAM")
+        assert vcf_strategy is not None
+        assert sam_strategy is not None
+        assert vcf_strategy is not sam_strategy
+
+        # Without fmt, defaults to VCF (single-scope fallback).
+        default_strategy = get_strategy("sut_write_roundtrip")
+        assert default_strategy is vcf_strategy
+
+        # Single-scope transforms ignore fmt (same object either way).
+        assert (
+            get_strategy("shuffle_meta_lines", fmt="VCF")
+            is get_strategy("shuffle_meta_lines", fmt="SAM")
+        )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

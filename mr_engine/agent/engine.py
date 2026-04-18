@@ -9,14 +9,16 @@ for self-correction (up to MAX_VALIDATION_RETRIES attempts).
 from __future__ import annotations
 
 import logging
+import random
+import re
 import time
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
-from mr_engine.llm_factory import get_llm
+from mr_engine.llm_factory import get_llm, get_llm_settings
 from mr_engine.behavior import BehaviorTarget
 from mr_engine.agent.tools import query_spec_database, get_spec_index
 from mr_engine.agent.prompts import build_system_prompt
@@ -27,11 +29,202 @@ logger = logging.getLogger(__name__)
 MAX_VALIDATION_RETRIES = 3
 
 
+def _rotate_llm(used_models: set[str]) -> tuple[BaseChatModel | None, str | None]:
+    """Walk the fallback chain looking for a provider we haven't tried.
+
+    Fallback chain comes from LLMSettings.llm_fallback_models. A model
+    is skipped when either (a) we already tried it in this theme, or
+    (b) constructing the LangChain client raises (typically because the
+    matching provider API key isn't set — e.g. no OpenAI key means we
+    skip gpt-* fallbacks instead of crashing).
+
+    Returns (llm, model_name) on success, or (None, None) when the chain
+    is exhausted — caller must bail this theme.
+    """
+    settings = get_llm_settings()
+    for candidate in settings.fallback_model_list():
+        if candidate in used_models:
+            continue
+        try:
+            llm = get_llm(settings=settings, model_override=candidate)
+        except Exception as e:
+            logger.info(
+                "Fallback model %r unavailable (%s); skipping.",
+                candidate, type(e).__name__,
+            )
+            continue
+        return llm, candidate
+    return None, None
+
+# Free-tier LLM quotas (Groq Llama 3.3) frequently hit 429 responses
+# that carry a Retry-After hint. We parse that hint; if absent, fall
+# back to exponential backoff starting at 30 s. Cap at RATE_LIMIT_CAP
+# so we never sleep longer than a single phase would run.
+RATE_LIMIT_BASE_DELAY_S = 30
+RATE_LIMIT_MAX_RETRIES = 4
+RATE_LIMIT_CAP_S = 10 * 60   # 10 minutes
+
+
+_RATE_LIMIT_KEYWORDS = (
+    "429", "rate limit", "rate_limit", "ratelimit", "quota",
+    "too many requests", "503", "capacity", "overloaded",
+    "try again in", "retry after",
+)
+
+# Persistent errors — retrying WILL NOT help. Detected so the rate-limit
+# helper short-circuits its retry ladder and hands control to the
+# fallback-rotation path immediately instead of burning 8 min of sleep.
+# These all require human action (add credits / enable billing / upgrade
+# plan) so no exponential backoff will fix them.
+_PERSISTENT_ERROR_KEYWORDS = (
+    "prepayment credits are depleted",
+    "prepayment credits depleted",
+    "billing",
+    "insufficient_quota",
+    "insufficient balance",         # DeepSeek 402
+    "payment required",
+    "please upgrade",
+    "account suspended",
+    "disabled billing",
+    "enable billing",
+    "exceeded your current quota",  # often paired with billing action-required
+    "decommissioned",               # Groq gemma2-9b-it / mixtral-8x7b
+    "no longer supported",
+)
+
+
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    """Return True when an exception looks like a rate-limit / 429."""
+    err = str(exc).lower()
+    if any(kw in err for kw in _RATE_LIMIT_KEYWORDS):
+        return True
+    # Common HTTP exception types expose a status_code attribute.
+    code = getattr(exc, "status_code", None) or getattr(
+        getattr(exc, "response", None), "status_code", None
+    )
+    return code in (429, 503)
+
+
+def _is_persistent_error(exc: BaseException) -> bool:
+    """True when the error won't clear via sleep — rotate, don't retry.
+
+    Billing issues, depleted prepayment credits, suspended accounts.
+    Treat these as fatal for the current model so we rotate to the
+    next API fallback immediately.
+    """
+    err = str(exc).lower()
+    return any(kw in err for kw in _PERSISTENT_ERROR_KEYWORDS)
+
+
+def _parse_retry_after_seconds(exc: BaseException) -> Optional[float]:
+    """Best-effort parse of provider-specific Retry-After hints.
+
+    Looks for:
+      - `Retry-After: <n>` HTTP header if the exception carries a response.
+      - Groq's free-form "try again in 37.23s" / "in 2m14s" in the message.
+      - Anthropic-style "retry_after" / "retryDelay" JSON fields in the text.
+    """
+    # Header path (httpx / requests Response).
+    response = getattr(exc, "response", None)
+    if response is not None:
+        headers = getattr(response, "headers", {}) or {}
+        retry_after = headers.get("Retry-After") or headers.get("retry-after")
+        if retry_after:
+            try:
+                return float(retry_after)
+            except (TypeError, ValueError):
+                pass
+
+    msg = str(exc)
+    # "try again in 37.23s" or "try again in 37s".
+    m = re.search(r"try again in\s+([\d.]+)\s*s", msg, flags=re.IGNORECASE)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            pass
+    # "try again in 1m30s"
+    m = re.search(r"try again in\s+(\d+)m(\d+)?s?", msg, flags=re.IGNORECASE)
+    if m:
+        minutes = int(m.group(1))
+        seconds = int(m.group(2) or 0)
+        return float(minutes * 60 + seconds)
+    # JSON field patterns.
+    m = re.search(r'"retry_?[a-z_]*":\s*"?(\d+(?:\.\d+)?)', msg)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            pass
+    return None
+
+
+def _invoke_with_rate_limit(
+    call: Callable[[], Any],
+    *,
+    attempt_label: str,
+    max_retries: int = RATE_LIMIT_MAX_RETRIES,
+) -> Any:
+    """Invoke `call` with exponential backoff on rate-limit errors.
+
+    Re-raises non-rate-limit exceptions to the caller (which still has
+    its own typed recovery path for tool_use_failed, recursion, etc).
+    """
+    last_exc: Optional[BaseException] = None
+    for i in range(max_retries + 1):
+        try:
+            return call()
+        except Exception as e:
+            if not _is_rate_limit_error(e):
+                raise
+            last_exc = e
+            # Short-circuit: persistent errors (billing / depleted
+            # credits / suspended account) won't clear via backoff.
+            # Raise immediately so the caller's fallback-rotation path
+            # can switch providers instead of burning the retry ladder.
+            if _is_persistent_error(e):
+                logger.warning(
+                    "Persistent error on %s (no retry will help): %s",
+                    attempt_label, str(e)[:200],
+                )
+                raise
+            if i == max_retries:
+                logger.error(
+                    "Rate-limit retries exhausted (%s attempt %d/%d): %s",
+                    attempt_label, i + 1, max_retries + 1, str(e)[:200],
+                )
+                raise
+
+            hint = _parse_retry_after_seconds(e)
+            if hint is not None:
+                # Honour the provider's suggestion plus a small jitter.
+                sleep_s = min(hint + random.uniform(0.5, 2.0), RATE_LIMIT_CAP_S)
+                src = "provider hint"
+            else:
+                # Exponential backoff: 30s, 60s, 120s, 240s …
+                sleep_s = min(
+                    RATE_LIMIT_BASE_DELAY_S * (2 ** i)
+                    + random.uniform(0.0, 2.0),
+                    RATE_LIMIT_CAP_S,
+                )
+                src = "exponential"
+            logger.warning(
+                "Rate-limited on %s (retry %d/%d, %s): sleeping %.1fs — %s",
+                attempt_label, i + 1, max_retries, src, sleep_s, str(e)[:150],
+            )
+            time.sleep(sleep_s)
+    # Should be unreachable — loop either returns or re-raises.
+    raise last_exc  # type: ignore[misc]
+
+
 def create_mr_agent(
     target: BehaviorTarget,
     spec_format: str,
     llm: BaseChatModel | None = None,
     blindspot_context: str | None = None,
+    primary_target: str = "",
+    available_suts: list[str] | None = None,
+    runtime_capabilities: set[str] | None = None,
 ):
     """
     Create a configured ReAct agent for MR mining.
@@ -41,6 +234,12 @@ def create_mr_agent(
         spec_format: "VCF" or "SAM".
         llm: LangChain model instance. If None, loads from environment.
         blindspot_context: Optional Phase D blindspot guidance to append.
+        primary_target: SUT driving the feedback loop (e.g. "htsjdk").
+                        Forwarded to the system prompt so the LLM aligns
+                        SUT-specific transforms with this target.
+        available_suts: SUT names currently available at runtime. Narrows
+                        the set of SUT-specific transforms the agent may
+                        pick from.
 
     Returns:
         A LangGraph Runnable agent.
@@ -48,7 +247,12 @@ def create_mr_agent(
     if llm is None:
         llm = get_llm()
 
-    system_prompt = build_system_prompt(target, spec_format, blindspot_context)
+    system_prompt = build_system_prompt(
+        target, spec_format, blindspot_context,
+        primary_target=primary_target,
+        available_suts=available_suts,
+        runtime_capabilities=runtime_capabilities,
+    )
 
     agent = create_react_agent(
         model=llm,
@@ -63,6 +267,9 @@ def mine_mrs(
     spec_format: str,
     llm: BaseChatModel | None = None,
     blindspot_context: str | None = None,
+    primary_target: str = "",
+    available_suts: list[str] | None = None,
+    runtime_capabilities: set[str] | None = None,
 ) -> CompilationResult:
     """
     Full MR mining pipeline: agent -> validate -> retry on failure.
@@ -72,11 +279,33 @@ def mine_mrs(
         spec_format: "VCF" or "SAM".
         llm: Optional pre-configured LLM instance.
         blindspot_context: Optional Phase D blindspot guidance.
+        primary_target: SUT driving feedback (e.g. "htsjdk"). Surfaced
+                        in the system prompt's selection rule so the
+                        LLM aligns SUT-specific transforms with this
+                        target. Empty string preserves legacy behavior.
+        available_suts: Runtime-available SUT names. Narrows SUT-specific
+                        transform selection to only those the current
+                        environment can actually execute.
 
     Returns:
         CompilationResult with validated MRs or final errors.
     """
-    agent = create_mr_agent(target, spec_format, llm, blindspot_context)
+    # Track which LLM models we've used on this theme, for the
+    # API-only fallback chain. Never falls back to local — if every
+    # API provider is exhausted, the theme bails cleanly.
+    settings = get_llm_settings()
+    active_llm = llm if llm is not None else get_llm(settings=settings)
+    active_model = getattr(active_llm, "model_name", None) or getattr(
+        active_llm, "model", None
+    ) or settings.llm_model
+    used_models: set[str] = {active_model} if active_model else set()
+
+    agent = create_mr_agent(
+        target, spec_format, active_llm, blindspot_context,
+        primary_target=primary_target,
+        available_suts=available_suts,
+        runtime_capabilities=runtime_capabilities,
+    )
     spec_index = get_spec_index()
 
     user_message = (
@@ -155,33 +384,74 @@ def mine_mrs(
             # result stays None so normal extraction is skipped).
         else:
           try:
-            result = agent.invoke(
-                {"messages": messages},
-                config={"recursion_limit": 25},
+            result = _invoke_with_rate_limit(
+                lambda: agent.invoke(
+                    {"messages": messages},
+                    config={"recursion_limit": 25},
+                ),
+                attempt_label=f"agent.invoke attempt {attempt + 1}",
             )
           except Exception as e:
             err_str = str(e).lower()
-            if "429" in err_str or "rate" in err_str or "quota" in err_str or "503" in err_str:
-                wait = 60
-                logger.warning(
-                    "Rate limited on attempt %d (%s), waiting %ds before retry...",
-                    attempt + 1, type(e).__name__, wait,
-                )
-                time.sleep(wait)
-                try:
-                    result = agent.invoke(
-                        {"messages": messages},
-                        config={"recursion_limit": 25},
-                    )
-                except Exception as e2:
+            if _is_rate_limit_error(e):
+                # Exhausted the backoff budget for the current model.
+                # Try rotating to the next API fallback — e.g. Gemini 2.5
+                # Flash → 2.0 Flash → Flash-Lite → Groq free models.
+                # No local fallback: API-only chain, per operator
+                # preference (local models choked on previous runs).
+                next_llm, next_model = _rotate_llm(used_models)
+                if next_llm is not None and next_model is not None:
                     logger.warning(
-                        "Agent error after rate-limit retry on attempt %d: %s",
-                        attempt + 1, e2,
+                        "Rate-limit budget exhausted on model %r (attempt %d); "
+                        "rotating to fallback model %r.",
+                        active_model, attempt + 1, next_model,
                     )
-                    # Feed this into the retry loop instead of bailing out.
+                    active_llm = next_llm
+                    active_model = next_model
+                    used_models.add(next_model)
+                    agent = create_mr_agent(
+                        target, spec_format, active_llm, blindspot_context,
+                        primary_target=primary_target,
+                        available_suts=available_suts,
+                    )
+                    # Retry this same attempt with the new model.
+                    # Don't bump `attempt`; we simply "restart" the try.
+                    try:
+                        result = _invoke_with_rate_limit(
+                            lambda: agent.invoke(
+                                {"messages": messages},
+                                config={"recursion_limit": 25},
+                            ),
+                            attempt_label=f"agent.invoke attempt {attempt + 1} "
+                                          f"(fallback {active_model})",
+                        )
+                    except Exception as e2:
+                        logger.warning(
+                            "Fallback %r also failed: %s",
+                            active_model, str(e2)[:200],
+                        )
+                        compilation = CompilationResult(
+                            success=False,
+                            error_detail=(
+                                f"Rate limit on primary AND fallback "
+                                f"{active_model!r}: {e2}"
+                            ),
+                        )
+                        continue
+                    # result is set; fall through to compilation.
+                else:
+                    # Entire API fallback chain exhausted — bail the theme.
+                    logger.warning(
+                        "Rate-limit exhausted on %r and every API fallback "
+                        "tried in this theme; bailing. Used: %s",
+                        active_model, sorted(used_models),
+                    )
                     compilation = CompilationResult(
                         success=False,
-                        error_detail=f"API error after rate-limit retry: {e2}",
+                        error_detail=(
+                            f"All API models exhausted (tried: "
+                            f"{sorted(used_models)}): {e}"
+                        ),
                     )
                     continue
             elif "tool_use_failed" in err_str or "failed_generation" in str(e):

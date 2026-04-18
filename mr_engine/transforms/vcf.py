@@ -748,16 +748,112 @@ def permute_bcf_header_dictionary(
 
 
 # ---------------------------------------------------------------------------
-# Helper: dispatch BCF modes through native pysam or Docker harness
+# 15. sut_write_roundtrip — parse x with the primary SUT, re-serialize via
+#     the same SUT's public writer. Works for BOTH VCF and SAM: the runner
+#     decides which writer to invoke based on format_type. Chen et al. 2018
+#     §3.2 round-trip MR; complementary to (and distinct from)
+#     vcf_bcf_round_trip which exercises the binary codec.
+# ---------------------------------------------------------------------------
+@register_transform(
+    "sut_write_roundtrip",
+    format="VCF/SAM",
+    description=(
+        "Parse a file with the primary SUT, then re-serialize it via "
+        "that same SUT's public writer API (htsjdk VCFWriter or "
+        "SAMFileWriter, pysam VariantFile or AlignmentFile, a hypothetical "
+        "Rust writer). Per Chen, Kuo, Liu, Tse (2018) §3.2, "
+        "`parse(write(parse(x)))` must deep-equal `parse(x)`; any diff "
+        "exposes a writer bug in the primary SUT. Format-agnostic — the "
+        "runner dispatches to the VCF or SAM writer based on the seed's "
+        "format, so one transform covers both and adding new SUTs only "
+        "needs a runner-class change."
+    ),
+    contextual_hint=(
+        "the MR target is round_trip_invariance and the primary SUT has "
+        "a writer (its Runner sets supports_write_roundtrip=True). This "
+        "is the ONLY writer transform in the menu — pick it whenever you "
+        "want to exercise any SUT's serializer for the current format; "
+        "which SUT actually runs is decided at Phase C time, not here."
+    ),
+    preconditions=(
+        "primary_sut_has_writer",
+    ),
+)
+def sut_write_roundtrip(
+    file_lines: list[str],
+    seed: Optional[int] = None,
+    runner=None,
+    format_type: str = "VCF",
+) -> list[str]:
+    """Round-trip a file through the supplied runner's public writer.
+
+    `runner` is the `ParserRunner` chosen by the orchestrator (usually
+    the primary SUT, else the first writer-capable SUT in the pool).
+    `format_type` is "VCF" or "SAM" and is threaded through to
+    `runner.run_write_roundtrip` so the runner picks the right writer.
+    If `runner` is None, its `supports_write_roundtrip` flag is False,
+    or the call raises — returns the input unchanged (safe-default,
+    same policy as `vcf_bcf_round_trip`).
+    """
+    import logging
+    import os
+    import tempfile
+    from pathlib import Path as _P
+
+    logger = logging.getLogger(__name__)
+
+    if not file_lines or runner is None:
+        return file_lines
+    if not getattr(runner, "supports_write_roundtrip", False):
+        logger.debug(
+            "sut_write_roundtrip: runner %r does not support write_roundtrip",
+            getattr(runner, "name", type(runner).__name__),
+        )
+        return file_lines
+
+    fmt = (format_type or "VCF").upper()
+    ext = ".vcf" if fmt == "VCF" else ".sam"
+    with tempfile.TemporaryDirectory(prefix="biotest_sut_rt_") as tmpdir:
+        input_path = _P(os.path.join(tmpdir, f"input{ext}"))
+        with open(input_path, "w", encoding="utf-8") as f:
+            f.writelines(file_lines)
+        try:
+            result = runner.run_write_roundtrip(input_path, fmt)
+        except NotImplementedError:
+            logger.warning(
+                "Runner %r declares supports_write_roundtrip=True "
+                "but raises NotImplementedError — no-op",
+                getattr(runner, "name", type(runner).__name__),
+            )
+            return file_lines
+        except Exception as e:
+            logger.debug("sut_write_roundtrip: runner raised: %s", e)
+            return file_lines
+
+        if not result.success or not result.canonical_json:
+            logger.debug(
+                "sut_write_roundtrip: runner returned failure: %s",
+                (result.stderr or "")[:200],
+            )
+            return file_lines
+        text = result.canonical_json.get("rewritten_text", "") or ""
+        if not text.strip():
+            return file_lines
+        return text.splitlines(keepends=True)
+
+
+# ---------------------------------------------------------------------------
+# Helper: dispatch pysam harness subcommands through native pysam or Docker
 # ---------------------------------------------------------------------------
 
-def _run_bcf_pysam_mode(
+def _run_pysam_mode(
     vcf_lines: list[str],
     mode: str,
     seed: Optional[int] = None,
 ) -> list[str]:
-    """Execute a pysam-harness BCF subcommand and return the resulting VCF.
+    """Execute a pysam-harness subcommand and return the resulting VCF.
 
+    Supported modes: bcf_roundtrip, bcf_header_reorder, vcf_write_roundtrip.
     Tries native pysam first (fast); falls back to Docker
     `biotest-pysam:latest` on Windows. On total failure returns the
     input unchanged — see vcf_bcf_round_trip docstring for rationale.
@@ -773,7 +869,7 @@ def _run_bcf_pysam_mode(
     if not vcf_lines:
         return vcf_lines
 
-    with tempfile.TemporaryDirectory(prefix="biotest_bcf_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="biotest_pysam_") as tmpdir:
         input_path = os.path.join(tmpdir, "input.vcf")
         output_path = os.path.join(tmpdir, "output.vcf")
         with open(input_path, "w", encoding="utf-8") as f:
@@ -791,6 +887,8 @@ def _run_bcf_pysam_mode(
                 _native_bcf_header_reorder(
                     _P(input_path), _P(output_path), seed=seed or 0
                 )
+            elif mode == "vcf_write_roundtrip":
+                _native_vcf_write_roundtrip(_P(input_path), _P(output_path))
             else:
                 return vcf_lines
             with open(output_path, "r", encoding="utf-8") as f:
@@ -798,7 +896,7 @@ def _run_bcf_pysam_mode(
         except ImportError:
             pass  # pysam not available natively — try Docker below
         except Exception as e:
-            logger.debug("Native pysam BCF mode failed: %s", e)
+            logger.debug("Native pysam mode %s failed: %s", mode, e)
 
         # Docker fallback
         try:
@@ -828,15 +926,20 @@ def _run_bcf_pysam_mode(
             )
             if proc.returncode != 0 or not os.path.exists(output_path):
                 logger.debug(
-                    "Docker BCF mode %s failed: rc=%s stderr=%s",
+                    "Docker pysam mode %s failed: rc=%s stderr=%s",
                     mode, proc.returncode, (proc.stderr or "")[:200],
                 )
                 return vcf_lines
             with open(output_path, "r", encoding="utf-8") as f:
                 return f.readlines()
         except Exception as e:
-            logger.debug("Docker pysam BCF mode failed: %s", e)
+            logger.debug("Docker pysam mode %s failed: %s", mode, e)
             return vcf_lines
+
+
+# Backward-compat alias. Existing callers of _run_bcf_pysam_mode
+# (vcf_bcf_round_trip, permute_bcf_header_dictionary) keep working.
+_run_bcf_pysam_mode = _run_pysam_mode
 
 
 def _native_bcf_roundtrip(input_vcf, output_vcf) -> None:
@@ -867,6 +970,25 @@ def _native_bcf_roundtrip(input_vcf, output_vcf) -> None:
             os.unlink(tmp_bcf)
         except OSError:
             pass
+
+
+def _native_vcf_write_roundtrip(input_vcf, output_vcf) -> None:
+    """Native pysam implementation of vcf_write_roundtrip.
+
+    Parse input_vcf via pysam.VariantFile, then re-serialize with the
+    text writer (no BCF hop). Exercises libhts's `vcf_write_line` and
+    the pysam Cython VCF writer — distinct from the BCF2 codec path
+    covered by `_native_bcf_roundtrip`.
+    """
+    import pysam
+    src = pysam.VariantFile(str(input_vcf))
+    out = pysam.VariantFile(str(output_vcf), "w", header=src.header)
+    try:
+        for rec in src:
+            out.write(rec)
+    finally:
+        out.close()
+        src.close()
 
 
 # ---------------------------------------------------------------------------

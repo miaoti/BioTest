@@ -1,6 +1,7 @@
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.writer.*;
 import htsjdk.variant.vcf.*;
 
 import java.io.*;
@@ -11,22 +12,82 @@ import java.util.stream.*;
 /**
  * BioTest Canonical JSON Harness for HTSJDK.
  *
- * Usage: java -cp biotest-harness.jar BioTestHarness VCF|SAM <file_path>
+ * Usage:
+ *   java -jar biotest-harness.jar VCF|SAM <file_path>
+ *     → emits canonical JSON to stdout (default parse mode).
  *
- * Outputs canonical JSON to stdout. Exit code 0 = success, 1 = error.
+ *   java -jar biotest-harness.jar --mode write_roundtrip VCF|SAM <file_path>
+ *     → parses the file, writes it back out via htsjdk's native writer
+ *       (VariantContextWriter for VCF, SAMFileWriterFactory for SAM),
+ *       and emits the rewritten TEXT to stdout. Used by the generic
+ *       `sut_write_roundtrip` transform in the MR arsenal. Writer /
+ *       encoder coverage that shows up is the natural consequence of
+ *       an MR using this mode — not a coverage hack.
+ *
+ * Exit code 0 = success, 1 = error.
  */
 public class BioTestHarness {
 
     public static void main(String[] args) {
-        if (args.length < 2) {
+        if (args.length == 0) {
             System.err.println("Usage: BioTestHarness VCF|SAM <file_path>");
+            System.err.println("   or: BioTestHarness --mode write_roundtrip VCF|SAM <file_path>");
             System.exit(1);
         }
 
-        String format = args[0].toUpperCase();
-        String filePath = args[1];
+        // Parse --mode <name> + positional args. Keeps backward compat:
+        // old two-positional-arg invocations still route to parse mode.
+        String mode = "parse";
+        List<String> positional = new ArrayList<>();
+        for (int i = 0; i < args.length; i++) {
+            if ("--mode".equals(args[i]) && i + 1 < args.length) {
+                mode = args[i + 1];
+                i++;
+            } else {
+                positional.add(args[i]);
+            }
+        }
 
         try {
+            if ("write_roundtrip".equals(mode)) {
+                // CLI grammar: --mode write_roundtrip <VCF|SAM> <file_path>
+                // (legacy single-arg form — <vcf_path> only — is kept
+                // for backward compat with older Python callers.)
+                if (positional.isEmpty()) {
+                    System.err.println(
+                        "--mode write_roundtrip requires <VCF|SAM> <file_path>");
+                    System.exit(1);
+                }
+                String rtFormat;
+                String rtPath;
+                if (positional.size() >= 2) {
+                    rtFormat = positional.get(0).toUpperCase();
+                    rtPath = positional.get(1);
+                } else {
+                    // Legacy: single positional → assume VCF
+                    rtFormat = "VCF";
+                    rtPath = positional.get(0);
+                }
+                if ("VCF".equals(rtFormat)) {
+                    System.out.print(writeRoundtripVcf(rtPath));
+                } else if ("SAM".equals(rtFormat)) {
+                    System.out.print(writeRoundtripSam(rtPath));
+                } else {
+                    System.err.println(
+                        "--mode write_roundtrip: unknown format " + rtFormat);
+                    System.exit(1);
+                }
+                return;
+            }
+
+            // Default: parse mode. Expects <format> <file_path>.
+            if (positional.size() < 2) {
+                System.err.println("Usage: BioTestHarness VCF|SAM <file_path>");
+                System.exit(1);
+            }
+            String format = positional.get(0).toUpperCase();
+            String filePath = positional.get(1);
+
             String json;
             if ("VCF".equals(format)) {
                 json = parseVcf(filePath);
@@ -43,6 +104,108 @@ public class BioTestHarness {
             e.printStackTrace(System.err);
             System.exit(1);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // VCF Write Roundtrip — parse-then-write exercise for the WRITE path.
+    //
+    // Hits VCFEncoder, VCFWriter, VariantContextWriterBuilder, and most of
+    // VariantContextBuilder. The output VCF text is returned to the
+    // caller (Python HTSJDKRunner.run_write_roundtrip) which re-parses it
+    // and compares canonical JSON against the original.
+    // -----------------------------------------------------------------------
+    private static String writeRoundtripVcf(String path) throws IOException {
+        File outFile = File.createTempFile("biotest_rt_", ".vcf");
+        outFile.deleteOnExit();
+
+        try (VCFFileReader reader = new VCFFileReader(Path.of(path), false)) {
+            VCFHeader header = reader.getFileHeader();
+            // htsjdk's VCFWriter refuses to serialize v4.3+ headers
+            // ("Writing VCF version VCF4_3 is not implemented"). Our
+            // canonical JSON comparison is format-agnostic, so force the
+            // writeable header down to v4.2 — the VariantContext objects
+            // themselves still carry any v4.3 content they contain.
+            VCFHeader writableHeader = forceVcfVersionToV42(header);
+
+            VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+                .setOutputFile(outFile)
+                .clearOptions()               // disable all defaults (no index, no MD5)
+                .setOption(Options.WRITE_FULL_FORMAT_FIELD)
+                .setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER);
+            if (writableHeader.getSequenceDictionary() != null) {
+                builder = builder.setReferenceDictionary(writableHeader.getSequenceDictionary());
+            }
+
+            try (VariantContextWriter writer = builder.build()) {
+                writer.writeHeader(writableHeader);
+                for (VariantContext vc : reader) {
+                    writer.add(vc);
+                }
+            }
+        }
+
+        return Files.readString(outFile.toPath());
+    }
+
+    // -----------------------------------------------------------------------
+    // SAM Write Roundtrip — parse-then-write via SAMFileWriterFactory.
+    //
+    // Parses the input SAM through SamReaderFactory, re-emits every record
+    // via SAMFileWriter (text SAM output via the .sam extension). Exercises
+    // SAMFileWriterFactory / SAMTextWriter / SAMRecord serialization — zero
+    // coverage from parse-only flows.
+    //
+    // Returned string is the rewritten SAM text; the caller (Python
+    // HTSJDKRunner.run_write_roundtrip) treats it as the transform output.
+    // -----------------------------------------------------------------------
+    private static String writeRoundtripSam(String path) throws IOException {
+        File outFile = File.createTempFile("biotest_rt_", ".sam");
+        outFile.deleteOnExit();
+
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(Path.of(path))) {
+            SAMFileHeader header = reader.getFileHeader();
+            try (SAMFileWriter writer = new SAMFileWriterFactory()
+                    .setCreateIndex(false)
+                    .setCreateMd5File(false)
+                    .makeSAMWriter(header, true, outFile)) {
+                for (SAMRecord rec : reader) {
+                    writer.addAlignment(rec);
+                }
+            }
+        }
+
+        return Files.readString(outFile.toPath());
+    }
+
+    /**
+     * Return a clone of `header` with any ##fileformat meta line replaced
+     * by VCFv4.2 so htsjdk's VCFWriter will serialize it (v4.3+ headers
+     * are rejected by {@code VCFWriter.rejectVCFV43Headers}). All INFO /
+     * FORMAT / FILTER / contig lines are preserved verbatim.
+     */
+    private static VCFHeader forceVcfVersionToV42(VCFHeader header) {
+        LinkedHashSet<VCFHeaderLine> lines = new LinkedHashSet<>();
+        for (VCFHeaderLine ln : header.getMetaDataInInputOrder()) {
+            // Drop any existing fileformat / file-version marker.
+            if (VCFHeaderVersion.isFormatString(ln.getKey())) {
+                continue;
+            }
+            lines.add(ln);
+        }
+        // Inject v4.2 fileformat at the top.
+        LinkedHashSet<VCFHeaderLine> withVersion = new LinkedHashSet<>();
+        withVersion.add(new VCFHeaderLine(
+            VCFHeaderVersion.VCF4_2.getFormatString(),
+            VCFHeaderVersion.VCF4_2.getVersionString()));
+        withVersion.addAll(lines);
+
+        VCFHeader out = new VCFHeader(withVersion, header.getGenotypeSamples());
+        if (header.getSequenceDictionary() != null) {
+            out.setSequenceDictionary(header.getSequenceDictionary());
+        }
+        return out;
     }
 
     // -----------------------------------------------------------------------

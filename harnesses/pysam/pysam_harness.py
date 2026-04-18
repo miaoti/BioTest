@@ -231,6 +231,50 @@ def bcf_roundtrip(input_vcf: Path, output_vcf: Path) -> None:
             pass
 
 
+def vcf_write_roundtrip(input_vcf: Path, output_vcf: Path) -> None:
+    """Parse input_vcf with pysam, re-serialize via pysam's VCF writer.
+
+    Chen et al. 2018 §3.2 canonical MR: parse(write(parse(x))) must
+    deep-equal parse(x). Complements bcf_roundtrip by skipping the
+    binary hop — this exercises pysam's VCF text-format writer directly
+    (libhts's vcf_write_line / variantfile.pyx Cython bindings),
+    distinct from the BCF2 codec path.
+    """
+    import pysam
+
+    src = pysam.VariantFile(str(input_vcf))
+    out = pysam.VariantFile(str(output_vcf), "w", header=src.header)
+    try:
+        for rec in src:
+            out.write(rec)
+    finally:
+        out.close()
+        src.close()
+
+
+def sam_write_roundtrip(input_sam: Path, output_sam: Path) -> None:
+    """Parse input_sam with pysam, re-serialize via AlignmentFile writer.
+
+    SAM analogue of vcf_write_roundtrip. Mode "wh" = write with header
+    to text SAM output. Exercises pysam's SAM text writer bindings
+    (libhts's sam_format1 + samfile.pyx Cython bindings), distinct
+    from the BAM binary codec and distinct from VCF.
+    """
+    import pysam
+
+    # "r" = read text SAM. pysam auto-detects BAM by file magic bytes,
+    # so `check_sq=False` keeps it permissive for minimal test inputs.
+    src = pysam.AlignmentFile(str(input_sam), "r", check_sq=False)
+    # "wh" = write with @-prefixed header lines included (text SAM).
+    out = pysam.AlignmentFile(str(output_sam), "wh", template=src)
+    try:
+        for rec in src:
+            out.write(rec)
+    finally:
+        out.close()
+        src.close()
+
+
 def bcf_header_reorder(
     input_vcf: Path, output_vcf: Path, seed: int = 0
 ) -> None:
@@ -362,6 +406,24 @@ def main():
                     )
                     sys.exit(1)
                 bcf_roundtrip(Path(rest[0]), Path(rest[1]))
+            elif mode == "vcf_write_roundtrip":
+                if len(rest) != 2:
+                    print(
+                        "vcf_write_roundtrip usage: --mode vcf_write_roundtrip "
+                        "<input_vcf> <output_vcf>",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                vcf_write_roundtrip(Path(rest[0]), Path(rest[1]))
+            elif mode == "sam_write_roundtrip":
+                if len(rest) != 2:
+                    print(
+                        "sam_write_roundtrip usage: --mode sam_write_roundtrip "
+                        "<input_sam> <output_sam>",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                sam_write_roundtrip(Path(rest[0]), Path(rest[1]))
             elif mode == "bcf_header_reorder":
                 seed = 0
                 if rest and rest[0] == "--seed":
@@ -394,6 +456,8 @@ def main():
         print(
             f"Usage: {sys.argv[0]} [--coverage /cov/dir] <VCF|SAM> <input_file>\n"
             f"   OR  {sys.argv[0]} --mode bcf_roundtrip <input_vcf> <output_vcf>\n"
+            f"   OR  {sys.argv[0]} --mode vcf_write_roundtrip <input_vcf> <output_vcf>\n"
+            f"   OR  {sys.argv[0]} --mode sam_write_roundtrip <input_sam> <output_sam>\n"
             f"   OR  {sys.argv[0]} --mode bcf_header_reorder [--seed N] "
             f"<input_vcf> <output_vcf>",
             file=sys.stderr,

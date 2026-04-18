@@ -38,12 +38,33 @@ from mr_engine.transforms.sam import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_19_transforms(self):
-        # 13 originals + 6 new (trim_common_affixes, left_align_indel,
-        # split_multi_allelic, vcf_bcf_round_trip,
-        # permute_bcf_header_dictionary, permute_csq_annotations)
+    def test_whitelist_has_20_transforms(self):
+        # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
+        # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip,
+        # runtime-dispatched — replaces the previous per-SUT pair).
         wl = get_whitelist()
-        assert len(wl) == 19, f"Expected 19 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 20, f"Expected 20 transforms, got {len(wl)}: {wl}"
+
+    def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
+        # One writer transform forever, spanning BOTH formats — the
+        # orchestrator resolves the actual SUT at Phase C time from
+        # primary_target, and the runner dispatches to VCF or SAM based
+        # on format_context. Guards against accidental reintroduction
+        # of per-SUT or per-format writer variants.
+        assert "sut_write_roundtrip" in TRANSFORM_REGISTRY
+        meta = TRANSFORM_REGISTRY["sut_write_roundtrip"]
+        assert meta.format == "VCF/SAM"
+        assert "primary_sut_has_writer" in meta.preconditions
+        # Reject any stale per-SUT / per-format writer names.
+        for stale in (
+            "htsjdk_write_roundtrip",
+            "pysam_vcf_write_roundtrip",
+            "sut_write_roundtrip_vcf",
+            "sut_write_roundtrip_sam",
+        ):
+            assert stale not in TRANSFORM_REGISTRY, (
+                f"{stale} should have been collapsed into sut_write_roundtrip"
+            )
 
     def test_all_transforms_are_callable(self):
         for name, meta in TRANSFORM_REGISTRY.items():
