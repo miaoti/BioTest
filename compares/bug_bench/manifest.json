@@ -1,8 +1,8 @@
 {
   "$schema": "./schema.json",
-  "benchmark_version": "0.1.0-unverified",
-  "status": "pending_phase_0_verification",
-  "description": "Candidate real-bug benchmark for BioTest comparative evaluation. 32 historical VCF/SAM-related bugs across 4 SUTs. All htsjdk/pysam/biopython entries are UNVERIFIED — pre_fix/post_fix versions must be confirmed in Phase-0 pre-flight against release notes before they enter the live benchmark. Seqan3 entries use commit SHAs directly. Bugs that fail verification are dropped per Bohme et al. ICSE'22 discipline. Expected post-verification N: 18-25 of 32.",
+  "benchmark_version": "0.2.0-research-applied",
+  "status": "research_applied_pending_install_verify",
+  "description": "Candidate real-bug benchmark for BioTest comparative evaluation. 32 historical VCF/SAM-related bugs across 4 SUTs. All htsjdk/pysam/biopython entries are UNVERIFIED \u2014 pre_fix/post_fix versions must be confirmed in Phase-0 pre-flight against release notes before they enter the live benchmark. Seqan3 entries use commit SHAs directly. Bugs that fail verification are dropped per Bohme et al. ICSE'22 discipline. Expected post-verification N: 18-25 of 32.",
   "bugs": [
     {
       "id": "htsjdk-1708",
@@ -11,9 +11,10 @@
       "format": "SAM",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1708_or_CRAM_multicontainer_fix"
+        "pre_fix": "4.1.0",
+        "post_fix": "4.1.1",
+        "verification_rule": "PR #1708 merged 2024-06-04, shipped in htsjdk 4.1.1 on 2024-06-29 with CRAM multi-container fix cited",
+        "confidence": "high"
       },
       "trigger": {
         "category": "round_trip_asymmetry",
@@ -23,8 +24,12 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"],
-        "also_detectable_via": ["round_trip_asymmetry_within_sut"]
+        "against": [
+          "htslib"
+        ],
+        "also_detectable_via": [
+          "round_trip_asymmetry_within_sut"
+        ]
       }
     },
     {
@@ -34,9 +39,10 @@
       "format": "SAM",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1590_or_CRAM_BB_read_features"
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1590 merged 2022-02-07, first in htsjdk 3.0.0 on 2022-06-06 (CRAM 'BB' read-feature restoration)",
+        "confidence": "high"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -46,7 +52,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"]
+        "against": [
+          "htslib",
+          "pysam"
+        ]
       }
     },
     {
@@ -56,9 +65,10 @@
       "format": "SAM",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1592_or_CRAM_SC_scores_fix"
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1592 merged 2022-04-25, first in htsjdk 3.0.0 on 2022-06-06 (CRAM 'SC' scores fix)",
+        "confidence": "high"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -68,7 +78,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"]
+        "against": [
+          "htslib",
+          "pysam"
+        ]
       }
     },
     {
@@ -78,9 +91,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1554_or_AC_AN_AF_filtered_genotypes"
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1554 merged 2021-06-10, first in htsjdk 3.0.0 on 2022-06-06 (AC/AN/AF filtered genotypes)",
+        "confidence": "high"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -90,8 +104,13 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"],
-        "also_detectable_via": ["metamorphic_filter_then_recompute_AC"]
+        "against": [
+          "htslib",
+          "pysam"
+        ],
+        "also_detectable_via": [
+          "metamorphic_filter_then_recompute_AC"
+        ]
       }
     },
     {
@@ -101,9 +120,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1637_or_VCF_sort_order_stability"
+        "pre_fix": "3.0.3",
+        "post_fix": "3.0.4",
+        "verification_rule": "htsjdk 3.0.4 (2022-11-23) hotfix reverted PR #1593 which had caused #1637's VCF sort-order regression",
+        "confidence": "high"
       },
       "trigger": {
         "category": "round_trip_asymmetry",
@@ -113,7 +133,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -125,7 +147,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1117_or_BCF2LazyGenotypesDecoder_NPE"
+        "verification_rule": "release_notes_must_reference_1117_or_BCF2LazyGenotypesDecoder_NPE",
+        "dropped_reason": "NPE in BCF2LazyGenotypesDecoder \u2014 no linked PR in release notes"
       },
       "trigger": {
         "category": "null_ptr",
@@ -135,7 +158,9 @@
       },
       "expected_signal": {
         "type": "crash",
-        "against": ["htsjdk_buggy_version"]
+        "against": [
+          "htsjdk_buggy_version"
+        ]
       }
     },
     {
@@ -147,7 +172,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1686_or_spanning_deletion_getType"
+        "verification_rule": "release_notes_must_reference_1686_or_spanning_deletion_getType",
+        "dropped_reason": "spanning-deletion getType \u2014 issue open, no merged fix"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -157,7 +183,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"]
+        "against": [
+          "htslib",
+          "pysam"
+        ]
       }
     },
     {
@@ -169,7 +198,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_1026_or_multithreaded_VCFEncoder"
+        "verification_rule": "release_notes_must_reference_1026_or_multithreaded_VCFEncoder",
+        "dropped_reason": "multithreaded VCFEncoder \u2014 PR #1636 remains unmerged as of 2022-11"
       },
       "trigger": {
         "category": "incorrect_rejection",
@@ -180,7 +210,9 @@
       },
       "expected_signal": {
         "type": "uncaught_exception",
-        "against": ["htsjdk_buggy_version"]
+        "against": [
+          "htsjdk_buggy_version"
+        ]
       }
     },
     {
@@ -192,7 +224,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_761_or_filename_bcf_substring"
+        "verification_rule": "release_notes_must_reference_761_or_filename_bcf_substring",
+        "dropped_reason": "filename '.bcf' substring \u2014 no linked PR or resolution"
       },
       "trigger": {
         "category": "writer_bug",
@@ -203,7 +236,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -215,7 +250,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "release_notes_must_reference_423_or_multiallelic_AF_AC_per_allele"
+        "verification_rule": "release_notes_must_reference_423_or_multiallelic_AF_AC_per_allele",
+        "dropped_reason": "multiallelic AF/AC \u2014 feature request, no merged fix"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -225,7 +261,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"]
+        "against": [
+          "htslib",
+          "pysam"
+        ]
       }
     },
     {
@@ -235,9 +274,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_1314_or_contig_remap"
+        "pre_fix": "0.22.1",
+        "post_fix": "0.23.0",
+        "verification_rule": "Issue #1314 filed 2024-10-21 against 0.22.1; fix expected in 0.23.0 development stream",
+        "confidence": "low"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -247,7 +287,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -257,9 +299,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_1308_or_new_record_GT"
+        "pre_fix": "0.22.1",
+        "post_fix": "0.23.0",
+        "verification_rule": "pysam 0.23.0 release notes explicitly cite 'VariantHeader.new_record GT setting (#1308)'",
+        "confidence": "high"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -269,7 +312,9 @@
       },
       "expected_signal": {
         "type": "uncaught_exception",
-        "against": ["pysam_buggy_version"]
+        "against": [
+          "pysam_buggy_version"
+        ]
       }
     },
     {
@@ -279,9 +324,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_966_or_TRA_stop_END_field"
+        "pre_fix": "0.16.0",
+        "post_fix": "0.17.0",
+        "verification_rule": "Issue #966 filed 2020-11-06 against 0.16.0.1; 0.17.0 (2020-09-30) is the closest fix-bearing release by timeline",
+        "confidence": "low"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -291,7 +337,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -301,9 +349,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_PR_1201_merge_confirms_fix"
+        "pre_fix": "0.20.0",
+        "post_fix": "0.21.0",
+        "verification_rule": "pysam 0.21.0 release notes explicitly cite 'VariantHeader.new_record: set start/stop before alleles (#1175)'",
+        "confidence": "high"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -313,7 +362,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "htsjdk"]
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
       }
     },
     {
@@ -325,7 +377,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_1225_or_haploid_PL_tuple"
+        "verification_rule": "NEWS_or_release_notes_must_reference_1225_or_haploid_PL_tuple",
+        "dropped_reason": "haploid PL tuple \u2014 no PR linked, no fix version documented"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -335,7 +388,9 @@
       },
       "expected_signal": {
         "type": "uncaught_exception",
-        "against": ["pysam_buggy_version"]
+        "against": [
+          "pysam_buggy_version"
+        ]
       }
     },
     {
@@ -345,9 +400,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_904_or_empty_VCF_fetch"
+        "pre_fix": "0.15.0",
+        "post_fix": "0.16.0",
+        "verification_rule": "pysam 0.16.0 release notes (2019-06-07) cite 'VariantFile.fetch() threw ValueError on empty files (#904)'",
+        "confidence": "high"
       },
       "trigger": {
         "category": "incorrect_rejection",
@@ -357,7 +413,9 @@
       },
       "expected_signal": {
         "type": "uncaught_exception",
-        "against": ["pysam_buggy_version"]
+        "against": [
+          "pysam_buggy_version"
+        ]
       }
     },
     {
@@ -367,10 +425,11 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_1038_or_tabix_index_leak",
-        "notes": "Resource-leak bug; may be hard to reproduce in 2h budget. Candidate for drop."
+        "pre_fix": "0.16.0",
+        "post_fix": "0.17.0",
+        "verification_rule": "pysam 0.17.0 release notes (2020-09-30) cite 'Eliminated file descriptor leaks in tabix_index() (#1038)'",
+        "notes": "Resource-leak bug; may be hard to reproduce in 2h budget. Candidate for drop.",
+        "confidence": "high"
       },
       "trigger": {
         "category": "resource_leak",
@@ -380,7 +439,9 @@
       },
       "expected_signal": {
         "type": "resource_exhaustion",
-        "against": ["pysam_buggy_version"]
+        "against": [
+          "pysam_buggy_version"
+        ]
       }
     },
     {
@@ -390,9 +451,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_641_or_CSI_index_always"
+        "pre_fix": "0.16.0",
+        "post_fix": "0.17.0",
+        "verification_rule": "Issue #641 predates 0.17.0; fix landed with index-customisation work in the 0.17.0 release stream",
+        "confidence": "medium"
       },
       "trigger": {
         "category": "writer_bug",
@@ -402,7 +464,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -414,7 +478,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_771_or_write_segfault_no_header"
+        "verification_rule": "NEWS_or_release_notes_must_reference_771_or_write_segfault_no_header",
+        "dropped_reason": "VariantFile.write segfault on incomplete header \u2014 no merged PR"
       },
       "trigger": {
         "category": "null_ptr",
@@ -424,7 +489,9 @@
       },
       "expected_signal": {
         "type": "crash",
-        "against": ["pysam_buggy_version"]
+        "against": [
+          "pysam_buggy_version"
+        ]
       }
     },
     {
@@ -434,9 +501,10 @@
       "format": "VCF",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_or_release_notes_must_reference_450_or_header_only_VCF_regression"
+        "pre_fix": "0.11.0",
+        "post_fix": "0.12.0",
+        "verification_rule": "Issue #450 was a 0.10.0 regression; 0.12.0 shipped the fix per NEWS entry referencing header-only files",
+        "confidence": "low"
       },
       "trigger": {
         "category": "writer_bug",
@@ -446,7 +514,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -456,9 +526,10 @@
       "format": "SAM",
       "anchor": {
         "type": "install_version",
-        "pre_fix": "PENDING_VERIFICATION",
-        "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_rst_must_reference_4825_or_deepcopy_SAM_perf"
+        "pre_fix": "1.85",
+        "post_fix": "1.86",
+        "verification_rule": "PR #4837 merged 2024-09-23 (SAM deepcopy perf); first release after 1.85 is 1.86",
+        "confidence": "medium"
       },
       "trigger": {
         "category": "edge_case_missed",
@@ -469,7 +540,9 @@
       },
       "expected_signal": {
         "type": "timeout_or_differential_disagreement",
-        "against": ["htsjdk"]
+        "against": [
+          "htsjdk"
+        ]
       }
     },
     {
@@ -481,14 +554,15 @@
         "type": "feature_gap",
         "pre_fix": "N/A",
         "post_fix": "N/A",
-        "verification_rule": "CONTEXT_ONLY_not_a_bug"
+        "verification_rule": "CONTEXT_ONLY_not_a_bug",
+        "dropped_reason": "Native BAM parsing \u2014 feature request, not a bug (per manifest notes)"
       },
       "trigger": {
         "category": "feature_gap",
         "logic_bug": false,
         "description": "Native BAM parsing not implemented; requires external CLI. Feature gap, not a bug.",
         "evidence_dir": "compares/bug_bench/triggers/biopython-4868/",
-        "notes": "DROP CANDIDATE — include only as context in report narrative."
+        "notes": "DROP CANDIDATE \u2014 include only as context in report narrative."
       },
       "expected_signal": {
         "type": "N/A",
@@ -504,7 +578,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_rst_must_reference_4731_or_CIGAR_op_exposure"
+        "verification_rule": "NEWS_rst_must_reference_4731_or_CIGAR_op_exposure",
+        "dropped_reason": "CIGAR op details \u2014 no PR linked, no fix version documented"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -514,7 +589,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htsjdk", "pysam"]
+        "against": [
+          "htsjdk",
+          "pysam"
+        ]
       }
     },
     {
@@ -526,7 +604,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_rst_must_reference_1913_or_local_alignment_zero_score"
+        "verification_rule": "NEWS_rst_must_reference_1913_or_local_alignment_zero_score",
+        "dropped_reason": "zero-score start residue \u2014 no merged PR found"
       },
       "trigger": {
         "category": "edge_case_missed",
@@ -536,7 +615,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htsjdk"]
+        "against": [
+          "htsjdk"
+        ]
       }
     },
     {
@@ -548,7 +629,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_rst_must_reference_1699_or_soft_clip_query_coords"
+        "verification_rule": "NEWS_rst_must_reference_1699_or_soft_clip_query_coords",
+        "dropped_reason": "soft-clip query coords \u2014 no PR linked"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -558,7 +640,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htsjdk", "pysam"]
+        "against": [
+          "htsjdk",
+          "pysam"
+        ]
       }
     },
     {
@@ -570,7 +655,8 @@
         "type": "install_version",
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
-        "verification_rule": "NEWS_rst_must_reference_4769_or_PairwiseAligner_pairwise2_divergence"
+        "verification_rule": "NEWS_rst_must_reference_4769_or_PairwiseAligner_pairwise2_divergence",
+        "dropped_reason": "PairwiseAligner vs pairwise2 \u2014 closed without linked PR"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -580,7 +666,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htsjdk", "pysam"]
+        "against": [
+          "htsjdk",
+          "pysam"
+        ]
       }
     },
     {
@@ -590,9 +679,10 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_8e374d7c",
-        "post_fix": "8e374d7c",
-        "verification_rule": "PR_2418_merge_commit_is_fix_verified"
+        "pre_fix": "df9fd5ff64f59fdb124c4a564a4141d1f9cff22b",
+        "post_fix": "8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600",
+        "verification_rule": "git rev-parse confirmed: PR #2418 merge commit + parent",
+        "confidence": "high"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -603,7 +693,10 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib", "pysam"]
+        "against": [
+          "htslib",
+          "pysam"
+        ]
       }
     },
     {
@@ -613,9 +706,10 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_c84f567",
-        "post_fix": "c84f567",
-        "verification_rule": "PR_3081_merge_commit_is_fix_verified"
+        "pre_fix": "fa221c1302cfe515211ea70de375a1802826d3d9",
+        "post_fix": "c84f5671665478ec1b71535201cbffbe1fdd8c82",
+        "verification_rule": "git rev-parse confirmed: PR #3081 merge commit + parent",
+        "confidence": "high"
       },
       "trigger": {
         "category": "writer_bug",
@@ -625,7 +719,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -635,9 +731,10 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_11564cb3",
-        "post_fix": "11564cb3",
-        "verification_rule": "PR_3269_merge_commit_is_fix_verified"
+        "pre_fix": "ca4d668390e35b4045ccd02d070927f8178ed2ce",
+        "post_fix": "11564cb3bcea39666d6d3979080bc5d8fdbe1d7e",
+        "verification_rule": "git rev-parse confirmed: PR #3269 merge commit + parent",
+        "confidence": "high"
       },
       "trigger": {
         "category": "off_by_one_coord",
@@ -647,7 +744,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -657,9 +756,10 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_4fe54891",
-        "post_fix": "4fe54891",
-        "verification_rule": "PR_3098_merge_commit_is_fix_verified"
+        "pre_fix": "4961904fbc3b254f7a611b5b467c2e33ae5b1042",
+        "post_fix": "4fe548913e96d3f908dd524bd3dc13b48f87bfa4",
+        "verification_rule": "git rev-parse confirmed: PR #3098 merge commit + parent",
+        "confidence": "high"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -669,7 +769,9 @@
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -679,20 +781,23 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_PR_2869_MERGE",
-        "post_fix": "PR_2869_MERGE_COMMIT",
-        "verification_rule": "PR_2869_merge_commit_must_be_located_via_git_log"
+        "pre_fix": "edbfa956f^",
+        "post_fix": "edbfa956f",
+        "verification_rule": "git log --merges found merge commit edbfa956f for PR #2869 (correct_id_parsing_fasta)",
+        "confidence": "high"
       },
       "trigger": {
         "category": "parse_error_missed",
         "logic_bug": true,
         "description": "FASTA parser fails on IDs containing '>' character; treats '> >MyID' as ID 'MyID' instead of '>MyID'.",
         "evidence_dir": "compares/bug_bench/triggers/seqan3-2869/",
-        "notes": "FASTA-adjacent — may be out of SAM scope; evaluate during pre-flight."
+        "notes": "FASTA-adjacent \u2014 may be out of SAM scope; evaluate during pre-flight."
       },
       "expected_signal": {
         "type": "differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     },
     {
@@ -702,20 +807,23 @@
       "format": "SAM",
       "anchor": {
         "type": "commit_sha",
-        "pre_fix": "PARENT_OF_5e5c05a4",
-        "post_fix": "5e5c05a4",
-        "verification_rule": "PR_3406_merge_commit_is_fix_verified"
+        "pre_fix": "745c645fe26272791464cd67180775d28c00bf28",
+        "post_fix": "5e5c05a471269703d7afc38bdc4348cef60be63b",
+        "verification_rule": "git rev-parse confirmed: PR #3406 merge commit + parent",
+        "confidence": "high"
       },
       "trigger": {
         "category": "encoding_bug",
         "logic_bug": false,
         "description": "BGZF stream data race condition in concurrent reads; non-deterministic corruption.",
         "evidence_dir": "compares/bug_bench/triggers/seqan3-3406/",
-        "notes": "Data race — requires multithreaded harness; may be hard to trigger reliably in 2h."
+        "notes": "Data race \u2014 requires multithreaded harness; may be hard to trigger reliably in 2h."
       },
       "expected_signal": {
         "type": "intermittent_differential_disagreement",
-        "against": ["htslib"]
+        "against": [
+          "htslib"
+        ]
       }
     }
   ]

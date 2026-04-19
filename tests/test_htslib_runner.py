@@ -32,7 +32,16 @@ def test_supported_formats_depend_on_binary_presence():
     assert runner.supported_formats <= {"VCF", "SAM"}
 
 
-def test_supports_helper_respects_formats():
+def test_supports_helper_respects_formats(monkeypatch):
+    # Prevent the constructor's `or shutil.which("samtools")` fallback
+    # from finding a real samtools on PATH (e.g. the WSL-Ubuntu wrapper
+    # we now ship for Phase 3 round-trip MRs) — the test wants
+    # determinism: only the explicit constructor args should drive
+    # which formats are supported.
+    monkeypatch.setattr(
+        "test_engine.runners.htslib_runner.shutil.which",
+        lambda name, *a, **kw: None,
+    )
     runner = HTSlibRunner(bcftools_path="/tmp/x-bcftools", samtools_path=None)
     # When bcftools_path is non-None (truthy), supported_formats includes VCF
     assert runner.supports("VCF") is True

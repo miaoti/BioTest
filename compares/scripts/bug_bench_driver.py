@@ -31,6 +31,20 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ADAPTERS_DIR = REPO_ROOT / "compares" / "scripts" / "tool_adapters"
 
+# Python SUT install venvs live under compares/results/sut-envs/. These
+# were created by compares/scripts/prepare_sut_install_envs.sh. Routing
+# `pip install pysam==<old-version>` through the Python 3.11 venv (not
+# 3.12) is required because pre-0.21 pysam has no 3.12 wheels and its
+# sdist build has dependency-rot on modern setuptools.
+SUT_VENV_PYSAM_PIP = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                      / "pysam" / "bin" / "pip")
+SUT_VENV_PYSAM_PY = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                     / "pysam" / "bin" / "python")
+SUT_VENV_BIO_PIP = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                    / "biopython" / "bin" / "pip")
+SUT_VENV_BIO_PY = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                   / "biopython" / "bin" / "python")
+
 # Ensure adapter module imports resolve.
 sys.path.insert(0, str(ADAPTERS_DIR))
 
@@ -63,18 +77,29 @@ class BugResult:
 # ---------- SUT install helpers ---------------------------------------
 
 def _install_pysam(version: str) -> None:
+    # Route through the sut-env Python 3.11 venv because pre-0.21 pysam
+    # has no modern Python wheels. On a fresh host without the venv,
+    # run `bash compares/scripts/prepare_sut_install_envs.sh` first.
+    if not SUT_VENV_PYSAM_PIP.exists():
+        raise RuntimeError(
+            f"pysam sut-env venv missing at {SUT_VENV_PYSAM_PIP.parent.parent}. "
+            "Run: bash compares/scripts/prepare_sut_install_envs.sh")
     subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--force-reinstall",
+        [str(SUT_VENV_PYSAM_PIP), "install", "--force-reinstall",
          f"pysam=={version}"],
-        check=True,
+        check=True, capture_output=True,
     )
 
 
 def _install_biopython(version: str) -> None:
+    if not SUT_VENV_BIO_PIP.exists():
+        raise RuntimeError(
+            f"biopython sut-env venv missing at {SUT_VENV_BIO_PIP.parent.parent}. "
+            "Run: bash compares/scripts/prepare_sut_install_envs.sh")
     subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--force-reinstall",
+        [str(SUT_VENV_BIO_PIP), "install", "--force-reinstall",
          f"biopython=={version}"],
-        check=True,
+        check=True, capture_output=True,
     )
 
 

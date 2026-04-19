@@ -975,8 +975,23 @@ def run_test_suite(
     result = TestSuiteResult()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    enforced_mrs = registry.get("enforced", [])
-    logger.info("Loaded %d enforced MRs from registry", len(enforced_mrs))
+    # Dispatch BOTH enforced and quarantine MRs.
+    #
+    # The legacy behavior was "enforced only", which meant a Phase B
+    # mine that produced only ADVISORY-severity MRs (e.g. SAM subtag-
+    # ordering or round-trip MRs grounded in SHOULD-level spec text)
+    # left Phase C with zero tests — even though the MRs were
+    # well-formed and useful. The right semantics for "quarantine" is
+    # "not yet validated by oracle behavior", not "never run". The
+    # oracle's auto-demote/promote logic in feedback/quarantine_manager
+    # will move MRs between tiers based on actual Phase C results.
+    enforced_mrs = registry.get("enforced", []) + registry.get("quarantine", [])
+    logger.info(
+        "Loaded %d MRs from registry (enforced=%d, quarantine=%d)",
+        len(enforced_mrs),
+        len(registry.get("enforced", [])),
+        len(registry.get("quarantine", [])),
+    )
 
     available_runners = [r for r in runners if r.is_available()]
     logger.info("Available runners: %s", [r.name for r in available_runners])

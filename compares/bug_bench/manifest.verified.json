@@ -1,0 +1,379 @@
+{
+  "$schema": "./schema.json",
+  "benchmark_version": "1.0.0-verified",
+  "status": "frozen_for_phase_4",
+  "frozen_on": "2026-04-19",
+  "description": "Verified subset of manifest.json. 14 bugs of 32 candidates (44%) survived Phase-0 install-verification per DESIGN.md \u00a713.4. Drops follow Bohme et al. ICSE'22 discipline \u2014 see dropped.json for per-bug reasons.",
+  "bench_counts_by_sut": {
+    "biopython": 1,
+    "htsjdk": 5,
+    "pysam": 2,
+    "seqan3": 6
+  },
+  "bugs": [
+    {
+      "id": "htsjdk-1708",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1708",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "4.1.0",
+        "post_fix": "4.1.1",
+        "verification_rule": "PR #1708 merged 2024-06-04, shipped in htsjdk 4.1.1 on 2024-06-29 with CRAM multi-container fix cited",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "CRAM multi-container reference region state corruption on multi-container writes. Reads at position 1 corrupt in CRAM 3.0.0+.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1708/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ],
+        "also_detectable_via": [
+          "round_trip_asymmetry_within_sut"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1590",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1590",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1590 merged 2022-02-07, first in htsjdk 3.0.0 on 2022-06-06 (CRAM 'BB' read-feature restoration)",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "CRAM 'BB' (Bases) read features not correctly restored during parsing; bases silently dropped.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1590/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "pysam"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1592",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1592",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1592 merged 2022-04-25, first in htsjdk 3.0.0 on 2022-06-06 (CRAM 'SC' scores fix)",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "CRAM scores read features ('SC' data series) misdecoded during normalization.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1592/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "pysam"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1554",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1554",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.24.1",
+        "post_fix": "3.0.0",
+        "verification_rule": "PR #1554 merged 2021-06-10, first in htsjdk 3.0.0 on 2022-06-06 (AC/AN/AF filtered genotypes)",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "AC/AN/AF allele counts include filtered genotypes marked FT; should exclude filtered variants.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1554/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "pysam"
+        ],
+        "also_detectable_via": [
+          "metamorphic_filter_then_recompute_AC"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1637",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/1637",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "3.0.3",
+        "post_fix": "3.0.4",
+        "verification_rule": "htsjdk 3.0.4 (2022-11-23) hotfix reverted PR #1593 which had caused #1637's VCF sort-order regression",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "VCF sort order changed to use alleles for stability; breaks merging of existing valid VCFs causing false 'unsorted' errors.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1637/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "pysam-1314",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1314",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.22.1",
+        "post_fix": "0.23.0",
+        "verification_rule": "Issue #1314 filed 2024-10-21 against 0.22.1; fix expected in 0.23.0 development stream",
+        "confidence": "low"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "VariantFile.write() maps records to wrong contig when header contigs manually edited.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1314/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "pysam-1308",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1308",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.22.1",
+        "post_fix": "0.23.0",
+        "verification_rule": "pysam 0.23.0 release notes explicitly cite 'VariantHeader.new_record GT setting (#1308)'",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "VariantHeader.new_record() fails to set GT field on second+ record creation; KeyError: 'invalid FORMAT: GT'.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1308/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "pysam_buggy_version"
+        ]
+      }
+    },
+    {
+      "id": "biopython-4825",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/4825",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "1.85",
+        "post_fix": "1.86",
+        "verification_rule": "PR #4837 merged 2024-09-23 (SAM deepcopy perf); first release after 1.85 is 1.86",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "edge_case_missed",
+        "logic_bug": true,
+        "description": "Excessive copy.deepcopy() in SAM parser; perf degradation with potential correctness impact on large files.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-4825/",
+        "notes": "Primarily performance; correctness impact secondary. May be dropped."
+      },
+      "expected_signal": {
+        "type": "timeout_or_differential_disagreement",
+        "against": [
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-2418",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2418",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "df9fd5ff64f59fdb124c4a564a4141d1f9cff22b",
+        "post_fix": "8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600",
+        "verification_rule": "git rev-parse confirmed: PR #2418 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "BAM parsing forgets to consume sequence bytes when creating dummy alignments; stream iterator misaligned, corrupts subsequent record reads.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2418/",
+        "notes": "Trigger file test.bam.gz present in original issue #2417."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "pysam"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3081",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3081",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "fa221c1302cfe515211ea70de375a1802826d3d9",
+        "post_fix": "c84f5671665478ec1b71535201cbffbe1fdd8c82",
+        "verification_rule": "git rev-parse confirmed: PR #3081 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Empty SAM/BAM output files invalid (no header written); file unusable unless records explicitly written.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3081/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3269",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3269",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "ca4d668390e35b4045ccd02d070927f8178ed2ce",
+        "post_fix": "11564cb3bcea39666d6d3979080bc5d8fdbe1d7e",
+        "verification_rule": "git rev-parse confirmed: PR #3269 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "off_by_one_coord",
+        "logic_bug": true,
+        "description": "Banded alignment returns relative positions of sliced sequences instead of absolute positions of originals; off-by-prefix offset.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3269/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3098",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3098",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "4961904fbc3b254f7a611b5b467c2e33ae5b1042",
+        "post_fix": "4fe548913e96d3f908dd524bd3dc13b48f87bfa4",
+        "verification_rule": "git rev-parse confirmed: PR #3098 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "Alignment score calculation wrong in traceback; incorrect carry bit tracking on up/left open directions causes wrong score.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3098/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-2869",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2869",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "edbfa956f^",
+        "post_fix": "edbfa956f",
+        "verification_rule": "git log --merges found merge commit edbfa956f for PR #2869 (correct_id_parsing_fasta)",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "FASTA parser fails on IDs containing '>' character; treats '> >MyID' as ID 'MyID' instead of '>MyID'.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2869/",
+        "notes": "FASTA-adjacent \u2014 may be out of SAM scope; evaluate during pre-flight."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3406",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3406",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "745c645fe26272791464cd67180775d28c00bf28",
+        "post_fix": "5e5c05a471269703d7afc38bdc4348cef60be63b",
+        "verification_rule": "git rev-parse confirmed: PR #3406 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "encoding_bug",
+        "logic_bug": false,
+        "description": "BGZF stream data race condition in concurrent reads; non-deterministic corruption.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3406/",
+        "notes": "Data race \u2014 requires multithreaded harness; may be hard to trigger reliably in 2h."
+      },
+      "expected_signal": {
+        "type": "intermittent_differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    }
+  ]
+}

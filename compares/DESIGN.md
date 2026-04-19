@@ -1074,24 +1074,133 @@ Verified output (2026-04-19):
 | htsjdk versioned-JAR dir | ✓ | `compares/baselines/evosuite/fatjar/versioned/` (empty, populated on demand) |
 | seqan3 source clone | ✓ | `compares/baselines/seqan3/source/` (main @ `45889f9`) |
 
-### 13.4 Bug-bench pre-flight (manifest verification)
+### 13.4 Bug-bench pre-flight (manifest verification) — verified
 
-- [ ] **Review the manifest**: open `compares/bug_bench/manifest.json` and for each entry confirm the issue URL is still live.
-- [ ] **Populate `pre_fix` / `post_fix` versions** for every entry:
-  - [ ] For each htsjdk / pysam / biopython bug, read the issue / PR, identify the release that ships the fix, set `anchor.post_fix` to that version and `anchor.pre_fix` to the immediately prior release.
-  - [ ] For each seqan3 entry, set `anchor.pre_fix = PARENT_OF_<fix_sha>` (run `git rev-parse <fix_sha>^` inside the seqan3 clone).
-  - [ ] Update `anchor.verification_rule` to reference the specific release-notes string or commit hash that proves the link.
-- [ ] **Run install-verification**:
-  - [ ] `py -3.12 compares/scripts/bug_bench_driver.py --verify-only --dropped-out compares/bug_bench/dropped.json`.
-  - [ ] Inspect `dropped.json`; investigate every entry marked "install failed".
-  - [ ] Expected verified count: 18–25 of 32. If below 10, halve the bug-bench per-cell budget to 1h per DESIGN.md Risk 2 mitigation.
-- [ ] **Populate trigger evidence** (optional but recommended):
-  - [ ] For each verified bug, if the issue / PR attaches a triggering input, drop it into `compares/bug_bench/triggers/<bug_id>/original.{vcf,sam,bam,py,java}`.
-  - [ ] For seqan3 bugs with known fix commits, extract the test input from the PR's tests and place in the same folder.
-- [ ] **Freeze the verified manifest**:
-  - [ ] Copy the working manifest to `compares/bug_bench/manifest.verified.json`.
-  - [ ] Commit both files; do not edit the verified manifest during the run.
-- [ ] **User review gate**: before Phase 4 executes, the user signs off on `manifest.verified.json`.
+Result: **14 verified / 18 dropped of 32 candidates** (44% yield —
+below the 18–25 forecast in DESIGN.md §5.2 but above the 10-floor that
+would trigger the 1h-per-bug budget fallback). Bench shape:
+
+| SUT | Verified bugs |
+| :--- | :---: |
+| htsjdk | 5 (`1708`, `1590`, `1592`, `1554`, `1637`) |
+| pysam | 2 (`1314`, `1308`) |
+| biopython | 1 (`4825`) |
+| seqan3 | 6 (`2418`, `3081`, `3269`, `3098`, `2869`, `3406`) |
+| **total** | **14** |
+
+#### 13.4.1 Manifest review — verified
+
+- [x] Each of the 32 candidate `issue_url`s is live on GitHub.
+  Reachable via WebFetch; researcher cross-checked the issue page
+  against the linked PR / release notes.
+
+#### 13.4.2 Populate `pre_fix` / `post_fix` — verified (via research script)
+
+An Explore agent researched all 26 htsjdk/pysam/biopython issues
+against GitHub release notes, PR-merge dates, and project CHANGELOG /
+NEWS files. For seqan3, `git rev-parse <fix_sha>^` inside the cloned
+repo resolved all 6 parent commits deterministically.
+
+Result, applied via `compares/bug_bench/apply_research.py`:
+
+- [x] **20 entries** got concrete version pins:
+  - 5 htsjdk (high confidence — all 5 cited explicitly in release notes)
+  - 8 pysam (4 high, 1 medium, 3 low confidence — later install-verify
+    filtered this down to 2)
+  - 1 biopython (medium — PR #4837 merged post-1.85)
+  - 6 seqan3 (commit SHA + parent SHA, all resolved via `git rev-parse`)
+- [x] **12 entries** marked `UNRESOLVABLE`: either no linked PR, the
+  fix was never merged, or release notes don't cite the issue. These
+  stay `PENDING_VERIFICATION` in `manifest.json` with a
+  `dropped_reason` field and are excluded from the verified manifest.
+  Breakdown: 5 htsjdk, 2 pysam, 5 biopython.
+- [x] `anchor.verification_rule` field on each updated entry cites the
+  specific release-notes line or commit hash that proves the linkage.
+
+Run the script (idempotent):
+
+```bash
+python3.12 compares/bug_bench/apply_research.py
+# → [research] updated=20 dropped=12 untouched=0
+```
+
+#### 13.4.3 Install-verification — verified
+
+Ran `bug_bench_driver.py --verify-only` inside the bench image.
+**Critical fix during this step**: the driver originally used
+`/usr/bin/python3.12` for `pip install pysam==<version>`, which fails
+for any pre-0.21 pysam (no 3.12 wheels, sdist build-rot on modern
+setuptools). Switched the helpers to route through the Python 3.11
+`sut-env` venvs created by §13.3.4 — `compares/results/sut-envs/pysam/bin/pip`
+and `…/biopython/bin/pip`. This is now documented in
+`bug_bench_driver.py` as the default path.
+
+Commands:
+
+```bash
+bash compares/scripts/prepare_sut_install_envs.sh   # creates the venvs
+python3.12 compares/scripts/bug_bench_driver.py --verify-only \
+    --dropped-out compares/bug_bench/dropped.json
+```
+
+Result: `Summary: 14 verified, 18 dropped of 32 candidates.`
+
+**Why only 14 survived**:
+- 12 UNRESOLVABLE dropped by the research step (no version anchor).
+- 6 pre-0.21 pysam versions fail to build (`pysam==0.11/0.12/0.15/
+  0.16/0.17/0.20`) even inside the Python 3.11 venv — sdist
+  `pyproject.toml` missing; Cython + old libhts headers incompatible
+  with modern toolchain. Honest drop.
+
+Empirically verified with Py 3.11 venv: pysam **0.21.0, 0.22.0,
+0.22.1, 0.23.0, 0.23.3** install cleanly; everything older fails at
+`pip wheel-build` time.
+
+#### 13.4.4 Populate trigger evidence — scheduled
+
+Per-bug trigger inputs aren't strictly required by the bench driver
+(fuzzer-produced inputs work too), but having a minimised known-bad
+input per bug short-circuits the "find the trigger" phase during the
+bench run.
+
+- [ ] For each of the 14 verified bugs, if the issue / PR attaches a
+  triggering input, drop it into
+  `compares/bug_bench/triggers/<bug_id>/original.{vcf,sam,bam,py,java}`.
+  (Optional; driver synthesises triggers otherwise. Expect this to
+  stay *partial* — many older issues have no minimised repro.)
+- [ ] For seqan3 bugs with known fix commits, the PR's own test files
+  are a good source (`git show <fix_sha> -- test/`).
+
+#### 13.4.5 Freeze the verified manifest — verified
+
+- [x] `compares/bug_bench/manifest.verified.json` written by
+  `compares/bug_bench/freeze_verified.py`. 14-bug subset; preserves
+  the full `anchor` / `trigger` / `expected_signal` payload per bug
+  plus a `bench_counts_by_sut` rollup field.
+- [x] Both `manifest.json` (32 candidates, research applied) and
+  `manifest.verified.json` (14-bug frozen subset) committed. The bench
+  driver reads `--manifest` (default `manifest.json`); pass the
+  `--manifest compares/bug_bench/manifest.verified.json` flag to
+  Phase 4 to run only on the frozen subset.
+
+#### 13.4.6 User review gate
+
+- [ ] Before Phase 4 fires, the user inspects
+  `compares/bug_bench/manifest.verified.json` and `dropped.json`,
+  confirms the drop reasons are acceptable, and green-lights the
+  run. Any dropped bug the user wants rescued → add manual research
+  + install-verify before un-dropping.
+
+### §13.4 summary
+
+| Item | Status | Produced / at |
+| :--- | :---: | :--- |
+| Manifest review | ✓ | 32 issue URLs checked |
+| Version pins populated | ✓ | 20 research, 12 UNRESOLVABLE (`apply_research.py`) |
+| Install-verification | ✓ | 14 verified / 18 dropped (`dropped.json`) |
+| Frozen verified manifest | ✓ | `manifest.verified.json` (14 bugs) |
+| Trigger evidence | scheduled | optional; populate when minimised repros exist |
+| User review gate | pending | required before Phase 4 runs |
 
 ### 13.5 Phase execution (ordered)
 
