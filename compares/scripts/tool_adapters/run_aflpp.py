@@ -1,9 +1,11 @@
 """AFL++ adapter for the seqan3 SAM harness.
 
-Unblocks the seqan3 C++ fuzzing row (DESIGN §9 Risk 1). libFuzzer
-requires Clang, which doesn't compile seqan3 3.x concepts; afl-g++
-delegates to GCC 12 which does. Same harness source; same detection
-criteria (crash / sanitizer abort == signal).
+Verified alternate to the libFuzzer adapter (DESIGN §13.2.4). Builds
+the same harness source with `afl-g++` + GCC 12. Useful as a drop-in
+when Clang/libFuzzer is unavailable OR when a second fuzzer is wanted
+on the same SUT for diversity. Swap `bug_bench_driver.MATRIX["seqan3"]`
+from `libfuzzer` to `aflpp` to route primary seqan3 bug-bench cells
+through this adapter.
 """
 
 from __future__ import annotations

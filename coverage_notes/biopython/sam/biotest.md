@@ -28,10 +28,12 @@ from `coverage.py`).
 |:-:|:--|:-:|:-:|:-:|:-:|:--|
 | 0 | 2026-04-19 | 13m 46s | 5 (1 fresh) | 0.0% → **bogus** | 0 / 0 | Windows path-sep bug: every file filtered out → `data/coverage_report.json` showed `final_coverage_total=0` |
 | 1 | 2026-04-19 | — (post-hoc re-filter) | — | **44.0%** | **263 / 598** | Same `.coverage` DB, filter bug fixed in `CoveragePyCollector`; real first measurement |
+| 2 | 2026-04-19 | 43m 48s (incl. NameError restart) | 4 (plateau) | **49.7%** | **297 / 598** | All 6 phases of SAM coverage plan active: +30 seeds, +8 transforms, +SeedMind generator (12 synth outputs), +reachability filter |
 
-Run 0 and Run 1 use the same underlying trace data — the delta is
-purely in the filter code (see "Bug: Windows path separators" below).
-Future runs will append Run 2+.
+Run 2 started fresh (state backed up to `*.pre_phase_rollout`) with all
+Phase 1–6 levers live. Crashed once on a `NameError` introduced by the
+Phase 4 reachability wiring (`config` vs `cfg`), fixed, resumed from
+iter 2. Plateau-terminated after 3 flat iterations.
 
 ---
 
@@ -123,6 +125,108 @@ recorded against 453 rules (both formats); iter 5 is the first
 SAM-scoped measurement and uses the 137-rule SAM subset. The numbers
 before and after the retarget are on different denominators and should
 not be compared directly.
+
+---
+
+## Run 2 detailed breakdown (2026-04-19)
+
+First measurement with the SAM coverage plan's 6 levers live. Launched
+after backing up `rule_attempts.json` / `feedback_state.json` /
+`mr_registry.json` to `*.pre_phase_rollout` so Phase D's iteration
+counter started fresh.
+
+Pipeline timing:
+
+| Phase | Wall | Output |
+|:--|:-:|:--|
+| A  Spec ingest       | 1m 52s (cached post-crash) | ChromaDB intact |
+| B  MR mining (iter1) | 17m 22s (split across 2 runs) | Re-mined against the 36-transform menu; deepseek-chat |
+| C  Cross-execution   | 1m 24s baseline → 1m 50s / iter under Phase D | 215 → 275 tests as Gen seeds landed |
+| D  Feedback loop     | 42m 14s total | 4 iterations, plateau-terminated |
+| **Total**            | **~1h 3m** | |
+
+### Coverage progression
+
+```
+Run 1 baseline:  44.0 %  (263 / 598)
+Iter 1  (after Phase 1 corpus expansion kicks in):  48.7 %  (+4.7 pp)
+Iter 2  (Phase B re-mine, no new seeds):           49.7 %  (+1.0 pp)
+Iter 3  (SeedMind landed 8 generator outputs):     49.7 %  (flat)
+Iter 4  (SeedMind landed 4 more):                  49.7 %  (flat)
+```
+
+**+5.7 pp over the Run 1 baseline in four iterations.** The plateau at
+49.7 % is consistent with the plan's "+4-8 pp from Phase 1+2" band; the
+SeedMind lever added volume (40→60 more tests per iter) but those extra
+tests mostly exercised already-covered lines, so the line-coverage
+number didn't move even though Phase C's test count and metamorphic-
+failure count kept climbing.
+
+### Oracle signal
+
+| Run-1 Phase C | Run-2 baseline (iter 0) | Run-2 iter 4 |
+|:--|:--:|:--:|
+| Tests            | 60   | 215  | **275**  |
+| Metamorphic fails| 2    | 18   | **26**   |
+| DET rate         | 3.3% | 8.4% | **9.4%** |
+| Seeds used       | ~12  | ~46  | **~58** (46 fetched + 12 SeedMind synth) |
+| Variants / run   | —    | 215  | 275      |
+
+The 9× jump in metamorphic failures is driven by Phase 1's +30 htslib
+edge-case seeds. Every `realn01*` / `c1_*` / `c2_pad` / `ce_supp` /
+`fieldarith` seed surfaces the same silent-accept pattern between
+seqan3 + reference (accept) vs htsjdk + biopython + pysam (crash-
+reject). These are SAM spec-conformance bugs in seqan3's harness
+text parser (it was never meant to be strict) and the reference
+normalizer's fallback — **all flagged, none attributed to biopython**.
+
+### SCC
+
+```
+SCC Progression: 0.7% -> 0.7% -> 0.7% -> 0.7%
+Final SCC: 0.7%  (1 / 137 testable SAM rules)
+Termination: plateau (SCC unchanged for 3 iterations → loop_controller
+  halts per feedback_control.plateau_patience=2)
+```
+
+SCC stayed flat despite the expanded corpus + transforms because the
+top blind spots in the format-scoped queue are still dominated by the
+binning-index / C-source-for-bin-number sections — rules the
+reachability filter **sinks** (+20 penalty) but does not remove. With
+only ~10 reachable rules in the whole 137-SAM-rule set and exactly
+one of them covered, any further lift requires either (a) expanding
+the reachability filter to tag more unreachables, or (b) more
+targeted MRs from the new 11-SAM-transform menu.
+
+### Phase-lever attribution
+
+| Phase | Observed effect in Run 2 | Plan expected |
+|:-----:|:-------------------------|:-------------:|
+| 1 (corpus +30)         | +4.7 pp at iter 1, + 9× metamorphic failures | +3–6 pp  |
+| 2 (+5 transforms +3 mutators) | Not isolatable — rolled in with Phase 1 gains | +4–8 pp |
+| 3 (round-trip MRs)     | **Inactive** — samtools not on PATH; preconditions correctly gated transforms off | +2–4 pp if samtools present |
+| 4 (reachability filter + query-methods tag) | Phase B menu correctly hid query_method_roundtrip where inapplicable; reachability penalty applied but no measurable SCC movement since reachable rules are sparse | +1–3 pp (reprioritization) |
+| 5 (SeedMind generator) | **12 synthetic outputs landed across iters 3-4**; +60 tests; no line-coverage lift (outputs hit already-covered paths) | +2–5 pp (low end) |
+| 6 (corpus minimization) | Not run | 0 pp (wall-time saving) |
+
+The honest Run-2 takeaway: **+5.7 pp came from Phase 1 corpus diversity
+alone**; the other levers contributed volume (more tests, more MRs)
+without moving the line-coverage ceiling. Ceiling for biopython/SAM
+via MR-only testing is now visible at ~50-52 %, consistent with the
+plan's "+5-10 pp ceiling" when all levers land on the same bucket.
+
+### Bug found & fixed during Run 2
+
+**Symptom**: `NameError: name 'config' is not defined` 10m into Phase D
+iter 1's post-Phase-C wiring. The Phase 4 reachability-filter code I
+added referenced `config.get("phase_a", ...)` but the enclosing scope
+uses `cfg` throughout biotest.py.
+
+**Fix**: one-char rename at the single call site. Added
+`tests/test_biotest_static.py` — uses pyflakes to statically scan
+`biotest.py` for undefined names, so this class of bug fails fast in
+CI rather than 10 minutes into a Phase D run. pyflakes added to
+`requirements.txt`.
 
 ---
 

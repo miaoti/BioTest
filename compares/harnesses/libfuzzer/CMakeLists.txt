@@ -4,15 +4,15 @@
 # with different coverage + fuzzer runtimes:
 #
 #   seqan3_sam_fuzzer_libfuzzer
-#       Clang 18 + libFuzzer + AddressSanitizer. DESIGN §9 Risk 1:
-#       currently BLOCKED — Clang 18 rejects seqan3 3.x
-#       `alphabet_tuple_base` concept constraints. Kept in the tree
-#       so the target is ready the day seqan3 ships Clang support.
+#       Clang 18 + libFuzzer + AddressSanitizer. PRIMARY C++ fuzzer
+#       for the bug bench. Requires the two seqan3 Clang patches
+#       baked into biotest-bench (DESIGN §13.2.4): the
+#       SEQAN3_IS_CONSTEXPR macro short-circuit and the repeat_view
+#       friend-declaration fix.
 #
 #   seqan3_sam_fuzzer_aflpp
-#       GCC 12 + AFL++ (via afl-g++). Works today because GCC accepts
-#       seqan3's concept declarations. This is the production C++
-#       fuzzer for the comparison matrix.
+#       GCC 12 + AFL++ (via afl-g++). Verified alternate target;
+#       compiles on vanilla seqan3 without the Clang patches.
 #
 # Build one or both:
 #   mkdir -p build && cd build

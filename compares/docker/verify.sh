@@ -23,9 +23,9 @@ check() {
     fi
 }
 
-# Like `check`, but a failure is non-fatal — used for optional tools
-# (e.g., mull, which is gated on DESIGN.md Risk 1 and only needed for
-# the C++ mutation row; its absence is documented as asterisked).
+# Like `check`, but a failure is non-fatal. Reserved for future
+# optional tools; none of the currently-listed checks use it as of
+# 2026-04-19 — the image reports 40 PASS / 0 WARN / 0 FAIL.
 check_optional() {
     local name="$1"; shift
     if "$@" >/dev/null 2>&1; then
@@ -95,8 +95,8 @@ check "g++-12 (seqan3 AFL++)" bash -c "command -v g++-12 >/dev/null"
 check "AFL_PATH populated"   bash -c "test -f \"${AFL_PATH:-/opt/aflpp/lib/afl}/afl-compiler-rt.o\""
 check "evosuite jar"         bash -c "test -s /opt/evosuite/evosuite.jar"
 check "pit jar"              bash -c "test -s /opt/pit/pitest-command-line.jar"
-check_optional "mull (C++ mutation; gated on DESIGN.md Risk 1)" \
-                             bash -c "command -v mull-runner-18 >/dev/null || command -v mull-runner >/dev/null"
+check "mull-runner-18"       bash -c "command -v mull-runner-18 >/dev/null"
+check "mull-ir-frontend-18"  test -x /usr/lib/mull-ir-frontend-18
 
 echo
 echo "=============================================="

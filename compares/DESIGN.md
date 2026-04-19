@@ -310,7 +310,7 @@ Seven phases. Phase 0 is one-time setup; Phases 1–5 are the run; Phase 6 is re
 - NEW: `compares/scripts/build_harnesses.sh` — compiles Jazzer (Gradle) + libFuzzer (CMake) harnesses. Atheris needs no compile.
 - NEW: hand-author `compares/bug_bench/manifest.json` from Appendix A; user review; **freeze**.
 - NEW: pre-flight install-verification — run `bug_bench_driver.py --verify-only` to drop unverifiable bugs.
-- **Prerequisite**: WSL2 + Ubuntu 22.04 + Clang 18 + `libseqan3-dev` — required for seqan3 libFuzzer + coverage + mutation. See §9 Risk 1.
+- **Prerequisite**: the `biotest-bench` Docker image (§13.1). It bundles the Clang 18 + patched seqan3 + libFuzzer toolchain (plus mull-18 for C++ mutation); no separate WSL2 setup required.
 
 ### Phase 1 — Validity probe (metric 3.1)
 
@@ -462,18 +462,13 @@ Resolution baked into `biotest-bench:latest`:
 - GCC 12 + AFL++ v4.21c build the same harness cleanly (verified
   alternate; swap in `bug_bench_driver.py: MATRIX["seqan3"]` if Clang
   ever regresses).
-- mull (C++ mutation on seqan3) remains WARN — only gated item, the
-  seqan3 mutation cell is asterisked in the report.
+- mull 0.33.0 for LLVM 18 installed via the upstream 24.04 release
+  deb (its only runtime deps — `libclang-cpp18` + `libllvm18` — are
+  already provided by apt.llvm.org, so the 24.04 package installs
+  cleanly on the 22.04 base). Binaries at `/usr/bin/mull-runner-18`
+  and `/usr/lib/mull-ir-frontend-18`.
 
-Full image verify (§13.1): 38 PASS, 1 WARN (mull only), 0 FAIL.
-
-### Risk 1b — mull (C++ mutation) absent
-
-**Severity: low.** `mull 0.18.0` release-asset URL format drifts per
-version; the Dockerfile tries the github-releases deb first, falls
-back to the mull apt repo, and soft-installs to WARN if both fail. The
-C++ mutation cell for seqan3 is the only row affected and is already
-labelled asterisked in §3.3; tolerate the gap.
+Full image verify (§13.1): **40 PASS, 0 WARN, 0 FAIL**.
 
 ### Risk 2 — Bug-bench walltime borderline even at 2h × 1
 
@@ -578,7 +573,7 @@ biopython #4868 is a feature gap rather than a bug and will likely be dropped or
 
 ## 13. Execution Checklist
 
-An operational, step-by-step todo list for actually running the comparative evaluation. Sub-steps are ordered by dependency. Items marked **[gated]** are blocked by Risk 1 (seqan3 WSL2 rewrite). Items marked **[one-time]** only need to run once; the rest run per evaluation.
+An operational, step-by-step todo list for actually running the comparative evaluation. Sub-steps are ordered by dependency. Items marked **[one-time]** only need to run once; the rest run per evaluation. Historical Risk 1 items have all been resolved as of 2026-04-19 (§9).
 
 ### 13.1 Environment prerequisites (one-time)
 
@@ -586,8 +581,8 @@ An operational, step-by-step todo list for actually running the comparative eval
 §13.1 needs; no WSL2 distribution to maintain by hand. Docker Desktop
 on Windows already uses WSL2 as its backend, so this is *using* WSL2
 without *managing* it. Verified end-to-end on 2026-04-19: image
-`biotest-bench:latest` (4.64 GB), `verify.sh` reports 30 PASS / 1 WARN
-(mull, optional) / 0 FAIL, exit code 0.
+`biotest-bench:latest`, `verify.sh` reports **40 PASS / 0 WARN /
+0 FAIL**, exit code 0.
 
 - [x] **Docker Desktop running** with the WSL2 backend (default on
   Windows 10/11). Verify: `docker --version && docker info | grep -i osType`.
@@ -600,13 +595,12 @@ without *managing* it. Verified end-to-end on 2026-04-19: image
     Docker's layer cache.
 - [x] **Image contents** (final, verified): Temurin JDK 17, Python 3.12
   + Python 3.11 (separate venv at `/opt/atheris-venv/`), Clang 18 +
-  libFuzzer + AddressSanitizer/UBSan, libseqan3-dev + xxsds/sdsl-lite v3
-  (C++23), gcovr + lcov, Gradle 8.5, Maven, Jazzer 0.22.1, EvoSuite
+  libFuzzer + AddressSanitizer/UBSan, GCC 12 + libstdc++-12, AFL++
+  v4.21c, mull 0.33.0 for LLVM 18, patched seqan3 3.3.0 + xxsds/sdsl-lite
+  v3 (C++23), gcovr + lcov, Gradle 8.5, Maven, Jazzer 0.22.1, EvoSuite
   1.2.0, PIT 1.15.3 (command-line + entry + pitest JARs under
   `/opt/pit/`), Atheris 2.3.0, mutmut 3.0.0, pysam 0.22.1, biopython
-  1.85, coverage.py 7.6.0, plus everything in `requirements.txt`. mull
-  0.18.0 is soft-installed — it fails over to a WARN if the pinned deb
-  URL 404s (C++ mutation is already asterisked per §9 Risk 1).
+  1.85, coverage.py 7.6.0, plus everything in `requirements.txt`.
 - [x] **Re-verify at any time**:
   - [x] `bash compares/docker/run.sh bash compares/docker/verify.sh` —
     prints `OK` / `WARN` / `FAIL` per tool, exits non-zero only if a
@@ -653,8 +647,10 @@ workaround. The four build-loop lessons worth knowing:
    `/opt/sdsl-lite/include` and export `CPLUS_INCLUDE_PATH`. The older
    `simongog/sdsl-lite` v2.1.1 is v2 and seqan3 rejects it at compile
    time with `sdsl_version_major != 3`.
-4. `mull 0.18.0` is soft-installed — if the release asset URL rots, the
-   build continues and `mull` is listed as WARN in `verify.sh`.
+4. `mull 0.33.0` for LLVM 18 is installed from the upstream Ubuntu 24.04
+   release .deb — the only mull build that targets our LLVM 18 runtime.
+   It installs cleanly on the 22.04 base because its runtime dependencies
+   are already satisfied by the LLVM apt repo.
 
 ---
 
@@ -824,8 +820,7 @@ Toolchain now baked into `biotest-bench:latest`:
 - [x] `verify.sh` reports all five seqan3 checks OK:
   *headers present*, *Clang patch (macro)*, *Clang patch (friend)*,
   *sam_file compile under Clang 18 + patches*, *sam_file compile
-  under GCC 12*. Full image verify: **38 PASS / 1 WARN / 0 FAIL**
-  (only mull still WARN, gated separately).
+  under GCC 12*. Full image verify: **40 PASS / 0 WARN / 0 FAIL**.
 
 Status — **both C++ fuzzers verified**:
 
@@ -1030,10 +1025,13 @@ All three are pinned in the `biotest-bench:latest` image.
   ```
   Note: `mutmut --version` as a standalone flag doesn't exist; query
   `mutmut.__version__` via Python instead.
-- [x] **mull (C++, seqan3)** — **absent (WARN)**. Release debs for
-  Ubuntu 22.04 × LLVM 18 don't publish a stable URL; the Dockerfile
-  soft-fails the install and `verify.sh` reports WARN rather than FAIL.
-  C++ mutation is already asterisked per §9 Risk 1.
+- [x] **mull (C++, seqan3)**: mull 0.33.0 for LLVM 18 via the upstream
+  24.04 release deb (`Mull-18-0.33.0-LLVM-18.1.3-ubuntu-amd64-24.04.deb`).
+  Installs cleanly on the 22.04 base because its only runtime deps
+  (`libclang-cpp18`, `libllvm18`) come from the LLVM apt repo already
+  on the image. Binaries at `/usr/bin/mull-runner-18` +
+  `/usr/lib/mull-ir-frontend-18`. Probe:
+  `mull-runner-18 --version` reports `0.33.0`.
 
 #### 13.3.4 SUT version-pinning scaffolding — verified
 
@@ -1070,7 +1068,7 @@ Verified output (2026-04-19):
 | Coverage scope resolution | ✓ | 8 (fmt × sut) cells probed; all 4 collectors register |
 | PIT install | ✓ | `/opt/pit/*.jar` (1.15.3) |
 | mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0) |
-| mull install | WARN | absent; gated on Risk 1 |
+| mull install | ✓ | `/usr/bin/mull-runner-18` (0.33.0 for LLVM 18) |
 | pysam venv | ✓ | `compares/results/sut-envs/pysam/` (0.22.1) |
 | biopython venv | ✓ | `compares/results/sut-envs/biopython/` (1.85) |
 | htsjdk versioned-JAR dir | ✓ | `compares/baselines/evosuite/fatjar/versioned/` (empty, populated on demand) |

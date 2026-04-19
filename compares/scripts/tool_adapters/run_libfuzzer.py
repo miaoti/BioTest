@@ -1,8 +1,10 @@
 """libFuzzer adapter — drives the seqan3 SAM harness built by the
 CMake shim at `compares/harnesses/libfuzzer/`.
 
-GATED on the WSL2 seqan3 rewrite (see DESIGN.md §9 Risk 1). Windows
-builds are not supported.
+Primary C++ fuzzer for the seqan3 row (DESIGN §13.2.4). Requires the
+two seqan3 Clang patches — baked into the `biotest-bench` image, or
+apply by hand if running on the bare host. Windows host is not
+supported (Clang + libFuzzer needs a Linux toolchain).
 """
 
 from __future__ import annotations

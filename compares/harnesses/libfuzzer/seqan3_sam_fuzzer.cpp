@@ -7,21 +7,24 @@
 // provide a simple stdin-reader `main` that calls the target once
 // per execution — compatible with AFL++ classic fork-server mode.
 //
-// Build (production — AFL++ + GCC 12, works today):
-//     cd compares/harnesses/libfuzzer
-//     bash compares/scripts/build_harnesses.sh aflpp
-//     # → compares/harnesses/libfuzzer/build-aflpp/seqan3_sam_fuzzer_aflpp
-//
-// Build (libFuzzer + Clang 18, GATED on DESIGN §9 Risk 1):
+// Build (libFuzzer + Clang 18 — primary; requires seqan3 Clang patches
+// baked into biotest-bench):
 //     bash compares/scripts/build_harnesses.sh libfuzzer
 //     # → compares/harnesses/libfuzzer/build/seqan3_sam_fuzzer_libfuzzer
+//
+// Build (AFL++ + GCC 12 — alternate):
+//     bash compares/scripts/build_harnesses.sh aflpp
+//     # → compares/harnesses/libfuzzer/build-aflpp/seqan3_sam_fuzzer_aflpp
 //
 // Run (AFL++):
 //     AFL_SKIP_CPUFREQ=1 afl-fuzz -i seeds/sam -o /tmp/fuzz-out \
 //         -- ./seqan3_sam_fuzzer_aflpp
 //
-// Run (libFuzzer, when unblocked):
-//     ./seqan3_sam_fuzzer_libfuzzer -seed_corpus=seeds/sam -max_total_time=7200
+// Run (libFuzzer):
+//     ./seqan3_sam_fuzzer_libfuzzer \
+//         -artifact_prefix=/tmp/crashes/ \
+//         -max_total_time=7200 \
+//         seeds/sam
 //
 // Touching only `id()` and `sequence()` keeps the concept-instantiation
 // storm under control — richer fields (cigar_sequence, tags) trigger
