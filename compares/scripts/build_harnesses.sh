@@ -31,10 +31,12 @@ build_jazzer() {
 }
 
 build_libfuzzer() {
-  # GATED — DESIGN §9 Risk 1. Kept for the day seqan3 adds Clang
-  # support; do not invoke by default.
+  # Works inside biotest-bench (seqan3 Clang patches baked into the
+  # image at /opt/seqan3/). If you're running this on bare WSL2
+  # without biotest-bench, re-apply the two patches in DESIGN.md
+  # §13.2.4 first.
   local dir="$ROOT/compares/harnesses/libfuzzer"
-  echo "[harness] libFuzzer (Clang 18) @ $dir  [gated]"
+  echo "[harness] libFuzzer (Clang 18) @ $dir"
   mkdir -p "$dir/build"
   cd "$dir/build"
   local cxx="${CXX:-$(command -v clang++-18 || command -v clang++)}"
@@ -42,7 +44,8 @@ build_libfuzzer() {
     echo "[harness] ERROR: clang++ not found; install Clang 18+" >&2
     return 1
   fi
-  cmake -DCMAKE_CXX_COMPILER="$cxx" ..
+  cmake -DCMAKE_CXX_COMPILER="$cxx" \
+        -DCMAKE_CXX_FLAGS="-DSEQAN3_DISABLE_COMPILER_CHECK" ..
   make seqan3_sam_fuzzer_libfuzzer
   cd - >/dev/null
 }
@@ -87,11 +90,12 @@ for tgt in $TARGETS; do
     all)
       build_jazzer
       build_aflpp || echo "[harness] AFL++ skipped (missing GCC 12 / AFL++)"
+      build_libfuzzer || echo "[harness] libFuzzer skipped (missing Clang 18 / patched seqan3)"
       build_atheris_env
       ;;
     jazzer)      build_jazzer ;;
     aflpp)       build_aflpp ;;
-    libfuzzer)   build_libfuzzer ;;  # gated
+    libfuzzer)   build_libfuzzer ;;
     atheris)     build_atheris_env ;;
     *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'atheris'"; exit 1 ;;
   esac

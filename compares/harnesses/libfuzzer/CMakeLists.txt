@@ -32,9 +32,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # seqan3 + sdsl-lite are injected via CPLUS_INCLUDE_PATH in the
 # biotest-bench image (see Dockerfile) and via -I on the host.
 
-# -------- Target 1: libFuzzer (Clang 18, gated) --------
+# -------- Target 1: libFuzzer (Clang 18) --------
+# Unblocked on 2026-04-19 via two in-tree seqan3 patches applied by
+# the biotest-bench Dockerfile: (a) SEQAN3_IS_CONSTEXPR short-circuits
+# to `true` under __clang__ (the original uses __builtin_constant_p
+# which Clang evaluates differently than GCC in concept contexts);
+# (b) `repeat_view`'s friend declaration of `random_access_iterator_base`
+# matches the real 3-param template signature, not the 2-param one.
+# Both patches are idempotent and documented in the Dockerfile.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(FUZZER_FLAGS "-g -O1 -fsanitize=fuzzer,address,undefined")
+    # List form (not quoted string) so CMake splits on spaces and each
+    # flag reaches clang++ as its own argv entry. The sanitize triple
+    # produces an in-process coverage-guided fuzzer with memory safety.
+    set(FUZZER_FLAGS -g -O1 -fsanitize=fuzzer,address,undefined)
     add_executable(seqan3_sam_fuzzer_libfuzzer seqan3_sam_fuzzer.cpp)
     # BIOTEST_HARNESS_LIBFUZZER=1 suppresses our stdin-reader main()
     # because libFuzzer provides its own.

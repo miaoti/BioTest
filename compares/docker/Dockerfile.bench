@@ -134,6 +134,65 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     test -f /opt/seqan3/include/seqan3/version.hpp && \
     gcovr --version
 
+# ---- seqan3 patches for Clang 18 compatibility --------------------------
+# Two in-tree patches unblock libFuzzer (Clang + -fsanitize=fuzzer) on
+# seqan3 3.3:
+#
+#  1. SEQAN3_IS_CONSTEXPR: seqan3 uses __builtin_constant_p inside concept
+#     constraints (alphabet/concept.hpp:1183, :1160, etc.). Clang 18
+#     evaluates the builtin differently than GCC, so
+#     `writable_constexpr_semialphabet` unconditionally rejects every
+#     alphabet type → seqan3::cigar (and sam_file_input) fail to
+#     instantiate. Short-circuit the macro to `true` under __clang__.
+#
+#  2. `repeat_view`'s friend declaration of `random_access_iterator_base`
+#     uses `template <typename, typename>` but the actual class is
+#     `template <typename, template <typename...> typename, typename...>`.
+#     GCC accepts the mismatch; Clang rejects it, which cascades into
+#     private-member access errors for difference_type/value_type/etc.
+#     Rewrite the friend decl to match the real signature.
+#
+# Patches are idempotent (guarded on the original macro text). The same
+# code compiles under GCC 12 (AFL++ build) and Clang 18 (libFuzzer build).
+
+RUN python3 - <<'PYEOF'
+import pathlib
+
+p1 = pathlib.Path("/opt/seqan3/include/seqan3/utility/type_traits/basic.hpp")
+t1 = p1.read_text()
+old1 = "#define SEQAN3_IS_CONSTEXPR(...) std::integral_constant<bool, __builtin_constant_p((__VA_ARGS__, 0))>::value"
+new1 = """#if defined(__clang__)
+// Clang 18+ evaluates __builtin_constant_p differently from GCC in
+// concept-constraint contexts, breaking writable_constexpr_semialphabet.
+// Accept the constraint under Clang so downstream alphabet_tuple_base
+// instantiations (seqan3::cigar, sam_file_input, ...) can proceed.
+#define SEQAN3_IS_CONSTEXPR(...) true
+#else
+#define SEQAN3_IS_CONSTEXPR(...) std::integral_constant<bool, __builtin_constant_p((__VA_ARGS__, 0))>::value
+#endif"""
+if old1 in t1:
+    p1.write_text(t1.replace(old1, new1))
+    print("[seqan3-patch] SEQAN3_IS_CONSTEXPR: applied")
+elif new1 in t1:
+    print("[seqan3-patch] SEQAN3_IS_CONSTEXPR: already applied")
+else:
+    raise RuntimeError("SEQAN3_IS_CONSTEXPR macro not in expected form")
+
+p2 = pathlib.Path("/opt/seqan3/include/seqan3/utility/views/repeat.hpp")
+t2 = p2.read_text()
+old2 = """    template <typename parent_type, typename crtp_base>
+    friend class detail::random_access_iterator_base;"""
+new2 = """    template <typename range_type, template <typename...> typename derived_t_template, typename... args_t>
+    friend class detail::random_access_iterator_base;"""
+if old2 in t2:
+    p2.write_text(t2.replace(old2, new2))
+    print("[seqan3-patch] repeat_view friend decl: applied")
+elif new2 in t2:
+    print("[seqan3-patch] repeat_view friend decl: already applied")
+else:
+    raise RuntimeError("repeat_view friend declaration not in expected form")
+PYEOF
+
 ENV CPLUS_INCLUDE_PATH="/opt/seqan3/include:/opt/sdsl-lite/include:${CPLUS_INCLUDE_PATH:-}"
 
 # ---- Python 3.11 + 3.12 (deadsnakes) + pip -------------------------------

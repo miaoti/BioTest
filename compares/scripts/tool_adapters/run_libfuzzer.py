@@ -25,7 +25,7 @@ from _base import (  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BINARY_DEFAULT = (REPO_ROOT / "compares" / "harnesses" / "libfuzzer"
-                  / "build" / "seqan3_sam_fuzzer")
+                  / "build" / "seqan3_sam_fuzzer_libfuzzer")
 
 
 def run(
