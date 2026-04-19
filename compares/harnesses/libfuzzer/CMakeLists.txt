@@ -36,6 +36,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(FUZZER_FLAGS "-g -O1 -fsanitize=fuzzer,address,undefined")
     add_executable(seqan3_sam_fuzzer_libfuzzer seqan3_sam_fuzzer.cpp)
+    # BIOTEST_HARNESS_LIBFUZZER=1 suppresses our stdin-reader main()
+    # because libFuzzer provides its own.
+    target_compile_definitions(seqan3_sam_fuzzer_libfuzzer PRIVATE
+        BIOTEST_HARNESS_LIBFUZZER=1)
     target_compile_options(seqan3_sam_fuzzer_libfuzzer PRIVATE
         ${FUZZER_FLAGS})
     target_link_options(seqan3_sam_fuzzer_libfuzzer PRIVATE

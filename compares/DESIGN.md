@@ -154,12 +154,14 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 BioTest           P          P          P              P
 Jazzer            P          —          —              —
 Atheris           —          P          P              —
-libFuzzer         —          —          —              P
+AFL++             —          —          —              P       ← replaces libFuzzer
 Pure Random       P          P          P              P
 EvoSuite (anchor) A          —          —              —
 ```
 
 `P` = primary (must run full 2h × 3 reps + 2h bug-bench). `A` = white-box anchor. `—` = not applicable (language mismatch or format unsupported). Total: **13 primary cells + 1 anchor = 14 cells**.
+
+**AFL++ replaced libFuzzer in the seqan3 row** (§13.2.4) because Clang 18 rejects seqan3 3.x concept constraints. AFL++ + `afl-g++` delegates to GCC 12 which compiles seqan3 cleanly; the same `LLVMFuzzerTestOneInput` harness source file targets both runtimes via a CMake-level define.
 
 `seqan3` does not support VCF (see `test_engine/runners/seqan3_runner.py:11`). `biopython` is evaluated on SAM only (it has no VCF parser).
 
@@ -748,45 +750,77 @@ invocations via `bash compares/docker/run.sh` work identically.
   `StopIteration`, `AttributeError`, `OSError` — real bugs propagate
   so libFuzzer logs them.
 
-#### 13.2.4 libFuzzer (C++ baseline, seqan3) — **WARN, gated on Risk 1**
+#### 13.2.4 C++ fuzzer for seqan3 — **AFL++ + GCC 12 verified; libFuzzer still gated**
 
-Compile-verified clean through `cmake`, but seqan3's concept-based
-alphabet system (`alphabet_tuple_base` + `SEQAN3_IS_CONSTEXPR`) relies
-on `__builtin_constant_p` semantics that Clang 18 and GCC evaluate
-differently. Every seqan3 release from 3.1 through `main` (April 2026)
-fails to compile `<seqan3/io/sam_file/input.hpp>` under Clang with
-cascading `writable_constexpr_semialphabet` constraint errors.
+The original design called for **libFuzzer** (Clang 18) on seqan3, but
+Clang 18 rejects seqan3 3.x concept constraints — every seqan3 release
+from 3.1 through `main` (April 2026) fails to compile
+`<seqan3/io/sam_file/input.hpp>` under Clang with cascading
+`writable_constexpr_semialphabet` errors. **Resolved by switching to
+AFL++ with `afl-g++` (which delegates to GCC 12 that compiles seqan3
+cleanly).** libFuzzer is kept as a CMake target for the day seqan3
+adds Clang support, but AFL++ is the production C++ fuzzer for the
+comparison matrix.
 
-Tried and documented:
+Tried and documented during the debug loop:
 - Ubuntu 22.04 `libseqan3-dev` 3.1.0 → missing `sdsl-lite`, fixed by
   cloning `xxsds/sdsl-lite` v3 (kept in image).
-- `seqan/seqan3` tag `3.3.0` → errors out on the constraint system even
-  with `-DSEQAN3_DISABLE_COMPILER_CHECK`.
-- `seqan/seqan3` main branch → needs libstdc++ 12 (we installed
-  gcc-12's runtime); then same constraint errors reappear.
+- `seqan/seqan3` tag `3.3.0` + Clang 18 → fails on the constraint
+  system even with `-DSEQAN3_DISABLE_COMPILER_CHECK`.
+- `seqan/seqan3` `main` + Clang 18 → needs libstdc++ 12 and still
+  fails the same constraints.
+- `seqan/seqan3` `main` + **g++-12** → compiles cleanly. Swapped to
+  AFL++ + g++-12 as the production toolchain.
 
-Resolution in the image:
-- [x] `libseqan3-dev` apt package is NOT installed (useless on its own).
-- [x] `seqan3 3.3.0` source clone at `/opt/seqan3/include` — headers
-  are there for future use when seqan3 adds Clang support or we drop in
-  a GCC-based libFuzzer.
-- [x] `xxsds/sdsl-lite` at `/opt/sdsl-lite/include`.
+Toolchain now baked into `biotest-bench:latest`:
+- [x] `seqan3` main branch source at `/opt/seqan3/include`.
+- [x] `xxsds/sdsl-lite` v3 at `/opt/sdsl-lite/include`.
 - [x] `CPLUS_INCLUDE_PATH` pre-populated with both.
-- [x] `verify.sh` reports a **WARN**, not a FAIL, for the sam_file
-  compile check — exit code 0 on the whole image is preserved.
+- [x] `g++-12` (Ubuntu 12.3.0) + `libstdc++-12-dev` installed.
+- [x] AFL++ v4.21c built from source at `/opt/aflpp/` with `afl-g++`,
+  `afl-fuzz`, `afl-gcc` symlinked into `/usr/local/bin/`.
+- [x] `AFL_PATH=/opt/aflpp/lib/afl` exported in the image so afl-g++
+  locates `afl-compiler-rt.o` without extra flags.
+- [x] `verify.sh` reports OK for `afl-g++`, `afl-fuzz`, `g++-12`,
+  and `AFL_PATH populated`; sam_file compile under Clang 18 is
+  reported as WARN (gated). Full image verify: 34 PASS / 2 WARN /
+  0 FAIL.
 
-Status → **gated**, not shipped:
+Status → **AFL++ target verified; libFuzzer target still gated**:
 
-- [ ] `bash compares/scripts/build_harnesses.sh libfuzzer` → **expected to
-  fail** until seqan3 ships Clang-compatible concept declarations OR
-  we dedicate time to a GCC-based libFuzzer fork (Clang is required for
-  the `-fsanitize=fuzzer` runtime).
-- [ ] `python3.12 compares/scripts/tool_adapters/run_libfuzzer.py …`
-  → will error with "binary not found" until the above unblocks.
+- [x] **Build the AFL++ harness**:
+  ```bash
+  bash compares/scripts/build_harnesses.sh aflpp
+  # → compares/harnesses/libfuzzer/build-aflpp/seqan3_sam_fuzzer_aflpp
+  ```
+  Produces a ~3.4 MB GCC-instrumented binary. Same harness source
+  file as libfuzzer; BIOTEST_HARNESS_LIBFUZZER define toggles the
+  stdin-reader main() on/off.
+- [x] **Smoke test (30 s)** inside the container:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_aflpp.py \
+    --sut seqan3 \
+    --seed-corpus compares/results/bench_seeds/sam \
+    --out-dir /tmp/aflpp-smoke --time-budget-s 30 --format SAM
+  ```
+  Verified: `exit=0 queue=60 crashes=1`. AFL++ **found a real seqan3
+  SAM crash in ~2 s** — same pattern as Jazzer/Atheris, exit 0 with
+  ≥1 crash is the success state.
+- [ ] **libFuzzer target** (`bash compares/scripts/build_harnesses.sh libfuzzer`)
+  → **expected to fail** until seqan3 ships Clang-compatible concept
+  declarations. Kept in the CMake file for future use.
 
-**Mitigation**: the seqan3 row in §4.1 degrades to **BioTest + Pure
-Random only** until this clears. The other three SUTs (htsjdk, pysam,
-biopython) cover VCF+SAM with fair E2E baselines regardless.
+**AFL++ gotchas resolved while building this**:
+
+| Symptom | Cause | Fix |
+| :--- | :--- | :--- |
+| `Unable to find 'afl-compiler-rt.o'. Please set the AFL_PATH environment variable.` | AFL++ install laid runtime under `/opt/aflpp/lib/afl/` but nothing exported it | `ENV AFL_PATH=/opt/aflpp/lib/afl` in Dockerfile + default export in `build_harnesses.sh` |
+| `undefined reference to 'main'` at link time | Harness only defined `main` under `__AFL_HAVE_MANUAL_CONTROL` which AFL++ doesn't define in default mode | Switched to unconditional stdin-reader `main()` gated by `BIOTEST_HARNESS_LIBFUZZER` (set only for the libfuzzer target) |
+| `PROGRAM ABORT: Pipe at the beginning of 'core_pattern'` | Docker inherits WSL2's systemd-coredumpd `core_pattern` which starts with `|/wsl-capture-crash` — AFL++ refuses to fuzz | Adapter sets `AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1` in the child env; `/proc/sys/kernel/core_pattern` is read-only inside Docker so we can't rewrite it |
+| `bug_bench_driver` matrix still pointed at `libfuzzer` | stale constant | Swapped `MATRIX["seqan3"]` to `["biotest", "aflpp", "pure_random"]`; added `aflpp` adapter dispatch in `invoke_adapter` |
+
+**Final matrix state**: the seqan3 row in §4.1 is now fully populated
+with a fair E2E baseline (AFL++) — same status as every other row.
 
 #### 13.2.5 Pure Random (floor baseline) — verified
 
@@ -848,7 +882,8 @@ the smoke test; the comparison protocol runs EvoSuite on the host.
 | BioTest | ✓ | `--dry-run` exit 0 in <1 s; full Phase C deferred to long-budget runs | **verified** |
 | Jazzer | ✓ | VCF exit 0 / 103 k runs; SAM found crash in 2 s | **verified** |
 | Atheris | ✓ (3.11 venv) | pysam 1.21 M runs; biopython found `UnboundLocalError` | **verified** |
-| libFuzzer / seqan3 | — | compile blocked by Clang ↔ seqan3 concept mismatch | **gated — Risk 1** |
+| **AFL++ / seqan3** | ✓ (g++-12 + afl-g++) | 60 queue items + 1 crash in 30 s on bench seeds | **verified** (replaced libFuzzer) |
+| libFuzzer / seqan3 | CMake target present | compile blocked by Clang ↔ seqan3 concept mismatch | **gated — Risk 1** (kept for future) |
 | Pure Random | ✓ | 681 k files in 30 s | **verified** |
 | EvoSuite anchor | ✓ (help banner) | full smoke on host via `run_evosuite.sh` | **partial (host-side)** |
 

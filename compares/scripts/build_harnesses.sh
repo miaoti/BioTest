@@ -62,6 +62,11 @@ build_aflpp() {
     echo "[harness] ERROR: g++-12 not on PATH (seqan3 needs libstdc++ 12)" >&2
     return 1
   fi
+  # afl-g++ needs AFL_PATH to locate afl-compiler-rt.o. biotest-bench
+  # sets this in the image; export a default here for host-side builds
+  # that skip the image.
+  : "${AFL_PATH:=/opt/aflpp/lib/afl}"
+  export AFL_PATH
   cmake -DCMAKE_CXX_COMPILER=g++-12 "$dir"
   make seqan3_sam_fuzzer_aflpp
   cd - >/dev/null

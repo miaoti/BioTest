@@ -1,30 +1,32 @@
 // Fuzz harness for seqan3's SAM parsing path.
 //
 // Produces a binary that can be driven by either libFuzzer OR AFL++.
-// The `LLVMFuzzerTestOneInput` entry is the fuzz target. Under AFL++
-// we also provide a `main()` that pumps stdin into the fuzz target in
-// persistent mode (1000× faster than classic fork mode).
+// The `LLVMFuzzerTestOneInput` entry is the fuzz target. When built
+// for libFuzzer (Clang + -fsanitize=fuzzer), libFuzzer provides its
+// own `main`. When built for anything else (AFL++, bare testing), we
+// provide a simple stdin-reader `main` that calls the target once
+// per execution — compatible with AFL++ classic fork-server mode.
 //
 // Build (production — AFL++ + GCC 12, works today):
 //     cd compares/harnesses/libfuzzer
-//     mkdir -p build && cd build
-//     cmake -DCMAKE_CXX_COMPILER=g++-12 ..
-//     make seqan3_sam_fuzzer_aflpp
+//     bash compares/scripts/build_harnesses.sh aflpp
+//     # → compares/harnesses/libfuzzer/build-aflpp/seqan3_sam_fuzzer_aflpp
 //
 // Build (libFuzzer + Clang 18, GATED on DESIGN §9 Risk 1):
-//     cmake -DCMAKE_CXX_COMPILER=clang++-18 ..
-//     make seqan3_sam_fuzzer_libfuzzer
+//     bash compares/scripts/build_harnesses.sh libfuzzer
+//     # → compares/harnesses/libfuzzer/build/seqan3_sam_fuzzer_libfuzzer
 //
 // Run (AFL++):
-//     mkdir -p /tmp/fuzz-out
-//     afl-fuzz -i seeds/sam -o /tmp/fuzz-out -- ./seqan3_sam_fuzzer_aflpp
+//     AFL_SKIP_CPUFREQ=1 afl-fuzz -i seeds/sam -o /tmp/fuzz-out \
+//         -- ./seqan3_sam_fuzzer_aflpp
 //
 // Run (libFuzzer, when unblocked):
 //     ./seqan3_sam_fuzzer_libfuzzer -seed_corpus=seeds/sam -max_total_time=7200
 //
 // Touching only `id()` and `sequence()` keeps the concept-instantiation
 // storm under control — richer fields (cigar_sequence, tags) trigger
-// cascading template errors from `alphabet_tuple_base`'s constraints.
+// cascading template errors from seqan3's `alphabet_tuple_base`
+// constraints under Clang.
 
 #include <cstddef>
 #include <cstdint>
@@ -57,32 +59,26 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     return 0;
 }
 
-// ---- AFL++ persistent-mode driver -------------------------------------
-// Only compiled when afl-clang / afl-g++ is the front end. libFuzzer
-// provides its own `main`, so we must NOT define one under that
-// toolchain. AFL++'s wrapper defines `__AFL_HAVE_MANUAL_CONTROL` in
-// persistent mode.
+// ---- AFL++ / standalone driver ----------------------------------------
+// libFuzzer provides its own `main`, so we must NOT define one when
+// building the libfuzzer target. The CMake `libfuzzer` target sets
+// BIOTEST_HARNESS_LIBFUZZER=1 to suppress this block.
+//
+// Everywhere else (AFL++, bare binary) we provide a simple stdin->
+// LLVMFuzzerTestOneInput shim. AFL++ classic fork-server mode reads
+// this main once per input and exits; AFL++ handles the fork-per-input
+// loop via its instrumented runtime.
 
-#ifdef __AFL_HAVE_MANUAL_CONTROL
-#include <unistd.h>
-#include <cstring>
-
-// Declared but not defined by us; AFL++ provides the implementation
-// via its linker magic when it sees these identifiers.
-extern "C" void __AFL_INIT(void);
-extern "C" int  __AFL_LOOP(unsigned int);
+#ifndef BIOTEST_HARNESS_LIBFUZZER
+#include <cstdio>
 
 int main() {
-    __AFL_INIT();
-    // 1 MiB is well above the size of any real SAM record; inputs
-    // larger than this are simply truncated — AFL++ stops growing
-    // them quickly since they hit a plateau in coverage.
+    // 1 MiB is well above the size of any real SAM record. Inputs
+    // larger than this are truncated; AFL++ stops growing once it
+    // stops gaining coverage.
     static unsigned char buf[1 << 20];
-    while (__AFL_LOOP(10000)) {
-        ssize_t n = read(0, buf, sizeof(buf));
-        if (n < 0) return 0;
-        LLVMFuzzerTestOneInput(buf, static_cast<size_t>(n));
-    }
+    size_t n = std::fread(buf, 1, sizeof(buf), stdin);
+    LLVMFuzzerTestOneInput(buf, n);
     return 0;
 }
 #endif

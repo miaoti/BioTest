@@ -85,6 +85,10 @@ echo
 echo "-- Fuzzers / mutation tools --"
 check "jazzer"               /opt/jazzer/jazzer --help
 check "libFuzzer stub"       bash -c "printf '#include <cstdint>\n#include <cstddef>\nextern \"C\" int LLVMFuzzerTestOneInput(const uint8_t*, size_t){return 0;}\n' | clang++ -fsanitize=fuzzer -x c++ -o /tmp/_libfuzz_probe -"
+check "afl-g++"              bash -c "command -v afl-g++ >/dev/null"
+check "afl-fuzz"             bash -c "command -v afl-fuzz >/dev/null"
+check "g++-12 (seqan3 AFL++)" bash -c "command -v g++-12 >/dev/null"
+check "AFL_PATH populated"   bash -c "test -f \"${AFL_PATH:-/opt/aflpp/lib/afl}/afl-compiler-rt.o\""
 check "evosuite jar"         bash -c "test -s /opt/evosuite/evosuite.jar"
 check "pit jar"              bash -c "test -s /opt/pit/pitest-command-line.jar"
 check_optional "mull (C++ mutation; gated on DESIGN.md Risk 1)" \

@@ -101,6 +101,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ln -sf /opt/aflpp/bin/afl-gcc /usr/local/bin/afl-gcc && \
     /opt/aflpp/bin/afl-fuzz 2>&1 | head -3 || true
 
+# AFL++'s compiler wrappers look up afl-compiler-rt.o via AFL_PATH. The
+# install lays it under /opt/aflpp/lib/afl/. Setting the env in the
+# image means afl-g++ works out of the box for every downstream build.
+ENV AFL_PATH=/opt/aflpp/lib/afl
+
 # ---- seqan3 (C++23 SAM/BAM library) + gcovr -----------------------------
 # Installed BEFORE Python 3.12 so apt's system-Python-3.10-linked gcovr +
 # lxml land cleanly. Swapping python3 to 3.12 later breaks gcovr's

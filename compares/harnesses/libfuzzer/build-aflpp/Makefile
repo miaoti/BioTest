@@ -60,7 +60,7 @@ EQUALS = =
 CMAKE_SOURCE_DIR = /work/compares/harnesses/libfuzzer
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /work/compares/harnesses/libfuzzer/build
+CMAKE_BINARY_DIR = /work/compares/harnesses/libfuzzer/build-aflpp
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /work/compares/harnesses/libfuzzer/build/CMakeFiles /work/compares/harnesses/libfuzzer/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /work/compares/harnesses/libfuzzer/build-aflpp/CMakeFiles /work/compares/harnesses/libfuzzer/build-aflpp//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /work/compares/harnesses/libfuzzer/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /work/compares/harnesses/libfuzzer/build-aflpp/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -117,41 +117,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named seqan3_sam_fuzzer
+# Target rules for targets named seqan3_sam_fuzzer_aflpp
 
 # Build rule for target.
-seqan3_sam_fuzzer: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 seqan3_sam_fuzzer
-.PHONY : seqan3_sam_fuzzer
+seqan3_sam_fuzzer_aflpp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 seqan3_sam_fuzzer_aflpp
+.PHONY : seqan3_sam_fuzzer_aflpp
 
 # fast build rule for target.
-seqan3_sam_fuzzer/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/seqan3_sam_fuzzer.dir/build.make CMakeFiles/seqan3_sam_fuzzer.dir/build
-.PHONY : seqan3_sam_fuzzer/fast
-
-seqan3_sam_fuzzer.o: seqan3_sam_fuzzer.cpp.o
-.PHONY : seqan3_sam_fuzzer.o
-
-# target to build an object file
-seqan3_sam_fuzzer.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/seqan3_sam_fuzzer.dir/build.make CMakeFiles/seqan3_sam_fuzzer.dir/seqan3_sam_fuzzer.cpp.o
-.PHONY : seqan3_sam_fuzzer.cpp.o
-
-seqan3_sam_fuzzer.i: seqan3_sam_fuzzer.cpp.i
-.PHONY : seqan3_sam_fuzzer.i
-
-# target to preprocess a source file
-seqan3_sam_fuzzer.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/seqan3_sam_fuzzer.dir/build.make CMakeFiles/seqan3_sam_fuzzer.dir/seqan3_sam_fuzzer.cpp.i
-.PHONY : seqan3_sam_fuzzer.cpp.i
-
-seqan3_sam_fuzzer.s: seqan3_sam_fuzzer.cpp.s
-.PHONY : seqan3_sam_fuzzer.s
-
-# target to generate assembly for a file
-seqan3_sam_fuzzer.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/seqan3_sam_fuzzer.dir/build.make CMakeFiles/seqan3_sam_fuzzer.dir/seqan3_sam_fuzzer.cpp.s
-.PHONY : seqan3_sam_fuzzer.cpp.s
+seqan3_sam_fuzzer_aflpp/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/seqan3_sam_fuzzer_aflpp.dir/build.make CMakeFiles/seqan3_sam_fuzzer_aflpp.dir/build
+.PHONY : seqan3_sam_fuzzer_aflpp/fast
 
 # Help Target
 help:
@@ -161,10 +137,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... seqan3_sam_fuzzer"
-	@echo "... seqan3_sam_fuzzer.o"
-	@echo "... seqan3_sam_fuzzer.i"
-	@echo "... seqan3_sam_fuzzer.s"
+	@echo "... seqan3_sam_fuzzer_aflpp"
 .PHONY : help
 
 
