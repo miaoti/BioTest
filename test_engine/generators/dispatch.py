@@ -65,6 +65,13 @@ from mr_engine.transforms.sam import (
     split_or_merge_adjacent_cigar_ops,
     reorder_header_records,
     toggle_cigar_hard_soft_clipping,
+    shuffle_hd_subtags,
+    shuffle_sq_record_subtags,
+    shuffle_rg_record_subtags,
+    shuffle_pg_record_subtags,
+    shuffle_co_comments,
+    sam_bam_round_trip,
+    sam_cram_round_trip,
 )
 from mr_engine.transforms.malformed import (
     violate_info_number_a_cardinality,
@@ -72,6 +79,9 @@ from mr_engine.transforms.malformed import (
     violate_fileformat_first_line,
     violate_gt_index_bounds,
     violate_cigar_seq_length,
+    violate_tlen_sign_consistency,
+    violate_optional_tag_type_character,
+    violate_flag_bit_exclusivity,
 )
 
 
@@ -848,6 +858,107 @@ def _dispatch_violate_cigar_seq_length(
     lines: list[str], seed: Optional[int]
 ) -> list[str]:
     return violate_cigar_seq_length(lines, seed=seed)
+
+
+@_register("violate_tlen_sign_consistency")
+def _dispatch_violate_tlen_sign_consistency(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_tlen_sign_consistency(lines, seed=seed)
+
+
+@_register("violate_optional_tag_type_character")
+def _dispatch_violate_optional_tag_type_character(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_optional_tag_type_character(lines, seed=seed)
+
+
+@_register("violate_flag_bit_exclusivity")
+def _dispatch_violate_flag_bit_exclusivity(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_flag_bit_exclusivity(lines, seed=seed)
+
+
+# ===========================================================================
+# Phase 2 SAM header-subtag / @CO shuffles.
+# Each splits `lines` into (header, non_header), rewrites header via the
+# transform, and re-stitches. Mirrors `_dispatch_reorder_header` above.
+# ===========================================================================
+
+
+def _split_header_body(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Return (stripped_header_lines, non_header_lines_with_newlines)."""
+    header = [l.rstrip("\n\r") for l in lines if l.rstrip("\n\r").startswith("@")]
+    body = [l for l in lines if not l.rstrip("\n\r").startswith("@")]
+    return header, body
+
+
+def _stitch_header_body(header: list[str], body: list[str]) -> list[str]:
+    return [h + "\n" for h in header] + body
+
+
+@_register("shuffle_hd_subtags")
+def _dispatch_shuffle_hd_subtags(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    header, body = _split_header_body(lines)
+    return _stitch_header_body(shuffle_hd_subtags(header, seed=seed), body)
+
+
+@_register("shuffle_sq_record_subtags")
+def _dispatch_shuffle_sq_record_subtags(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    header, body = _split_header_body(lines)
+    return _stitch_header_body(shuffle_sq_record_subtags(header, seed=seed), body)
+
+
+@_register("shuffle_rg_record_subtags")
+def _dispatch_shuffle_rg_record_subtags(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    header, body = _split_header_body(lines)
+    return _stitch_header_body(shuffle_rg_record_subtags(header, seed=seed), body)
+
+
+@_register("shuffle_pg_record_subtags")
+def _dispatch_shuffle_pg_record_subtags(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    header, body = _split_header_body(lines)
+    return _stitch_header_body(shuffle_pg_record_subtags(header, seed=seed), body)
+
+
+@_register("shuffle_co_comments")
+def _dispatch_shuffle_co_comments(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    header, body = _split_header_body(lines)
+    return _stitch_header_body(shuffle_co_comments(header, seed=seed), body)
+
+
+# ===========================================================================
+# Phase 3 SAM <-> BAM <-> CRAM round-trip via samtools.
+# Each shells out to `samtools view` twice (encode + decode) and returns
+# the post-round-trip SAM text. Gated by samtools_available /
+# cram_reference_available runtime preconditions.
+# ===========================================================================
+
+
+@_register("sam_bam_round_trip")
+def _dispatch_sam_bam_round_trip(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return sam_bam_round_trip(lines, seed=seed)
+
+
+@_register("sam_cram_round_trip")
+def _dispatch_sam_cram_round_trip(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return sam_cram_round_trip(lines, seed=seed)
 
 
 # ===========================================================================

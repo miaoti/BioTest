@@ -196,3 +196,112 @@ def build_prompt(
     if fmt_u == "SAM":
         return build_sam_prompt(blindspot_context, n=n, max_bytes=max_bytes)
     raise ValueError(f"Unsupported format for seed synthesis: {fmt}")
+
+
+# ---------------------------------------------------------------------------
+# SeedMind-style generator prompt (Phase 5 of SAM coverage plan).
+#
+# Instead of asking the LLM to produce raw SAM/VCF files, ask it for a
+# Python generator program. The synthesizer runs that program K times
+# with different seeds, validates each output, and keeps the survivors.
+#
+# Why generators beat raw files:
+#   - A generator can parameterize edge-case axes (read length, CIGAR
+#     complexity, tag count) — one prompt yields K distinct outputs.
+#   - Invariants (SEQ/CIGAR-length coupling, FLAG/RNAME consistency) are
+#     easier to encode once than to satisfy K times.
+#   - SeedMind (arXiv:2411.18143) reports +29 % coverage vs prior LLM
+#     fuzzers using this pattern.
+# ---------------------------------------------------------------------------
+
+
+_GENERATOR_OUTPUT_CONTRACT = """\
+OUTPUT CONTRACT:
+- Produce a SINGLE Python 3 module wrapped in a triple-fenced block: ```python\\n<code>\\n```.
+- The module MUST define exactly one function with this signature:
+      def generate(seed: int) -> str:
+- `generate(seed)` must be deterministic given `seed`: calling it twice
+  with the same seed returns the same string.
+- The return value MUST be a complete {fmt} file as a single string
+  (include trailing newlines).
+- Allowed standard-library imports ONLY: random, string, itertools,
+  struct, math, textwrap. NO network, NO file I/O, NO os / sys / subprocess,
+  NO multiprocessing, NO importlib. No third-party packages.
+- The generator must handle `seed` values 0..10^9 without raising.
+- Each returned file MUST be <= {max_bytes:,} bytes.
+- NO prose before or after the fenced block.
+"""
+
+
+def build_generator_prompt(
+    blindspot_context: str,
+    fmt: str,
+    n: int = 5,
+    max_bytes: int = 500 * 1024,
+) -> str:
+    """Build the SeedMind-style generator-program prompt for a format.
+
+    The resulting prompt asks the LLM for a self-contained Python
+    generator module. The synthesizer then executes it K times with
+    distinct seeds to get K distinct outputs.
+    """
+    fmt_u = fmt.upper()
+    if fmt_u not in ("VCF", "SAM"):
+        raise ValueError(f"Unsupported format for seed synthesis: {fmt}")
+
+    format_brief = (
+        "VCFv4.3 / v4.2 / v4.5 text format, with ##fileformat header, "
+        "##INFO/##FORMAT/##FILTER meta lines, a `#CHROM POS ID REF ALT "
+        "QUAL FILTER INFO [FORMAT SAMPLES]` line, and tab-separated "
+        "data records."
+        if fmt_u == "VCF"
+        else
+        "SAM 1.6 text format: @HD (VN:1.6), at least one @SQ (SN/LN), "
+        "optional @RG/@PG/@CO, then tab-separated alignment records "
+        "with 11 mandatory columns (QNAME FLAG RNAME POS MAPQ CIGAR "
+        "RNEXT PNEXT TLEN SEQ QUAL)."
+    )
+    header_brief = (
+        "Return a string starting with `##fileformat=VCFv4.3`."
+        if fmt_u == "VCF"
+        else
+        "Return a string starting with `@HD\\tVN:1.6`."
+    )
+
+    return (
+        "You are writing a Python generator program for a metamorphic "
+        "+ differential fuzz-test framework for bioinformatics parsers. "
+        "The framework will invoke your generator multiple times with "
+        "different integer seeds; each call must return a parseable "
+        f"{fmt_u} file as a string.\n\n"
+        f"Format brief: {format_brief}\n\n"
+        "TASK. Author ONE Python module with a `generate(seed: int) -> "
+        "str` function whose output exercises the UNDERCOVERED code "
+        "paths listed below. The generator must use `random.Random(seed)` "
+        "so the output is reproducible given a seed. Parameterize the "
+        "following axes via `rng`:\n"
+        f"  - {'number of data records' if fmt_u == 'VCF' else 'number of alignment records'} (1..20)\n"
+        "  - record/alignment field values drawn from plausible ranges\n"
+        "  - presence/absence of under-covered features (see blindspot "
+        "report below)\n"
+        "  - CIGAR complexity (SAM) or ALT complexity (VCF)\n\n"
+        f"{header_brief}\n\n"
+        "=== BLINDSPOT REPORT (source lines not yet hit) ===\n"
+        + blindspot_context
+        + "\n=== END BLINDSPOT REPORT ===\n\n"
+        "INVARIANTS TO RESPECT (enforce programmatically):\n"
+        + (
+            "- REF and ALT are non-empty, ALT may be comma-separated.\n"
+            "- #CHROM is a string matching declared ##contig IDs (if you declare any).\n"
+            "- POS is a positive integer.\n"
+            "- QUAL is either `.` or a non-negative float.\n"
+            if fmt_u == "VCF"
+            else
+            "- sum(query-consuming CIGAR ops in {M,I,S,=,X}) == len(SEQ) unless CIGAR=='*'.\n"
+            "- len(SEQ) == len(QUAL) unless either is '*'.\n"
+            "- FLAG 0x4 (unmapped) iff RNAME=='*' and POS==0 (or vice versa).\n"
+            "- Optional tag TYPE is one of AifZHB.\n"
+        )
+        + "\n"
+        + _GENERATOR_OUTPUT_CONTRACT.format(fmt=fmt_u, max_bytes=max_bytes)
+    )

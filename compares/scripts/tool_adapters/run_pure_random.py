@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 import time
 from pathlib import Path
 import argparse
 
-from _base import AdapterResult, prepare_out_dir
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _base import AdapterResult, prepare_out_dir  # noqa: E402
 
 
 def run(

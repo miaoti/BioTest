@@ -96,6 +96,15 @@ class TestHtslibSeedsParse:
         path = SEEDS_DIR / subdir / name
         if not path.exists():
             pytest.skip(f"{name} not fetched yet; run seeds/fetch_real_world.py")
+        if name.endswith(".bam"):
+            # BAM is binary (BGZF-compressed). The text normalizers
+            # don't handle it — only SUTs with native BAM readers do.
+            # Assert the magic bytes and move on.
+            magic = path.read_bytes()[:4]
+            assert magic == b"\x1f\x8b\x08\x04", (
+                f"{name}: expected BGZF magic, got {magic!r}"
+            )
+            return
 
         text = path.read_text(encoding="utf-8")
         lines = text.splitlines(keepends=True)

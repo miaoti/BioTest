@@ -167,3 +167,85 @@ def st_violate_cigar_seq_length(draw, corpus: SeedCorpus):
         "lines": lines,
         "rng_seed": rng_seed,
     }
+
+
+# Phase 2 of SAM coverage plan — 3 new SAM malformed strategies.
+
+
+@composite
+def st_violate_tlen_sign_consistency(draw, corpus: SeedCorpus):
+    """Precondition: alignment with non-zero TLEN (column 9)."""
+    seed_path = draw(st.sampled_from(corpus.sam_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    have_target = False
+    for l in lines:
+        s = l.rstrip("\r\n")
+        if s.startswith("@") or "\t" not in s:
+            continue
+        cols = s.split("\t")
+        if len(cols) < 11:
+            continue
+        try:
+            if int(cols[8]) != 0:
+                have_target = True
+                break
+        except ValueError:
+            pass
+    assume(have_target)
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {
+        "transform": "violate_tlen_sign_consistency",
+        "seed_path": seed_path,
+        "lines": lines,
+        "rng_seed": rng_seed,
+    }
+
+
+@composite
+def st_violate_optional_tag_type_character(draw, corpus: SeedCorpus):
+    """Precondition: alignment carrying at least one optional TAG:TYPE:VALUE."""
+    seed_path = draw(st.sampled_from(corpus.sam_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    have_target = any(
+        (not l.startswith("@")) and "\t" in l and len(l.split("\t")) >= 12
+        for l in lines
+    )
+    assume(have_target)
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {
+        "transform": "violate_optional_tag_type_character",
+        "seed_path": seed_path,
+        "lines": lines,
+        "rng_seed": rng_seed,
+    }
+
+
+@composite
+def st_violate_flag_bit_exclusivity(draw, corpus: SeedCorpus):
+    """Precondition: at least one mapped alignment (RNAME != '*', POS > 0)."""
+    seed_path = draw(st.sampled_from(corpus.sam_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    have_target = False
+    for l in lines:
+        s = l.rstrip("\r\n")
+        if s.startswith("@") or "\t" not in s:
+            continue
+        cols = s.split("\t")
+        if len(cols) < 11:
+            continue
+        try:
+            flag = int(cols[1])
+            pos = int(cols[3])
+        except ValueError:
+            continue
+        if cols[2] != "*" and pos > 0 and not (flag & 0x4):
+            have_target = True
+            break
+    assume(have_target)
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {
+        "transform": "violate_flag_bit_exclusivity",
+        "seed_path": seed_path,
+        "lines": lines,
+        "rng_seed": rng_seed,
+    }

@@ -13,7 +13,8 @@ import time
 from pathlib import Path
 import argparse
 
-from _base import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _base import (  # noqa: E402
     AdapterResult,
     prepare_out_dir,
     run_subprocess_with_timeout,

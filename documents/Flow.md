@@ -1460,3 +1460,93 @@ coverage:
 3. **写 coverage 作用域** (`biotest_config.yaml::coverage.target_filters.<FMT>.<sut>`)
 
 缺了第 3 条，Phase D 的 feedback signal 就是垃圾数据。
+
+---
+
+# SAM Coverage Plan (Phases 1–6, 2026-04-19)
+
+A SUT-agnostic lever stack designed specifically to close the SAM-side
+coverage gap measured on biopython/SAM Run 1 (44.0 % on
+`Bio/Align/sam.py`). All 6 phases ship behind the existing 3-piece
+onboarding contract — no new per-SUT code, no new harness obligations.
+
+Per-phase expected lift, phased by ROI + complexity:
+
+| Phase | Lever                                                    | Expected lift | Files                                                                                                     |
+|:-----:|:---------------------------------------------------------|:-------------:|:----------------------------------------------------------------------------------------------------------|
+| 1     | Tier-2 SAM corpus expansion (+30 htslib files, +3 BAM)   | +3–6 pp       | `seeds/fetch_real_world.py`, `seeds/SOURCES.md`, `tests/test_seed_fetch.py`                               |
+| 2     | 5 header-subtag shuffles + 3 malformed mutators          | +4–8 pp       | `mr_engine/transforms/sam.py`, `mr_engine/transforms/malformed.py`, `mr_engine/behavior.py`, `sam_normalizer.py` (dict-sort), dispatch + strategies |
+| 3     | SAM↔BAM / SAM↔CRAM round-trip via samtools CLI           | +2–4 pp       | `mr_engine/transforms/sam.py` (`sam_bam_round_trip`, `sam_cram_round_trip`), `seeds/ref/toy.fa`, dispatch + strategies |
+| 4     | Rule-reachability filter + query-methods precondition    | +1–3 pp       | `test_engine/feedback/blindspot_builder.py`, `phase_a.rule_capability_tags`, `transforms_menu.py`, `biotest.py::_compute_runtime_capabilities` |
+| 5     | SeedMind-style LLM-generator synthesis (sandboxed)       | +5–10 pp      | `mr_engine/agent/seed_synthesizer.py::synthesize_seeds_via_generator`, `seed_synth_prompts.py::build_generator_prompt` |
+| 6     | Cross-parser Tier-2 corpus minimization (union-edge)     | 0 (wall-time) | `seeds/minimize_corpus.py`                                                                                |
+
+**Cumulative expected ceiling on biopython/SAM**: 55–62 %, bounded by the
+published ~60 % automated-MR limit (Liyanage & Böhme ICSE'23).
+
+### Key design invariants
+
+- **Tier-1 preservation**: `seeds/minimize_corpus.py` hard-codes
+  `MINIMIZE_SCOPE = {"real_world_", "synthetic_"}`. Hand-curated
+  `minimal_*`, `spec_example*`, `complex_*` seeds are walked for edge
+  contribution but NEVER moved. Operator-chosen debugging anchors.
+- **Runtime-gated transforms**: `sam_bam_round_trip` and
+  `sam_cram_round_trip` declare `samtools_available` /
+  `cram_reference_available` preconditions. The Phase B prompt filter
+  hides them when the tag is unset, so deployments without `samtools`
+  don't waste LLM calls mining dead transforms. Analogue of how
+  `sut_write_roundtrip` is gated by `primary_sut_has_writer`.
+- **CRAM lossiness policy**: the toy reference in `seeds/ref/toy.fa`
+  contains only ~2.4 KB of random bases for 7 canonical `@SQ` names.
+  Seeds with non-covered `@SQ` names cause `sam_cram_round_trip` to
+  no-op; the strategy router's `assume()` filters those out before they
+  reach Phase C.
+- **SeedMind sandbox**: `_run_generator_sandboxed` uses `python -I`
+  (isolated) + `subprocess.run(timeout=5s)` + 500 KB output cap + AST
+  whitelist restricting imports to `{random, string, itertools, struct,
+  math, textwrap, __future__}`. No LLM-authored code can reach the
+  network or touch the filesystem outside its own stdout.
+- **Canonical normalizer change** (Phase 2): `_parse_tag_fields` now
+  `dict(sorted(items()))` so header-subtag permutations produce
+  byte-identical canonical JSON. All 5 shuffle_*_subtag MRs rely on
+  this — regression tested in
+  `tests/test_transforms.py::TestSubtagShuffleCanonicalInvariance`.
+- **Reachability penalty** (Phase 4): adds a sixth priority dimension
+  (+20) below the format penalty (+10) so an on-format unreachable rule
+  still sinks below an on-format reachable rule but ranks above every
+  off-format rule. Operator-editable via
+  `phase_a.rule_capability_tags` in config; runner classes declare
+  `supports_<cap>=True` per class attribute (default False).
+
+### Runtime capability matrix after Phase 4
+
+New `KNOWN_RUNTIME_PRECONDITIONS` entries (gate the Phase B LLM menu):
+
+| Tag                                | Computed from                                              |
+|:-----------------------------------|:----------------------------------------------------------|
+| `primary_sut_has_query_methods`    | Primary runner class `supports_query_methods=True`        |
+| `samtools_available`               | `shutil.which("samtools")` resolves                        |
+| `cram_reference_available`         | `seeds/ref/toy.fa` exists on disk                         |
+
+Gaps filled during Phase 4: the pre-existing
+`query_method_roundtrip` transform declared its precondition as
+`primary_sut_supports_query_methods`, which was NOT in
+`KNOWN_RUNTIME_PRECONDITIONS` and thus treated as an advisory
+sample-level hint, not a hard gate. Renamed to
+`primary_sut_has_query_methods` and added to the known set so the
+menu-filter actually fires.
+
+### Cross-SUT parity audit (to run after rollout)
+
+After each phase lands:
+1. Baseline the primary target (biopython) — `py -3.12 biotest.py`,
+   record `data/coverage_report.json::final_coverage_pct`.
+2. Flip `feedback_control.primary_target` to `htsjdk` / `pysam` /
+   `seqan3` in turn and re-run Phase C only (`--phase C`).
+3. Every SUT should show similar pp movement from this phase. If one
+   SUT lags by >5 pp, the lever has a hidden per-SUT bias — investigate
+   before shipping.
+
+This is what "generalizable across all SAM SUTs" means operationally —
+the coverage-notes writeup stays honest when every SUT benefits within
+±3 pp.

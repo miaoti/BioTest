@@ -50,6 +50,13 @@ def _build_map() -> dict[str, Callable]:
         st_toggle_clipping,
         st_sut_write_roundtrip as st_sut_write_roundtrip_sam,
         st_query_method_roundtrip as st_query_method_roundtrip_sam,
+        st_shuffle_hd_subtags,
+        st_shuffle_sq_record_subtags,
+        st_shuffle_rg_record_subtags,
+        st_shuffle_pg_record_subtags,
+        st_shuffle_co_comments,
+        st_sam_bam_round_trip,
+        st_sam_cram_round_trip,
     )
     from .malformed_strategies import (
         st_violate_info_number_a_cardinality,
@@ -57,6 +64,9 @@ def _build_map() -> dict[str, Callable]:
         st_violate_fileformat_first_line,
         st_violate_gt_index_bounds,
         st_violate_cigar_seq_length,
+        st_violate_tlen_sign_consistency,
+        st_violate_optional_tag_type_character,
+        st_violate_flag_bit_exclusivity,
     )
 
     return {
@@ -110,6 +120,25 @@ def _build_map() -> dict[str, Callable]:
         "violate_fileformat_first_line":     st_violate_fileformat_first_line,
         "violate_gt_index_bounds":           st_violate_gt_index_bounds,
         "violate_cigar_seq_length":          st_violate_cigar_seq_length,
+
+        # Phase 2 SAM malformed mutators
+        "violate_tlen_sign_consistency":        st_violate_tlen_sign_consistency,
+        "violate_optional_tag_type_character":  st_violate_optional_tag_type_character,
+        "violate_flag_bit_exclusivity":         st_violate_flag_bit_exclusivity,
+
+        # Phase 2 SAM header-subtag / @CO shuffles (Rank 2 MRs under
+        # ORDERING_INVARIANCE — see mr_engine/behavior.py).
+        "shuffle_hd_subtags":          st_shuffle_hd_subtags,
+        "shuffle_sq_record_subtags":   st_shuffle_sq_record_subtags,
+        "shuffle_rg_record_subtags":   st_shuffle_rg_record_subtags,
+        "shuffle_pg_record_subtags":   st_shuffle_pg_record_subtags,
+        "shuffle_co_comments":         st_shuffle_co_comments,
+
+        # Phase 3 SAM↔BAM↔CRAM round-trip MRs via samtools CLI.
+        # Runtime-gated by samtools_available / cram_reference_available;
+        # the LLM only sees them when the preconditions fire.
+        "sam_bam_round_trip":          st_sam_bam_round_trip,
+        "sam_cram_round_trip":         st_sam_cram_round_trip,
     }
 
 

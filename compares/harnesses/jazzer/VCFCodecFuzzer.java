@@ -1,26 +1,28 @@
 // Jazzer harness for htsjdk's VCF parsing path.
 //
-// Build: ./gradlew :harnesses:jazzer:jazzerHarness
-// Run:   jazzer --cp=build/libs/biotest-jazzer.jar:... \
-//              --target_class=VCFCodecFuzzer \
-//              --instrumentation_includes=htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.* \
-//              -seed_corpus=../../../seeds/vcf \
-//              -max_total_time=7200 \
-//              results_dir/
+// Build: bash compares/scripts/build_harnesses.sh jazzer
+// Run (from inside biotest-bench):
+//   python3.12 compares/scripts/tool_adapters/run_jazzer.py \
+//       --sut htsjdk --seed-corpus seeds/vcf \
+//       --out-dir /tmp/jz-vcf --time-budget-s 60 --format VCF
 //
-// Contract: given a byte stream, write it to a temp file and drive the
-// SUT's public file-level entry points end-to-end. We catch *expected*
-// htsjdk exceptions (TribbleException, IOException) — those signal a
-// legitimately malformed input, not a bug. Anything else (NPE,
-// IndexOOB, ClassCast, assertion violation) propagates and Jazzer
-// records it as a finding.
+// Entry point: the classic Jazzer static signature
+// `public static void fuzzerTestOneInput(FuzzedDataProvider)`. We do NOT
+// use `@FuzzTest` here because that annotation requires JUnit 5 on the
+// classpath, which adds unnecessary weight to the harness jar and isn't
+// how the standalone `jazzer` CLI discovers targets.
+//
+// Contract: given fuzzed bytes, write them to a temp file and drive the
+// public VCFFileReader / VCFCodec plumbing end-to-end. We catch
+// *expected* htsjdk exceptions (TribbleException, IOException,
+// IllegalArgumentException) — those signal a legitimately malformed
+// input, not a bug. Anything else (NPE, IndexOOB, assertion violation)
+// propagates so Jazzer records it as a finding.
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
-import com.code_intelligence.jazzer.junit.FuzzTest;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.io.IOException;
@@ -30,15 +32,14 @@ import java.nio.file.StandardOpenOption;
 
 public class VCFCodecFuzzer {
 
-    @FuzzTest(maxDuration = "0")
-    public static void fuzzVcfParse(FuzzedDataProvider data) throws IOException {
+    public static void fuzzerTestOneInput(FuzzedDataProvider data) throws IOException {
         byte[] bytes = data.consumeRemainingAsBytes();
         if (bytes.length == 0) {
             return;
         }
 
         // htsjdk's VCFFileReader is file-based; write to temp and let
-        // the Codec+Tribble plumbing drive the full parse.
+        // the Codec + Tribble plumbing drive the full parse.
         Path tmp = Files.createTempFile("jazzer-vcf-", ".vcf");
         try {
             Files.write(tmp, bytes,
@@ -47,17 +48,15 @@ public class VCFCodecFuzzer {
 
             // requireIndex=false: Tribble's in-memory codec pathway.
             try (VCFFileReader reader = new VCFFileReader(tmp, false)) {
-                // Force full read of header + every record.
                 reader.getFileHeader();
                 for (VariantContext vc : reader) {
-                    // Drain side-effects that trigger lazy parsing.
                     vc.getAlleles();
                     vc.getAttributes();
                     vc.getGenotypes();
                     vc.getType();
                 }
             }
-        } catch (TribbleException | IOException expected) {
+        } catch (TribbleException | IOException | IllegalArgumentException expected) {
             // Expected: malformed input. Not a bug.
         } finally {
             try {

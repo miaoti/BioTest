@@ -83,16 +83,28 @@ from mr_engine.transforms import TRANSFORM_REGISTRY, TransformMeta, get_whitelis
 # _compute_runtime_capabilities) either includes or excludes the tag
 # based on the current runtime state.
 KNOWN_RUNTIME_PRECONDITIONS: frozenset[str] = frozenset({
-    "primary_sut_has_writer",       # Primary target's runner must set
-                                    # supports_write_roundtrip=True. Gates
-                                    # sut_write_roundtrip from appearing
-                                    # in the menu when the primary parser
-                                    # lacks a writer API entirely.
-    "pysam_runtime_reachable",      # Native pysam OR Docker harness OK.
-                                    # Gates vcf_bcf_round_trip, permute_bcf_
-                                    # header_dictionary.
-    "htsjdk_runtime_reachable",     # Java + harness JAR reachable.
-    "bcf_codec_available",          # Either pysam or htsjdk provides BCF.
+    "primary_sut_has_writer",          # Primary target's runner must set
+                                       # supports_write_roundtrip=True. Gates
+                                       # sut_write_roundtrip from appearing
+                                       # in the menu when the primary parser
+                                       # lacks a writer API entirely.
+    "primary_sut_has_query_methods",   # Primary runner sets
+                                       # supports_query_methods=True AND
+                                       # implements discover_query_methods()
+                                       # + run_query_methods(). Gates
+                                       # query_method_roundtrip (Rank 5).
+    "pysam_runtime_reachable",         # Native pysam OR Docker harness OK.
+                                       # Gates vcf_bcf_round_trip, permute_bcf_
+                                       # header_dictionary.
+    "htsjdk_runtime_reachable",        # Java + harness JAR reachable.
+    "bcf_codec_available",             # Either pysam or htsjdk provides BCF.
+    "samtools_available",              # `samtools` CLI on PATH or in the
+                                       # htslib SUT config. Gates
+                                       # sam_bam_round_trip (Phase 3 SAM
+                                       # coverage plan).
+    "cram_reference_available",        # A committed micro-reference under
+                                       # seeds/ref/ whose @SQ SN matches
+                                       # the seed's. Gates sam_cram_round_trip.
 })
 
 

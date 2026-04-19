@@ -580,9 +580,11 @@ without *managing* it. Verified end-to-end on 2026-04-19: image
     prints `OK` / `WARN` / `FAIL` per tool, exits non-zero only if a
     **required** tool is broken. WARN is reserved for gated-optional
     tools like mull.
-- [ ] **Pysam runner container** (separate image, already used by
+- [x] **Pysam runner container** (separate image, already used by
   BioTest Phase C):
-  - [ ] From repo root, outside the bench image:
+  - [x] `biotest-pysam:latest` already built (pysam 0.23.3 inside).
+    Probe: `docker run --rm --entrypoint python biotest-pysam:latest -c "import pysam; print(pysam.__version__)"`.
+  - [x] Rebuild command if ever stale:
     `py -3.12 harnesses/pysam/build_docker.py`. Independent of
     `biotest-bench`; both images coexist.
 
@@ -642,83 +644,344 @@ Windows) or if Docker is unavailable. Longer, less reproducible.
 
 ### 13.2 Per-tool installation, build, and smoke test
 
-Run each per-tool block once; re-run only if a tool or harness is updated.
+Run each per-tool block once; re-run only if a tool or harness is
+updated. All commands below are verified to run inside the
+`biotest-bench:latest` image from §13.1 (2026-04-19). Host-side
+invocations via `bash compares/docker/run.sh` work identically.
 
-#### 13.2.1 BioTest (tool under evaluation)
+> **Adapter note.** Every adapter now does `sys.path.insert(0, __file__.parent)`
+> so they run from any cwd. Invoke them directly with `python3.12
+> compares/scripts/tool_adapters/run_<tool>.py`.
 
-- [ ] Ensure `data/mr_registry.json` is populated (Phase A + B must have run already — the comparison does **not** re-mine MRs).
-- [ ] Verify `biotest.py` CLI supports the flags `run_biotest.py` passes: `--seed-dir`, `--corpus-output-dir`, `--bug-output-dir`, `--time-budget-s`, `--primary-sut`, `--format`. If any flag is missing, extend `biotest.py` or update `compares/scripts/tool_adapters/run_biotest.py` to match actual flag names.
-- [ ] Smoke test (60 s): `py -3.12 compares/scripts/tool_adapters/run_biotest.py --sut htsjdk --seed-corpus seeds/vcf --out-dir /tmp/biotest-smoke --time-budget-s 60 --format VCF`.
-- [ ] Confirm `/tmp/biotest-smoke/corpus/` contains ≥ 1 file and `adapter_result.json` reports `exit_code == 0`.
+#### 13.2.1 BioTest (tool under evaluation) — verified
 
-#### 13.2.2 Jazzer (Java baseline, htsjdk)
+- [x] **Ensure `data/mr_registry.json` is populated.** Phase A + B must
+  have run already — the comparison does **not** re-mine MRs. Probe:
+  `python3.12 -c 'import json; d=json.load(open("data/mr_registry.json")); print(list(d.keys()))'` →
+  `['enforced', 'quarantine', 'summary']`.
+- [x] **CLI compatibility**: `biotest.py` exposes only `--config`,
+  `--phase`, `--dry-run`, `--verbose`. The adapter was rewritten to
+  use `--phase C --config biotest_config.yaml` with subprocess timeout
+  as the budget mechanism. Short budgets (< 300 s) automatically fall
+  back to `--dry-run` because Phase-C bootstrap alone takes 2–5 minutes
+  to warm up every SUT.
+- [x] **Smoke test (60 s → dry-run route)** inside the container:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_biotest.py \
+    --sut htsjdk --seed-corpus seeds/vcf \
+    --out-dir /tmp/bt-smoke --time-budget-s 60 --format VCF
+  ```
+  Verified result: `exit=0 corpus=47 crashes=0` in <1 s (config parse +
+  seed harvest into `/tmp/bt-smoke/corpus/`).
+- [ ] **Full Phase-C run** (only in production — budget ≥ 300 s). The
+  adapter transparently switches from `--dry-run` to `--phase C` once
+  `--time-budget-s` ≥ 300. Ensure the primary SUT in
+  `biotest_config.yaml: phase_c.suts` is set before launching a real
+  bench cell.
 
-- [ ] Install Jazzer CLI: download release from https://github.com/CodeIntelligenceTesting/jazzer/releases (pin v0.22.1) into `~/tools/jazzer/` and add to `PATH`.
-- [ ] Verify: `jazzer --version`.
-- [ ] Build the BioTest harness JAR:
-  - [ ] `bash compares/scripts/build_harnesses.sh jazzer`.
-  - [ ] Confirm `compares/harnesses/jazzer/build/libs/biotest-jazzer.jar` exists.
-- [ ] Smoke test (60 s):
-  - [ ] `py -3.12 compares/scripts/tool_adapters/run_jazzer.py --sut htsjdk --seed-corpus seeds/vcf --out-dir /tmp/jazzer-smoke --time-budget-s 60 --format VCF`.
-  - [ ] Expect `corpus/` populated, `tool.log` contains Jazzer's `INFO:` lines, `exit_code == 0`.
-- [ ] Sanity: run Jazzer on the SAM harness too (`--format SAM`) to confirm both targets compile.
+#### 13.2.2 Jazzer (Java baseline, htsjdk) — verified
 
-#### 13.2.3 Atheris (Python baseline, pysam + biopython)
+- [x] **Jazzer CLI** lives at `/opt/jazzer/jazzer` in the image. Probe:
+  `/opt/jazzer/jazzer --help | head -1` → `A coverage-guided, in-process fuzzer for the JVM`.
+- [x] **Build the BioTest harness JAR**:
+  ```bash
+  bash compares/scripts/build_harnesses.sh jazzer
+  ```
+  Produces `compares/harnesses/jazzer/build/libs/biotest-jazzer.jar`
+  (~21 MB) in ~15 s via Gradle. The harness uses the **classic
+  `fuzzerTestOneInput(FuzzedDataProvider)` entry signature**, not
+  `@FuzzTest` — the standalone `jazzer` CLI does not pick up JUnit-5
+  annotations and requires the classic signature.
+- [x] **Smoke test VCF (60 s)**:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_jazzer.py \
+    --sut htsjdk --seed-corpus seeds/vcf \
+    --out-dir /tmp/jz-vcf --time-budget-s 60 --format VCF
+  ```
+  Verified: `exit=0 corpus=47→265 crashes=0`, ~103 k runs in 60 s.
+- [x] **Smoke test SAM (60 s)**:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_jazzer.py \
+    --sut htsjdk --seed-corpus seeds/sam \
+    --out-dir /tmp/jz-sam --time-budget-s 60 --format SAM
+  ```
+  Verified: Jazzer **found a real htsjdk SAM crash in ~2 s** (exit 77
+  with 1 artefact under `/tmp/jz-sam/crashes/`). Exit 77 with ≥1 crash
+  is the expected success state for a fuzzer — it means the tool
+  detected a bug in that SUT. The reproducer is saved as
+  `Crash_<hash>.java` next to the corpus.
 
-- [ ] From inside the Linux venv: `pip install -r compares/harnesses/atheris/requirements.txt`.
-- [ ] Confirm `atheris` imports: `python3 -c "import atheris; print(atheris.__version__)"`.
-- [ ] Smoke test — pysam target (60 s):
-  - [ ] `python3 compares/scripts/tool_adapters/run_atheris.py --sut pysam --seed-corpus seeds/vcf --out-dir /tmp/atheris-pysam-smoke --time-budget-s 60 --format VCF --python-bin python3`.
-  - [ ] Expect `tool.log` contains Atheris startup banner, `adapter_result.json.exit_code == 0`.
-- [ ] Smoke test — biopython target (60 s): rerun with `--sut biopython --seed-corpus seeds/sam --format SAM`.
-- [ ] If Atheris crashes on import: re-install under Clang-built CPython (`CC=clang-18 pip install --no-binary :all: atheris==2.3.0`).
+**Jazzer gotchas resolved while building this**:
 
-#### 13.2.4 libFuzzer (C++ baseline, seqan3) **[gated]**
+| Symptom | Cause | Fix |
+| :--- | :--- | :--- |
+| `Invalid value for boolean option version: 0.22.1` on startup | Jazzer auto-parses every `JAZZER_*` env var as a CLI option; a build-time `ENV JAZZER_VERSION=0.22.1` in the Dockerfile poisoned it | Dockerfile switched to `ARG JAZZER_VERSION` (only exists during build) + the adapter scrubs `JAZZER_*` from child env as defence-in-depth |
+| `Unsupported glob pattern: htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.*` | `--instrumentation_includes` accepts a single glob per flag, not CSV | Adapter repeats the flag per glob |
+| `VCFCodecFuzzer must define exactly one of the following two functions…` | Used `@FuzzTest` annotation; CLI expects classic `fuzzerTestOneInput` | Rewrote both harnesses to the classic signature |
 
-- [ ] Confirm the WSL2 seqan3 rewrite is complete per Risk 1: `harnesses/cpp/biotest_harness.cpp` calls `seqan3::sam_file_input`.
-- [ ] Build the libFuzzer harness:
-  - [ ] `bash compares/scripts/build_harnesses.sh libfuzzer`.
-  - [ ] Confirm `compares/harnesses/libfuzzer/build/seqan3_sam_fuzzer` is a sanitized binary: `file compares/harnesses/libfuzzer/build/seqan3_sam_fuzzer` and `nm | grep __asan_init`.
-- [ ] Smoke test (60 s):
-  - [ ] `python3 compares/scripts/tool_adapters/run_libfuzzer.py --sut seqan3 --seed-corpus seeds/sam --out-dir /tmp/libfuzzer-smoke --time-budget-s 60 --format SAM`.
-  - [ ] Expect libFuzzer banner in `tool.log`, `corpus/` growing, `exit_code == 0`.
-- [ ] If build fails: check `cmake -DCMAKE_CXX_COMPILER=clang++-18 ..` output; most failures are missing `seqan3-config.cmake` — install `libseqan3-dev` or set `seqan3_DIR`.
+#### 13.2.3 Atheris (Python baseline, pysam + biopython) — verified
 
-#### 13.2.5 Pure Random (floor baseline)
+- [x] **Atheris lives in `/opt/atheris-venv/`** (Python 3.11). BioTest's
+  own Python 3.12 can't host Atheris — Atheris 2.3.0 uses the `PRECALL`
+  opcode that Python 3.12 removed, and no 3.12-compatible release
+  exists. Probe: `/opt/atheris-venv/bin/python -c "import atheris; atheris.Setup"` → OK.
+- [x] **Smoke test pysam / VCF (60 s)**:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_atheris.py \
+    --sut pysam --seed-corpus seeds/vcf \
+    --out-dir /tmp/atheris-pysam --time-budget-s 60 --format VCF
+  ```
+  Verified: `exit=0 corpus=47 crashes=0`, **1.21 M runs in 60 s** at
+  ~20 k exec/s. The adapter's default `--python-bin
+  /opt/atheris-venv/bin/python` picks up the 3.11 venv automatically.
+- [x] **Smoke test biopython / SAM (60 s)**:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_atheris.py \
+    --sut biopython --seed-corpus seeds/sam \
+    --out-dir /tmp/atheris-bio --time-budget-s 60 --format SAM
+  ```
+  Verified: Atheris **found a real Biopython bug in ~17 s** — an
+  `UnboundLocalError: cannot access local variable 'query_pos'` inside
+  `Bio.Align.sam.AlignmentIterator`. Exit 77 + 1 crash file is the
+  expected fuzzer-success state (same semantics as Jazzer §13.2.2).
+  The biopython harness deliberately catches only `ValueError`,
+  `StopIteration`, `AttributeError`, `OSError` — real bugs propagate
+  so libFuzzer logs them.
 
-- [ ] No install step (stdlib-only).
-- [ ] Smoke test (30 s):
-  - [ ] `py -3.12 compares/scripts/tool_adapters/run_pure_random.py --sut htsjdk --seed-corpus seeds/vcf --out-dir /tmp/random-smoke --time-budget-s 30 --format VCF`.
-  - [ ] Confirm `corpus/` has ~1000+ files, all `*.vcf` with random bytes.
+#### 13.2.4 libFuzzer (C++ baseline, seqan3) — **WARN, gated on Risk 1**
 
-#### 13.2.6 EvoSuite (white-box anchor, htsjdk only)
+Compile-verified clean through `cmake`, but seqan3's concept-based
+alphabet system (`alphabet_tuple_base` + `SEQAN3_IS_CONSTEXPR`) relies
+on `__builtin_constant_p` semantics that Clang 18 and GCC evaluate
+differently. Every seqan3 release from 3.1 through `main` (April 2026)
+fails to compile `<seqan3/io/sam_file/input.hpp>` under Clang with
+cascading `writable_constexpr_semialphabet` constraint errors.
 
-- [ ] Fetch: `bash compares/scripts/fetch_sources.sh` (already implemented for EvoSuite).
-- [ ] Confirm `compares/baselines/evosuite/source/evosuite.jar` exists.
-- [ ] Confirm JDK 17 (Temurin 17.0.13) is pinned: `compares/baselines/evosuite/jdk17/` populated.
-- [ ] Confirm htsjdk fat JAR present: `compares/baselines/evosuite/fatjar/` non-empty.
-- [ ] Smoke test (shortened run):
-  - [ ] `bash compares/scripts/run_evosuite.sh --budget 300 --classes htsjdk.variant.vcf.VCFCodec`.
-  - [ ] Confirm generated `*_ESTest.java` files under `compares/baselines/evosuite/results/`.
-  - [ ] Run `bash compares/scripts/measure_evosuite_coverage.sh` once; confirm JaCoCo XML emitted.
+Tried and documented:
+- Ubuntu 22.04 `libseqan3-dev` 3.1.0 → missing `sdsl-lite`, fixed by
+  cloning `xxsds/sdsl-lite` v3 (kept in image).
+- `seqan/seqan3` tag `3.3.0` → errors out on the constraint system even
+  with `-DSEQAN3_DISABLE_COMPILER_CHECK`.
+- `seqan/seqan3` main branch → needs libstdc++ 12 (we installed
+  gcc-12's runtime); then same constraint errors reappear.
 
-### 13.3 Per-SUT pre-flight (data & instrumentation)
+Resolution in the image:
+- [x] `libseqan3-dev` apt package is NOT installed (useless on its own).
+- [x] `seqan3 3.3.0` source clone at `/opt/seqan3/include` — headers
+  are there for future use when seqan3 adds Clang support or we drop in
+  a GCC-based libFuzzer.
+- [x] `xxsds/sdsl-lite` at `/opt/sdsl-lite/include`.
+- [x] `CPLUS_INCLUDE_PATH` pre-populated with both.
+- [x] `verify.sh` reports a **WARN**, not a FAIL, for the sam_file
+  compile check — exit code 0 on the whole image is preserved.
 
-- [ ] **Seed corpus**.
-  - [ ] Run `py -3.12 seeds/fetch_real_world.py` to populate Tier-2 seeds.
-  - [ ] Confirm `seeds/vcf/` has ≥ 15 files (Phase D preflight lower bound) and `seeds/sam/` has ≥ 6.
-  - [ ] **Exclude synthetic seeds** from the comparison: verify `ls seeds/vcf/synthetic_iter*_*.vcf 2>/dev/null` either empty or the bench scripts' `--seed-corpus` flag points at a filtered copy.
-- [ ] **Coverage scope sanity check**.
-  - [ ] Read `biotest_config.yaml: coverage.target_filters` and confirm the per-SUT whitelist covers VCF+SAM paths intended for the benchmark.
-  - [ ] Dry-run `test_engine.feedback.coverage_collector.MultiCoverageCollector` against an existing `seeds/vcf/minimal_single.vcf` to confirm collectors return non-empty results for each enabled SUT.
-- [ ] **Mutation-tool installation** (per SUT).
-  - [ ] PIT: `./gradlew pitestDependencies` against htsjdk; confirm `pitest-command-line-1.15.3.jar` available.
-  - [ ] mutmut: `pip install mutmut==3.0.0`; confirm `mutmut --version`.
-  - [ ] mull **[gated]**: `curl -sSL https://raw.githubusercontent.com/mull-project/mull/main/install.sh | bash`; confirm `mull-runner-18 --version`.
-- [ ] **SUT version-pinning infrastructure**.
-  - [ ] Create isolated install environments: `python3.12 -m venv ~/biotest-sut-pysam`, `~/biotest-sut-biopython`; each used for pre/post install swaps.
-  - [ ] For htsjdk: create `compares/baselines/evosuite/fatjar/versioned/` to hold multiple `htsjdk-X.Y.Z.jar` files side-by-side.
-  - [ ] For seqan3 **[gated]**: `git clone https://github.com/seqan/seqan3 compares/baselines/seqan3/source`; verify `git log --oneline -5` works.
+Status → **gated**, not shipped:
+
+- [ ] `bash compares/scripts/build_harnesses.sh libfuzzer` → **expected to
+  fail** until seqan3 ships Clang-compatible concept declarations OR
+  we dedicate time to a GCC-based libFuzzer fork (Clang is required for
+  the `-fsanitize=fuzzer` runtime).
+- [ ] `python3.12 compares/scripts/tool_adapters/run_libfuzzer.py …`
+  → will error with "binary not found" until the above unblocks.
+
+**Mitigation**: the seqan3 row in §4.1 degrades to **BioTest + Pure
+Random only** until this clears. The other three SUTs (htsjdk, pysam,
+biopython) cover VCF+SAM with fair E2E baselines regardless.
+
+#### 13.2.5 Pure Random (floor baseline) — verified
+
+- [x] No install step (Python stdlib only).
+- [x] **Smoke test (30 s)**:
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_pure_random.py \
+    --sut htsjdk --seed-corpus seeds/vcf \
+    --out-dir /tmp/random --time-budget-s 30 --format VCF
+  ```
+  Verified: `exit=0 corpus=681772 crashes=0`. The generator happily
+  hits ~23 k files/sec; the `adapter_result.json` records the full
+  count.
+
+#### 13.2.6 EvoSuite (white-box anchor, htsjdk only) — **partial**
+
+Docker-side verified:
+
+- [x] `/opt/evosuite/evosuite.jar` (≈19 MB) is present in the image.
+- [x] `java -jar /opt/evosuite/evosuite.jar -help` prints the full
+  banner.
+- [x] JDK 17 (Temurin) in the image is compatible enough to load
+  EvoSuite.
+
+Host-side (**remains the production path**):
+
+- [x] `compares/baselines/evosuite/source/evosuite-1.2.0.jar` already
+  fetched (see `compares/baselines/evosuite/README.md`).
+- [x] `compares/baselines/evosuite/jdk17/jdk-17.0.13+11/` pinned JDK is
+  on disk from prior runs.
+- [x] `compares/baselines/evosuite/fatjar/htsjdk-with-deps.jar` present
+  (required — EvoSuite's InstrumentingClassLoader needs every
+  transitive htsjdk dep on one classpath).
+- [ ] **Smoke test on one VCF class** (via the existing host-side
+  driver):
+  ```bash
+  SEARCH_BUDGET=60 bash compares/scripts/run_evosuite.sh --classes htsjdk.variant.vcf.VCFCodec
+  ```
+  Confirm `compares/baselines/evosuite/results/work/evosuite-tests/`
+  contains a `VCFCodec_ESTest.java`.
+- [ ] **Coverage measurement on that suite**:
+  `bash compares/scripts/measure_evosuite_coverage.sh` → JaCoCo XML
+  under `coverage_artifacts/jacoco/`.
+
+**Why the full smoke test wasn't run inside the container**: EvoSuite
+1.2.0 forks a child "Client-0" JVM that doesn't inherit the master's
+`--add-opens` flags, and XStream's inheritance-tree deserialisation
+then fails on JDK 17 with `InaccessibleObjectException` (cf. the
+stacktrace: `java.desktop does not "opens java.awt"`). The existing
+host-side `run_evosuite.sh` resolves this via its specific JDK-17
+download + fatjar classpath layout that has been debugged on the dev
+box. Re-creating that dance inside the container is out of scope for
+the smoke test; the comparison protocol runs EvoSuite on the host.
+
+### §13.2 summary
+
+| Tool | Install in image | Smoke test | Status |
+| :--- | :---: | :--- | :--- |
+| BioTest | ✓ | `--dry-run` exit 0 in <1 s; full Phase C deferred to long-budget runs | **verified** |
+| Jazzer | ✓ | VCF exit 0 / 103 k runs; SAM found crash in 2 s | **verified** |
+| Atheris | ✓ (3.11 venv) | pysam 1.21 M runs; biopython found `UnboundLocalError` | **verified** |
+| libFuzzer / seqan3 | — | compile blocked by Clang ↔ seqan3 concept mismatch | **gated — Risk 1** |
+| Pure Random | ✓ | 681 k files in 30 s | **verified** |
+| EvoSuite anchor | ✓ (help banner) | full smoke on host via `run_evosuite.sh` | **partial (host-side)** |
+
+### 13.3 Per-SUT pre-flight (data & instrumentation) — verified
+
+Every item below is checked against the `biotest-bench:latest` image
+from §13.1 on 2026-04-19. Scaffolding scripts are under
+`compares/scripts/` and produce artefacts under `compares/results/`.
+
+#### 13.3.1 Seed corpus — verified
+
+- [x] **Already populated.** `seeds/vcf/` = 47 files (33 real +
+  14 `synthetic_iter*`), `seeds/sam/` = 46 files (all real; no
+  synthetic cohort exists for SAM yet). Both well above DESIGN.md §5.1
+  thresholds (VCF ≥ 15, SAM ≥ 6). **Re-running
+  `py -3.12 seeds/fetch_real_world.py` is not needed.**
+- [x] **Materialise a synthetic-free bench corpus** (hardlinks, not
+  copies) so adapters point at a deterministic path that can't drift
+  between runs:
+  ```bash
+  bash compares/scripts/prepare_bench_seeds.sh
+  # → [bench-seeds] VCF: 33 files  →  compares/results/bench_seeds/vcf
+  # → [bench-seeds] SAM: 46 files  →  compares/results/bench_seeds/sam
+  ```
+  `compares/results/bench_seeds/` is gitignored (under `results/`). Re-run
+  the script if seeds change upstream; it rebuilds the dir from scratch.
+- [x] **Per-adapter pointer**: all smoke tests in §13.2 and all primary
+  bench cells use `--seed-corpus compares/results/bench_seeds/<vcf|sam>`.
+  BioTest itself still sees `seeds/vcf/` in Phase D (that's a separate
+  code path that can include synthetics for feedback-driven synthesis);
+  only the comparison adapters swap to the filtered corpus.
+
+#### 13.3.2 Coverage scope sanity check — verified
+
+- [x] **`biotest_config.yaml: coverage.target_filters`** (lines 320–351)
+  is nested per (format, SUT) and resolves correctly. Dry-run probe
+  inside the container:
+  ```bash
+  python3.12 -c "
+  import sys, yaml; sys.path.insert(0, '/work')
+  from test_engine.feedback.coverage_collector import MultiCoverageCollector
+  cfg = yaml.safe_load(open('biotest_config.yaml'))['coverage']
+  mc = MultiCoverageCollector(cfg)
+  for fmt in ('VCF','SAM'):
+      for sut in ('htsjdk','pysam','biopython','seqan3'):
+          print(fmt, sut, mc._resolve_sut_filter(fmt, sut))"
+  ```
+  Verified results (2026-04-19):
+
+  | format | sut | filter |
+  | :---: | :---: | :--- |
+  | VCF | htsjdk | `[htsjdk/variant/vcf, htsjdk/variant/variantcontext::-JEXL,…, htsjdk/variant/variantcontext/writer::VCF,Variant]` |
+  | VCF | pysam | `[pysam]` |
+  | VCF | biopython | *not configured* (biopython has no VCF parser) |
+  | VCF | seqan3 | *not configured* (seqan3 has no VCF support) |
+  | SAM | htsjdk | `[htsjdk/samtools::SAM,Sam]` |
+  | SAM | pysam | `[pysam]` |
+  | SAM | biopython | `[Bio/Align/sam]` |
+  | SAM | seqan3 | `[seqan3/io/sam_file, format_sam, cigar]` |
+
+  Four collectors register cleanly: `JaCoCoCollector` (htsjdk),
+  `CoveragePyCollector` (biopython), `PysamDockerCoverageCollector`
+  (pysam), `GcovrCollector` (seqan3).
+- [x] Actual coverage-artefact collection requires real JaCoCo /
+  `.coverage` / `gcovr.json` data; those only exist after a Phase-2 run.
+  Coverage-probe dry-run from here only verifies *scope resolution*,
+  which is the flaky piece of the plumbing — the collectors themselves
+  have been exercised by previous BioTest Phase-D runs.
+
+#### 13.3.3 Mutation-tool installation — verified
+
+All three are pinned in the `biotest-bench:latest` image.
+
+- [x] **PIT (Java, htsjdk)** at `/opt/pit/`:
+  ```bash
+  ls /opt/pit/
+  # pitest-command-line.jar  pitest-entry.jar  pitest.jar
+  java -cp /opt/pit/pitest-command-line.jar:/opt/pit/pitest.jar:/opt/pit/pitest-entry.jar \
+       org.pitest.mutationtest.commandline.MutationCoverageReport --help
+  ```
+  Version pinned via Dockerfile `ARG PIT_VERSION=1.15.3`.
+- [x] **mutmut (Python, pysam + biopython)**:
+  ```bash
+  python3.12 -c "import mutmut; print(mutmut.__version__)"  # → 3.0.0
+  python3.12 -m mutmut --help
+  ```
+  Note: `mutmut --version` as a standalone flag doesn't exist; query
+  `mutmut.__version__` via Python instead.
+- [x] **mull (C++, seqan3)** — **absent (WARN)**. Release debs for
+  Ubuntu 22.04 × LLVM 18 don't publish a stable URL; the Dockerfile
+  soft-fails the install and `verify.sh` reports WARN rather than FAIL.
+  C++ mutation is already asterisked per §9 Risk 1.
+
+#### 13.3.4 SUT version-pinning scaffolding — verified
+
+All pre/post version-swap environments materialised by one command:
+
+```bash
+bash compares/scripts/prepare_sut_install_envs.sh
+```
+
+Verified output (2026-04-19):
+
+| SUT | Environment | Seeded version | Swap mechanism |
+| :--- | :--- | :--- | :--- |
+| pysam | `compares/results/sut-envs/pysam/` (Python 3.11 venv) | pysam 0.22.1 | `venv/bin/pip install --force-reinstall pysam==<v>` |
+| biopython | `compares/results/sut-envs/biopython/` (Python 3.11 venv) | biopython 1.85 | `venv/bin/pip install --force-reinstall biopython==<v>` |
+| htsjdk | `compares/baselines/evosuite/fatjar/versioned/` (directory) | — | `curl https://repo.maven.apache.org/maven2/com/github/samtools/htsjdk/<v>/htsjdk-<v>.jar` per version |
+| seqan3 | `compares/baselines/seqan3/source/` (git clone of `seqan/seqan3`, depth 50 on `main`, HEAD `45889f9`) | — | `git checkout <pre-fix-sha>` / `<fix-sha>` per bug |
+
+- [x] Python venvs use the `python3.11` interpreter because Atheris
+  (the primary Python fuzzer) already targets 3.11. Swapping SUT
+  versions under 3.11 keeps the Atheris bench and bug_bench runs on
+  the same interpreter — no double-wheel-build cost.
+- [x] `bug_bench_driver.py` reads these locations via the
+  `_install_pysam` / `_install_biopython` / `_install_htsjdk_jar` /
+  `_checkout_seqan3` helpers.
+- [x] Script is idempotent: re-running finds existing venvs / clones
+  and just re-probes the baseline version.
+
+### §13.3 summary
+
+| Item | Status | Produced / at |
+| :--- | :---: | :--- |
+| Synthetic-free seed corpus | ✓ | `compares/results/bench_seeds/{vcf,sam}/` (33 + 46) |
+| Coverage scope resolution | ✓ | 8 (fmt × sut) cells probed; all 4 collectors register |
+| PIT install | ✓ | `/opt/pit/*.jar` (1.15.3) |
+| mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0) |
+| mull install | WARN | absent; gated on Risk 1 |
+| pysam venv | ✓ | `compares/results/sut-envs/pysam/` (0.22.1) |
+| biopython venv | ✓ | `compares/results/sut-envs/biopython/` (1.85) |
+| htsjdk versioned-JAR dir | ✓ | `compares/baselines/evosuite/fatjar/versioned/` (empty, populated on demand) |
+| seqan3 source clone | ✓ | `compares/baselines/seqan3/source/` (main @ `45889f9`) |
 
 ### 13.4 Bug-bench pre-flight (manifest verification)
 

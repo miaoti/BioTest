@@ -77,7 +77,9 @@ check "lld"                  ld.lld --version
 check "llvm-symbolizer"      llvm-symbolizer --version
 check "gcovr"                gcovr --version
 check "lcov"                 lcov --version
-check "libseqan3-dev"        bash -c "echo '#include <seqan3/core/debug_stream.hpp>' | clang++ -std=c++23 -x c++ -fsyntax-only -"
+check_optional "seqan3 sam_file compile (gated on Clang support; DESIGN §9 Risk 1)" \
+                             bash -c "echo '#include <seqan3/io/sam_file/input.hpp>' | clang++ -std=c++23 -DSEQAN3_DISABLE_COMPILER_CHECK -x c++ -fsyntax-only -"
+check "seqan3 headers present" test -f /opt/seqan3/include/seqan3/version.hpp
 
 echo
 echo "-- Fuzzers / mutation tools --"

@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-29.1-blue?logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-364%20passing-brightgreen?logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-544%20passing-brightgreen?logo=pytest" />
   <img src="https://img.shields.io/badge/SUTs-6%20parsers-purple" />
   <img src="https://img.shields.io/badge/License-MIT-green" />
 </p>
@@ -241,11 +241,11 @@ so no MR will ever target your read-only runner for write testing.
 
 ---
 
-## The 25 Atomic Transforms
+## The 36 Atomic Transforms
 
-Each transform either preserves biological semantics (transforms 1–20) or
+Each transform either preserves biological semantics (1–20, 26–32) or
 deliberately violates a specific spec rule to exercise rejection paths
-(transforms 21–25). All are grounded in published literature — see
+(21–25, 33–35). All are grounded in published literature — see
 `documents/Flow.md` for full citations.
 
 ### VCF (15)
@@ -294,6 +294,33 @@ expose parsers that silently tolerate spec violations.
 | 24 | `violate_gt_index_bounds`              | VCF  | GT indices must satisfy `0 ≤ idx ≤ len(ALT)`                   |
 | 25 | `violate_cigar_seq_length`             | SAM  | `sum(query-consuming CIGAR ops) == len(SEQ)`                   |
 
+### SAM coverage plan — Phase 2 & 3 additions (8 new, 2026-04-19)
+
+Phase 2 adds 5 header-subtag-reorder transforms (the SAMv1 §1.3
+"TAG:VALUE pairs within a record line have no ordering" invariant) and
+3 new malformed mutators. Phase 3 adds 2 binary-codec round-trips via
+the `samtools` CLI. All are SUT-agnostic and pass through the existing
+dispatch / strategy plumbing — no runner code changes. See
+`documents/Flow.md` "SAM Coverage Plan" for the full design.
+
+| #  | Transform                              | Fmt | Scope  | Purpose                                                         |
+|:--:|:---------------------------------------|:---:|:------:|:----------------------------------------------------------------|
+| 26 | `shuffle_hd_subtags`                   | SAM | Header | Permute TAG:VALUE inside `@HD` (subtags have no spec order)     |
+| 27 | `shuffle_sq_record_subtags`            | SAM | Header | Permute TAG:VALUE inside each `@SQ` record                      |
+| 28 | `shuffle_rg_record_subtags`            | SAM | Header | Permute TAG:VALUE inside each `@RG` record                      |
+| 29 | `shuffle_pg_record_subtags`            | SAM | Header | Permute TAG:VALUE inside each `@PG` record                      |
+| 30 | `shuffle_co_comments`                  | SAM | Header | Shuffle `@CO` comment lines (canonical normalizer sorts them)   |
+| 31 | `sam_bam_round_trip`                   | SAM | File   | SAM → BAM → SAM via `samtools view -b`; exercises BAM codec     |
+| 32 | `sam_cram_round_trip`                  | SAM | File   | SAM → CRAM → SAM via `samtools view -C -T ref`; needs toy ref   |
+
+New Rank-3 malformed mutators (all SAM):
+
+| #  | Transform                              | Fmt | Spec rule broken                                                   |
+|:--:|:---------------------------------------|:---:|:-------------------------------------------------------------------|
+| 33 | `violate_tlen_sign_consistency`        | SAM | Paired reads must have opposite-signed TLEN (SAMv1 §1.4)           |
+| 34 | `violate_optional_tag_type_character`  | SAM | Tag type char restricted to `AifZHB` (SAMtags §2.1)                |
+| 35 | `violate_flag_bit_exclusivity`         | SAM | FLAG 0x4 unmapped ⇔ RNAME=`*` / POS=0 (SAMv1 §1.4.1)               |
+
 ---
 
 ## How the framework keeps coverage climbing
@@ -319,6 +346,24 @@ ceiling for automated MR/fuzz testing without per-SUT hand-written
 drivers. See `documents/Flow.md` for the full Phase B + C + D writeup
 including the API-query oracle (§5.5) and citation chain.
 
+### SAM coverage plan (2026-04-19) — 6 additional levers
+
+A companion, SUT-agnostic lever stack specifically for closing the SAM
+coverage gap. All 6 live entirely in framework code + data; nothing
+per-SUT changes.
+
+| Phase | Lever                                         | Where                                                                               |
+|:-----:|:----------------------------------------------|:------------------------------------------------------------------------------------|
+| 1     | Expanded SAM Tier-2 corpus (+30 htslib files) | `seeds/fetch_real_world.py`                                                         |
+| 2     | 5 header-subtag shuffles + 3 malformed        | `mr_engine/transforms/sam.py`, `mr_engine/transforms/malformed.py`                  |
+| 3     | SAM↔BAM / SAM↔CRAM round-trip via samtools    | `mr_engine/transforms/sam.py` (`sam_bam_round_trip`, `sam_cram_round_trip`)         |
+| 4     | Rule-reachability filter + query-methods gate | `test_engine/feedback/blindspot_builder.py`, `phase_a.rule_capability_tags` config  |
+| 5     | SeedMind generator-mode synthesis             | `mr_engine/agent/seed_synthesizer.py::synthesize_seeds_via_generator`               |
+| 6     | Tier-2 cross-parser corpus minimization       | `seeds/minimize_corpus.py`                                                          |
+
+Expected cumulative lift on biopython/SAM (Run 1 baseline 44.0 %):
+**55–62 %**, ceiling-bounded by the published ~60 % automated-MR limit.
+
 ---
 
 ## Seed Corpus
@@ -327,9 +372,12 @@ Two tiers:
 
 - **Tier-1 (committed, ~6 files)**: hand-crafted minimal examples under
   `seeds/vcf/` and `seeds/sam/` — enough for smoke tests.
-- **Tier-2 (gitignored, ~30 files)**: curated real-world seeds from htsjdk,
-  bcftools, hts-specs, GATK. Pull with `py -3.12 seeds/fetch_real_world.py`.
+- **Tier-2 (gitignored, ~60 files)**: curated real-world seeds from htsjdk,
+  bcftools, hts-specs, GATK, htslib. Pull with `py -3.12 seeds/fetch_real_world.py`.
   Full provenance + diversity axes in `seeds/SOURCES.md`. Per-file cap 500 KB.
+- **CRAM toy reference (committed, ≤10 KB)**: `seeds/ref/toy.fa` — required by
+  `sam_cram_round_trip`; seed `@SQ` names must subset the reference's FASTA
+  entries or the transform no-ops.
 
 Phase D preflight requires ≥ 15 VCF seeds.
 

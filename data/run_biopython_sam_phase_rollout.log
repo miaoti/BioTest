@@ -1,0 +1,402 @@
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.yaml
+
+                                 Configuration                                 
+                                                                               
+ Spec Versions          VCF v4.5, SAM v1.6                                     
+ Test Format            SAM (cascades to B, C, D)                              
+ MR Themes              ordering_invariance, semantics_preserving_permutation, 
+                        normalization_invariance, rejection_invariance,        
+                        coordinate_indexing_invariance, round_trip_invariance, 
+                        api_query_invariance                                   
+ Active SUTs            htsjdk, biopython, seqan3, pysam, htslib               
+ Enabled Phases         A -> B -> C -> D                                       
+                                                                               
+
+  Fetching specs from GitHub...
+15:16:29 [INFO] spec_ingestor.main: === Step 1: Ingestion ===
+15:16:30 [INFO] spec_ingestor.ingestor: HEAD commit SHA: e821e4f02ae25c2175f9a366edca1322d6a2de72
+15:16:30 [INFO] spec_ingestor.ingestor: Fetching VCFv4.5.tex ...
+15:16:31 [INFO] spec_ingestor.ingestor:   -> found \input{VCFv4.5.ver}, queuing
+15:16:31 [INFO] spec_ingestor.ingestor: Fetching SAMv1.tex ...
+15:16:31 [INFO] spec_ingestor.ingestor:   -> found \input{SAMv1.ver}, queuing
+15:16:31 [INFO] spec_ingestor.ingestor: Fetching VCFv4.5.ver.tex ...
+15:16:32 [INFO] spec_ingestor.ingestor: Skipping \input ref VCFv4.5.ver.tex (not found — likely build-generated)
+15:16:32 [INFO] spec_ingestor.ingestor: Fetching SAMv1.ver.tex ...
+15:16:32 [INFO] spec_ingestor.ingestor: Skipping \input ref SAMv1.ver.tex (not found — likely build-generated)
+15:16:32 [INFO] spec_ingestor.ingestor: Ingestion complete: 2 files fetched at commit e821e4f02a
+15:16:32 [INFO] spec_ingestor.main: Fetched 2 files at commit e821e4f02a
+  Parsing LaTeX and chunking...
+15:16:32 [INFO] spec_ingestor.main: === Step 2-3: Parsing & Chunking ===
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,24)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,13)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,10)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,11)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:32 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,19)
+15:16:32 [INFO] spec_ingestor.parser: Extracted 65 tables
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(111,0)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(8,0)
+15:16:33 [INFO] spec_ingestor.parser: Chunked VCFv4.5.tex into 1713 chunks
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,24)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,13)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,10)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,11)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,19)
+15:16:33 [INFO] spec_ingestor.parser: Extracted 65 tables
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,0)
+15:16:33 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:33 [INFO] spec_ingestor.parser: Extracted 13 tables
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'appendices' @(89,0)
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(90,0)
+15:16:34 [INFO] spec_ingestor.parser: Chunked SAMv1.tex into 335 chunks
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,0)
+15:16:34 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:16:34 [INFO] spec_ingestor.parser: Extracted 13 tables
+15:16:34 [INFO] spec_ingestor.parser: Total chunks across all files: 2048
+15:16:34 [INFO] spec_ingestor.main: Produced 2048 chunks
+  Indexing into ChromaDB...
+15:16:34 [INFO] spec_ingestor.main: === Step 4: Indexing ===
+15:16:34 [INFO] spec_ingestor.indexer: Using ChromaDB default local embeddings (all-MiniLM-L6-v2)
+15:16:34 [INFO] spec_ingestor.indexer: ChromaDB collection 'hts_specs' ready (2048 existing documents)
+15:16:34 [INFO] spec_ingestor.indexer: Generating embeddings for 2048 chunks ...
+15:17:28 [INFO] spec_ingestor.indexer: Index now contains 2048 documents
+15:17:28 [INFO] spec_ingestor.main: Indexed 2048 chunks
+  Phase A: OK  (59.5s)
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'pysam_runtime_reachable']
+  Discovered 12 query methods on primary biopython for Rank 5
+  Mining SAM / ordering_invariance...
+15:17:31 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:17:31 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+15:18:29 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 58.5s
+15:18:29 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+15:19:03 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+15:19:03 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 1
+    OK mined 1 MR(s) for SAM/ordering_invariance
+  Mining SAM / semantics_preserving_permutation...
+15:19:03 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:19:03 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+15:19:50 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:19:50 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/semantics_preserving_permutation
+  Mining SAM / normalization_invariance...
+15:19:50 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:19:50 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+15:20:24 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+15:20:24 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 1
+    OK mined 1 MR(s) for SAM/normalization_invariance
+  Mining SAM / rejection_invariance...
+15:20:24 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:20:24 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+15:22:10 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+15:22:10 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for SAM/rejection_invariance
+  Mining SAM / coordinate_indexing_invariance...
+15:22:10 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:22:10 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+15:23:35 [INFO] mr_engine.dsl.compiler: Compiled 2 MRs successfully
+15:23:35 [INFO] mr_engine.agent.engine: Successfully compiled 2 MRs on attempt 1
+    OK mined 2 MR(s) for SAM/coordinate_indexing_invariance
+  Mining SAM / round_trip_invariance...
+15:23:35 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:23:35 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+15:24:49 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:24:49 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/round_trip_invariance
+  Mining SAM / api_query_invariance...
+15:24:49 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:24:49 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+15:25:48 [INFO] mr_engine.dsl.compiler: Compiled 3 MRs successfully
+15:25:48 [INFO] mr_engine.agent.engine: Successfully compiled 3 MRs on attempt 1
+    OK mined 3 MR(s) for SAM/api_query_invariance
+15:25:48 [INFO] mr_engine.registry: Dedup: skipped 7 duplicate MR(s)
+15:25:48 [INFO] mr_engine.registry: Triage result: 1 enforced, 13 quarantine
+15:25:48 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\data\mr_registry.json (14 MRs)
+  Phase B: OK  (8m 19s)
+15:25:48 [INFO] test_engine.generators.seeds: Seed corpus loaded: 47 VCF seeds, 43 SAM seeds
+15:25:48 [INFO] test_engine.generators.seeds: Seed corpus loaded: 47 VCF seeds, 43 SAM seeds
+15:25:48 [INFO] test_engine.orchestrator: Loaded 1 enforced MRs from registry
+15:25:48 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'reference']
+15:25:48 [INFO] test_engine.orchestrator: Execution mode: static
+15:25:48 [INFO] test_engine.orchestrator: Testing MR 319f95e31472 (CIGAR-SEQ length mismatch violation) -- scope=SAM.record, transforms=['violate_cigar_seq_length']
+15:25:48 [INFO] test_engine.orchestrator:   Seed: complex_cigar.sam
+15:25:50 [INFO] test_engine.orchestrator:   Seed: htsjdk_coordinate_sorted.sam
+15:25:53 [INFO] test_engine.orchestrator:   Seed: minimal_tags.sam
+15:25:55 [INFO] test_engine.orchestrator:   Seed: real_world_htsjdk_coordinate_sorted.sam
+15:25:56 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_auxf_values.sam
+15:25:58 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_bounds.sam
+15:26:00 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_clip.sam
+15:26:02 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_noseq.sam
+15:26:04 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad1.sam
+15:26:06 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad2.sam
+15:26:08 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad3.sam
+15:26:10 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_unknown.sam
+15:26:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_c1_unknown.sam (seed=716344190) — majority crash rejected, this parser voted accept
+15:26:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_c1_unknown.sam (seed=716344190) — majority crash rejected, this parser voted accept
+15:26:12 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c2_pad.sam
+15:26:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_c2_pad.sam (seed=509491497) — majority crash rejected, this parser voted accept
+15:26:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_c2_pad.sam (seed=509491497) — majority crash rejected, this parser voted accept
+15:26:14 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_1.sam
+15:26:16 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_2.sam
+15:26:18 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_5.sam
+15:26:20 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_5b.sam
+15:26:21 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_supp.sam
+15:26:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_ce_supp.sam (seed=1445721910) — majority crash rejected, this parser voted accept
+15:26:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_ce_supp.sam (seed=1445721910) — majority crash rejected, this parser voted accept
+15:26:23 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_tag_depadded.sam
+15:26:25 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_tag_padded.sam
+15:26:27 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap.sam
+15:26:29 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap1.sam
+15:26:31 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap2.sam
+15:26:33 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_embed_md.sam
+15:26:35 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_fieldarith.sam
+15:26:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_fieldarith.sam (seed=1320414817) — majority crash rejected, this parser voted accept
+15:26:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_fieldarith.sam (seed=1320414817) — majority crash rejected, this parser voted accept
+15:26:37 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index2.sam
+15:26:39 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index3.sam
+15:26:41 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index3_exp.sam
+15:26:43 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index_dos.sam
+15:26:45 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_md_1.sam
+15:26:47 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01.sam
+15:26:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01.sam (seed=1246971268) — majority crash rejected, this parser voted accept
+15:26:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01.sam (seed=1246971268) — majority crash rejected, this parser voted accept
+15:26:49 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp.sam
+15:26:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp.sam (seed=878969707) — majority crash rejected, this parser voted accept
+15:26:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp.sam (seed=878969707) — majority crash rejected, this parser voted accept
+15:26:51 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp_a.sam
+15:26:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp_a.sam (seed=1236234857) — majority crash rejected, this parser voted accept
+15:26:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp_a.sam (seed=1236234857) — majority crash rejected, this parser voted accept
+15:26:53 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp_e.sam
+15:26:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp_e.sam (seed=1056004871) — majority crash rejected, this parser voted accept
+15:26:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp_e.sam (seed=1056004871) — majority crash rejected, this parser voted accept
+15:26:55 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02.sam
+15:26:56 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp.sam
+15:26:58 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp_a.sam
+15:27:00 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp_e.sam
+15:27:02 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_r.sam
+15:27:04 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn03.sam
+15:27:06 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn03_exp.sam
+15:27:08 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_xx_tlen.sam
+15:27:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_xx_tlen.sam (seed=292440375) — majority crash rejected, this parser voted accept
+15:27:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_xx_tlen.sam (seed=292440375) — majority crash rejected, this parser voted accept
+15:27:10 [INFO] test_engine.orchestrator:   Seed: spec_example.sam
+15:27:12 [INFO] test_engine.orchestrator: Test suite complete: 215 tests, 18 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0837
+15:27:12 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\data\det_report.json
+  Phase C: OK  (1m 24s)
+15:27:12 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: biopython (drives evolution)
+  Format context: SAM (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'pysam_runtime_reachable']
+  Discovered 12 query methods on primary biopython for Rank 5
+  Mining SAM / ordering_invariance...
+15:27:12 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:27:12 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+15:28:25 [INFO] mr_engine.dsl.compiler: Compiled 3 MRs successfully
+15:28:25 [INFO] mr_engine.agent.engine: Successfully compiled 3 MRs on attempt 1
+    OK mined 3 MR(s) for SAM/ordering_invariance
+  Mining SAM / semantics_preserving_permutation...
+15:28:25 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:28:25 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+15:29:46 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:29:46 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/semantics_preserving_permutation
+  Mining SAM / normalization_invariance...
+15:29:46 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:29:46 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+15:30:28 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+15:30:28 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+15:31:22 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+15:31:22 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 2
+    OK mined 1 MR(s) for SAM/normalization_invariance
+  Mining SAM / rejection_invariance...
+15:31:22 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:31:22 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+15:32:43 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+15:32:43 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for SAM/rejection_invariance
+  Mining SAM / coordinate_indexing_invariance...
+15:32:43 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:32:43 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+15:33:54 [INFO] mr_engine.dsl.compiler: Compiled 3 MRs successfully
+15:33:54 [INFO] mr_engine.agent.engine: Successfully compiled 3 MRs on attempt 1
+    OK mined 3 MR(s) for SAM/coordinate_indexing_invariance
+  Mining SAM / round_trip_invariance...
+15:33:54 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:33:54 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+15:35:08 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:35:08 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/round_trip_invariance
+  Mining SAM / api_query_invariance...
+15:35:08 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:35:08 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+15:36:00 [INFO] mr_engine.dsl.compiler: Compiled 3 MRs successfully
+15:36:00 [INFO] mr_engine.agent.engine: Successfully compiled 3 MRs on attempt 1
+    OK mined 3 MR(s) for SAM/api_query_invariance
+15:36:00 [INFO] mr_engine.registry: Dedup: skipped 9 duplicate MR(s)
+15:36:00 [INFO] mr_engine.registry: Triage result: 0 enforced, 15 quarantine
+15:36:00 [INFO] mr_engine.registry: Merged 3 new MRs into C:\Users\miaot\Github\BioTest\data\mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+15:36:00 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=coverage_artifacts/.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align'], source_pkgs=['Bio.Align'], evicted=16 modules)
+15:36:01 [INFO] test_engine.generators.seeds: Seed corpus loaded: 47 VCF seeds, 43 SAM seeds
+15:36:01 [INFO] test_engine.generators.seeds: Seed corpus loaded: 47 VCF seeds, 43 SAM seeds
+15:36:01 [INFO] test_engine.orchestrator: Loaded 1 enforced MRs from registry
+15:36:01 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'reference']
+15:36:01 [INFO] test_engine.orchestrator: Execution mode: static
+15:36:01 [INFO] test_engine.orchestrator: Testing MR 319f95e31472 (CIGAR-SEQ length mismatch violation) -- scope=SAM.record, transforms=['violate_cigar_seq_length']
+15:36:01 [INFO] test_engine.orchestrator:   Seed: complex_cigar.sam
+15:36:02 [INFO] test_engine.orchestrator:   Seed: htsjdk_coordinate_sorted.sam
+15:36:04 [INFO] test_engine.orchestrator:   Seed: minimal_tags.sam
+15:36:06 [INFO] test_engine.orchestrator:   Seed: real_world_htsjdk_coordinate_sorted.sam
+15:36:08 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_auxf_values.sam
+15:36:10 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_bounds.sam
+15:36:12 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_clip.sam
+15:36:14 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_noseq.sam
+15:36:16 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad1.sam
+15:36:18 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad2.sam
+15:36:20 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_pad3.sam
+15:36:22 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c1_unknown.sam
+15:36:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_c1_unknown.sam (seed=716344190) — majority crash rejected, this parser voted accept
+15:36:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_c1_unknown.sam (seed=716344190) — majority crash rejected, this parser voted accept
+15:36:23 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_c2_pad.sam
+15:36:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_c2_pad.sam (seed=509491497) — majority crash rejected, this parser voted accept
+15:36:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_c2_pad.sam (seed=509491497) — majority crash rejected, this parser voted accept
+15:36:25 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_1.sam
+15:36:27 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_2.sam
+15:36:29 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_5.sam
+15:36:31 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_5b.sam
+15:36:33 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_supp.sam
+15:36:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_ce_supp.sam (seed=1445721910) — majority crash rejected, this parser voted accept
+15:36:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_ce_supp.sam (seed=1445721910) — majority crash rejected, this parser voted accept
+15:36:35 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_tag_depadded.sam
+15:36:37 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_tag_padded.sam
+15:36:39 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap.sam
+15:36:41 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap1.sam
+15:36:43 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_ce_unmap2.sam
+15:36:45 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_embed_md.sam
+15:36:47 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_fieldarith.sam
+15:36:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_fieldarith.sam (seed=1320414817) — majority crash rejected, this parser voted accept
+15:36:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_fieldarith.sam (seed=1320414817) — majority crash rejected, this parser voted accept
+15:36:49 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index2.sam
+15:36:50 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index3.sam
+15:36:52 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index3_exp.sam
+15:36:54 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_index_dos.sam
+15:36:56 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_md_1.sam
+15:36:58 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01.sam
+15:37:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01.sam (seed=1246971268) — majority crash rejected, this parser voted accept
+15:37:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01.sam (seed=1246971268) — majority crash rejected, this parser voted accept
+15:37:00 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp.sam
+15:37:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp.sam (seed=878969707) — majority crash rejected, this parser voted accept
+15:37:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp.sam (seed=878969707) — majority crash rejected, this parser voted accept
+15:37:02 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp_a.sam
+15:37:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp_a.sam (seed=1236234857) — majority crash rejected, this parser voted accept
+15:37:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp_a.sam (seed=1236234857) — majority crash rejected, this parser voted accept
+15:37:04 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn01_exp_e.sam
+15:37:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_realn01_exp_e.sam (seed=1056004871) — majority crash rejected, this parser voted accept
+15:37:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_realn01_exp_e.sam (seed=1056004871) — majority crash rejected, this parser voted accept
+15:37:06 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02.sam
+15:37:08 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp.sam
+15:37:09 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp_a.sam
+15:37:11 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_exp_e.sam
+15:37:13 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn02_r.sam
+15:37:15 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn03.sam
+15:37:17 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_realn03_exp.sam
+15:37:19 [INFO] test_engine.orchestrator:   Seed: real_world_htslib_xx_tlen.sam
+15:37:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: seqan3 on real_world_htslib_xx_tlen.sam (seed=292440375) — majority crash rejected, this parser voted accept
+15:37:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_xx_tlen.sam (seed=292440375) — majority crash rejected, this parser voted accept
+15:37:21 [INFO] test_engine.orchestrator:   Seed: spec_example.sam
+15:37:23 [INFO] test_engine.orchestrator: Test suite complete: 215 tests, 18 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0837
+15:37:23 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\data\det_report.json
+15:37:23 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (4 files traced with >0 lines)
+    C: OK (215 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> biopython=48.7% (291/598 lines)
+15:37:23 [INFO] test_engine.feedback.scc_tracker: SCC report exported to C:\Users\miaot\Github\BioTest\data\scc_report.json (0.7%)
+    SCC: 0.7% (1/137 rules)
+15:37:23 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.7%, enforced=1, demoted=0
+15:37:23 [ERROR] __main__: Phase D error: name 'config' is not defined
+Traceback (most recent call last):
+  File "C:\Users\miaot\Github\BioTest\biotest.py", line 1132, in run_phase_d
+    config.get("phase_a", {}).get("rule_capability_tags")
+    ^^^^^^
+NameError: name 'config' is not defined
+
+  Phase D: FAIL  (10m 11s)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                               Phase Results                                
+┌──────────────┬──────────┬────────────┬───────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                           │
+├──────────────┼──────────┼────────────┼───────────────────────────────────┤
+│ A: Ingest    │   PASS   │      59.5s │ 2048 chunks (VCF: 1713, SAM: 335) │
+│ B: Mine MRs  │   PASS   │     8m 19s │ 1 enforced, 13 quarantine         │
+│ C: Execute   │   PASS   │     1m 24s │ 215 tests, 0 bugs found           │
+│ D: Feedback  │   FAIL   │    10m 11s │ name 'config' is not defined      │
+└──────────────┴──────────┴────────────┴───────────────────────────────────┘
+
+┌─────────────────────────────── Test Metrics ────────────────────────────────┐
+│                                                                             │
+│  Format Tested                      VCF v4.5                                │
+│  Format Tested                      SAM v1.6                                │
+│  Themes Tested                             7                                │
+│    ordering_invariance                                                      │
+│    semantics_preserving_perm…                                               │
+│    normalization_invariance                                                 │
+│    rejection_invariance                                                     │
+│    coordinate_indexing_invar…                                               │
+│    round_trip_invariance                                                    │
+│    api_query_invariance                                                     │
+│                                                                             │
+│  Seeds Used                               90                                │
+│  Variants Generated                      215                                │
+│  Runners                             htsjdk,                                │
+│                                   biopython,                                │
+│                                      seqan3,                                │
+│                                       pysam,                                │
+│                                    reference                                │
+│                                                                             │
+│  Total Tests                             215                                │
+│  Metamorphic Failures                     18                                │
+│  Differential Failures                     0                                │
+│  Crashes                                   0                                │
+│                                                                             │
+│  DET Rate                               8.4%                                │
+│  Bugs / DETs Found                         0                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Total Pipeline Duration:  20m 54s
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PIPELINE FAILED — Phase(s) D encountered errors.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

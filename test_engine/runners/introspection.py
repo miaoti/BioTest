@@ -150,6 +150,106 @@ def get_scalar_query_methods(obj: Any, limit: int = 50) -> list[dict[str, Any]]:
     return results
 
 
+_MUTATOR_PREFIXES: tuple[str, ...] = (
+    "set", "add", "remove", "clear", "put", "reset", "insert",
+    "append", "extend", "pop", "update", "replace", "delete",
+)
+
+
+def get_mutator_methods(obj: Any, limit: int = 50) -> list[dict[str, Any]]:
+    """Introspect ``obj`` and return up to ``limit`` descriptors for public
+    MUTATOR methods — methods whose name starts with a known mutator verb
+    (``set``, ``add``, ``remove``, ``clear``, ``put``, …) AND whose return
+    type is either ``None`` / ``void`` or the receiver type (fluent).
+
+    Output shape matches ``get_scalar_query_methods``:
+        [{"name": str, "returns": str, "args": list[str]}, ...]
+
+    For a Pydantic v2 BaseModel *class*, mutators don't live on the class
+    directly — model_fields define setter-like access — so the catalog is
+    derived from ``model_fields`` entries that are not ``frozen``. This
+    mirrors the scalar-query fast path's handling of Pydantic.
+
+    Purpose (Tier 2b): surface the mutator surface to the LLM so MR-
+    synthesis prompts can anchor transforms on concrete post-parse API
+    calls. The framework does NOT dispatch these mutators itself —
+    soundness is preserved because any MR the LLM proposes still has to
+    go through the existing ``sut_write_roundtrip`` oracle.
+    """
+    # Pydantic BaseModel fast-path — treat non-frozen fields as mutable.
+    try:
+        from pydantic import BaseModel as _BM
+        if isinstance(obj, type) and issubclass(obj, _BM):
+            results: list[dict[str, Any]] = []
+            for name, field in obj.model_fields.items():
+                if name.startswith("_"):
+                    continue
+                frozen = getattr(field, "frozen", False)
+                if frozen:
+                    continue
+                ann = getattr(field, "annotation", None)
+                results.append({
+                    "name": name,
+                    "returns": "None",
+                    "args": [_describe_return(ann) if ann is not None else "Any"],
+                })
+                if len(results) >= limit:
+                    break
+            return results
+    except ImportError:
+        pass
+
+    results: list[dict[str, Any]] = []
+    for name in sorted(dir(obj)):
+        if name.startswith("_") or name in _PYDANTIC_NOISE:
+            continue
+        if not name.lower().startswith(_MUTATOR_PREFIXES):
+            continue
+        try:
+            attr = getattr(obj, name)
+        except Exception:
+            continue
+        if not callable(attr):
+            continue
+        try:
+            sig = inspect.signature(attr)
+        except (TypeError, ValueError):
+            continue
+        # Mutator return type: None / void / the receiver type
+        # (fluent setter). We accept missing annotations.
+        ann = sig.return_annotation
+        ret_name = getattr(ann, "__name__", None) or str(ann)
+        is_none_return = (
+            ann is inspect.Signature.empty
+            or ann is None
+            or ret_name in ("NoneType", "None", "Void", "void")
+        )
+        is_self_return = isinstance(obj, type) and ann is obj
+        if not (is_none_return or is_self_return):
+            # Accept unannotated callables defensively — Python-side
+            # runners rarely annotate their mutators.
+            if ann is not inspect.Signature.empty:
+                continue
+        params = [
+            p for p in sig.parameters.values()
+            if p.name not in ("self", "cls")
+        ]
+        arg_types = [
+            _describe_return(p.annotation)
+            if p.annotation is not inspect.Parameter.empty
+            else "Any"
+            for p in params
+        ]
+        results.append({
+            "name": name,
+            "returns": _describe_return(ann),
+            "args": arg_types,
+        })
+        if len(results) >= limit:
+            break
+    return results
+
+
 def invoke_query_method(
     obj: Any, method_name: str, args: list[Any] | None = None,
 ) -> Any:

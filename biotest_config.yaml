@@ -35,6 +35,30 @@ phase_a:
   embedding_model: text-embedding-3-small
   chroma_collection: hts_specs
 
+  # Rule-reachability filter (Phase 4 of SAM coverage plan).
+  # Maps a capability-requirement tag to the list of spec section-title
+  # substrings it applies to. A blindspot rule whose `section_id`
+  # contains any of the listed substrings is flagged as requiring that
+  # capability. If the Phase D primary target's runner does NOT declare
+  # the matching `supports_<cap> = True` class attribute, the rule gets
+  # a +20 priority penalty — beats the +10 format penalty — so the LLM
+  # never burns a Top-K slot on rules it is structurally unable to
+  # exercise (e.g. BAI/CSI index rules against a text-SAM parser).
+  #
+  # Operator-editable: add new capability tags here, set the matching
+  # `supports_<cap> = True` on any runner that DOES implement that
+  # capability, and the filter self-configures. Empty mapping = filter
+  # disabled (every rule stays equally reachable).
+  rule_capability_tags:
+    index_io:
+      - "binning index"
+      - "Basic binning index"
+      - "C source code for computing bin number"
+      - "BAI"
+      - "CSI"
+    cram_io:
+      - "CRAM"
+
 # ---------------------------------------------------------------------------
 # Phase B: Agentic RAG-Driven MR Mining
 # ---------------------------------------------------------------------------
@@ -171,10 +195,16 @@ phase_c:
 # ---------------------------------------------------------------------------
 feedback_control:
   enabled: true
-  max_iterations: 5           # Maximum B->C loop iterations
-  plateau_patience: 2         # Stop if SCC unchanged for N consecutive rounds
+  max_iterations: 8           # Maximum B->C loop iterations (raised from 5
+                              # so Phase D has room to compound gains from
+                              # Rank 6 MR synthesis + richer blindspot).
+  plateau_patience: 3         # Stop if SCC unchanged for N consecutive rounds
+                              # (raised from 2: SCC signal is sparse at the
+                              # current plateau so tighter patience false-halts).
   target_scc_percent: 95.0    # Stop when SCC reaches this target
-  timeout_minutes: 120        # Absolute time limit for Phase D
+  timeout_minutes: 240        # Absolute time limit for Phase D (raised from
+                              # 120 — Run 6 timed out mid-iteration; we want
+                              # the full 8 iterations to land before cap).
   catastrophic_threshold: 0.5 # Fraction of enforced MRs demoted → halt
   catastrophic_min_sample: 5  # Halt only arms when enforced_count >= N
                               # (prevents spurious halts when Phase B mined
@@ -193,7 +223,7 @@ feedback_control:
   #
   # Raise this when running a stronger LLM (GPT-4o / Claude): 10–15 is
   # reasonable. Keep at 5 for Llama-70B / qwen3-coder:30b and smaller.
-  max_rules_per_iteration: 5
+  max_rules_per_iteration: 8
   # Source roots for code slice extraction (per SUT).
   # The blindspot builder searches these dirs to find source files
   # matching uncovered line ranges, then extracts actual code for the LLM.
@@ -216,8 +246,17 @@ feedback_control:
   # -------------------------------------------------------------------------
   seed_synthesis:
     enabled: true                # flip to false to disable the lever
-    max_seeds_per_iteration: 5   # Top-K requested from the LLM per iteration
+    max_seeds_per_iteration: 8   # Top-K requested from the LLM per iteration
     max_file_bytes: 524288       # 500 KB, same cap as fetch_real_world.py
+
+    # Phase 5 of SAM coverage plan — SeedMind-style generator synthesis.
+    # One LLM call asks for a Python generator; the sandbox invokes it
+    # max_seeds_per_iteration times with distinct seeds. Off-by-default
+    # in new deployments (set true once raw-file synthesis is baselined
+    # and the LLM-authored code sandbox is trusted). Grounded in
+    # SeedMind (arXiv:2411.18143) — reports +29 % vs raw-file synthesis.
+    generator_mode: true
+    generator_timeout_s: 5.0     # per-invocation sandbox time cap
 
   # -------------------------------------------------------------------------
   # Rank 6 lever: LLM-driven MR SYNTHESIS (parallel to Rank 1 seeds).
@@ -232,8 +271,12 @@ feedback_control:
   # ChatAFL (NDSS'24).
   # -------------------------------------------------------------------------
   mr_synthesis:
-    enabled: false               # flip to true when Rank 5 baseline is set
-    max_mrs_per_iteration: 5     # Top-K MRs requested from the LLM per iter
+    enabled: true                # Rank 5 baseline landed in Run 6 (+1.7 pp);
+                                 # Rank 6 enabled for subsequent runs to pair
+                                 # LLM-synthesized MRs with the per-class
+                                 # blindspot + mutator catalog (see Flow.md).
+    max_mrs_per_iteration: 8     # Top-K MRs requested from the LLM per iter
+                                 # (raised from 5 to compound with Rank 5).
 
 # ---------------------------------------------------------------------------
 # Coverage Collection (Phase D)

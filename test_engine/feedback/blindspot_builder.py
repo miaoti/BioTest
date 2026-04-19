@@ -22,7 +22,11 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .scc_tracker import SCCReport
-from .coverage_collector import CoverageResult
+from .coverage_collector import (
+    CoverageResult,
+    parse_filter_rules,
+    filter_file_matches,
+)
 from .rule_attempts import RuleAttemptTracker
 
 logger = logging.getLogger(__name__)
@@ -173,6 +177,52 @@ def _format_penalty(rule: dict[str, Any], format_context: str) -> int:
     return 0 if rule_fmt == format_context.upper() else 10
 
 
+def _reachability_penalty(
+    rule: dict[str, Any],
+    rule_capability_tags: Optional[dict[str, list[str]]],
+    supported_capabilities: Optional[set[str]],
+) -> int:
+    """Return a reachability penalty for rules whose required capability
+    is not supported by the primary target's runner.
+
+    Phase 4 of the SAM coverage plan: many spec rules describe library
+    behavior (e.g. BAI/CSI random access, CRAM reconstruction) that
+    cannot be exercised via file-level MRs against a text-mode parser.
+    Feeding them to the LLM wastes tokens on rules it can never exercise.
+
+    The penalty is +20 — deliberately higher than `_format_penalty`'s
+    +10 so an on-format-but-unreachable rule still sinks below an
+    on-format-reachable rule, but below a two-step demotion would
+    (unreachable rules are still eligible if NO reachable rule remains).
+
+    Args:
+        rule: A blindspot-rule dict with `section_id` field.
+        rule_capability_tags: {capability: [section_substring, ...]}
+            Loaded from `biotest_config.yaml::phase_a.rule_capability_tags`.
+        supported_capabilities: Set of capability tags the primary
+            target's runner declares it supports (e.g. {"index_io"} if
+            that runner has supports_index_io=True). None or empty → no
+            capabilities supported → worst case for all tagged rules.
+
+    Returns:
+        20 if the rule requires an unsupported capability, 0 otherwise.
+    """
+    if not rule_capability_tags:
+        return 0
+    section_id = (rule.get("section_id") or "").strip()
+    if not section_id:
+        return 0
+    supported = supported_capabilities or set()
+    needle = section_id.lower()
+    for cap, substrings in rule_capability_tags.items():
+        if cap in supported:
+            continue
+        for sub in substrings:
+            if sub.lower() in needle:
+                return 20
+    return 0
+
+
 def _build_slice_token_set(code_slices: list["CodeSlice"]) -> set[str]:
     """Tokenise every line of every slice into one unified set.
 
@@ -192,23 +242,28 @@ def _prioritise_rules(
     code_slices: list["CodeSlice"],
     format_context: str,
     attempt_tracker: Optional[RuleAttemptTracker] = None,
+    rule_capability_tags: Optional[dict[str, list[str]]] = None,
+    supported_capabilities: Optional[set[str]] = None,
 ) -> list[tuple[dict[str, Any], dict[str, float]]]:
-    """Return rules sorted by the five-dimension priority key.
+    """Return rules sorted by the six-dimension priority key.
 
     Sort key (ascending, first difference wins):
         1. fmt_pen           — 0 if on-format, 10 otherwise (hard filter).
-        2. failure_count     — repeat-failures sink below first-timers.
-        3. -complexity       — complex rules first among equals.
-        4. -proximity        — then rules closest to uncovered code.
-        5. severity_rank     — CRITICAL before ADVISORY before MAY.
-        6. chunk_id          — deterministic tiebreaker.
+        2. reach_pen         — 0 if the primary target can reach this rule's
+                               spec section, 20 otherwise (Phase 4 of SAM
+                               coverage plan).
+        3. failure_count     — repeat-failures sink below first-timers.
+        4. -complexity       — complex rules first among equals.
+        5. -proximity        — then rules closest to uncovered code.
+        6. severity_rank     — CRITICAL before ADVISORY before MAY.
+        7. chunk_id          — deterministic tiebreaker.
 
     Each element is (rule, score_diagnostics) so callers can log why a
     particular rule landed in the Top-K.
     """
     slice_tokens = _build_slice_token_set(code_slices)
     scored: list[tuple[
-        tuple[int, int, int, float, int, str],
+        tuple[int, int, int, int, float, int, str],
         dict[str, Any], dict[str, float],
     ]] = []
     for rule in rules:
@@ -216,6 +271,9 @@ def _prioritise_rules(
         complexity = _complexity_score(rule)
         proximity = _proximity_score(rule, slice_tokens)
         fmt_pen = _format_penalty(rule, format_context)
+        reach_pen = _reachability_penalty(
+            rule, rule_capability_tags, supported_capabilities,
+        )
         sev_rank = _SEVERITY_RANK.get(
             (rule.get("severity") or "").upper().strip(), 3
         )
@@ -226,6 +284,7 @@ def _prioritise_rules(
 
         key = (
             fmt_pen,
+            reach_pen,
             failure_count,
             -complexity,
             -proximity,
@@ -236,6 +295,7 @@ def _prioritise_rules(
             "complexity": complexity,
             "proximity": round(proximity, 3),
             "format_penalty": fmt_pen,
+            "reachability_penalty": reach_pen,
             "severity_rank": sev_rank,
             "failure_count": failure_count,
         }
@@ -243,6 +303,236 @@ def _prioritise_rules(
 
     scored.sort(key=lambda entry: entry[0])
     return [(rule, diag) for _, rule, diag in scored]
+
+
+# ---------------------------------------------------------------------------
+# Per-class coverage gap (Tier 2a — prompt enrichment, SUT-agnostic)
+# ---------------------------------------------------------------------------
+#
+# The goal: tell the LLM which CLASSES / MODULES are under-covered,
+# not just which LINE RANGES. Works on any SUT whose coverage collector
+# emits a standard report shape:
+#   - JaCoCo XML (Java: htsjdk and any future Java SUT)
+#   - coverage.py JSON export (Python: biopython, pysam local mode)
+#   - gcovr JSON (C/C++: seqan3, any future C/C++ SUT)
+#
+# Each format reports per-file (or per-class) line counters; we just
+# re-apply the same ``target_filters`` rules the feedback loop already
+# uses so the "top-gap classes" block is aligned with the weighted
+# scope the user cares about.
+
+@dataclass
+class ClassGap:
+    """A per-class / per-module coverage gap item for the LLM prompt.
+
+    ``name``        is the fully-qualified class name (Java) or module
+                    path (Python) — whatever identifier the LLM can
+                    plausibly recognise when composing MRs against the
+                    SUT.  Rendered verbatim into the prompt.
+    ``covered``     covered lines in the most recent coverage report.
+    ``total``       total instrumented lines in the same report.
+    ``missed``      total - covered, pre-computed.
+    ``pct``         100*covered/total, rounded.
+
+    ``ClassGap`` instances are RANKED by ``missed`` descending — the
+    top-N (default 10) go into the prompt.
+    """
+    name: str
+    covered: int
+    total: int
+    missed: int = 0
+    pct: float = 0.0
+
+    def __post_init__(self) -> None:
+        self.missed = max(self.total - self.covered, 0)
+        self.pct = round(100.0 * self.covered / self.total, 1) if self.total else 0.0
+
+    def render_line(self) -> str:
+        return f"  - {self.name}: {self.covered}/{self.total} ({self.pct:.1f}%) — missed {self.missed} lines"
+
+
+def compute_class_level_gaps(
+    coverage_report_path: Optional[Path],
+    filter_rules_text: Optional[list[str]] = None,
+    top_n: int = 10,
+) -> list[ClassGap]:
+    """Parse the coverage report at ``coverage_report_path`` and return the
+    Top-N classes/modules by uncovered-line count, filtered by the SAME
+    ``target_filters`` entries the feedback loop's coverage collector uses.
+
+    The report format is auto-detected from filename/shape:
+    - ``*.xml`` with ``<report>`` root + ``<package>`` children → JaCoCo
+    - ``*.json`` with ``{"files": {...}}`` top-level → coverage.py JSON
+    - ``*.json`` with ``{"files": [...]}`` (list) → gcovr JSON
+    Unknown formats return ``[]``; callers treat empty as "no class-gap
+    block to render" and fall back to the existing rule-based prompt.
+
+    Args:
+        coverage_report_path: Path to the raw report. ``None`` is accepted
+            and produces ``[]`` (primary SUT may not have a live report).
+        filter_rules_text: List of filter entries as written in
+            ``biotest_config.yaml: coverage.target_filters``, e.g.
+            ``["htsjdk/variant/vcf", "htsjdk/variant/variantcontext::-JEXL"]``.
+            ``None`` / empty → accept every class in the report.
+        top_n: cap on the number of ClassGap rows returned.
+
+    Returns:
+        A list of ``ClassGap``, sorted by ``missed`` desc, truncated to
+        ``top_n``. Empty on any parse failure (logged at DEBUG).
+    """
+    if coverage_report_path is None:
+        return []
+    path = Path(coverage_report_path)
+    if not path.exists():
+        logger.debug("class-gap: report not found at %s", path)
+        return []
+
+    rules = parse_filter_rules(filter_rules_text or [])
+
+    try:
+        if path.suffix.lower() == ".xml":
+            return _class_gaps_from_jacoco(path, rules, top_n)
+        if path.suffix.lower() == ".json":
+            return _class_gaps_from_json(path, rules, top_n)
+    except Exception as e:  # pragma: no cover — report-specific parse bugs
+        logger.debug("class-gap: parse failed on %s: %s", path, e)
+
+    return []
+
+
+def _class_gaps_from_jacoco(
+    xml_path: Path,
+    rules: list[tuple[str, tuple[str, ...], tuple[str, ...]]],
+    top_n: int,
+) -> list[ClassGap]:
+    """Walk a JaCoCo XML report and return per-sourcefile ClassGap entries.
+
+    When ``rules`` is empty, every ``<package>/<sourcefile>`` contributes.
+    Otherwise only sourcefiles whose ``(package, filename)`` pair passes
+    the include/exclude rules are counted — matches the feedback loop's
+    weighted-filter denominator exactly.
+    """
+    import xml.etree.ElementTree as ET
+
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    gaps: list[ClassGap] = []
+
+    # Build a quick lookup: package_name → (includes, excludes) or None.
+    pkg_lookup: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+    for pkg, incl, excl in rules:
+        pkg_lookup[pkg] = (incl, excl)
+
+    for pkg_el in root.findall(".//package"):
+        pkg_name = pkg_el.get("name", "")
+        if rules and pkg_name not in pkg_lookup:
+            continue
+        includes, excludes = pkg_lookup.get(pkg_name, ((), ()))
+        for sf in pkg_el.findall("sourcefile"):
+            sf_name = sf.get("name", "")
+            if not filter_file_matches(sf_name, includes, excludes):
+                continue
+            covered = missed = 0
+            for ctr in sf.findall("counter"):
+                if ctr.get("type") == "LINE":
+                    covered += int(ctr.get("covered", 0))
+                    missed += int(ctr.get("missed", 0))
+            total = covered + missed
+            if total == 0:
+                continue
+            # Java class name ≈ stem of sourcefile name; use the package
+            # + stem so the LLM can cite the fully-qualified type it sees
+            # at runtime reflection.
+            stem = sf_name[:-5] if sf_name.endswith(".java") else sf_name
+            qualified = f"{pkg_name.replace('/', '.')}.{stem}" if pkg_name else stem
+            gaps.append(ClassGap(name=qualified, covered=covered, total=total))
+
+    gaps.sort(key=lambda g: g.missed, reverse=True)
+    return gaps[:top_n]
+
+
+def _class_gaps_from_json(
+    json_path: Path,
+    rules: list[tuple[str, tuple[str, ...], tuple[str, ...]]],
+    top_n: int,
+) -> list[ClassGap]:
+    """Parse coverage.py ``json`` export or gcovr JSON into ClassGap rows.
+
+    coverage.py JSON shape (``coverage json``):
+    ``{"files": {"Bio/Align/sam.py": {"summary": {"covered_lines": N,
+       "num_statements": M}}, ...}}``
+
+    gcovr JSON shape:
+    ``{"files": [{"file": "X.cpp", "lines": [{"line_number": ..,
+       "count": ..}, ...]}, ...]}``
+
+    The filter rules are interpreted loosely for these formats: the
+    package prefix matches against the file path; include/exclude name
+    prefixes match the basename. This matches how the collectors
+    ``CoveragePyCollector`` and ``GcovrCollector`` apply the same
+    ``target_filters`` entries today.
+    """
+    import json
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    files = data.get("files")
+    if files is None:
+        return []
+
+    entries: list[tuple[str, int, int]] = []  # (name, covered, total)
+    if isinstance(files, dict):  # coverage.py json shape
+        for fpath, fdata in files.items():
+            summary = fdata.get("summary", {}) if isinstance(fdata, dict) else {}
+            covered = int(summary.get("covered_lines", 0))
+            total = int(summary.get("num_statements", 0))
+            entries.append((fpath, covered, total))
+    elif isinstance(files, list):  # gcovr json shape
+        for fentry in files:
+            fpath = fentry.get("file", "")
+            lines = fentry.get("lines", [])
+            total = len(lines)
+            covered = sum(1 for ln in lines if int(ln.get("count", 0)) > 0)
+            entries.append((fpath, covered, total))
+    else:
+        return []
+
+    gaps: list[ClassGap] = []
+    for fpath, covered, total in entries:
+        if total == 0:
+            continue
+        if rules and not _json_path_passes_rules(fpath, rules):
+            continue
+        # For Python / C++ we use the file path itself as the "class"
+        # name — modules map 1:1 to files in Python, and for C++
+        # headers the path IS the identifier the LLM sees in includes.
+        gaps.append(ClassGap(name=fpath, covered=covered, total=total))
+
+    gaps.sort(key=lambda g: g.missed, reverse=True)
+    return gaps[:top_n]
+
+
+def _json_path_passes_rules(
+    file_path: str,
+    rules: list[tuple[str, tuple[str, ...], tuple[str, ...]]],
+) -> bool:
+    """Apply the same include/exclude logic the coverage collectors use.
+
+    A JSON-report file path passes if ANY rule matches:
+      - `file_path` starts with rule's package prefix, AND
+      - basename passes the include/exclude sub-filter.
+    Rules with no package prefix (empty string) act as match-all.
+    """
+    import os
+    basename = os.path.basename(file_path)
+    # Normalize separators so a Windows path compares equally.
+    file_path_norm = file_path.replace("\\", "/")
+    for pkg, incl, excl in rules:
+        if pkg and not (file_path_norm.startswith(pkg) or pkg in file_path_norm):
+            continue
+        if not filter_file_matches(basename, incl, excl):
+            continue
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -454,6 +744,11 @@ class BlindspotTicket:
     remaining_uncovered: int = 0
     cooling_count: int = 0  # rules in cooldown, held out of Top-K this round
     rule_scores: list[dict[str, float]] = field(default_factory=list)
+    # Tier 2a — per-class coverage gaps from the primary SUT's latest
+    # coverage report. Rendered as a separate block so the LLM sees
+    # "VariantContextBuilder is 29% covered" instead of only "lines
+    # 50-170 in X.java are missed".
+    class_gaps: list[ClassGap] = field(default_factory=list)
 
     def to_prompt_fragment(self) -> str:
         """Render as a string appendable to the Phase B system prompt."""
@@ -504,6 +799,28 @@ class BlindspotTicket:
             if text:
                 # Tighten per-rule text budget (was 200 chars, now 160)
                 lines.append(f'     Spec text: "{text[:160]}"')
+            lines.append("")
+
+        # Section 1b: Top uncovered classes / modules (Tier 2a).
+        # The LLM uses this to compose MRs that touch specific classes
+        # where our file-format flow currently has the largest gap.
+        # Identifier shape is language-native (Java FQN, Python module
+        # path, C++ header path) — whatever the primary runner's
+        # coverage report emits. No SUT-specific strings here.
+        if self.class_gaps:
+            lines.append("TOP UNCOVERED CLASSES / MODULES in the primary target:")
+            lines.append(
+                "(Ranked by missed-line count. These classes have live API"
+            )
+            lines.append(
+                " surface that your MRs are not reaching — consider composing"
+            )
+            lines.append(
+                " transforms that invoke methods on instances of these types.)"
+            )
+            lines.append("")
+            for cg in self.class_gaps:
+                lines.append(cg.render_line())
             lines.append("")
 
         # Section 2: Uncovered code with ACTUAL SOURCE SLICES
@@ -558,6 +875,10 @@ def build_blindspot_ticket(
     format_context: str = "",
     max_rules_per_iteration: int = MAX_UNCOVERED_RULES,
     attempt_tracker: Optional[RuleAttemptTracker] = None,
+    rule_capability_tags: Optional[dict[str, list[str]]] = None,
+    supported_capabilities: Optional[set[str]] = None,
+    primary_coverage_report_path: Optional[Path] = None,
+    coverage_filter_rules_text: Optional[list[str]] = None,
 ) -> BlindspotTicket:
     """
     Build a blindspot ticket using PRIORITIZED QUEUEING.
@@ -613,6 +934,8 @@ def build_blindspot_ticket(
         code_slices=code_slices,
         format_context=format_context,
         attempt_tracker=attempt_tracker,
+        rule_capability_tags=rule_capability_tags,
+        supported_capabilities=supported_capabilities,
     )
 
     # --- 3. Slice to the Top-K window. SKIP rules that are still in
@@ -654,6 +977,16 @@ def build_blindspot_ticket(
         uncovered_rules.append(enriched)
         rule_scores.append(diag)
 
+    # Tier 2a — per-class coverage gaps for the primary SUT. Format-
+    # and language-agnostic: dispatches on the extension of the report
+    # path. Returns [] if the primary target has no live report yet, if
+    # the report format isn't handled, or on any parse error — the
+    # prompt block degrades gracefully to the existing rule-based view.
+    class_gaps = compute_class_level_gaps(
+        coverage_report_path=primary_coverage_report_path,
+        filter_rules_text=coverage_filter_rules_text,
+    )
+
     ticket = BlindspotTicket(
         uncovered_rules=uncovered_rules,
         uncovered_code_hints=code_hints,
@@ -667,6 +1000,7 @@ def build_blindspot_ticket(
         remaining_uncovered=remaining,
         cooling_count=cooling_count,
         rule_scores=rule_scores,
+        class_gaps=class_gaps,
     )
 
     # --- 5. Register the Top-K as "shown" in the tracker. record_outcome

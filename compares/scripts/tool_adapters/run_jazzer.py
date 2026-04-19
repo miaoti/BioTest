@@ -14,7 +14,8 @@ import time
 from pathlib import Path
 import argparse
 
-from _base import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _base import (  # noqa: E402
     AdapterResult,
     prepare_out_dir,
     run_subprocess_with_timeout,
@@ -27,17 +28,15 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 JAZZER_JAR = REPO_ROOT / "compares" / "harnesses" / "jazzer" / "build" / "libs" / "biotest-jazzer.jar"
 
 
-def _target_class(format_hint: str) -> tuple[str, str]:
-    """(target-class, instrumentation-includes) per format."""
+def _target_class(format_hint: str) -> tuple[str, list[str]]:
+    """(target-class, [glob]) per format. Jazzer rejects CSV in
+    --instrumentation_includes and expects the flag repeated per glob."""
     fmt = format_hint.upper()
     if fmt == "SAM":
-        return (
-            "SAMCodecFuzzer",
-            "htsjdk.samtools.*",
-        )
+        return ("SAMCodecFuzzer", ["htsjdk.samtools.**"])
     return (
         "VCFCodecFuzzer",
-        "htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.*",
+        ["htsjdk.variant.vcf.**", "htsjdk.variant.variantcontext.**"],
     )
 
 
@@ -54,19 +53,30 @@ def run(
 
     corpus_dir, crashes_dir, log_file = prepare_out_dir(out_dir)
     seed_copy(seed_corpus, corpus_dir)
-    target_class, instrument_includes = _target_class(format_hint)
+    target_class, instrument_globs = _target_class(format_hint)
 
     started = time.time()
     cmd = [
         "jazzer",
         f"--cp={JAZZER_JAR}",
         f"--target_class={target_class}",
-        f"--instrumentation_includes={instrument_includes}",
+    ]
+    # Jazzer's --instrumentation_includes accepts a single glob per flag;
+    # repeat the flag for each glob we need.
+    for glob in instrument_globs:
+        cmd.append(f"--instrumentation_includes={glob}")
+    cmd.extend([
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
         str(corpus_dir),
-    ]
-    exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)
+    ])
+    # Jazzer auto-parses every JAZZER_* env var as a CLI option. Scrub
+    # any that might be lingering (e.g. a build-time JAZZER_VERSION
+    # pin) so Jazzer doesn't misinterpret them as fuzzer flags.
+    child_env = {k: v for k, v in os.environ.items() if not k.startswith("JAZZER_")}
+    exit_code = run_subprocess_with_timeout(
+        cmd, log_file, time_budget_s, env=child_env,
+    )
     ended = time.time()
 
     return AdapterResult(
@@ -81,7 +91,11 @@ def run(
         generated_count=count_files(corpus_dir),
         crash_count=count_files(crashes_dir),
         exit_code=exit_code,
-        extra={"target_class": target_class, "format": format_hint.upper()},
+        extra={
+            "target_class": target_class,
+            "format": format_hint.upper(),
+            "instrumentation_includes": instrument_globs,
+        },
     )
 
 

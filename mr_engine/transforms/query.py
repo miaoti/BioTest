@@ -52,7 +52,10 @@ from . import register_transform
         "text transform (shuffle_meta_lines, etc.) as an earlier step."
     ),
     preconditions=(
-        "primary_sut_supports_query_methods",
+        # Matches transforms_menu.KNOWN_RUNTIME_PRECONDITIONS — the
+        # Phase B prompt filter hides this transform when the primary
+        # runner class does not declare supports_query_methods=True.
+        "primary_sut_has_query_methods",
     ),
 )
 def query_method_roundtrip(

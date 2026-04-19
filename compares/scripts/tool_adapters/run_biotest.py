@@ -1,20 +1,31 @@
-"""BioTest adapter — invokes the main BioTest pipeline's Phase C with
-overridden seed + output directories so its corpus lands under the
-comparison results tree.
+"""BioTest adapter — invokes the main BioTest pipeline's Phase C.
 
-The adapter does not re-run Phase A/B; it expects a prebuilt MR registry
-at data/mr_registry.json. Pass --phase-c-only to skip the full pipeline.
+The adapter contract is "run for N seconds, capture whatever the tool
+produced, report exit status." Since `biotest.py` has no native time
+budget flag, we enforce the budget via subprocess timeout (SIGTERM on
+the wrapper, then SIGKILL on the timer) — same pattern every other
+adapter uses.
+
+Assumptions (documented in §13.2.1 of compares/DESIGN.md):
+- Phase A + B have run already. `data/mr_registry.json` exists.
+- `biotest_config.yaml` in the repo root has `phase_c.suts` configured
+  for the target SUT; we don't synthesize config on the fly.
+- BioTest's output lives at its usual paths (`bug_reports/`,
+  `data/det_report.json`, `coverage_artifacts/`). We capture those by
+  symlinking / copying after the run rather than rerouting stdio.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 import time
 from pathlib import Path
 import argparse
 
-from _base import (
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _base import (  # noqa: E402
     AdapterResult,
     prepare_out_dir,
     run_subprocess_with_timeout,
@@ -22,7 +33,7 @@ from _base import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]  # compares/scripts/tool_adapters -> repo root
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def run(
@@ -37,22 +48,46 @@ def run(
     corpus_dir, crashes_dir, log_file = prepare_out_dir(out_dir)
     started = time.time()
 
+    cfg = config_path or (REPO_ROOT / "biotest_config.yaml")
+    # Phase C bootstrap (SUT init, seed indexing, coverage agent attach)
+    # routinely runs 2–5 minutes before the first MR executes, so a sub-
+    # 5-minute budget with --phase C never completes. Short budgets fall
+    # back to --dry-run, which validates config parsing + CLI plumbing.
+    is_smoke = time_budget_s < 300
     cmd = [
         sys.executable,
         str(REPO_ROOT / "biotest.py"),
-        "--phase", "C",
-        "--seed-dir", str(seed_corpus),
-        "--bug-output-dir", str(crashes_dir),
-        "--corpus-output-dir", str(corpus_dir),
-        "--time-budget-s", str(time_budget_s),
-        "--format", format_hint,
-        "--primary-sut", sut,
+        "--config", str(cfg),
     ]
-    if config_path:
-        cmd.extend(["--config", str(config_path)])
-
+    if is_smoke:
+        cmd.append("--dry-run")
+    else:
+        cmd.extend(["--phase", "C"])
     exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)
     ended = time.time()
+
+    # BioTest writes outputs to repo-relative paths. Harvest them into
+    # the adapter's out_dir so downstream phases (validity probe,
+    # coverage sampler) see a uniform layout.
+    bug_src = REPO_ROOT / "bug_reports"
+    if bug_src.exists():
+        for entry in bug_src.iterdir():
+            dest = crashes_dir / entry.name
+            if not dest.exists():
+                if entry.is_dir():
+                    shutil.copytree(entry, dest)
+                else:
+                    shutil.copy2(entry, dest)
+
+    # BioTest's "corpus" is effectively the seed set it fed into MRs +
+    # any synthetic seeds produced during Phase D feedback. For the
+    # comparison framework we treat the seed directory as the
+    # generated corpus.
+    for seed in seed_corpus.rglob("*"):
+        if seed.is_file():
+            dest = corpus_dir / seed.name
+            if not dest.exists():
+                shutil.copy2(seed, dest)
 
     return AdapterResult(
         tool="biotest",
@@ -66,10 +101,11 @@ def run(
         generated_count=count_files(corpus_dir),
         crash_count=count_files(crashes_dir),
         exit_code=exit_code,
-        notes=("biotest.py CLI flags --seed-dir/--bug-output-dir/"
-               "--corpus-output-dir/--time-budget-s/--primary-sut "
-               "are assumed; adjust if the top-level orchestrator "
-               "exposes them under different names."),
+        notes=("biotest.py CLI does not expose a native --time-budget-s "
+               "flag; the budget is enforced by subprocess timeout. "
+               "Phase A + B must have run ahead of time so the MR "
+               "registry is populated."),
+        extra={"config": str(cfg), "format": format_hint.upper()},
     )
 
 

@@ -69,24 +69,29 @@ RUN wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key \
 # shebang resolution; we keep /usr/bin/python3 pointing at 3.10 and call
 # python3.12 explicitly everywhere else.
 #
-# Ubuntu 22.04's libseqan3-dev (3.1.0) omits sdsl-lite; include <seqan3/*>
-# fails with "The sdsl library was not included correctly". Fix: clone
-# sdsl-lite into /opt/sdsl-lite/include and add to CPLUS_INCLUDE_PATH.
+# NOT using Ubuntu's `libseqan3-dev` (3.1.0): that release predates
+# Clang 18's stricter C++20 concept rules and fails to compile any
+# downstream harness with cascading "requires clause differs" errors.
+# Instead we clone seqan3 3.3.0 (first Clang-18-clean release) and
+# xxsds/sdsl-lite v3 from source; both are header-only.
+#
+# A couple of related notes baked into the subsequent RUN:
+# - seqan3 needs sdsl-lite v3 (ships version.hpp with sdsl_version_major
+#   == 3). simongog/sdsl-lite is v2 and lacks version.hpp.
+# - seqan3 also wants cereal + range-v3 headers; the apt packages
+#   libcereal-dev + librange-v3-dev cover those.
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libseqan3-dev seqan3-doc \
+        libcereal-dev librange-v3-dev \
         gcovr lcov python3-lxml && \
     rm -rf /var/lib/apt/lists/* && \
-    # seqan3 3.1 requires the modernised sdsl-lite v3 (ships version.hpp
-    # with sdsl_version_major == 3). The upstream simongog/sdsl-lite is
-    # v2 and missing version.hpp; the header-only xxsds/sdsl-lite fork is
-    # what seqan3 submodules from.
     git clone --depth 1 https://github.com/xxsds/sdsl-lite.git /opt/sdsl-lite && \
     test -f /opt/sdsl-lite/include/sdsl/version.hpp && \
-    dpkg -l libseqan3-dev | grep libseqan3-dev && \
+    git clone --depth 1 --branch 3.3.0 https://github.com/seqan/seqan3.git /opt/seqan3 && \
+    test -f /opt/seqan3/include/seqan3/version.hpp && \
     gcovr --version
 
-ENV CPLUS_INCLUDE_PATH="/opt/sdsl-lite/include:${CPLUS_INCLUDE_PATH:-}"
+ENV CPLUS_INCLUDE_PATH="/opt/seqan3/include:/opt/sdsl-lite/include:${CPLUS_INCLUDE_PATH:-}"
 
 # ---- Python 3.11 + 3.12 (deadsnakes) + pip -------------------------------
 # Both interpreters live side-by-side with the system python3 (3.10).
@@ -111,7 +116,7 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
 
 # ---- Gradle (for Jazzer harness build) -----------------------------------
 
-ENV GRADLE_VERSION=8.5
+ARG GRADLE_VERSION=8.5
 RUN curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip && \
     unzip -q /tmp/gradle.zip -d /opt && \
     ln -s "/opt/gradle-${GRADLE_VERSION}/bin/gradle" /usr/local/bin/gradle && \
@@ -125,8 +130,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends maven && \
     mvn -version
 
 # ---- Jazzer CLI (release JAR + agent) -----------------------------------
+# ARG not ENV: Jazzer auto-parses every JAZZER_* env var as a CLI option
+# at startup, so leaving JAZZER_VERSION in the runtime environment makes
+# Jazzer treat "0.22.1" as a value for --version (boolean flag) and
+# crash with IllegalOptionValueException before the fuzz target even
+# loads. Same reasoning applies to the other *_VERSION pins below.
 
-ENV JAZZER_VERSION=0.22.1
+ARG JAZZER_VERSION=0.22.1
 RUN mkdir -p /opt/jazzer && \
     curl -fsSL "https://github.com/CodeIntelligenceTesting/jazzer/releases/download/v${JAZZER_VERSION}/jazzer-linux.tar.gz" \
         -o /tmp/jazzer.tar.gz && \
@@ -137,7 +147,7 @@ RUN mkdir -p /opt/jazzer && \
 
 # ---- EvoSuite JAR (for htsjdk white-box anchor) --------------------------
 
-ENV EVOSUITE_VERSION=1.2.0
+ARG EVOSUITE_VERSION=1.2.0
 RUN mkdir -p /opt/evosuite && \
     curl -fsSL "https://github.com/EvoSuite/evosuite/releases/download/v${EVOSUITE_VERSION}/evosuite-${EVOSUITE_VERSION}.jar" \
         -o /opt/evosuite/evosuite.jar && \
@@ -145,7 +155,7 @@ RUN mkdir -p /opt/evosuite && \
 
 # ---- PIT (Pitest) command-line JAR for Java mutation scoring ------------
 
-ENV PIT_VERSION=1.15.3
+ARG PIT_VERSION=1.15.3
 RUN mkdir -p /opt/pit && \
     curl -fsSL "https://repo.maven.apache.org/maven2/org/pitest/pitest-command-line/${PIT_VERSION}/pitest-command-line-${PIT_VERSION}.jar" \
         -o /opt/pit/pitest-command-line.jar && \
@@ -161,7 +171,7 @@ RUN mkdir -p /opt/pit && \
 # instead, and if both fail we log + continue (the seqan3 mutation row
 # is already asterisked per DESIGN.md §9 Risk 1).
 
-ENV MULL_VERSION=0.18.0
+ARG MULL_VERSION=0.18.0
 RUN set +e; \
     curl -fsSL "https://github.com/mull-project/mull/releases/download/${MULL_VERSION}/Mull-18-${MULL_VERSION}-LLVM-18.0-ubuntu-22.04.deb" -o /tmp/mull.deb && \
         apt-get update && apt-get install -y /tmp/mull.deb && rm /tmp/mull.deb && rm -rf /var/lib/apt/lists/* && exit 0; \

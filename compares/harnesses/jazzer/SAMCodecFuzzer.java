@@ -1,18 +1,10 @@
 // Jazzer harness for htsjdk's SAM parsing path.
 //
-// Build: ./gradlew :harnesses:jazzer:jazzerHarness
-// Run:   jazzer --cp=build/libs/biotest-jazzer.jar:... \
-//              --target_class=SAMCodecFuzzer \
-//              --instrumentation_includes=htsjdk.samtools.* \
-//              -seed_corpus=../../../seeds/sam \
-//              -max_total_time=7200 \
-//              results_dir/
-//
-// Contract: same as VCFCodecFuzzer — expected SAM-parse exceptions are
-// caught; everything else propagates as a Jazzer finding.
+// Build + run: see VCFCodecFuzzer.java for the build command and the
+// reason we use the classic `fuzzerTestOneInput` entry signature
+// instead of @FuzzTest.
 
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
-import com.code_intelligence.jazzer.junit.FuzzTest;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamInputResource;
@@ -26,8 +18,7 @@ import java.io.IOException;
 
 public class SAMCodecFuzzer {
 
-    @FuzzTest(maxDuration = "0")
-    public static void fuzzSamParse(FuzzedDataProvider data) throws IOException {
+    public static void fuzzerTestOneInput(FuzzedDataProvider data) throws IOException {
         byte[] bytes = data.consumeRemainingAsBytes();
         if (bytes.length == 0) {
             return;
@@ -41,7 +32,6 @@ public class SAMCodecFuzzer {
                 SamInputResource.of(new ByteArrayInputStream(bytes)))) {
             reader.getFileHeader();
             for (SAMRecord rec : reader) {
-                // Force lazy field resolution.
                 rec.getReadName();
                 rec.getCigar();
                 rec.getAlignmentStart();

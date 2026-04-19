@@ -48,16 +48,17 @@ from mr_engine.transforms.malformed import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_34_transforms(self):
+    def test_whitelist_has_36_transforms(self):
         # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
         # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip) +
         # 5 Rank-3 spec-rule-targeted malformed-input mutators +
         # 1 Rank-5 query-method MR transform (query_method_roundtrip;
         # MR-Scout TOSEM 2024) +
         # 5 Phase-2 SAM header-subtag / @CO shuffles +
-        # 3 Phase-2 SAM malformed mutators (TLEN / tag-type / FLAG).
+        # 3 Phase-2 SAM malformed mutators (TLEN / tag-type / FLAG) +
+        # 2 Phase-3 SAM round-trip MRs (SAM↔BAM, SAM↔CRAM).
         wl = get_whitelist()
-        assert len(wl) == 34, f"Expected 34 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 36, f"Expected 36 transforms, got {len(wl)}: {wl}"
 
     def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
         # One writer transform forever, spanning BOTH formats — the

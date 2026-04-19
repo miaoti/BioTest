@@ -99,6 +99,88 @@ def load_config(path: Path) -> dict[str, Any]:
 # instances are constructed, no subprocesses spawned. Fast and safe to
 # call at Phase B time.
 
+def _resolve_primary_coverage_report(
+    cfg: dict[str, Any],
+    primary_target: str,
+    format_context: str | None,
+) -> tuple[Path | None, list[str] | None]:
+    """Resolve the raw coverage-report path + filter rules for the primary SUT.
+
+    Purpose (Tier 2a of the plateau plan): give the blindspot builder a
+    format-agnostic pointer to whichever report this SUT produced this
+    iteration, plus the SAME filter rules the feedback loop uses so the
+    per-class gap block aligns with the weighted-VCF (or -SAM) score.
+
+    Returns ``(None, None)`` when the primary SUT has no live report or
+    when the report format isn't yet plumbed — callers treat that as
+    "skip the class-gap block". No assumption is made that primary_target
+    is any particular SUT; dispatch is keyed on the name we see in config.
+    """
+    if not primary_target:
+        return None, None
+    cov = cfg.get("coverage", {}) or {}
+    target_filters = cov.get("target_filters", {}) or {}
+    fmt = (format_context or "").upper()
+    # target_filters is nested <FORMAT>:<sut>:[rules…]; pick the rules
+    # for the primary SUT under the current format if present.
+    filter_rules: list[str] | None = None
+    per_fmt = target_filters.get(fmt) or target_filters.get(fmt.lower())
+    if isinstance(per_fmt, dict):
+        rules = per_fmt.get(primary_target)
+        if isinstance(rules, list) and rules:
+            filter_rules = rules
+
+    # Dispatch by SUT language / collector family. No per-SUT hardcoded
+    # class names — just the report location each collector already
+    # writes to.
+    if primary_target == "htsjdk":
+        jdir = cov.get("jacoco_report_dir")
+        if jdir:
+            xml = PROJECT_ROOT / jdir / "jacoco.xml"
+            return (xml if xml.exists() else None), filter_rules
+    elif primary_target in {"biopython", "pysam"}:
+        # coverage.py writes a binary SQLite .coverage file; convert it
+        # on the fly to JSON so the blindspot builder can read a
+        # standard shape. Fail-soft: if the coverage CLI isn't
+        # available, return (None, None).
+        import shutil
+        import subprocess
+        if primary_target == "biopython":
+            data = cov.get("coveragepy_data_file")
+        else:  # pysam
+            data = cov.get("pysam_coverage_combined_file") or cov.get("pysam_coverage_dir")
+        if not data:
+            return None, filter_rules
+        data_path = PROJECT_ROOT / data
+        if not data_path.exists():
+            return None, filter_rules
+        json_out = data_path.parent / f"{data_path.stem}_classgaps.json"
+        # Only regenerate the JSON if the .coverage file is newer.
+        try:
+            if (
+                not json_out.exists()
+                or json_out.stat().st_mtime < data_path.stat().st_mtime
+            ):
+                cov_cli = shutil.which("coverage") or shutil.which("python")
+                if cov_cli:
+                    subprocess.run(
+                        ["coverage", "json", "--data-file", str(data_path),
+                         "-o", str(json_out)],
+                        check=False, capture_output=True, timeout=30,
+                    )
+        except Exception as e:
+            logger.debug("coverage.py JSON export failed: %s", e)
+            return None, filter_rules
+        return (json_out if json_out.exists() else None), filter_rules
+    elif primary_target == "seqan3":
+        gpath = cov.get("gcovr_report_path")
+        if gpath:
+            gj = PROJECT_ROOT / gpath
+            return (gj if gj.exists() else None), filter_rules
+    # Any other SUT — return empty (block will be skipped in the prompt).
+    return None, filter_rules
+
+
 def _compute_runtime_capabilities(
     primary_target: str,
     available_suts: list[str],
@@ -106,11 +188,13 @@ def _compute_runtime_capabilities(
     """Return the set of runtime capability tags currently satisfied.
 
     Tags map 1:1 with `transforms_menu.KNOWN_RUNTIME_PRECONDITIONS`:
-      - `primary_sut_has_writer`  — primary runner class sets
-                                    `supports_write_roundtrip = True`.
-      - `pysam_runtime_reachable` — pysam SUT is enabled.
-      - `htsjdk_runtime_reachable` — htsjdk SUT is enabled.
-      - `bcf_codec_available`    — either pysam or htsjdk is enabled.
+      - `primary_sut_has_writer`        — primary runner class sets
+                                          `supports_write_roundtrip = True`.
+      - `primary_sut_has_query_methods` — primary runner class sets
+                                          `supports_query_methods = True`.
+      - `pysam_runtime_reachable`       — pysam SUT is enabled.
+      - `htsjdk_runtime_reachable`      — htsjdk SUT is enabled.
+      - `bcf_codec_available`           — either pysam or htsjdk is enabled.
     """
     caps: set[str] = set()
 
@@ -153,6 +237,26 @@ def _compute_runtime_capabilities(
     primary_cls = _SUT_CLASSES.get(primary_target)
     if primary_cls and getattr(primary_cls, "supports_write_roundtrip", False):
         caps.add("primary_sut_has_writer")
+    # Rank-5 query-methods MRs are only viable when the primary SUT's
+    # runner exposes the discovery + invocation hooks. Without this tag
+    # the transforms_menu filter hides `query_method_roundtrip` from the
+    # LLM prompt — see transforms_menu.KNOWN_RUNTIME_PRECONDITIONS.
+    if primary_cls and getattr(primary_cls, "supports_query_methods", False):
+        caps.add("primary_sut_has_query_methods")
+
+    # Phase 3 of SAM coverage plan — SAM<->BAM<->CRAM round-trip gates.
+    # `samtools` on PATH (or the htslib SUT's configured samtools_path)
+    # is what the round-trip transforms shell out to.
+    import shutil as _shutil
+    if _shutil.which("samtools"):
+        caps.add("samtools_available")
+    # Toy CRAM reference is committed; fatter setups can override by
+    # pointing `cram_reference` elsewhere. A missing reference file or
+    # unreadable .fa disables the CRAM lever cleanly.
+    from pathlib import Path as _Path
+    _toy_ref = _Path(__file__).resolve().parent / "seeds" / "ref" / "toy.fa"
+    if _toy_ref.exists():
+        caps.add("cram_reference_available")
 
     return caps
 
@@ -790,6 +894,38 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                         console.print(
                             f"    [green]Synth:[/] {len(new_seeds)} new seeds landed"
                         )
+
+                    # Phase 5 of SAM coverage plan — SeedMind-style
+                    # generator-mode synthesis, off-by-default. One LLM
+                    # call produces a Python generator; we invoke it K
+                    # times for K distinct outputs. Runs alongside the
+                    # raw-file synthesis above so both strategies
+                    # contribute to the corpus in the same iteration.
+                    gen_enabled = bool(synth_cfg.get("generator_mode", False))
+                    if gen_enabled:
+                        from mr_engine.agent.seed_synthesizer import (
+                            synthesize_seeds_via_generator,
+                        )
+                        console.print(
+                            f"  [dim]Synthesizing via generator ({synth_fmt}, "
+                            f"Phase D Rank 1b SeedMind)...[/]"
+                        )
+                        gen_seeds = synthesize_seeds_via_generator(
+                            blindspot_context=blindspot_text,
+                            fmt=synth_fmt,
+                            primary_target=primary_target or "",
+                            n_seeds=int(synth_cfg.get("max_seeds_per_iteration", 5)),
+                            out_dir=seeds_dir,
+                            iteration=iteration + 1,
+                            max_bytes=int(synth_cfg.get("max_file_bytes", 500 * 1024)),
+                            sandbox_timeout_s=float(
+                                synth_cfg.get("generator_timeout_s", 5.0)
+                            ),
+                        )
+                        if gen_seeds:
+                            console.print(
+                                f"    [green]Gen:[/] {len(gen_seeds)} generator outputs landed"
+                            )
                 except Exception as e:
                     logger.warning("Seed synthesis failed (non-fatal): %s", e)
                     console.print(f"    [yellow]Synth failed (non-fatal):[/] {e}")
@@ -1068,6 +1204,46 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 feedback_cfg.get("max_rules_per_iteration", 5)
             )
 
+            # Phase 4 of SAM coverage plan — reachability filter.
+            # Operator-editable section-to-capability mapping lives under
+            # phase_a.rule_capability_tags; the runner class declares each
+            # capability via `supports_<cap> = True`. Rules whose section
+            # requires an unsupported capability get +20 priority penalty
+            # so the LLM doesn't burn Top-K slots on unreachable rules.
+            rule_cap_tags = (
+                cfg.get("phase_a", {}).get("rule_capability_tags")
+            )
+            supported_caps: set[str] = set()
+            if primary_target:
+                # Recompute the class lookup locally — _compute_runtime_capabilities
+                # encapsulates it but returns a different tag set. We only
+                # need the per-runner capability flags here.
+                from test_engine.runners.htsjdk_runner import HTSJDKRunner
+                from test_engine.runners.pysam_runner import PysamRunner
+                from test_engine.runners.biopython_runner import BiopythonRunner
+                from test_engine.runners.seqan3_runner import SeqAn3Runner
+                from test_engine.runners.htslib_runner import HTSlibRunner
+                from test_engine.runners.reference_runner import ReferenceRunner
+                _cls_by_name = {
+                    "htsjdk": HTSJDKRunner, "pysam": PysamRunner,
+                    "biopython": BiopythonRunner, "seqan3": SeqAn3Runner,
+                    "htslib": HTSlibRunner, "reference": ReferenceRunner,
+                }
+                primary_cls = _cls_by_name.get(primary_target)
+                if primary_cls and rule_cap_tags:
+                    for cap in rule_cap_tags.keys():
+                        if getattr(primary_cls, f"supports_{cap}", False):
+                            supported_caps.add(cap)
+
+            # Tier 2a — resolve the primary SUT's raw coverage report so
+            # build_blindspot_ticket can compute per-class gaps for the
+            # prompt. SUT-agnostic: we dispatch on primary_target name
+            # using only the paths the user already set in
+            # biotest_config.yaml: coverage.*.
+            primary_cov_path, primary_cov_filter = _resolve_primary_coverage_report(
+                cfg, primary_target, format_context
+            )
+
             ticket = build_blindspot_ticket(
                 scc_report=scc_report,
                 coverage_results=coverage_results,
@@ -1079,6 +1255,10 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 format_context=format_context or "",
                 max_rules_per_iteration=max_rules_per_iter,
                 attempt_tracker=attempt_tracker,
+                rule_capability_tags=rule_cap_tags,
+                supported_capabilities=supported_caps,
+                primary_coverage_report_path=primary_cov_path,
+                coverage_filter_rules_text=primary_cov_filter,
             )
             blindspot_text = ticket.to_prompt_fragment()
             attempt_tracker.save(attempts_path)

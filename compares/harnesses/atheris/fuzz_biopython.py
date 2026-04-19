@@ -44,7 +44,11 @@ def fuzz_sam(data: bytes) -> None:
             _ = aln.query
             _ = aln.score if hasattr(aln, "score") else None
             _ = str(aln.coordinates) if hasattr(aln, "coordinates") else None
-    except (ValueError, StopIteration, AttributeError) as expected:
+    # Expected errors on adversarial input — not bugs. Anything beyond
+    # this list (UnboundLocalError, SystemExit from Bio.Align.sam, etc.)
+    # is a real Biopython defect and should propagate so libFuzzer logs
+    # it as a finding.
+    except (ValueError, StopIteration, AttributeError, OSError) as expected:
         del expected
 
 

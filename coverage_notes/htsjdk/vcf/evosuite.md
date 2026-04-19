@@ -127,15 +127,79 @@ Bug-finding is NOT compared — EvoSuite has no differential oracle,
 while BioTest Run 6 reported 339 bugs via the 4-way consensus. This
 note records **coverage only**.
 
-## Run 2 — 170 min wall, search_budget=180 s per class (pending)
+## Run 2 — 84 min wall, search_budget=180 s per class (2026-04-19)
 
-Run 1's 21 min was much less than BioTest's 170 min. Giving EvoSuite
-the full 170 min budget (6× the per-class search time of Run 1) stress-
-tests the "MOSA converged early" claim. Expected incremental gain: **0–3 pp**,
-mostly on the few complex classes (`AbstractVCFCodec`, `VariantContext`,
-`VCFCodec`) where the 30 s search may have missed reachable goals.
+Stress test of Run 1's "MOSA converged early" claim. 6× the per-class
+search time + larger minimization / assertion / init caps:
+`-Dsearch_budget=180 -Dminimization_timeout=45 -Dassertion_timeout=30
+-Dextra_timeout=30 -Dinitialization_timeout=90`.
 
-Results to be appended here once the re-run completes.
+Outcome:
+
+- **35 / 54 classes** → tests generated (**+1 vs Run 1**:
+  `GenotypeLikelihoods` succeeded with the longer budget; its 305-LOC
+  test file alone added ~80 lines to the data-model bucket).
+- **7 / 54 classes** → trivial (same enum-only set as Run 1).
+- **12 / 54 classes** → classloader failures (same set as Run 1 minus
+  GenotypeLikelihoods). These are genuine resolution failures chasing
+  deep htsjdk-internal dependencies; no amount of search budget helps.
+- **Wall clock 84 min** (vs 170 min cap) — used ~2× Run 1's time and
+  stopped when MOSA ran out of new goals on the simpler classes while
+  still hitting the per-class search cap on complex ones.
+- **593 JUnit tests** ran (584 passed, 9 flaky — +38 tests vs Run 1).
+
+Coverage against the 3-path weighted filter:
+
+| Bucket                                   | Run 1 (21 m, 30 s) | Run 2 (84 m, 180 s) | Delta |
+|:-----------------------------------------|:------------------:|:-------------------:|:-----:|
+| `htsjdk/variant/vcf` (parser)            | 48.6% (778/1602)   | 48.8% (782/1602)    | +0.2 pp, +4 lines |
+| `htsjdk/variant/variantcontext`          | 54.3% (1012/1864)  | **59.4% (1107/1864)** | **+5.1 pp, +95 lines** |
+| `htsjdk/variant/variantcontext/writer`   | 28.8% (72/250)     | 30.4% (76/250)      | +1.6 pp, +4 lines |
+| **Weighted VCF scope**                   | **50.1% (1862/3716)** | **52.9% (1965/3716)** | **+2.8 pp, +103 lines** |
+
+### Run 2 vs Run 1 — what the extra budget bought
+
+The variantcontext bucket moved +5.1 pp (+95 lines). Breakdown:
+
+- **New class**: `GenotypeLikelihoods` (305 LOC test file) covered
+  previously-unreachable branches in PL/GL arithmetic.
+- **Bigger tests on existing classes**: `CommonInfo` 476→506 LOC,
+  `GenotypesContext` 496→526, `VariantContextBuilder` 380→398,
+  `VCFWriter` 224→237 — extra search found additional goals.
+
+MOSA's "convergence" is real but **conditional**: simple classes saturated
+in Run 1 (their generated suites grew by ≤ 4 LOC here), but complex
+data-model classes had real headroom that 30 s search missed. The
+failing-classloader set is unchanged — those are resolution bugs, not
+search-budget issues, and would need EvoSuite internals to fix.
+
+### Final comparison — BioTest Run 6 vs EvoSuite Run 2
+
+| Bucket                                  | EvoSuite R2 (84 m) | BioTest Run 6 (170 m) | Winner |
+|:----------------------------------------|:-:|:-:|:-:|
+| `htsjdk/variant/vcf` (parser)           | 48.8% | **60.1%** | BioTest +11.3 pp |
+| `htsjdk/variant/variantcontext`         | **59.4%** | 34.6% | EvoSuite +24.8 pp |
+| `htsjdk/variant/variantcontext/writer`  | 30.4% | **55.6%** | BioTest +25.2 pp |
+| **Weighted VCF**                        | **52.9%** | 46.9% | EvoSuite +5.9 pp |
+
+### Updated takeaways after Run 2
+
+1. **Overall lead widens** — EvoSuite +5.9 pp (was +3.2 pp). The extra
+   budget closed half the gap for complex data-model classes.
+2. **Bucket story unchanged, amplified**:
+   - Parser bucket: BioTest still wins handily (+11.3 pp). File-based
+     parsing is the right tool for `VCFCodec.decode()`.
+   - Data-model bucket: EvoSuite now leads by **+24.8 pp** (was 19.7
+     in Run 1). This is the published upper bound for the API-query
+     surface — Rank 5's 34.6% still has ~25 pp of headroom.
+   - Writer bucket: BioTest still wins by +25.2 pp. Unit-test
+     generation can't drive `VCFWriter` through the actual byte
+     stream.
+3. **The 170-min budget was unnecessary**. EvoSuite used 84 min and
+   would have used less if we capped per-class wall at ~150 s. The
+   84-min number is the honest "at convergence" coverage.
+
+Run 2 XML snapshot: `compares/baselines/evosuite/results/run2_180s_jacoco.xml`
 
 ## Artifacts
 

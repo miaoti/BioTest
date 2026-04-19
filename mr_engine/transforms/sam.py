@@ -7,11 +7,18 @@ for reproducibility.
 
 from __future__ import annotations
 
+import logging
 import re
 import random
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from typing import Optional
 
 from . import register_transform
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -458,3 +465,221 @@ def shuffle_co_comments(
     for pos, new_line in zip(co_indices, co_lines):
         out[pos] = new_line
     return out
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 of SAM coverage plan — cross-format round-trip MRs via htslib.
+#
+# The samtools CLI is the canonical SAM↔BAM↔CRAM reference implementation.
+# These transforms pipe the SAM seed through a binary codec (BAM or CRAM)
+# and back to text SAM, exercising binary code paths that the text-SAM
+# oracle never reaches. Gated at runtime: if `samtools` is not on PATH,
+# the transforms_menu filter hides the MRs from the LLM prompt so no
+# wasted mining.
+#
+# Analogue of the existing `vcf_bcf_round_trip` VCF transform; zero
+# per-SUT code changes required.
+# ---------------------------------------------------------------------------
+
+
+def _samtools_binary() -> Optional[str]:
+    """Return the samtools CLI path, or None if not installed."""
+    return shutil.which("samtools")
+
+
+def _run_samtools(
+    args: list[str],
+    stdin: Optional[bytes] = None,
+    timeout_s: float = 30.0,
+) -> tuple[int, bytes, str]:
+    """Invoke `samtools <args>`, return (returncode, stdout, stderr).
+
+    Dedicated helper so the round-trip transforms share cmd-line
+    handling (-@ thread count, timeout policy, stderr capture).
+    """
+    binary = _samtools_binary()
+    if not binary:
+        raise RuntimeError("samtools CLI not on PATH — runtime precondition should have gated this")
+    proc = subprocess.run(
+        [binary, *args],
+        input=stdin,
+        capture_output=True,
+        timeout=timeout_s,
+    )
+    return proc.returncode, proc.stdout, proc.stderr.decode("utf-8", errors="replace")
+
+
+@register_transform(
+    "sam_bam_round_trip",
+    format="SAM",
+    description=(
+        "Pipe the SAM seed through `samtools view -b | samtools view -h` "
+        "so it transits the BAM binary codec and comes back to text SAM. "
+        "Exercises the BAM writer + BAM reader code paths in every SUT's "
+        "full `parse` flow (pysam/htsjdk that support BAM natively; "
+        "text-only parsers like biopython still observe whatever samtools "
+        "canonicalizes on the return trip). Analogue of VCF's "
+        "`vcf_bcf_round_trip`."
+    ),
+    preconditions=("samtools_available",),
+)
+def sam_bam_round_trip(
+    file_lines: list[str],
+    seed: Optional[int] = None,
+    timeout_s: float = 30.0,
+) -> list[str]:
+    """Round-trip the SAM seed through BAM via samtools.
+
+    Writes input to a temp .sam, encodes to .bam, decodes back to SAM
+    text, and returns the result as `list[str]` (with trailing newlines,
+    matching the other line-level transforms' output shape).
+    """
+    if not _samtools_binary():
+        # Runtime-precondition filter should have prevented the MR from
+        # being mined, but fall back gracefully to a no-op if somehow we
+        # reached here without samtools.
+        logger.debug("sam_bam_round_trip: samtools unavailable — no-op")
+        return list(file_lines)
+
+    with tempfile.TemporaryDirectory(prefix="biotest_sam_bam_") as tmp:
+        tmp_path = Path(tmp)
+        in_sam = tmp_path / "input.sam"
+        bam_path = tmp_path / "roundtrip.bam"
+        out_sam = tmp_path / "output.sam"
+
+        in_sam.write_text("".join(file_lines), encoding="utf-8")
+
+        # SAM → BAM (--no-PG so samtools doesn't add its own @PG record
+        # and thereby change canonical output byte-for-byte).
+        rc1, _, err1 = _run_samtools(
+            ["view", "-b", "--no-PG", "-o", str(bam_path), str(in_sam)],
+            timeout_s=timeout_s,
+        )
+        if rc1 != 0:
+            logger.debug("sam_bam_round_trip: SAM->BAM failed (rc=%s): %s", rc1, err1.strip())
+            return list(file_lines)
+
+        # BAM → SAM text, preserving @HD/@SQ/@RG/@PG via -h.
+        rc2, sam_bytes, err2 = _run_samtools(
+            ["view", "-h", "--no-PG", str(bam_path)],
+            timeout_s=timeout_s,
+        )
+        if rc2 != 0:
+            logger.debug("sam_bam_round_trip: BAM->SAM failed (rc=%s): %s", rc2, err2.strip())
+            return list(file_lines)
+
+        text = sam_bytes.decode("utf-8", errors="replace")
+        # Splitlines with keepends so downstream writers don't double-\n
+        return text.splitlines(keepends=True)
+
+
+@register_transform(
+    "sam_cram_round_trip",
+    format="SAM",
+    description=(
+        "Pipe the SAM seed through `samtools view -C -T ref.fa` and back "
+        "so it transits the CRAM binary codec. Requires a committed toy "
+        "reference (seeds/ref/toy.fa) whose @SQ SN names match the seed's. "
+        "Bonfield CRAM 3.1 2022 documents lossy edges (=/X collapsed to M, "
+        "NM/MD recompute) — the oracle accounts for those via the canonical "
+        "normalizer's `cram_safe` mode."
+    ),
+    preconditions=(
+        "samtools_available",
+        "cram_reference_available",
+    ),
+)
+def sam_cram_round_trip(
+    file_lines: list[str],
+    seed: Optional[int] = None,
+    timeout_s: float = 30.0,
+) -> list[str]:
+    """Round-trip the SAM seed through CRAM via samtools + toy reference.
+
+    If the seed's @SQ SN names are not covered by the toy reference
+    (seeds/ref/toy.fa), the transform is a no-op — the framework's
+    quarantine logic auto-demotes MRs that always no-op, so bad seed/ref
+    pairings correct themselves.
+    """
+    if not _samtools_binary():
+        logger.debug("sam_cram_round_trip: samtools unavailable — no-op")
+        return list(file_lines)
+
+    # Resolve the toy reference relative to project root (the runner
+    # can't pass absolute paths through dispatch; hard-code the committed
+    # fixture path).
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    ref_fa = repo_root / "seeds" / "ref" / "toy.fa"
+    if not ref_fa.exists():
+        logger.debug("sam_cram_round_trip: toy reference missing — no-op")
+        return list(file_lines)
+
+    # Collect seed's @SQ SN names so we can short-circuit if none of
+    # them live in the reference (avoids a guaranteed-failure samtools
+    # invocation).
+    ref_names = _parse_fasta_names(ref_fa)
+    sq_names_in_seed: list[str] = []
+    for ln in file_lines:
+        stripped = ln.rstrip("\r\n")
+        if not stripped.startswith("@SQ"):
+            continue
+        for field in stripped.split("\t"):
+            if field.startswith("SN:"):
+                sq_names_in_seed.append(field[3:])
+                break
+    if sq_names_in_seed and not any(n in ref_names for n in sq_names_in_seed):
+        logger.debug(
+            "sam_cram_round_trip: seed @SQ names %r not in toy reference — no-op",
+            sq_names_in_seed,
+        )
+        return list(file_lines)
+
+    with tempfile.TemporaryDirectory(prefix="biotest_sam_cram_") as tmp:
+        tmp_path = Path(tmp)
+        in_sam = tmp_path / "input.sam"
+        cram_path = tmp_path / "roundtrip.cram"
+        in_sam.write_text("".join(file_lines), encoding="utf-8")
+
+        rc1, _, err1 = _run_samtools(
+            [
+                "view", "-C", "--no-PG",
+                "-T", str(ref_fa),
+                "-o", str(cram_path),
+                str(in_sam),
+            ],
+            timeout_s=timeout_s,
+        )
+        if rc1 != 0:
+            logger.debug("sam_cram_round_trip: SAM->CRAM failed (rc=%s): %s", rc1, err1.strip())
+            return list(file_lines)
+
+        rc2, sam_bytes, err2 = _run_samtools(
+            [
+                "view", "-h", "--no-PG",
+                "-T", str(ref_fa),
+                str(cram_path),
+            ],
+            timeout_s=timeout_s,
+        )
+        if rc2 != 0:
+            logger.debug("sam_cram_round_trip: CRAM->SAM failed (rc=%s): %s", rc2, err2.strip())
+            return list(file_lines)
+
+        text = sam_bytes.decode("utf-8", errors="replace")
+        return text.splitlines(keepends=True)
+
+
+def _parse_fasta_names(fa_path: Path) -> set[str]:
+    """Return the set of sequence names (header text after '>') in a
+    FASTA file. Parses the header line only — does not load sequences."""
+    names: set[str] = set()
+    try:
+        with fa_path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.startswith(">"):
+                    name = line[1:].split()[0].strip()
+                    if name:
+                        names.add(name)
+    except OSError:
+        pass
+    return names
