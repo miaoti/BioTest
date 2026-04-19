@@ -35,11 +35,13 @@ ADAPTERS_DIR = REPO_ROOT / "compares" / "scripts" / "tool_adapters"
 sys.path.insert(0, str(ADAPTERS_DIR))
 
 # Row membership per DESIGN.md §4.1 slim matrix.
+# seqan3 uses AFL++ (GCC + afl-g++) instead of libFuzzer (Clang) because
+# Clang 18 rejects seqan3 3.x concept constraints — see §9 Risk 1.
 MATRIX: dict[str, list[str]] = {
     "htsjdk":    ["biotest", "jazzer", "pure_random", "evosuite_anchor"],
     "pysam":     ["biotest", "atheris", "pure_random"],
     "biopython": ["biotest", "atheris", "pure_random"],
-    "seqan3":    ["biotest", "libfuzzer", "pure_random"],
+    "seqan3":    ["biotest", "aflpp", "pure_random"],
 }
 
 
@@ -159,6 +161,8 @@ def invoke_adapter(
         from run_atheris import run as _run  # type: ignore
     elif tool == "libfuzzer":
         from run_libfuzzer import run as _run  # type: ignore
+    elif tool == "aflpp":
+        from run_aflpp import run as _run  # type: ignore
     elif tool == "pure_random":
         from run_pure_random import run as _run  # type: ignore
     elif tool == "evosuite_anchor":

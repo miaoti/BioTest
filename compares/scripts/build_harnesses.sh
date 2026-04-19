@@ -31,18 +31,39 @@ build_jazzer() {
 }
 
 build_libfuzzer() {
+  # GATED — DESIGN §9 Risk 1. Kept for the day seqan3 adds Clang
+  # support; do not invoke by default.
   local dir="$ROOT/compares/harnesses/libfuzzer"
-  echo "[harness] libFuzzer @ $dir"
+  echo "[harness] libFuzzer (Clang 18) @ $dir  [gated]"
   mkdir -p "$dir/build"
   cd "$dir/build"
-  # Prefer clang++-18; fall back to clang++ in PATH.
   local cxx="${CXX:-$(command -v clang++-18 || command -v clang++)}"
   if [[ -z "$cxx" ]]; then
     echo "[harness] ERROR: clang++ not found; install Clang 18+" >&2
     return 1
   fi
   cmake -DCMAKE_CXX_COMPILER="$cxx" ..
-  make seqan3_sam_fuzzer
+  make seqan3_sam_fuzzer_libfuzzer
+  cd - >/dev/null
+}
+
+build_aflpp() {
+  # AFL++ + GCC 12. Works today; this is the production C++ fuzzer
+  # target for the comparison.
+  local dir="$ROOT/compares/harnesses/libfuzzer"
+  echo "[harness] AFL++ (g++-12) @ $dir"
+  mkdir -p "$dir/build-aflpp"
+  cd "$dir/build-aflpp"
+  if ! command -v afl-g++ >/dev/null 2>&1; then
+    echo "[harness] ERROR: afl-g++ not on PATH; install AFL++ or rebuild the biotest-bench image" >&2
+    return 1
+  fi
+  if ! command -v g++-12 >/dev/null 2>&1; then
+    echo "[harness] ERROR: g++-12 not on PATH (seqan3 needs libstdc++ 12)" >&2
+    return 1
+  fi
+  cmake -DCMAKE_CXX_COMPILER=g++-12 "$dir"
+  make seqan3_sam_fuzzer_aflpp
   cd - >/dev/null
 }
 
@@ -60,13 +81,14 @@ for tgt in $TARGETS; do
   case "$tgt" in
     all)
       build_jazzer
-      build_libfuzzer || echo "[harness] libFuzzer skipped (gated on Linux/Clang/seqan3)"
+      build_aflpp || echo "[harness] AFL++ skipped (missing GCC 12 / AFL++)"
       build_atheris_env
       ;;
     jazzer)      build_jazzer ;;
-    libfuzzer)   build_libfuzzer ;;
+    aflpp)       build_aflpp ;;
+    libfuzzer)   build_libfuzzer ;;  # gated
     atheris)     build_atheris_env ;;
-    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'libfuzzer', 'atheris'"; exit 1 ;;
+    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'atheris'"; exit 1 ;;
   esac
 done
 

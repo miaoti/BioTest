@@ -49,6 +49,12 @@ RUN mkdir -p /etc/apt/keyrings && \
     java -version
 
 # ---- LLVM / Clang 18 + libFuzzer + AddressSanitizer ---------------------
+#
+# Clang 18 is present for Jazzer + Atheris native-extension builds, and
+# as the target for a future libFuzzer+seqan3 integration once seqan3
+# ships Clang-compatible concept declarations. The seqan3 harness
+# itself is currently built with GCC 12 + AFL++ (see below), because
+# Clang 18 rejects seqan3 3.x `alphabet_tuple_base` constraints.
 
 RUN wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key \
         | gpg --dearmor > /etc/apt/keyrings/llvm.gpg && \
@@ -62,6 +68,38 @@ RUN wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key \
     update-alternatives --install /usr/bin/clang   clang   /usr/bin/clang-18   100 && \
     update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100 && \
     clang --version
+
+# ---- GCC 12 + libstdc++-12 (required for seqan3 under AFL++) ------------
+# seqan3 3.x / main requires libstdc++ 12+ AND GCC's `__builtin_constant_p`
+# semantics for its concept declarations. Clang 18 rejects the concepts;
+# GCC 12 accepts them. We install g++-12 here so the AFL++ toolchain
+# (next layer) has a usable host compiler for seqan3.
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc-12 g++-12 libstdc++-12-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    g++-12 --version | head -1
+
+# ---- AFL++ (seqan3 SAM fuzzing, via GCC) --------------------------------
+# AFL++ is our fair-E2E C++ fuzzer for seqan3. libFuzzer is blocked by
+# Clang ↔ seqan3 concept mismatch (DESIGN §9 Risk 1); AFL++ bypasses it
+# because afl-g++ delegates instrumentation to GCC. Source build because
+# Ubuntu 22.04 apt has no afl++ package.
+
+ARG AFLPP_VERSION=4.21c
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libc6-dev gawk bison flex python3-setuptools && \
+    rm -rf /var/lib/apt/lists/* && \
+    git clone --depth 1 --branch v${AFLPP_VERSION} \
+        https://github.com/AFLplusplus/AFLplusplus.git /tmp/aflpp && \
+    cd /tmp/aflpp && \
+    make source-only NO_NYX=1 NO_CORESIGHT=1 NO_UNICORN_ARM64=1 STATIC=0 && \
+    make install PREFIX=/opt/aflpp && \
+    rm -rf /tmp/aflpp && \
+    ln -sf /opt/aflpp/bin/afl-fuzz /usr/local/bin/afl-fuzz && \
+    ln -sf /opt/aflpp/bin/afl-g++ /usr/local/bin/afl-g++ && \
+    ln -sf /opt/aflpp/bin/afl-gcc /usr/local/bin/afl-gcc && \
+    /opt/aflpp/bin/afl-fuzz 2>&1 | head -3 || true
 
 # ---- seqan3 (C++23 SAM/BAM library) + gcovr -----------------------------
 # Installed BEFORE Python 3.12 so apt's system-Python-3.10-linked gcovr +

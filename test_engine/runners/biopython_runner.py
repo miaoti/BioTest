@@ -306,6 +306,23 @@ class BiopythonRunner(ParserRunner):
         except Exception:
             return []
 
+    # ------------------------------------------------------------------
+    # Tier 2b — mutator-method catalog (prompt-only)
+    # ------------------------------------------------------------------
+    supports_mutator_methods: bool = True
+
+    def discover_mutator_methods(self, format_type: str) -> list[dict]:
+        from .introspection import get_mutator_methods
+        if format_type.upper() != "SAM":
+            return []
+        if not self.is_available():
+            return []
+        try:
+            from Bio.Align import Alignment
+            return get_mutator_methods(Alignment)
+        except Exception:
+            return []
+
     def run_query_methods(
         self,
         input_path: Path,

@@ -239,6 +239,23 @@ default). The framework's runtime-capability filter hides
 `sut_write_roundtrip` from the Phase B menu when no primary SUT supports it,
 so no MR will ever target your read-only runner for write testing.
 
+### Optional: richer LLM catalogs via reflection
+
+Two sibling opt-in flags let the framework surface your SUT's live API
+surface to the LLM that mines metamorphic relations:
+
+| Flag                                  | What it enables                                                  |
+|:--------------------------------------|:-----------------------------------------------------------------|
+| `supports_query_methods: bool`        | Scalar getter catalog for API-query MRs (Rank 5)                 |
+| `supports_mutator_methods: bool`      | Mutator-method catalog — prompt-only signal for Rank 6 MR synth  |
+
+Both default to `False`. Opt in by implementing the matching
+`discover_query_methods(fmt)` / `discover_mutator_methods(fmt)` — each is a
+thin wrapper over your language's native reflection (Python:
+`test_engine/runners/introspection.py` helpers; Java: your harness's
+`--mode discover_methods` CLI; C/C++/Rust: `harnesses/_reflect/` scaffolding).
+See `documents/Flow.md` §5.5 for the runner-contract details.
+
 ---
 
 ## The 36 Atomic Transforms
@@ -338,13 +355,17 @@ backed by published research:
 | **Malformed MRs** (Rank 3) | 5 spec-rule-targeted mutators + `error_consensus` oracle exercise parser rejection branches | Gmutator TOSEM'25 | `mr_engine/transforms/malformed.py`, `test_engine/oracles/error_consensus.py` |
 | **`hypothesis.target()`** (Rank 4) | `divergence` + `seed_size` scalar objectives steer Hypothesis toward examples that cause more consensus-disagreements | Hypothesis docs (MacIver, Hatfield-Dodds) | `test_engine/orchestrator.py::_run_mr_with_hypothesis` |
 | **API-query MRs** (Rank 5) | `P(parse(x)) == P(parse(T(x)))` — runtime reflection (Java + Python; `libclang` / `rustdoc` for C/C++/Rust templates) discovers the SUT's public scalar query methods; LLM mines MRs against them; `query_consensus` oracle compares scalar results across voters | MR-Scout TOSEM'24 (arXiv:2304.07548); MeMo JSS'21; Chen-Kuo-Liu-Tse 2018 §3.2 | `test_engine/runners/introspection.py`, `test_engine/oracles/query_consensus.py`, `mr_engine/transforms/query.py` |
+| **MR synthesis** (Rank 6) | Each Phase D iteration asks the LLM for NEW metamorphic relations (not new files) that target uncovered classes / modules; candidates go through the same compiler validators as spec-mined MRs | Fuzz4All ICSE'24; PromptFuzz CCS'24; ChatAFL NDSS'24 | `mr_engine/agent/mr_synthesizer.py` |
+| **Per-class blindspot + mutator catalog** (Tier 2) | Blindspot ticket surfaces the Top uncovered classes / modules from the primary SUT's coverage report + a reflection-discovered mutator catalog — both are **prompt-only signals** that steer seed + MR synthesis | (internal) | `test_engine/feedback/blindspot_builder.py`, `test_engine/runners/introspection.py::get_mutator_methods` |
 
-Configured under `feedback_control.seed_synthesis` and `phase_b.themes`
-in `biotest_config.yaml`. Realistic ceiling with all five active:
-**~52–58% line coverage on htsjdk/VCF**, at the edge of the ~60% hard
-ceiling for automated MR/fuzz testing without per-SUT hand-written
-drivers. See `documents/Flow.md` for the full Phase B + C + D writeup
-including the API-query oracle (§5.5) and citation chain.
+Configured under `feedback_control.seed_synthesis`,
+`feedback_control.mr_synthesis`, and `phase_b.themes` in
+`biotest_config.yaml`. Realistic ceiling with all levers active:
+**~52–58% line coverage** on a typical parser SUT, at the edge of the
+~60% hard ceiling for automated MR/fuzz testing without per-SUT hand-
+written drivers (Liyanage & Böhme ICSE'23). See `documents/Flow.md`
+for the full pipeline writeup, `coverage_notes/` for per-SUT per-
+format measurement logs.
 
 ### SAM coverage plan (2026-04-19) — 6 additional levers
 
@@ -408,10 +429,16 @@ phase_c:
 
 feedback_control:
   enabled: true
-  max_iterations: 5
+  max_iterations: 8
   target_scc_percent: 95.0
   primary_target: htsjdk
-  max_rules_per_iteration: 5      # Top-K blindspot window
+  max_rules_per_iteration: 8      # Top-K blindspot window
+  seed_synthesis:
+    enabled: true                 # LLM-driven VCF/SAM seed synthesis
+    max_seeds_per_iteration: 8
+  mr_synthesis:
+    enabled: true                 # LLM-driven NEW MRs targeting blindspot
+    max_mrs_per_iteration: 8
 
 coverage:
   enabled: true

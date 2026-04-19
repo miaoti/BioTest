@@ -400,3 +400,117 @@ NameError: name 'config' is not defined
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ PIPELINE FAILED — Phase(s) D encountered errors.                            │
 └─────────────────────────────────────────────────────────────────────────────┘
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.yaml
+
+                                 Configuration                                 
+                                                                               
+ Spec Versions          VCF v4.5, SAM v1.6                                     
+ Test Format            SAM (cascades to B, C, D)                              
+ MR Themes              ordering_invariance, semantics_preserving_permutation, 
+                        normalization_invariance, rejection_invariance,        
+                        coordinate_indexing_invariance, round_trip_invariance, 
+                        api_query_invariance                                   
+ Active SUTs            htsjdk, biopython, seqan3, pysam, htslib               
+ Enabled Phases         A -> B -> C -> D                                       
+                                                                               
+
+  Fetching specs from GitHub...
+15:38:09 [INFO] spec_ingestor.main: === Step 1: Ingestion ===
+15:38:10 [INFO] spec_ingestor.ingestor: HEAD commit SHA: e821e4f02ae25c2175f9a366edca1322d6a2de72
+15:38:10 [INFO] spec_ingestor.ingestor: Fetching VCFv4.5.tex ...
+15:38:10 [INFO] spec_ingestor.ingestor:   -> found \input{VCFv4.5.ver}, queuing
+15:38:10 [INFO] spec_ingestor.ingestor: Fetching SAMv1.tex ...
+15:38:11 [INFO] spec_ingestor.ingestor:   -> found \input{SAMv1.ver}, queuing
+15:38:11 [INFO] spec_ingestor.ingestor: Fetching VCFv4.5.ver.tex ...
+15:38:11 [INFO] spec_ingestor.ingestor: Skipping \input ref VCFv4.5.ver.tex (not found — likely build-generated)
+15:38:11 [INFO] spec_ingestor.ingestor: Fetching SAMv1.ver.tex ...
+15:38:12 [INFO] spec_ingestor.ingestor: Skipping \input ref SAMv1.ver.tex (not found — likely build-generated)
+15:38:12 [INFO] spec_ingestor.ingestor: Ingestion complete: 2 files fetched at commit e821e4f02a
+15:38:12 [INFO] spec_ingestor.main: Fetched 2 files at commit e821e4f02a
+  Parsing LaTeX and chunking...
+15:38:12 [INFO] spec_ingestor.main: === Step 2-3: Parsing & Chunking ===
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,24)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,13)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,10)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,11)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:12 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,19)
+15:38:12 [INFO] spec_ingestor.parser: Extracted 65 tables
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(111,0)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(8,0)
+15:38:13 [INFO] spec_ingestor.parser: Chunked VCFv4.5.tex into 1713 chunks
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,24)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,13)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,10)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,11)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,19)
+15:38:13 [INFO] spec_ingestor.parser: Extracted 65 tables
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,0)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:13 [INFO] spec_ingestor.parser: Extracted 13 tables
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'appendices' @(89,0)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected closing environment: 'document' @(90,0)
+15:38:13 [INFO] spec_ingestor.parser: Chunked SAMv1.tex into 335 chunks
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,9)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,5)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,0)
+15:38:13 [INFO] pylatexenc.latexwalker: Ignoring parse error (tolerant parsing mode): Unexpected mismatching closing brace: '}' @(1,2)
+15:38:13 [INFO] spec_ingestor.parser: Extracted 13 tables
+15:38:13 [INFO] spec_ingestor.parser: Total chunks across all files: 2048
+15:38:13 [INFO] spec_ingestor.main: Produced 2048 chunks
+  Indexing into ChromaDB...
+15:38:13 [INFO] spec_ingestor.main: === Step 4: Indexing ===
+15:38:13 [INFO] spec_ingestor.indexer: Using ChromaDB default local embeddings (all-MiniLM-L6-v2)
+15:38:13 [INFO] spec_ingestor.indexer: ChromaDB collection 'hts_specs' ready (2048 existing documents)
+15:38:13 [INFO] spec_ingestor.indexer: Generating embeddings for 2048 chunks ...
+15:39:01 [INFO] spec_ingestor.indexer: Index now contains 2048 documents
+15:39:01 [INFO] spec_ingestor.main: Indexed 2048 chunks
+  Phase A: OK  (52.7s)
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'pysam_runtime_reachable']
+  Discovered 12 query methods on primary biopython for Rank 5
+  Mining SAM / ordering_invariance...
+15:39:03 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:39:03 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+15:39:55 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 52.0s
+15:39:55 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+15:41:04 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:41:04 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/ordering_invariance
+  Mining SAM / semantics_preserving_permutation...
+15:41:04 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:41:04 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+15:42:09 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+15:42:09 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for SAM/semantics_preserving_permutation
+  Mining SAM / normalization_invariance...
+15:42:09 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:42:09 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+15:42:46 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+15:42:46 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+15:43:16 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Could not find valid JSON in your output. Return a JSON array of MR objects, optionally inside ```json fences.
+15:43:16 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+15:43:51 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+15:43:51 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent

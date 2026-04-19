@@ -47,6 +47,7 @@ def synthesize_mrs(
     primary_target: str = "",
     n_mrs: int = 5,
     query_methods: Optional[list[dict]] = None,
+    mutator_catalog: Optional[list[dict]] = None,
     exemplars: Optional[list[dict]] = None,
     llm=None,
 ) -> list[MetamorphicRelation]:
@@ -66,6 +67,11 @@ def synthesize_mrs(
         query_methods: Optional Rank-5 catalog from
             ``runner.discover_query_methods(fmt)`` — if present the prompt
             invites the LLM to compose MRs using ``query_method_roundtrip``.
+        mutator_catalog: Optional Tier-2b mutator catalog from
+            ``runner.discover_mutator_methods(fmt)``. Prompt-only signal:
+            the LLM uses it to reason about which post-parse API surface
+            to target; generated MRs still go through the existing
+            transform whitelist + oracles, so no soundness regression.
         exemplars: Optional list of accepted MRs from the registry to
             anchor the LLM on the expected JSON shape.
         llm: Optional BaseChatModel. Falls back to ``get_llm()`` if None.
@@ -93,6 +99,7 @@ def synthesize_mrs(
         whitelist=whitelist,
         n=n_mrs,
         query_methods=query_methods,
+        mutator_catalog=mutator_catalog,
         exemplars=exemplars,
     )
 

@@ -950,6 +950,7 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                     # MRs aren't rejected by the non-empty-query_methods
                     # validator.
                     rank5_query_methods: list[dict] = []
+                    mutator_catalog: list[dict] = []
                     try:
                         rank5_runners = _build_runners(cfg)
                         rank5_primary = next(
@@ -963,9 +964,19 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                             rank5_query_methods = (
                                 rank5_primary.discover_query_methods(synth_fmt)
                             )
+                        # Tier 2b — mutator catalog is prompt-only info;
+                        # drives the LLM to reason about which post-parse
+                        # API surface to target. The synthesized MRs still
+                        # route through sut_write_roundtrip for soundness.
+                        if rank5_primary is not None and getattr(
+                            rank5_primary, "supports_mutator_methods", False,
+                        ):
+                            mutator_catalog = (
+                                rank5_primary.discover_mutator_methods(synth_fmt)
+                            )
                     except Exception as qe:
                         logger.info(
-                            "Rank 6: query-method discovery skipped (%s)", qe,
+                            "Rank 6: method discovery skipped (%s)", qe,
                         )
                     console.print(
                         f"  [dim]Synthesizing MRs ({synth_fmt}, Phase D Rank 6)...[/]"
@@ -977,6 +988,7 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                         primary_target=primary_target or "",
                         n_mrs=int(mr_synth_cfg.get("max_mrs_per_iteration", 5)),
                         query_methods=rank5_query_methods or None,
+                        mutator_catalog=mutator_catalog or None,
                     )
                     if new_mrs:
                         merged_registry = triage(new_mrs)

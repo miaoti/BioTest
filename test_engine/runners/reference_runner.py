@@ -96,6 +96,20 @@ class ReferenceRunner(ParserRunner):
             return get_scalar_query_methods(CanonicalSamRecord)
         return []
 
+    # ------------------------------------------------------------------
+    # Tier 2b — mutator-method catalog (prompt-only)
+    # ------------------------------------------------------------------
+    supports_mutator_methods: bool = True
+
+    def discover_mutator_methods(self, format_type: str) -> list[dict]:
+        from .introspection import get_mutator_methods
+        from ..canonical.schema import CanonicalVcfRecord, CanonicalSamRecord
+        if format_type.upper() == "VCF":
+            return get_mutator_methods(CanonicalVcfRecord)
+        if format_type.upper() == "SAM":
+            return get_mutator_methods(CanonicalSamRecord)
+        return []
+
     def run_query_methods(
         self,
         input_path: Path,

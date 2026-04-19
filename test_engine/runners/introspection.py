@@ -224,7 +224,16 @@ def get_mutator_methods(obj: Any, limit: int = 50) -> list[dict[str, Any]]:
             or ann is None
             or ret_name in ("NoneType", "None", "Void", "void")
         )
-        is_self_return = isinstance(obj, type) and ann is obj
+        # Fluent: return annotation IS the receiver class, or is a
+        # forward-reference string matching the receiver class name
+        # (common Python typing pattern: def add(...) -> "Self":).
+        obj_name = getattr(obj, "__name__", None) if isinstance(obj, type) else None
+        is_self_return = (
+            (isinstance(obj, type) and ann is obj)
+            or (obj_name is not None and isinstance(ann, str)
+                and (ann == obj_name or ann.endswith(f"{obj_name}'")
+                     or ann.endswith(f"{obj_name}\"")))
+        )
         if not (is_none_return or is_self_return):
             # Accept unannotated callables defensively — Python-side
             # runners rarely annotate their mutators.

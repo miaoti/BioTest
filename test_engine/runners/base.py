@@ -163,3 +163,38 @@ class ParserRunner(ABC):
         raise NotImplementedError(
             f"{type(self).__name__} does not implement run_query_methods"
         )
+
+    # ------------------------------------------------------------------
+    # OPTIONAL: MUTATOR catalog (Tier 2b — prompt enrichment only)
+    # ------------------------------------------------------------------
+    # Runners that can enumerate public MUTATOR methods on the parsed
+    # object (setX / addX / removeX / clearX / putX / resetX, etc.)
+    # implement `discover_mutator_methods` + set
+    # `supports_mutator_methods = True`. Discovery reuses the same
+    # language-native reflection each runner already has for Rank 5.
+    #
+    # The catalog is PROMPT-ONLY — the framework does not dispatch
+    # mutator chains as its own transform family. That keeps oracle
+    # soundness inherited from `sut_write_roundtrip`: any MR the LLM
+    # proposes still has to pass a writer-roundtrip canonical-JSON
+    # compare. The catalog simply makes the LLM aware of which API
+    # surface exists, which steers it toward the classes that the
+    # Tier-2a per-class blindspot block flags as under-covered.
+    supports_mutator_methods: bool = False
+
+    def discover_mutator_methods(
+        self,
+        format_type: str,
+    ) -> list[dict[str, Any]]:
+        """Return a list of mutator-method descriptors (or empty list).
+
+        Each entry mirrors `discover_query_methods`:
+          - "name": method name.
+          - "returns": return-type hint ("None" / "void" / receiver).
+          - "args": list of argument-type hints.
+
+        Default returns [] so existing runners are unaffected. Opt in
+        per runner when the language reflection is cheap and the SUT
+        has a non-trivial mutator surface.
+        """
+        return []

@@ -89,6 +89,45 @@ def _render_query_methods_block(query_methods: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _render_mutator_catalog_block(mutator_catalog: list[dict]) -> str:
+    """Render the Tier-2b mutator catalog when the primary runner exposes it.
+
+    Prompt-only: this tells the LLM which POST-PARSE API mutator methods
+    exist on the parsed object so it can reason about which under-covered
+    classes its MRs should aim for. The catalog is NOT a new transform —
+    the framework does not dispatch mutator chains directly. Generated
+    MRs must still use the allowed transforms list (``sut_write_roundtrip``
+    is the natural partner: apply a transform on file bytes whose effect
+    mirrors what those mutators would produce post-parse).
+    """
+    if not mutator_catalog:
+        return ""
+    lines: list[str] = [
+        "",
+        "AVAILABLE MUTATOR METHODS on the primary SUT (Tier 2b catalog):",
+        "  These are public mutator methods reflection discovered on the",
+        "  parsed-object class (setX / addX / removeX / clearX / putX, etc.).",
+        "  Use them as SEMANTIC HINTS for which classes are under-covered",
+        "  — e.g., if many mutators on a given type are listed, the LLM",
+        "  should weight transforms that exercise that type's post-parse",
+        "  state. Do NOT try to call these mutators directly in an MR;",
+        "  the framework dispatches only through the ALLOWED TRANSFORMS",
+        "  list above. A typical pattern: pair ``sut_write_roundtrip``",
+        "  with a byte-level transform whose effect mirrors the mutator,",
+        "  or use ``query_method_roundtrip`` to observe a scalar that",
+        "  depends on the mutator's target state.",
+        "",
+        "Methods (cap 50, by name):",
+    ]
+    for m in mutator_catalog[:50]:
+        n = m.get("name", "?")
+        r = m.get("returns", "Any")
+        a = ",".join(m.get("args", []))
+        sig = f"{n}({a})" if a else f"{n}()"
+        lines.append(f"  - {sig} -> {r}")
+    return "\n".join(lines)
+
+
 def _render_exemplars_block(exemplars: list[dict]) -> str:
     """Tiny in-context block of accepted MRs so the LLM gets the shape and
     style right. Caller supplies at most 3 sanitized entries."""
@@ -136,6 +175,7 @@ def build_prompt(
     whitelist: list[str],
     n: int = 5,
     query_methods: list[dict] | None = None,
+    mutator_catalog: list[dict] | None = None,
     exemplars: list[dict] | None = None,
 ) -> str:
     """Build the MR-synthesis prompt for a given format.
@@ -180,6 +220,10 @@ def build_prompt(
     qm_block = _render_query_methods_block(query_methods or [])
     if qm_block:
         parts.append(qm_block)
+
+    mut_block = _render_mutator_catalog_block(mutator_catalog or [])
+    if mut_block:
+        parts.append(mut_block)
 
     ex_block = _render_exemplars_block(exemplars or [])
     if ex_block:

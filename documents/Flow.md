@@ -1550,3 +1550,189 @@ After each phase lands:
 This is what "generalizable across all SAM SUTs" means operationally —
 the coverage-notes writeup stays honest when every SUT benefits within
 ±3 pp.
+
+---
+
+# Plateau-breaker update (2026-04-19) — Rank 6 ON, Tier 2a + 2b prompt enrichment
+
+Ranks 1-5 + Rank 7 plus the filter correction landed BioTest at a
+**plateau near 47 % weighted VCF on htsjdk** (Run 6). An apples-to-
+apples EvoSuite 1.2.0 baseline on the same 3-path filter came in at
+**52.9 %**, dominated by a +24.8 pp bucket lead inside
+`htsjdk/variant/variantcontext`. Diagnostic: five post-parse API
+classes account for ~500 of the ~1 250 lines still missing on that
+bucket, and the same shape of gap is expected on any parser SUT —
+`parse(x) → canonical_JSON` flows never exercise
+builder-chain / collection-mutation / type-resolution code paths.
+
+The plateau-breaker ships **three SUT-agnostic changes** that stay
+inside the zero-user-cost envelope. No new MR paradigm, no new oracle,
+no per-SUT equivalence rules.
+
+## Rank 6 — LLM-synthesized MRs, now active
+
+Previously documented as deferred, now **on by default**
+(`feedback_control.mr_synthesis.enabled: true` in
+`biotest_config.yaml`). `mr_engine/agent/mr_synthesizer.py`:
+
+- Consumes the same `BlindspotTicket.to_prompt_fragment()` text Rank 1
+  seed synth uses.
+- Asks the LLM for NEW MRs (not new files) composed strictly over the
+  existing transform whitelist — the compiler rejects invented names.
+- Routes output through the standard `compile_mr_output` pipeline, so
+  every Pydantic validator (whitelist, compound groups, `query_methods`
+  non-empty gate from Rank 5) still applies.
+- Triage + merge into `data/mr_registry.json` at the start of each
+  Phase D iteration, ahead of the ReAct Phase B mining loop.
+
+Grounded in Fuzz4All (ICSE'24, arXiv:2308.04748), PromptFuzz (CCS'24,
+arXiv:2312.17677), and ChatAFL (NDSS'24). Expected +3–5 pp on any SUT
+with an existing MR registry; empirical measurement pending next
+run.
+
+## Tier 2a — per-class blindspot block (`ClassGap`)
+
+`test_engine/feedback/blindspot_builder.py` adds `ClassGap` +
+`compute_class_level_gaps(coverage_report_path, filter_rules_text)`.
+
+- Input: whichever **standard coverage report** the primary SUT emitted
+  this iteration:
+  - JaCoCo XML (Java SUTs like htsjdk, and any future Java parser)
+  - coverage.py JSON (`coverage json`) for Python SUTs (biopython,
+    pysam native mode, reference)
+  - gcovr JSON for C / C++ SUTs (seqan3, future libclang-adapted SUTs)
+- Output: Top-N `ClassGap` entries (default 10), ranked by missed-line
+  count, filtered through the same `target_filters.<FORMAT>.<sut>`
+  rules the feedback loop uses for its weighted score. Names are the
+  language-native identifier the runner's reflection would surface —
+  Java FQN, Python module path, C++ header path.
+
+`BlindspotTicket` carries them as `class_gaps: list[ClassGap]` and
+`to_prompt_fragment()` renders a new `TOP UNCOVERED CLASSES / MODULES`
+section. The block is **skipped** when the list is empty, so a runner
+whose coverage report is unsupported / missing degrades gracefully
+back to the existing rule-based blindspot.
+
+Flowchart:
+
+```
+primary_target ─┐
+format_context ─┼─► _resolve_primary_coverage_report(cfg, ...) ─► Path
+target_filters ─┘                                                  │
+                                                                    ▼
+             compute_class_level_gaps(path, filter_rules_text) ──► list[ClassGap]
+                                                                    │
+                                                                    ▼
+                                             BlindspotTicket.class_gaps
+                                                                    │
+                                                                    ▼
+                         to_prompt_fragment()  →  blindspot_text  →  Rank 1 seed synth
+                                                                    │
+                                                                    └─► Rank 6 MR synth prompt
+```
+
+The dispatch in `biotest.py::_resolve_primary_coverage_report` is keyed
+only on `primary_target` name + config keys the user already writes —
+no SUT-specific class names or paths inside framework code.
+
+## Tier 2b — mutator-method catalog (`supports_mutator_methods`)
+
+A sibling of the Rank 5 `supports_query_methods` opt-in:
+
+```python
+# test_engine/runners/base.py
+supports_mutator_methods: bool = False
+def discover_mutator_methods(self, format_type: str) -> list[dict]: ...
+```
+
+`test_engine/runners/introspection.py::get_mutator_methods` provides
+the Python implementation (reflection filter on name prefix +
+`None`/fluent-return types; Pydantic `model_fields` fast path). Each
+Python runner opts in with a three-line `discover_mutator_methods`
+method that calls `get_mutator_methods` on the right target class
+(`ReferenceRunner` → `CanonicalVcfRecord` / `CanonicalSamRecord`,
+`BiopythonRunner` → `Bio.Align.Alignment`, `PysamRunner` →
+`pysam.VariantRecord` / `pysam.AlignedSegment`). Java / C / C++ / Rust
+runners can follow the same pattern via their existing harnesses'
+`--mode discover_*` CLI surface.
+
+**Critical invariant** (stated explicitly so this stays soundness-
+preserving): the mutator catalog is **prompt-only**. The framework
+does NOT dispatch mutator chains as a new transform family. Instead,
+`mr_engine/agent/mr_synth_prompts.py::_render_mutator_catalog_block`
+surfaces the discovered names to the LLM so Rank 6 can reason about
+which classes its MRs should target — but the generated MRs still go
+through the allowed-transforms whitelist (typically
+`sut_write_roundtrip` or `query_method_roundtrip`). Oracle soundness
+is inherited from those transforms' existing compare logic.
+
+Rejected alternative (Rank 8 standalone mutator-chain MR paradigm):
+mutator chains aren't self-inverse in general, the LLM can't certify
+semantic no-op from reflection alone, and the fix (per-class
+equivalence rules) IS the per-SUT code the zero-user-cost constraint
+forbids.
+
+## Runtime reflection contract — language-level, not SUT-level
+
+Both `supports_query_methods` (Rank 5) and `supports_mutator_methods`
+(Tier 2b) are declared on `ParserRunner` with `= False` defaults.
+Each runner opts in using its language's native reflection:
+
+- **Java**: `Class.getMethods()` + harness CLI
+  (`BioTestHarness --mode discover_methods`).
+- **Python**: `inspect.signature` + `dir()` via
+  `test_engine/runners/introspection.py`.
+- **Python / Pydantic v2**: `model_fields` fast path (filters out
+  `model_dump` / `model_validate` framework noise).
+- **C / C++**: libclang AST walk via `harnesses/_reflect/libclang_walker.py`.
+- **Rust**: rustdoc JSON via `harnesses/_reflect/rustdoc_parser.py`.
+
+All five follow the same manifest shape
+(`{name, returns, args: list[str]}`), so onboarding a new SUT in
+language L is a copy-paste of L's existing adapter plus a tiny
+opt-in flag — never a from-scratch reflection bring-up.
+
+## Honest ceiling (paradigm-level, not SUT-specific)
+
+Published upper bound for automated MR+fuzz testing of parser
+libraries **without per-SUT harness code**: **~60 % line coverage**
+(Liyanage & Böhme ICSE'23; Nguyen et al. Fuzzing Workshop 2023).
+EvoSuite 1.2.0, a mature search-based generator, reaches 52.9 % on
+htsjdk/VCF under the same 3-path filter BioTest uses. Our Run-6
+baseline is 46.9 %; Tier 1 + Tier 2 project 52–55 %; above that,
+progress requires hand-written equivalence rules per class (the
+zero-user-cost exit).
+
+This ceiling pattern holds on any parser SUT in this framework — the
+gap shape (parser bucket high, data-model bucket low, writer bucket
+middling) is a symptom of the file-in/canonical-JSON-out paradigm,
+not of any particular library.
+
+### Config knobs raised alongside this patch
+
+| Key                                                     | Before | After  | Rationale                                                             |
+|:--------------------------------------------------------|:------:|:------:|:----------------------------------------------------------------------|
+| `feedback_control.mr_synthesis.enabled`                 | false  | true   | Rank 6 baseline landed in Run 6                                       |
+| `feedback_control.mr_synthesis.max_mrs_per_iteration`   | 5      | 8      | compound with Rank 5                                                  |
+| `feedback_control.max_iterations`                       | 5      | 8      | runs were guillotining mid-iteration                                  |
+| `feedback_control.timeout_minutes`                      | 120    | 240    | same                                                                  |
+| `feedback_control.plateau_patience`                     | 2      | 3      | SCC signal is sparse at the plateau; 2 false-halts                    |
+| `feedback_control.max_rules_per_iteration`              | 5      | 8      | stronger LLM can digest more rules per ticket                         |
+| `feedback_control.seed_synthesis.max_seeds_per_iteration` | 5    | 8      | symmetric with MR synthesis throughput                                |
+
+### References added
+
+- **Fuzz4All** — Xia, Jia, Zhang, Wu, Xue, Chen, Zhang. *Universal
+  Fuzzing with Large Language Models*. ICSE 2024. arXiv:2308.04748.
+- **PromptFuzz** — Lyu, Sun, Ma, Tu, Wang. *PromptFuzz:
+  Harnessing Large Language Models for Fuzz Driver Generation*. CCS
+  2024. arXiv:2312.17677.
+- **ChatAFL** — Meng, Su, Wen, Sun, Roychoudhury. *Large Language
+  Model Guided Protocol Fuzzing*. NDSS 2024.
+- **Liyanage & Böhme** — ICSE 2023. *Reachable Coverage: Estimating
+  the Amount of Reachable Code in Fuzz-Testing*. Published ceiling
+  reference.
+- **Nguyen, Just, Hicks, Petke** — Fuzzing Workshop 2023
+  (DOI 10.1145/3605157.3605177). *On the Effect of Fuzzing on API
+  State*. "Most top fuzz blockers are not input-related — they require
+  API state" — the paradigm limit BioTest deliberately inherits.

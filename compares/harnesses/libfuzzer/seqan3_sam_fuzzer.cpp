@@ -1,27 +1,30 @@
-// libFuzzer harness for seqan3's SAM parsing path.
+// Fuzz harness for seqan3's SAM parsing path.
 //
-// GATED on Risk 1 in compares/DESIGN.md §9. Requires Linux / WSL2
-// Clang 18+ and libseqan3-dev v3.1.0+ (plus the xxsds/sdsl-lite v3
-// headers that the biotest-bench Dockerfile pulls into
-// /opt/sdsl-lite/include). The Dockerfile has verified this works.
+// Produces a binary that can be driven by either libFuzzer OR AFL++.
+// The `LLVMFuzzerTestOneInput` entry is the fuzz target. Under AFL++
+// we also provide a `main()` that pumps stdin into the fuzz target in
+// persistent mode (1000× faster than classic fork mode).
 //
-// Build (from compares/harnesses/libfuzzer/):
+// Build (production — AFL++ + GCC 12, works today):
+//     cd compares/harnesses/libfuzzer
 //     mkdir -p build && cd build
+//     cmake -DCMAKE_CXX_COMPILER=g++-12 ..
+//     make seqan3_sam_fuzzer_aflpp
+//
+// Build (libFuzzer + Clang 18, GATED on DESIGN §9 Risk 1):
 //     cmake -DCMAKE_CXX_COMPILER=clang++-18 ..
-//     make seqan3_sam_fuzzer
+//     make seqan3_sam_fuzzer_libfuzzer
 //
-// Run:
-//     ./build/seqan3_sam_fuzzer \
-//         -seed_corpus=../../../seeds/sam \
-//         -max_total_time=7200 \
-//         -artifact_prefix=../../../results/libfuzzer/seqan3_sam/
+// Run (AFL++):
+//     mkdir -p /tmp/fuzz-out
+//     afl-fuzz -i seeds/sam -o /tmp/fuzz-out -- ./seqan3_sam_fuzzer_aflpp
 //
-// Field touching is deliberately minimal: seqan3 3.1's sam_record
-// exposes many methods but most trigger cascading template
-// instantiations on header-only types (seqan3::cigar, alphabet_tuple)
-// that blow clang's error budget at compile time. The minimal `id()`
-// + `sequence()` pair is enough to force full SAM parsing inside
-// format_sam, which is the code path we care about.
+// Run (libFuzzer, when unblocked):
+//     ./seqan3_sam_fuzzer_libfuzzer -seed_corpus=seeds/sam -max_total_time=7200
+//
+// Touching only `id()` and `sequence()` keeps the concept-instantiation
+// storm under control — richer fields (cigar_sequence, tags) trigger
+// cascading template errors from `alphabet_tuple_base`'s constraints.
 
 #include <cstddef>
 #include <cstdint>
@@ -53,3 +56,33 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     return 0;
 }
+
+// ---- AFL++ persistent-mode driver -------------------------------------
+// Only compiled when afl-clang / afl-g++ is the front end. libFuzzer
+// provides its own `main`, so we must NOT define one under that
+// toolchain. AFL++'s wrapper defines `__AFL_HAVE_MANUAL_CONTROL` in
+// persistent mode.
+
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+#include <unistd.h>
+#include <cstring>
+
+// Declared but not defined by us; AFL++ provides the implementation
+// via its linker magic when it sees these identifiers.
+extern "C" void __AFL_INIT(void);
+extern "C" int  __AFL_LOOP(unsigned int);
+
+int main() {
+    __AFL_INIT();
+    // 1 MiB is well above the size of any real SAM record; inputs
+    // larger than this are simply truncated — AFL++ stops growing
+    // them quickly since they hit a plateau in coverage.
+    static unsigned char buf[1 << 20];
+    while (__AFL_LOOP(10000)) {
+        ssize_t n = read(0, buf, sizeof(buf));
+        if (n < 0) return 0;
+        LLVMFuzzerTestOneInput(buf, static_cast<size_t>(n));
+    }
+    return 0;
+}
+#endif

@@ -455,6 +455,33 @@ class PysamRunner(ParserRunner):
                 return []
         return []
 
+    # ------------------------------------------------------------------
+    # Tier 2b — mutator-method catalog (prompt-only)
+    # ------------------------------------------------------------------
+    supports_mutator_methods: bool = True
+
+    def discover_mutator_methods(self, format_type: str) -> list[dict]:
+        """Enumerate public mutator methods on pysam's parsed-record
+        classes. Prompt-only: framework never dispatches these."""
+        from .introspection import get_mutator_methods
+        if not self._use_native():
+            return []
+        try:
+            import pysam
+        except ImportError:
+            return []
+        if format_type.upper() == "VCF":
+            try:
+                return get_mutator_methods(pysam.VariantRecord)
+            except Exception:
+                return []
+        if format_type.upper() == "SAM":
+            try:
+                return get_mutator_methods(pysam.AlignedSegment)
+            except Exception:
+                return []
+        return []
+
     def run_query_methods(
         self,
         input_path: Path,
