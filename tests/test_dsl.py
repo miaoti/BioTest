@@ -237,6 +237,59 @@ class TestExtractJson:
 
 
 # ===========================================================================
+# Rank 5 — query_methods validators
+# ===========================================================================
+
+
+class TestQueryMethodsValidators:
+    """Regression guards for the Pydantic validators added after Phase D
+    runs 4/5 exposed that the LLM was shipping `query_method_roundtrip`
+    MRs with `query_methods=[]`, silently no-opping in the orchestrator."""
+
+    def _evidence(self):
+        return [RawEvidence(chunk_id="c1", quote="q")]
+
+    def test_query_transform_requires_non_empty_query_methods(self):
+        with pytest.raises(ValidationError) as excinfo:
+            RawMRFromAgent(
+                mr_name="bad", scope="VCF.record", preconditions=[],
+                transform_steps=["shuffle_meta_lines", "query_method_roundtrip"],
+                oracle="x", evidence=self._evidence(),
+                # query_methods omitted
+            )
+        msg = str(excinfo.value)
+        assert "query_methods" in msg
+        assert "empty" in msg
+
+    def test_query_methods_requires_query_transform(self):
+        with pytest.raises(ValidationError) as excinfo:
+            RawMRFromAgent(
+                mr_name="bad", scope="VCF.record", preconditions=[],
+                transform_steps=["shuffle_meta_lines"],
+                oracle="x", evidence=self._evidence(),
+                query_methods=["isBiallelic"],
+            )
+        assert "query_method_roundtrip" in str(excinfo.value)
+
+    def test_valid_pair_accepted(self):
+        raw = RawMRFromAgent(
+            mr_name="good", scope="VCF.record", preconditions=[],
+            transform_steps=["shuffle_meta_lines", "query_method_roundtrip"],
+            oracle="P(parse(x)) == P(parse(T(x)))",
+            evidence=self._evidence(),
+            query_methods=["isBiallelic", "getNAlleles"],
+        )
+        assert raw.query_methods == ["isBiallelic", "getNAlleles"]
+
+    def test_non_query_mr_without_query_methods_is_fine(self):
+        RawMRFromAgent(
+            mr_name="normal", scope="VCF.record", preconditions=[],
+            transform_steps=["shuffle_meta_lines"],
+            oracle="x", evidence=self._evidence(),
+        )
+
+
+# ===========================================================================
 # Run
 # ===========================================================================
 

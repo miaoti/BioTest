@@ -38,12 +38,14 @@ from mr_engine.transforms.sam import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_20_transforms(self):
+    def test_whitelist_has_26_transforms(self):
         # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
-        # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip,
-        # runtime-dispatched — replaces the previous per-SUT pair).
+        # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip) +
+        # 5 Rank-3 spec-rule-targeted malformed-input mutators +
+        # 1 Rank-5 query-method MR transform (query_method_roundtrip;
+        # MR-Scout TOSEM 2024).
         wl = get_whitelist()
-        assert len(wl) == 20, f"Expected 20 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 26, f"Expected 26 transforms, got {len(wl)}: {wl}"
 
     def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
         # One writer transform forever, spanning BOTH formats — the

@@ -381,6 +381,41 @@ def run_phase_b(
                 f"{sorted(runtime_caps_for_prompt)}[/]"
             )
 
+        # Rank 5 — discover the primary SUT's API surface ONCE per Phase B
+        # run, pass to mine_mrs so the LLM can construct API_QUERY_INVARIANCE
+        # MRs naming methods that actually exist on the live SUT. Reuses
+        # `_build_runners` and picks out the primary one — no duplication
+        # of the factory map.
+        # Per Chen-Kuo-Liu-Tse 2018 §3.2 + MR-Scout (TOSEM 2024).
+        primary_query_methods_by_fmt: dict[str, list[dict]] = {}
+        if primary_target_for_prompt:
+            try:
+                discovery_runners = _build_runners(cfg)
+                primary_runner = next(
+                    (r for r in discovery_runners
+                     if getattr(r, "name", None) == primary_target_for_prompt),
+                    None,
+                )
+                if primary_runner is not None and getattr(
+                    primary_runner, "supports_query_methods", False,
+                ):
+                    for f in formats:
+                        primary_query_methods_by_fmt[f] = (
+                            primary_runner.discover_query_methods(f)
+                        )
+                    n_total = sum(
+                        len(v) for v in primary_query_methods_by_fmt.values()
+                    )
+                    if n_total:
+                        console.print(
+                            f"  [dim]Discovered {n_total} query methods on "
+                            f"primary {primary_target_for_prompt} for Rank 5[/]"
+                        )
+            except Exception as e:
+                logger.warning(
+                    "Query-method discovery failed (Rank 5 disabled): %s", e,
+                )
+
         for fmt in formats:
             for target in targets:
                 console.print(f"  [dim]Mining {fmt} / {target.value}...[/]")
@@ -390,6 +425,7 @@ def run_phase_b(
                     primary_target=primary_target_for_prompt,
                     available_suts=available_suts_for_prompt,
                     runtime_capabilities=runtime_caps_for_prompt,
+                    query_methods=primary_query_methods_by_fmt.get(fmt),
                 )
                 if result.success and result.relations:
                     all_relations.extend(result.relations)
@@ -723,6 +759,99 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 break
 
             console.print(f"\n  [bold cyan]--- Iteration {iteration + 1} ---[/]")
+
+            # Rank 1 lever — LLM-driven seed synthesis, runs BEFORE Phase B
+            # so any synthesized seeds are on disk when SeedCorpus re-loads
+            # at Phase C time. Conceptually parallel to MR mining (both
+            # consume the same blindspot ticket), implemented sequentially
+            # to avoid ChromaDB concurrency + filesystem-race complexity.
+            # Fail-soft: any failure here is logged and skipped, never
+            # aborts the iteration.
+            synth_cfg = feedback_cfg.get("seed_synthesis", {}) or {}
+            if synth_cfg.get("enabled", False) and blindspot_text:
+                try:
+                    from mr_engine.agent.seed_synthesizer import synthesize_seeds
+                    phase_c_cfg = cfg.get("phase_c", {}) or {}
+                    seeds_dir = PROJECT_ROOT / phase_c_cfg.get("seeds_dir", "seeds")
+                    synth_fmt = (format_context or "VCF").upper()
+                    console.print(
+                        f"  [dim]Synthesizing seeds ({synth_fmt}, Phase D Rank 1)...[/]"
+                    )
+                    new_seeds = synthesize_seeds(
+                        blindspot_context=blindspot_text,
+                        fmt=synth_fmt,
+                        primary_target=primary_target or "",
+                        n_seeds=int(synth_cfg.get("max_seeds_per_iteration", 5)),
+                        out_dir=seeds_dir,
+                        iteration=iteration + 1,
+                        max_bytes=int(synth_cfg.get("max_file_bytes", 500 * 1024)),
+                    )
+                    if new_seeds:
+                        console.print(
+                            f"    [green]Synth:[/] {len(new_seeds)} new seeds landed"
+                        )
+                except Exception as e:
+                    logger.warning("Seed synthesis failed (non-fatal): %s", e)
+                    console.print(f"    [yellow]Synth failed (non-fatal):[/] {e}")
+
+            # Rank 6 lever — LLM-driven MR SYNTHESIS. Same blindspot ticket
+            # as Rank 1, but the LLM emits new MRs (transform_steps + oracle
+            # + evidence) rather than raw files. Validated through the same
+            # compile_mr_output pipeline as Phase B, merged into the
+            # registry before Phase B's ReAct mining so Phase C picks up
+            # both. Disabled by default — flip feedback_control.mr_synthesis.
+            # enabled to true once Rank 5 impact is baselined.
+            # Per Fuzz4All (ICSE'24), PromptFuzz (CCS'24), ChatAFL (NDSS'24).
+            mr_synth_cfg = feedback_cfg.get("mr_synthesis", {}) or {}
+            if mr_synth_cfg.get("enabled", False) and blindspot_text:
+                try:
+                    from mr_engine.agent.mr_synthesizer import synthesize_mrs
+                    from mr_engine.index_loader import get_ephemeral_index
+                    from mr_engine.registry import triage, merge_registries
+                    synth_fmt = (format_context or "VCF").upper()
+                    # Rank 5 catalog for the primary SUT — gives the
+                    # synthesizer usable method names so query_method_roundtrip
+                    # MRs aren't rejected by the non-empty-query_methods
+                    # validator.
+                    rank5_query_methods: list[dict] = []
+                    try:
+                        rank5_runners = _build_runners(cfg)
+                        rank5_primary = next(
+                            (r for r in rank5_runners
+                             if getattr(r, "name", None) == primary_target),
+                            None,
+                        )
+                        if rank5_primary is not None and getattr(
+                            rank5_primary, "supports_query_methods", False,
+                        ):
+                            rank5_query_methods = (
+                                rank5_primary.discover_query_methods(synth_fmt)
+                            )
+                    except Exception as qe:
+                        logger.info(
+                            "Rank 6: query-method discovery skipped (%s)", qe,
+                        )
+                    console.print(
+                        f"  [dim]Synthesizing MRs ({synth_fmt}, Phase D Rank 6)...[/]"
+                    )
+                    new_mrs = synthesize_mrs(
+                        blindspot_context=blindspot_text,
+                        fmt=synth_fmt,
+                        spec_index=get_ephemeral_index(),
+                        primary_target=primary_target or "",
+                        n_mrs=int(mr_synth_cfg.get("max_mrs_per_iteration", 5)),
+                        query_methods=rank5_query_methods or None,
+                    )
+                    if new_mrs:
+                        merged_registry = triage(new_mrs)
+                        merge_registries(str(registry_path), merged_registry)
+                        console.print(
+                            f"    [green]Synth:[/] {len(new_mrs)} new MR(s) "
+                            f"merged into registry"
+                        )
+                except Exception as e:
+                    logger.warning("MR synthesis failed (non-fatal): %s", e)
+                    console.print(f"    [yellow]MR synth failed (non-fatal):[/] {e}")
 
             # Phase B: Mine MRs with blindspot context.
             # merge_mode=True: accumulate MRs across iterations (dedup by mr_id).

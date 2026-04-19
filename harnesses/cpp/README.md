@@ -51,3 +51,55 @@ C4 (original plan: "rebuild with coverage flags") is **not actionable on the cur
 - seqan3 C++23 requirement: `SUTfolder/cpp/seqan3/include/seqan3/core/platform.hpp:91`
 - BAM ABI `static_assert`: `SUTfolder/cpp/seqan3/include/seqan3/io/sam_file/format_bam.hpp:160`
 - Windows compile attempt: `g++ -std=c++23 -I .../seqan3/include ... -o smoke.exe` fails at the format_bam assertion.
+
+---
+
+## Rank 5 — query-method MR scaffolding (template only)
+
+C++ has no portable runtime reflection. Scaffolding lives at framework
+level under `harnesses/_reflect/`:
+
+```bash
+# 1. Generate a methods manifest from the SUT's public header.
+py -3.12 -m harnesses._reflect.libclang_walker \
+    --header /path/to/seqan3/io/sam_file/record.hpp \
+    --type seqan3::sam_record \
+    --sut-name seqan3 \
+    --language cpp \
+    --out manifest.json \
+    -- -I /path/to/seqan3/include -std=c++23
+
+# 2. Hand-port the manifest entries into a CMake-compiled adapter
+#    (`biotest_harness_query.cpp` — same CLI grammar as the C harness:
+#    `--mode discover_methods <FMT>` and `--mode query <FMT> <PATH>
+#    --methods n1,n2`).
+
+# 3. Add the adapter as a CMake target alongside biotest_harness:
+#       add_executable(biotest_harness_query biotest_harness_query.cpp)
+#       target_link_libraries(biotest_harness_query PRIVATE seqan3::seqan3)
+
+# 4. Flip seqan3_runner.py's `supports_query_methods = True` once the
+#    binary is on disk. The runner tests if the binary exists at
+#    runtime and gracefully opts out otherwise.
+```
+
+### Limitations (libclang AST walk)
+
+- **Templates / overloads / SFINAE-gated methods** are skipped — the
+  walker only admits concrete, non-templated, public, `const`,
+  zero-arg member functions. seqan3 is *very* template-heavy, so
+  the discovered method list will be small in practice.
+- **Macros** (`#define X 1`) and headers behind conditional compilation
+  hide methods from the AST walker.
+- **ABI stability**: the harness pins seqan3 to a specific commit so
+  struct layouts don't drift mid-run.
+
+### Reference citations for the Rank 5 lever
+
+- Chen, T. Y., Kuo, F.-C., Liu, H., Tse, T. H. (2018). "Metamorphic
+  Testing: A Review of Challenges and Opportunities." *ACM Computing
+  Surveys* 51(1):4 §3.2 — API metamorphic relations.
+- Xu, C., Terragni, V., Zhu, H., Wu, J., Cheung, S.-C. (2024).
+  "MR-Scout: Mining Metamorphic Relations from Existing Test Cases."
+  *ACM TOSEM* 33(6), arXiv:2304.07548. Reports +13.5 pp line coverage
+  from query-method MRs across 701 OSS projects.

@@ -105,3 +105,61 @@ class ParserRunner(ABC):
         raise NotImplementedError(
             f"{type(self).__name__} does not implement run_write_roundtrip"
         )
+
+    # ------------------------------------------------------------------
+    # OPTIONAL: API-query contract (Rank 5 lever)
+    # ------------------------------------------------------------------
+    # Runners that can invoke scalar-returning public query methods on
+    # their parsed objects (e.g. VariantContext.isStructural(),
+    # SAMRecord.isProperPair()) implement `run_query_methods` + set
+    # `supports_query_methods = True`. The runner-agnostic
+    # `query_method_roundtrip` transform dispatches to whichever runner
+    # is primary, same pattern as `sut_write_roundtrip`.
+    #
+    # Discovery is opt-in too: `discover_query_methods(fmt)` returns a
+    # list of dicts {name, returns, args} that the Phase B LLM prompt
+    # renders, so MR mining can reference method names the primary SUT
+    # actually exposes — no hardcoded per-SUT method lists in the
+    # framework.
+    #
+    # Citation — API-level / query-method metamorphic relations: Chen,
+    # Kuo, Liu, Tse (ACM CSUR 2018) §3.2; MR-Scout (Xu et al., TOSEM
+    # 2024, arXiv:2304.07548) — mines query-method MRs from existing
+    # tests and reports +13.5 pp line coverage on 701 OSS projects.
+    supports_query_methods: bool = False
+
+    def discover_query_methods(
+        self,
+        format_type: str,
+    ) -> list[dict[str, Any]]:
+        """Return a list of query-method descriptors the LLM can reference.
+
+        Each entry is a dict with keys:
+          - "name": method or property name.
+          - "returns": return-type hint string ("bool", "int", "str", "Enum").
+          - "args": list of argument-type hints (empty list = nullary).
+
+        The framework filters for scalar-returning, effectively-nullary
+        methods whose call is deterministic on a single parsed record.
+        Default returns []: runner advertises no introspectable API.
+        """
+        return []
+
+    def run_query_methods(
+        self,
+        input_path: Path,
+        format_type: str,
+        method_names: list[str],
+        timeout_s: float = 30.0,
+    ) -> "RunnerResult":
+        """Parse `input_path`, invoke each named query method on the
+        first parsed record, return a RunnerResult whose
+        `canonical_json["method_results"]` maps method name → scalar.
+
+        The oracle (`query_consensus.py`) compares `method_results` maps
+        across x and T(x). Runners without introspection raise
+        NotImplementedError; the dispatch layer treats this as no-op.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement run_query_methods"
+        )

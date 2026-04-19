@@ -1,0 +1,73 @@
+// Jazzer harness build shim.
+//
+// Reuses the fat-jar produced by the main BioTest htsjdk harness for
+// htsjdk + transitive dependencies, and adds Jazzer's @FuzzTest
+// annotation library.
+//
+// Usage:
+//   ./gradlew jazzerHarness
+// Output:
+//   build/libs/biotest-jazzer.jar
+//
+// Run the fuzzer (from repo root, Linux/WSL2 recommended):
+//   jazzer \
+//     --cp=compares/harnesses/jazzer/build/libs/biotest-jazzer.jar \
+//     --target_class=VCFCodecFuzzer \
+//     --instrumentation_includes=htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.* \
+//     -seed_corpus=seeds/vcf \
+//     -max_total_time=7200 \
+//     compares/results/jazzer/htsjdk_vcf/
+
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Keep in sync with the htsjdk version used by the main BioTest harness.
+ext {
+    htsjdkVersion = '4.1.1'
+    jazzerVersion = '0.22.1'
+}
+
+dependencies {
+    // htsjdk SUT under test.
+    implementation "com.github.samtools:htsjdk:${htsjdkVersion}"
+
+    // Jazzer annotations + FuzzedDataProvider.
+    // The Jazzer runtime JAR is provided separately by the jazzer CLI.
+    implementation "com.code-intelligence:jazzer-api:${jazzerVersion}"
+    implementation "com.code-intelligence:jazzer-junit:${jazzerVersion}"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['.']
+            includes = ['*.java']
+        }
+    }
+}
+
+task jazzerHarness(type: Jar) {
+    archiveBaseName = 'biotest-jazzer'
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath
+                .findAll { it.name.endsWith('.jar') }
+                .collect { zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes(
+            'Main-Class': 'VCFCodecFuzzer' // symbolic; Jazzer drives the entry
+        )
+    }
+}

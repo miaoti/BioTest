@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-29.1-blue?logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-292%20passing-brightgreen?logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-364%20passing-brightgreen?logo=pytest" />
   <img src="https://img.shields.io/badge/SUTs-6%20parsers-purple" />
   <img src="https://img.shields.io/badge/License-MIT-green" />
 </p>
@@ -117,13 +117,53 @@ Create `test_engine/runners/my_parser_runner.py` by mirroring
 `htsjdk_runner.py` (Java) or `seqan3_runner.py` (C++). Python libraries
 follow `biopython_runner.py`.
 
-### Step 4 — run
+### Step 4 — tell the coverage collector what "in scope" means for *your* SUT
+
+**This step is not optional.** Without it the framework either measures
+no coverage for your SUT, or pollutes the denominator with every package
+your SUT's library ships (CRAM, BAM index, legacy codecs, JEXL filters,
+etc. in the case of htsjdk). A VCF run on a new SUT should measure
+coverage on that SUT's VCF code *only*.
+
+Add a per-SUT block under `coverage.target_filters.<FORMAT>.<sut_name>`:
+
+```yaml
+coverage:
+  target_filters:
+    VCF:
+      my_parser:               # must match the SUT name from Step 2
+        - my_parser/vcf        # Python package / Java pkg / C++ dir substring
+        # optional: keep it narrow
+        - my_parser/model::VCF,Variant,-*JEXL*
+    SAM:
+      my_parser:
+        - my_parser/sam
+```
+
+Pattern syntax (each entry):
+
+| Pattern | Meaning |
+|:--------|:--------|
+| `pkg/path` | whole package / source directory, all files |
+| `pkg/path::VCF,Variant` | package + include-list: only files starting with `VCF` or `Variant` |
+| `pkg/path::-JEXL,-Jexl` | package + exclude-list: everything EXCEPT files starting with those prefixes |
+| `pkg/path::*SV*,-BCF2*` | wildcards: `*Foo*` = contains "Foo"; `-BCF2*` = exclude files starting with BCF2 |
+
+**Rule of thumb**: include your SUT's parse + data-model + writer
+packages. Exclude binary codecs, alternative format backends, or
+filter-expression engines you aren't testing. See the existing
+`htsjdk` / `pysam` / `biopython` / `seqan3` entries in
+`biotest_config.yaml` for working examples.
+
+### Step 5 — run
 
 ```bash
 py -3.12 biotest.py --phase C
 ```
 
-The new SUT joins both the metamorphic and differential oracles automatically.
+The new SUT joins both the metamorphic and differential oracles
+automatically, and its coverage is measured against the scope YOU
+specified in Step 4.
 
 ---
 
@@ -201,10 +241,11 @@ so no MR will ever target your read-only runner for write testing.
 
 ---
 
-## The 20 Atomic Transforms
+## The 25 Atomic Transforms
 
-Each transform preserves biological semantics while changing the textual (or
-binary) representation. All are grounded in published literature — see
+Each transform either preserves biological semantics (transforms 1–20) or
+deliberately violates a specific spec rule to exercise rejection paths
+(transforms 21–25). All are grounded in published literature — see
 `documents/Flow.md` for full citations.
 
 ### VCF (15)
@@ -238,6 +279,45 @@ binary) representation. All are grounded in published literature — see
 | #  | Transform                | Scope | Purpose                                                                |
 |:--:|:-------------------------|:-----:|:-----------------------------------------------------------------------|
 | 20 | `sut_write_roundtrip`    | File  | `parse(write(parse(x))) == parse(x)` — runner picks VCF or SAM writer |
+
+### Malformed-input mutators (5) — REJECTION_INVARIANCE
+
+These deliberately break a CRITICAL spec rule. Paired with the
+**error-consensus oracle** (accept / silent_skip / reject / crash voting) to
+expose parsers that silently tolerate spec violations.
+
+| #  | Transform                              | Fmt  | Spec rule broken                                               |
+|:--:|:---------------------------------------|:----:|:---------------------------------------------------------------|
+| 21 | `violate_info_number_a_cardinality`    | VCF  | INFO `Number=A` values must equal `len(ALT)`                   |
+| 22 | `violate_required_fixed_columns`       | VCF  | First 8 columns are mandatory                                  |
+| 23 | `violate_fileformat_first_line`        | VCF  | `##fileformat` must be line 1                                  |
+| 24 | `violate_gt_index_bounds`              | VCF  | GT indices must satisfy `0 ≤ idx ≤ len(ALT)`                   |
+| 25 | `violate_cigar_seq_length`             | SAM  | `sum(query-consuming CIGAR ops) == len(SEQ)`                   |
+
+---
+
+## How the framework keeps coverage climbing
+
+MR-only testing naturally ceilings at ~25–40% line coverage on file-format
+parsers (Liyanage & Böhme, ICSE 2023; Nguyen et al., Fuzzing Workshop 2023;
+Chen & Kuo, ACM CSUR 2018). Above that band you have to widen the test
+paradigm — the framework does so via five zero-user-cost levers, each
+backed by published research:
+
+| Lever | What it does | Cite | Where |
+|:-----:|:-------------|:-----|:------|
+| **Seed synthesis** (Rank 1) | Each Phase D iteration asks the LLM for raw VCF/SAM files targeting uncovered source lines; validated candidates land as `seeds/vcf/synthetic_iter*_*.vcf` | SeedMind arXiv:2411.18143; SeedAIchemy arXiv:2511.12448; TitanFuzz ISSTA'23; Fuzz4All ICSE'24 | `mr_engine/agent/seed_synthesizer.py` |
+| **htslib corpus** (Rank 2) | `seeds/fetch_real_world.py` pulls upstream htslib `test/` files — BCF/CRAM edge cases, Unicode, CIGAR bounds | (data) | `seeds/fetch_real_world.py` |
+| **Malformed MRs** (Rank 3) | 5 spec-rule-targeted mutators + `error_consensus` oracle exercise parser rejection branches | Gmutator TOSEM'25 | `mr_engine/transforms/malformed.py`, `test_engine/oracles/error_consensus.py` |
+| **`hypothesis.target()`** (Rank 4) | `divergence` + `seed_size` scalar objectives steer Hypothesis toward examples that cause more consensus-disagreements | Hypothesis docs (MacIver, Hatfield-Dodds) | `test_engine/orchestrator.py::_run_mr_with_hypothesis` |
+| **API-query MRs** (Rank 5) | `P(parse(x)) == P(parse(T(x)))` — runtime reflection (Java + Python; `libclang` / `rustdoc` for C/C++/Rust templates) discovers the SUT's public scalar query methods; LLM mines MRs against them; `query_consensus` oracle compares scalar results across voters | MR-Scout TOSEM'24 (arXiv:2304.07548); MeMo JSS'21; Chen-Kuo-Liu-Tse 2018 §3.2 | `test_engine/runners/introspection.py`, `test_engine/oracles/query_consensus.py`, `mr_engine/transforms/query.py` |
+
+Configured under `feedback_control.seed_synthesis` and `phase_b.themes`
+in `biotest_config.yaml`. Realistic ceiling with all five active:
+**~52–58% line coverage on htsjdk/VCF**, at the edge of the ~60% hard
+ceiling for automated MR/fuzz testing without per-SUT hand-written
+drivers. See `documents/Flow.md` for the full Phase B + C + D writeup
+including the API-query oracle (§5.5) and citation chain.
 
 ---
 

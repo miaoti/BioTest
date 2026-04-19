@@ -225,6 +225,7 @@ def create_mr_agent(
     primary_target: str = "",
     available_suts: list[str] | None = None,
     runtime_capabilities: set[str] | None = None,
+    query_methods: list[dict] | None = None,
 ):
     """
     Create a configured ReAct agent for MR mining.
@@ -252,6 +253,7 @@ def create_mr_agent(
         primary_target=primary_target,
         available_suts=available_suts,
         runtime_capabilities=runtime_capabilities,
+        query_methods=query_methods,
     )
 
     agent = create_react_agent(
@@ -270,6 +272,7 @@ def mine_mrs(
     primary_target: str = "",
     available_suts: list[str] | None = None,
     runtime_capabilities: set[str] | None = None,
+    query_methods: list[dict] | None = None,
 ) -> CompilationResult:
     """
     Full MR mining pipeline: agent -> validate -> retry on failure.
@@ -305,6 +308,7 @@ def mine_mrs(
         primary_target=primary_target,
         available_suts=available_suts,
         runtime_capabilities=runtime_capabilities,
+        query_methods=query_methods,
     )
     spec_index = get_spec_index()
 
@@ -413,6 +417,8 @@ def mine_mrs(
                         target, spec_format, active_llm, blindspot_context,
                         primary_target=primary_target,
                         available_suts=available_suts,
+                        runtime_capabilities=runtime_capabilities,
+                        query_methods=query_methods,
                     )
                     # Retry this same attempt with the new model.
                     # Don't bump `attempt`; we simply "restart" the try.

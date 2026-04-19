@@ -15,22 +15,41 @@ from typing import Any, Optional
 from .schema import CanonicalVcf, CanonicalVcfHeader, CanonicalVcfRecord
 
 
-def normalize_vcf_text(lines: list[str]) -> CanonicalVcf:
+def normalize_vcf_text(
+    lines: list[str],
+    strict_mode: bool = False,
+) -> CanonicalVcf:
     """
     Parse raw VCF text lines into a CanonicalVcf object.
 
     This is the reference normalizer — it reads the VCF text directly
     and produces canonical output. Used for generating golden files
     and for the metamorphic oracle when no external parser is needed.
+
+    Args:
+        lines: raw VCF text lines (with or without trailing newlines).
+        strict_mode: when True, raise ValueError on spec violations that
+            non-strict silently tolerates — specifically: ##fileformat
+            not first non-blank line, INFO Number=A cardinality ≠ len(ALT),
+            GT index > len(ALT). Used by the error-consensus oracle (Rank 3
+            lever) so the reference runner can vote REJECT on malformed seeds.
     """
     meta_lines: list[str] = []
     header_line: Optional[str] = None
     data_lines: list[str] = []
 
+    first_nonblank_seen = False
     for line in lines:
         stripped = line.rstrip("\r\n")
         if not stripped:
             continue
+        if not first_nonblank_seen:
+            first_nonblank_seen = True
+            if strict_mode and not stripped.startswith("##fileformat="):
+                raise ValueError(
+                    "VCF spec violation: first non-blank line must be "
+                    f"`##fileformat=…`, got: {stripped[:60]}"
+                )
         if stripped.startswith("##"):
             meta_lines.append(stripped)
         elif stripped.startswith("#CHROM") or stripped.startswith("#"):
@@ -42,7 +61,7 @@ def normalize_vcf_text(lines: list[str]) -> CanonicalVcf:
         raise ValueError("No #CHROM header line found in VCF")
 
     header = _parse_header(meta_lines, header_line)
-    records = [_parse_record(dl, header) for dl in data_lines]
+    records = [_parse_record(dl, header, strict_mode=strict_mode) for dl in data_lines]
     return CanonicalVcf(header=header, records=records)
 
 
@@ -124,7 +143,11 @@ def _parse_structured_fields(text: str) -> dict[str, str]:
     return fields
 
 
-def _parse_record(line: str, header: CanonicalVcfHeader) -> CanonicalVcfRecord:
+def _parse_record(
+    line: str,
+    header: CanonicalVcfHeader,
+    strict_mode: bool = False,
+) -> CanonicalVcfRecord:
     """Parse a VCF data line into a CanonicalVcfRecord."""
     cols = line.split("\t")
     if len(cols) < 8:
@@ -139,6 +162,20 @@ def _parse_record(line: str, header: CanonicalVcfHeader) -> CanonicalVcfRecord:
     filt = [] if cols[6] == "." else sorted(cols[6].split(";"))
     info = _parse_info(cols[7], header.meta.get("INFO", {}))
 
+    # Strict-mode guard: INFO Number=A cardinality vs len(ALT).
+    if strict_mode and alt:
+        info_defs = header.meta.get("INFO", {})
+        for key, value in info.items():
+            defn = info_defs.get(key, {})
+            if defn.get("Number") == "A":
+                vals = value if isinstance(value, list) else [value]
+                if len(vals) != len(alt):
+                    raise ValueError(
+                        f"VCF spec violation: INFO key {key!r} declared "
+                        f"Number=A must have len(ALT)={len(alt)} values, got "
+                        f"{len(vals)} at record {chrom}:{pos}"
+                    )
+
     fmt = None
     samples = None
     if len(cols) > 8 and cols[8] != ".":
@@ -149,6 +186,30 @@ def _parse_record(line: str, header: CanonicalVcfHeader) -> CanonicalVcfRecord:
                 if 9 + i < len(cols):
                     samples[sample_name] = _parse_sample(
                         cols[9 + i], fmt, header.meta.get("FORMAT", {})
+                    )
+
+    # Strict-mode guard: GT index bounds (0 = REF; 1..N-1 = ALT[i-1]).
+    if strict_mode and fmt and "GT" in fmt and samples:
+        gt_i = fmt.index("GT")
+        max_idx = len(alt)  # inclusive upper bound for valid GT indices
+        for sample_name, sample_dict in samples.items():
+            # sample_dict is a dict keyed by fmt names — find GT entry
+            gt_val = sample_dict.get("GT") if isinstance(sample_dict, dict) else None
+            if gt_val is None:
+                continue
+            gt_str = str(gt_val)
+            for tok in gt_str.replace("|", "/").split("/"):
+                if tok in (".", ""):
+                    continue
+                try:
+                    idx = int(tok)
+                except ValueError:
+                    continue
+                if idx > max_idx:
+                    raise ValueError(
+                        f"VCF spec violation: GT index {idx} exceeds "
+                        f"len(ALT)={max_idx} at record {chrom}:{pos} "
+                        f"(sample {sample_name})"
                     )
 
     return CanonicalVcfRecord(

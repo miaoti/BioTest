@@ -61,6 +61,11 @@ class RawMRFromAgent(BaseModel):
     oracle: str
     evidence: list[RawEvidence]
     ambiguity_flags: list[str] = []
+    # Optional list of public query-method names — populated by the LLM
+    # when the MR uses `query_method_roundtrip` (Rank 5). The framework's
+    # query-consensus oracle compares scalar results of these methods on
+    # x and T(x). Empty / missing for non-API-query MRs.
+    query_methods: list[str] = []
 
     @field_validator("scope")
     @classmethod
@@ -88,6 +93,38 @@ class RawMRFromAgent(BaseModel):
             raise ValueError("MR must have at least one transform step")
         if not self.evidence:
             raise ValueError("MR must have at least one evidence citation")
+        return self
+
+    @model_validator(mode="after")
+    def _query_methods_required_when_query_transform(self) -> "RawMRFromAgent":
+        """Rank 5 — if `query_method_roundtrip` is in transform_steps, the
+        MR MUST supply a non-empty `query_methods` list. Otherwise the
+        orchestrator's query-consensus branch has nothing to compare,
+        the test silently no-ops, and Phase D's SCC counts the MR as
+        "covered" without actually exercising anything. Observed in Phase D
+        run 4/5 where the LLM shipped 6 query-MRs with `query_methods=[]`
+        and produced 0 pp line-coverage movement despite SCC climbing."""
+        if "query_method_roundtrip" in self.transform_steps and not self.query_methods:
+            raise ValueError(
+                "MR uses transform `query_method_roundtrip` but `query_methods` "
+                "is empty. Supply 2-5 method names from the AVAILABLE QUERY "
+                "METHODS catalog in the system prompt (e.g. `isStructural`, "
+                "`getNAlleles`, `isBiallelic`). These are the scalar invariants "
+                "the oracle will compare across x and T(x) — the MR is a no-op "
+                "without them."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _query_methods_only_with_query_transform(self) -> "RawMRFromAgent":
+        """Symmetric sanity check: `query_methods` only makes sense when
+        `query_method_roundtrip` is one of the transform_steps."""
+        if self.query_methods and "query_method_roundtrip" not in self.transform_steps:
+            raise ValueError(
+                "`query_methods` is populated but `query_method_roundtrip` is "
+                "not in transform_steps. Either drop query_methods or add "
+                "query_method_roundtrip as the final transform step."
+            )
         return self
 
     @model_validator(mode="after")
@@ -137,6 +174,11 @@ class MetamorphicRelation(BaseModel):
     oracle: str
     evidence: list[HydratedEvidence]
     ambiguity_flags: list[str] = []
+    # Optional list of public query-method names the MR's API_QUERY_INVARIANCE
+    # oracle should compare across x and T(x). Populated by the LLM when the
+    # MR uses `query_method_roundtrip`. Empty / missing for non-API-query MRs.
+    # See test_engine/oracles/query_consensus.py.
+    query_methods: list[str] = []
 
 
 class MRBatch(BaseModel):

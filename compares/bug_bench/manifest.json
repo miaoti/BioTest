@@ -1,0 +1,722 @@
+{
+  "$schema": "./schema.json",
+  "benchmark_version": "0.1.0-unverified",
+  "status": "pending_phase_0_verification",
+  "description": "Candidate real-bug benchmark for BioTest comparative evaluation. 32 historical VCF/SAM-related bugs across 4 SUTs. All htsjdk/pysam/biopython entries are UNVERIFIED — pre_fix/post_fix versions must be confirmed in Phase-0 pre-flight against release notes before they enter the live benchmark. Seqan3 entries use commit SHAs directly. Bugs that fail verification are dropped per Bohme et al. ICSE'22 discipline. Expected post-verification N: 18-25 of 32.",
+  "bugs": [
+    {
+      "id": "htsjdk-1708",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1708",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1708_or_CRAM_multicontainer_fix"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "CRAM multi-container reference region state corruption on multi-container writes. Reads at position 1 corrupt in CRAM 3.0.0+.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1708/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"],
+        "also_detectable_via": ["round_trip_asymmetry_within_sut"]
+      }
+    },
+    {
+      "id": "htsjdk-1590",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1590",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1590_or_CRAM_BB_read_features"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "CRAM 'BB' (Bases) read features not correctly restored during parsing; bases silently dropped.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1590/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"]
+      }
+    },
+    {
+      "id": "htsjdk-1592",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1592",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1592_or_CRAM_SC_scores_fix"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "CRAM scores read features ('SC' data series) misdecoded during normalization.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1592/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"]
+      }
+    },
+    {
+      "id": "htsjdk-1554",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1554",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1554_or_AC_AN_AF_filtered_genotypes"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "AC/AN/AF allele counts include filtered genotypes marked FT; should exclude filtered variants.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1554/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"],
+        "also_detectable_via": ["metamorphic_filter_then_recompute_AC"]
+      }
+    },
+    {
+      "id": "htsjdk-1637",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/1637",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1637_or_VCF_sort_order_stability"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "VCF sort order changed to use alleles for stability; breaks merging of existing valid VCFs causing false 'unsorted' errors.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1637/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "htsjdk-1117",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/1117",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1117_or_BCF2LazyGenotypesDecoder_NPE"
+      },
+      "trigger": {
+        "category": "null_ptr",
+        "logic_bug": false,
+        "description": "NullPointerException in BCF2LazyGenotypesDecoder.parse() when reading BCF converted from VCF.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1117/"
+      },
+      "expected_signal": {
+        "type": "crash",
+        "against": ["htsjdk_buggy_version"]
+      }
+    },
+    {
+      "id": "htsjdk-1686",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/1686",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1686_or_spanning_deletion_getType"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "Inconsistent VariantContext.getType() on spanning deletion alleles: <DEL>,* classified INDEL but <INS>,* not.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1686/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"]
+      }
+    },
+    {
+      "id": "htsjdk-1026",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/1026",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_1026_or_multithreaded_VCFEncoder"
+      },
+      "trigger": {
+        "category": "incorrect_rejection",
+        "logic_bug": false,
+        "description": "VCFEncoder.addGenotypeData throws 'Allele X is not an allele in variant context' in multithreaded read-then-write.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1026/",
+        "notes": "Requires multithreaded harness; may be hard to trigger without concurrent-access test wrapper."
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": ["htsjdk_buggy_version"]
+      }
+    },
+    {
+      "id": "htsjdk-761",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/761",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_761_or_filename_bcf_substring"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Filenames containing '.bcf' substring cause VCF output to be written as BCF instead of VCF.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-761/",
+        "notes": "Easily trigger with crafted filename like 'library.bcf<uuid>.g.vcf.gz'."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "htsjdk-423",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/issues/423",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "release_notes_must_reference_423_or_multiallelic_AF_AC_per_allele"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Multiallelic AF/AC fields not parsed/cached per-allele; SelectVariants crashes on AF-based filtering.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-423/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"]
+      }
+    },
+    {
+      "id": "pysam-1314",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1314",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_1314_or_contig_remap"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "VariantFile.write() maps records to wrong contig when header contigs manually edited.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1314/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "pysam-1308",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1308",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_1308_or_new_record_GT"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "VariantHeader.new_record() fails to set GT field on second+ record creation; KeyError: 'invalid FORMAT: GT'.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1308/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": ["pysam_buggy_version"]
+      }
+    },
+    {
+      "id": "pysam-966",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/966",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_966_or_TRA_stop_END_field"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "VariantRecord.stop returns wrong value for TRA records; returns POS instead of END INFO field.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-966/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "pysam-1175",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1175",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_PR_1201_merge_confirms_fix"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "INFO/END incorrectly omitted when writing VCF records with missing/symbolic alleles; affects SV representation.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1175/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "htsjdk"]
+      }
+    },
+    {
+      "id": "pysam-1225",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1225",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_1225_or_haploid_PL_tuple"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": false,
+        "description": "VariantRecord expects wrong PL tuple length for haploid GT; 1-tuple GT raises error expecting 3-tuple PL.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1225/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": ["pysam_buggy_version"]
+      }
+    },
+    {
+      "id": "pysam-904",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/904",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_904_or_empty_VCF_fetch"
+      },
+      "trigger": {
+        "category": "incorrect_rejection",
+        "logic_bug": false,
+        "description": "VariantFile.fetch() raises 'ValueError: fetch requires an index' on empty VCF even with valid tabix index.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-904/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": ["pysam_buggy_version"]
+      }
+    },
+    {
+      "id": "pysam-1038",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/1038",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_1038_or_tabix_index_leak",
+        "notes": "Resource-leak bug; may be hard to reproduce in 2h budget. Candidate for drop."
+      },
+      "trigger": {
+        "category": "resource_leak",
+        "logic_bug": false,
+        "description": "pysam.tabix_index() leaves file handles open when indexing ~20k VCF files; resource exhaustion.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-1038/"
+      },
+      "expected_signal": {
+        "type": "resource_exhaustion",
+        "against": ["pysam_buggy_version"]
+      }
+    },
+    {
+      "id": "pysam-641",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/641",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_641_or_CSI_index_always"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "tabix_index() always creates CSI index for VCF files regardless of user choice.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-641/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "pysam-771",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/771",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_771_or_write_segfault_no_header"
+      },
+      "trigger": {
+        "category": "null_ptr",
+        "logic_bug": false,
+        "description": "VariantFile.write() segfaults when VCF header missing ##FORMAT or ##contig entries.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-771/"
+      },
+      "expected_signal": {
+        "type": "crash",
+        "against": ["pysam_buggy_version"]
+      }
+    },
+    {
+      "id": "pysam-450",
+      "sut": "pysam",
+      "issue_url": "https://github.com/pysam-developers/pysam/issues/450",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_or_release_notes_must_reference_450_or_header_only_VCF_regression"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "VCF file with no variant records written without header (writes empty file); regression in 0.10.0.",
+        "evidence_dir": "compares/bug_bench/triggers/pysam-450/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "biopython-4825",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/4825",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_rst_must_reference_4825_or_deepcopy_SAM_perf"
+      },
+      "trigger": {
+        "category": "edge_case_missed",
+        "logic_bug": true,
+        "description": "Excessive copy.deepcopy() in SAM parser; perf degradation with potential correctness impact on large files.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-4825/",
+        "notes": "Primarily performance; correctness impact secondary. May be dropped."
+      },
+      "expected_signal": {
+        "type": "timeout_or_differential_disagreement",
+        "against": ["htsjdk"]
+      }
+    },
+    {
+      "id": "biopython-4868",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/4868",
+      "format": "SAM",
+      "anchor": {
+        "type": "feature_gap",
+        "pre_fix": "N/A",
+        "post_fix": "N/A",
+        "verification_rule": "CONTEXT_ONLY_not_a_bug"
+      },
+      "trigger": {
+        "category": "feature_gap",
+        "logic_bug": false,
+        "description": "Native BAM parsing not implemented; requires external CLI. Feature gap, not a bug.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-4868/",
+        "notes": "DROP CANDIDATE — include only as context in report narrative."
+      },
+      "expected_signal": {
+        "type": "N/A",
+        "against": []
+      }
+    },
+    {
+      "id": "biopython-4731",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/4731",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_rst_must_reference_4731_or_CIGAR_op_exposure"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Biopython SAM parser does not expose CIGAR operation details (gaps, mismatches).",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-4731/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htsjdk", "pysam"]
+      }
+    },
+    {
+      "id": "biopython-1913",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/1913",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_rst_must_reference_1913_or_local_alignment_zero_score"
+      },
+      "trigger": {
+        "category": "edge_case_missed",
+        "logic_bug": true,
+        "description": "Alignment scoring incorrect for local alignment with zero-score residue pairs at start.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-1913/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htsjdk"]
+      }
+    },
+    {
+      "id": "biopython-1699",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/1699",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_rst_must_reference_1699_or_soft_clip_query_coords"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "Bio.Align.sam doesn't expose query_start/query_end from CIGAR soft-clip operations.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-1699/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htsjdk", "pysam"]
+      }
+    },
+    {
+      "id": "biopython-4769",
+      "sut": "biopython",
+      "issue_url": "https://github.com/biopython/biopython/issues/4769",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "PENDING_VERIFICATION",
+        "post_fix": "PENDING_VERIFICATION",
+        "verification_rule": "NEWS_rst_must_reference_4769_or_PairwiseAligner_pairwise2_divergence"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "PairwiseAligner produces different alignments than legacy pairwise2; alignment score/path inconsistency.",
+        "evidence_dir": "compares/bug_bench/triggers/biopython-4769/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htsjdk", "pysam"]
+      }
+    },
+    {
+      "id": "seqan3-2418",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2418",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_8e374d7c",
+        "post_fix": "8e374d7c",
+        "verification_rule": "PR_2418_merge_commit_is_fix_verified"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "BAM parsing forgets to consume sequence bytes when creating dummy alignments; stream iterator misaligned, corrupts subsequent record reads.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2418/",
+        "notes": "Trigger file test.bam.gz present in original issue #2417."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib", "pysam"]
+      }
+    },
+    {
+      "id": "seqan3-3081",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3081",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_c84f567",
+        "post_fix": "c84f567",
+        "verification_rule": "PR_3081_merge_commit_is_fix_verified"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Empty SAM/BAM output files invalid (no header written); file unusable unless records explicitly written.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3081/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "seqan3-3269",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3269",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_11564cb3",
+        "post_fix": "11564cb3",
+        "verification_rule": "PR_3269_merge_commit_is_fix_verified"
+      },
+      "trigger": {
+        "category": "off_by_one_coord",
+        "logic_bug": true,
+        "description": "Banded alignment returns relative positions of sliced sequences instead of absolute positions of originals; off-by-prefix offset.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3269/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "seqan3-3098",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3098",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_4fe54891",
+        "post_fix": "4fe54891",
+        "verification_rule": "PR_3098_merge_commit_is_fix_verified"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "Alignment score calculation wrong in traceback; incorrect carry bit tracking on up/left open directions causes wrong score.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3098/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "seqan3-2869",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2869",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_PR_2869_MERGE",
+        "post_fix": "PR_2869_MERGE_COMMIT",
+        "verification_rule": "PR_2869_merge_commit_must_be_located_via_git_log"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "FASTA parser fails on IDs containing '>' character; treats '> >MyID' as ID 'MyID' instead of '>MyID'.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2869/",
+        "notes": "FASTA-adjacent — may be out of SAM scope; evaluate during pre-flight."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": ["htslib"]
+      }
+    },
+    {
+      "id": "seqan3-3406",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3406",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "PARENT_OF_5e5c05a4",
+        "post_fix": "5e5c05a4",
+        "verification_rule": "PR_3406_merge_commit_is_fix_verified"
+      },
+      "trigger": {
+        "category": "encoding_bug",
+        "logic_bug": false,
+        "description": "BGZF stream data race condition in concurrent reads; non-deterministic corruption.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3406/",
+        "notes": "Data race — requires multithreaded harness; may be hard to trigger reliably in 2h."
+      },
+      "expected_signal": {
+        "type": "intermittent_differential_disagreement",
+        "against": ["htslib"]
+      }
+    }
+  ]
+}

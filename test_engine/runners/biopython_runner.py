@@ -38,6 +38,11 @@ def _check_biopython() -> bool:
 class BiopythonRunner(ParserRunner):
     """Parser runner using Biopython's Bio.Align.sam (SAM only)."""
 
+    # Rank 5 — opt in to query-method MRs. Bio.Align Alignment objects
+    # expose a handful of scalar properties (target, query, score) that
+    # we introspect via stdlib reflection.
+    supports_query_methods: bool = True
+
     @property
     def name(self) -> str:
         return "biopython"
@@ -285,3 +290,66 @@ class BiopythonRunner(ParserRunner):
             "header": {"HD": hd, "SQ": sq, "RG": rg, "PG": pg, "CO": co},
             "records": records,
         }
+
+    # ------------------------------------------------------------------
+    # Rank 5 — query-method MRs
+    # ------------------------------------------------------------------
+    def discover_query_methods(self, format_type: str) -> list[dict]:
+        from .introspection import get_scalar_query_methods
+        if format_type.upper() != "SAM":
+            return []
+        if not self.is_available():
+            return []
+        try:
+            from Bio.Align import Alignment
+            return get_scalar_query_methods(Alignment)
+        except Exception:
+            return []
+
+    def run_query_methods(
+        self,
+        input_path: Path,
+        format_type: str,
+        method_names: list[str],
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        from .introspection import run_methods_on_record
+        import time as _time
+        if format_type.upper() != "SAM":
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr="BiopythonRunner.run_query_methods supports SAM only",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type="SAM", error_type="ineligible",
+                stderr="biopython not available",
+            )
+        t0 = _time.monotonic()
+        try:
+            from Bio import Align
+            it = Align.parse(str(input_path), "sam")
+            rec = next(iter(it), None)
+            if rec is None:
+                return RunnerResult(
+                    success=True, parser_name=self.name,
+                    format_type="SAM", exit_code=0,
+                    canonical_json={"method_results": {}},
+                    duration_ms=(_time.monotonic() - t0) * 1000,
+                )
+            results = run_methods_on_record(rec, method_names)
+            return RunnerResult(
+                success=True, parser_name=self.name,
+                format_type="SAM", exit_code=0,
+                canonical_json={"method_results": results},
+                duration_ms=(_time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type="SAM", error_type="crash",
+                stderr=f"biopython query: {e}",
+                duration_ms=(_time.monotonic() - t0) * 1000,
+            )

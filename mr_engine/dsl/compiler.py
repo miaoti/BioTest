@@ -154,6 +154,7 @@ def compile_mr_output(
             oracle=raw_mr.oracle,
             evidence=hydrated_evidence,
             ambiguity_flags=raw_mr.ambiguity_flags,
+            query_methods=raw_mr.query_methods,
         ))
 
     if errors:

@@ -369,6 +369,128 @@ def bcf_header_reorder(
                 pass
 
 
+# ============================================================================
+# Rank 5 — query-method MRs (Python introspection inside the Docker harness)
+# ============================================================================
+#
+# Reference: Chen, Kuo, Liu, Tse — ACM CSUR 2018 §3.2 (API metamorphic
+# relations); MR-Scout — Xu et al., TOSEM 2024 (arXiv:2304.07548).
+#
+# These mirror the framework-level helpers in
+# test_engine/runners/introspection.py but live inside the Docker container
+# so the Phase D / Phase B path that uses Docker pysam can also discover +
+# invoke query methods. The PysamRunner Docker fallback dispatches here
+# via `--mode discover_methods` / `--mode query`.
+
+_PYDANTIC_NOISE_DOCKER = frozenset({
+    "construct", "copy", "dict", "from_orm", "json", "parse_file",
+    "parse_obj", "parse_raw", "schema", "schema_json", "update_forward_refs",
+    "validate", "model_construct", "model_copy", "model_dump",
+    "model_dump_json", "model_json_schema", "model_post_init", "model_rebuild",
+    "model_validate", "model_validate_json", "model_validate_strings",
+    "model_computed_fields", "model_config", "model_extra", "model_fields",
+    "model_fields_set",
+})
+
+
+def _scalar_methods_of(obj_or_cls) -> list[dict[str, Any]]:
+    import inspect
+    out: list[dict[str, Any]] = []
+    for name in sorted(dir(obj_or_cls)):
+        if name.startswith("_") or name in _PYDANTIC_NOISE_DOCKER:
+            continue
+        try:
+            attr = getattr(obj_or_cls, name)
+        except Exception:
+            continue
+        if not callable(attr):
+            out.append({"name": name, "returns": type(attr).__name__, "args": []})
+        else:
+            try:
+                sig = inspect.signature(attr)
+            except (TypeError, ValueError):
+                continue
+            params = [
+                p for p in sig.parameters.values()
+                if p.name not in ("self", "cls")
+            ]
+            if any(p.default is inspect.Parameter.empty for p in params):
+                continue
+            ret = sig.return_annotation
+            ret_name = (
+                getattr(ret, "__name__", None)
+                if ret is not inspect.Signature.empty else "Any"
+            ) or "Any"
+            out.append({"name": name, "returns": str(ret_name), "args": []})
+        if len(out) >= 50:
+            break
+    return out
+
+
+def discover_methods(fmt: str) -> None:
+    """Print {"methods": [...]} for the parser's first-record class."""
+    import pysam
+    if fmt == "VCF":
+        cls = pysam.VariantRecord
+    elif fmt == "SAM":
+        cls = pysam.AlignedSegment
+    else:
+        print(f"discover_methods: unknown format {fmt!r}", file=sys.stderr)
+        sys.exit(1)
+    payload = {"methods": _scalar_methods_of(cls)}
+    print(json.dumps(payload))
+
+
+def _coerce_scalar(v: Any) -> Any:
+    import enum as _enum
+    if v is None or isinstance(v, (bool, int, float, str)):
+        return v
+    if isinstance(v, _enum.Enum):
+        return v.name
+    if isinstance(v, (list, tuple, set)):
+        return [_coerce_scalar(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _coerce_scalar(x) for k, x in v.items()}
+    return repr(v)
+
+
+def query_methods(fmt: str, input_path: Path, method_names: list[str]) -> None:
+    """Parse first record, invoke each named method, print method_results JSON."""
+    import pysam
+    try:
+        if fmt == "VCF":
+            f = pysam.VariantFile(str(input_path))
+            rec = next(f, None)
+            f.close()
+        elif fmt == "SAM":
+            f = pysam.AlignmentFile(str(input_path), "r", check_sq=False)
+            rec = next(f, None)
+            f.close()
+        else:
+            print(f"query: unknown format {fmt!r}", file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
+        print(f"query: failed to open {input_path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    results: dict[str, Any] = {}
+    if rec is None:
+        print(json.dumps({"method_results": results}))
+        return
+    for name in method_names:
+        try:
+            attr = getattr(rec, name)
+        except AttributeError as e:
+            results[name] = {"__error__": f"AttributeError: {e}"}
+            continue
+        try:
+            value = attr() if callable(attr) else attr
+            results[name] = _coerce_scalar(value)
+        except Exception as e:
+            results[name] = {"__error__": f"{type(e).__name__}: {e}"}
+    print(json.dumps({"method_results": results}))
+
+
 def main():
     # Argument grammar supported:
     #   [--coverage /cov/dir] VCF|SAM <input_file>
@@ -444,6 +566,40 @@ def main():
                     )
                     sys.exit(1)
                 bcf_header_reorder(Path(rest[0]), Path(rest[1]), seed=seed)
+            elif mode == "discover_methods":
+                # Rank 5 — pysam reflection on VariantRecord / AlignedSegment.
+                # Per Chen-Kuo-Liu-Tse 2018 §3.2 + MR-Scout TOSEM 2024.
+                if len(rest) != 1:
+                    print(
+                        "discover_methods usage: --mode discover_methods <VCF|SAM>",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                discover_methods(rest[0].upper())
+            elif mode == "query":
+                # Rank 5 — invoke listed query methods on the first record.
+                # CLI: --mode query <VCF|SAM> <input_path> --methods n1,n2
+                method_names: list[str] = []
+                if "--methods" in rest:
+                    idx = rest.index("--methods")
+                    if idx + 1 >= len(rest):
+                        print(
+                            "--methods requires a comma-list of names",
+                            file=sys.stderr,
+                        )
+                        sys.exit(1)
+                    method_names = [
+                        m.strip() for m in rest[idx + 1].split(",") if m.strip()
+                    ]
+                    rest = rest[:idx] + rest[idx + 2:]
+                if len(rest) != 2:
+                    print(
+                        "query usage: --mode query <VCF|SAM> <input_path> "
+                        "--methods n1,n2",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+                query_methods(rest[0].upper(), Path(rest[1]), method_names)
             else:
                 print(f"Unknown --mode: {mode}", file=sys.stderr)
                 sys.exit(1)

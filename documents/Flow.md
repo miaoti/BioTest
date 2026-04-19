@@ -364,7 +364,7 @@ current MR demands at run time. All are grounded in published literature:
 
 3. **归一化不变性 (Normalization Invariance)**：如 CIGAR 字符串相邻同类操作符的拆分/合并（`10M` ↔ `4M6M`）。
 
-4. **拒绝不变性 (Rejection Invariance)**：注入规范明确禁止的非法字符或零长度字段，测试软件防御性。
+4. **拒绝不变性 (Rejection Invariance)**：注入规范明确禁止的非法字符或零长度字段，测试软件防御性。**Rank 3 实装 (2026 v3 扩展)**：通过 `mr_engine/transforms/malformed.py` 提供 5 个针对具体 CRITICAL 规则的突变器（violate_info_number_a_cardinality、violate_required_fixed_columns、violate_fileformat_first_line、violate_gt_index_bounds、violate_cigar_seq_length）。每个都针对一条具体的规范条款（Number=A 基数、必填列、##fileformat 首行、GT 索引上界、CIGAR/SEQ 长度）。与 `error_consensus` 预言机配合（见 Phase C §5.4），通过 `accept / silent_skip / reject / crash` 四元投票暴露默默接受非法输入的 SUT。Grounded in Gmutator (Donaldson et al., TOSEM 2025)。
 
 5. **坐标系与索引不变性 (Coordinate & Indexing Invariance)**：在 1-based (SAM/VCF 原生) 和 0-based (Biopython 解析后) 之间进行映射，验证软件对于 0 长度区间或半开闭区间的处理是否越界。
 
@@ -712,6 +712,13 @@ Bug Report 目录中的 `x.vcf` 和 `T_x.vcf` 现在是**最小复现文件**，
 
 差分判官从 v2 开始采用 **多数投票共识**（Majority-Voting Consensus）而不是简单的两两对比。核心思想：**单个 SUT 有 bug 不应该污染整体判断**。
 
+> **Reference**: McKeeman, W. M. (1998), "Differential Testing for Software,"
+> *Digital Technical Journal* 10(1):100–107. The original differential-testing
+> paper that motivates N-version voting on equivalent inputs. Our consensus
+> oracle is a direct application: instead of declaring any pairwise diff a
+> bug, the strict-majority bucket wins, with htslib (samtools/bcftools) as a
+> tie-breaker because it ships from the hts-specs maintainers themselves.
+
 **共识投票规则 (`get_consensus_output`)**：
 1. 将所有解析器的规范化输出按语义等价分桶（`deep_equal`）。
 2. 严格多数桶（`> N/2`）直接胜出 → 它就是 "正确答案"。
@@ -733,6 +740,76 @@ Bug Report 目录中的 `x.vcf` 和 `T_x.vcf` 现在是**最小复现文件**，
 | `crash` / `timeout`  | 解析器崩溃                                         | 通常是 SUT    |
 
 **htslib 不合法信号 (Reliability guard)**：若 htslib 因 "invalid/malformed" 报错，系统置位 `htslib_rejected_as_invalid`，quarantine 据此直接隔离 MR——上游参考实现说文件格式错了，就是 MR 出了问题。
+
+#### 5.4 拒绝判定：Error-Consensus Oracle (`error_consensus.py`)
+
+> **Reference**: Chen, T. Y., Kuo, F.-C., Liu, H., Tse, T. H. (2018).
+> "Metamorphic Testing: A Review of Challenges and Opportunities." *ACM
+> Computing Surveys* 51(1):4, §3.2 — the canonical taxonomy of MRs. Our
+> 4-vote oracle (accept / silent_skip / reject / crash) is a rejection-
+> path specialization of differential testing where the "consensus" is
+> on parser verdicts rather than canonical-JSON outputs.
+
+
+Rank 3 覆盖率杠杆专用。`deep_equal` 共识在**恶意输入**场景下毫无意义——被突变的种子没有"应保留的语义"，比较 canonical_JSON 只会产生一致的垃圾。为此 `test_engine/oracles/error_consensus.py` 引入一套**四元投票**：
+
+| ErrorVote       | 判定条件                                                   |
+| :-------------- | :--------------------------------------------------------- |
+| `ACCEPT`        | 解析成功且记录数与原种子一致                                 |
+| `SILENT_SKIP`   | 解析成功但记录数**少于**原种子（解析器默默丢弃了非法记录）    |
+| `REJECT`        | 返回 `error_type="parse_error"`——识别为校验错误              |
+| `CRASH`         | 返回 `error_type="crash"`——进程异常终止                     |
+| `INELIGIBLE`    | 格式不兼容（不计入投票）                                     |
+
+多数规则：`REJECT + CRASH` 同属"拒绝"阵营，票数 > N/2 则 majority 为拒绝；此时任何 `ACCEPT / SILENT_SKIP` 的 SUT 即为 **silent acceptor**（直接判为 conformance bug）。反之若多数是 `ACCEPT`，少数的 `REJECT` 只算过度严格，记录但不升格为 Bug。
+
+`_run_single_test` 在检测到当前 MR 的 transform_steps 包含 `mr_engine.transforms.malformed.MALFORMED_TRANSFORM_NAMES` 中任一条目时自动走 `_handle_rejection_consensus`，跳过 metamorphic + differential 块。如果 primary target 就是 silent acceptor，返回 `_OracleFailure` 触发 Hypothesis 收缩，生成最小复现 Bug 报告（与其他 Oracle 同一 pipeline）。
+
+**配套 strict_mode**：`vcf_normalizer.normalize_vcf_text(..., strict_mode=True)` 与 `sam_normalizer.normalize_sam_text(..., strict_mode=True)` 在严格模式下会对突变器针对的每条规则（##fileformat 首行、INFO Number=A 基数、GT 索引、CIGAR/SEQ 长度）抛出 `ValueError`。Reference runner 默认走非严格以保持向后兼容；error-consensus 路径下启用严格模式，以便 reference runner 能正确投 REJECT。
+
+#### 5.5 API 查询判定：Query-Consensus Oracle (`query_consensus.py`) — Rank 5
+
+文件→文件 MR 永远碰不到 SUT 库的 **API 查询表面**——`vc.isStructural()`、`vc.getNAlleles()`、`smartMergeHeaders()` 这些方法只有在程序调用者使用 SUT API 时才会执行。我们的 oracle 之前只比较 canonical JSON，因此 htsjdk 的 ~460 行 API 查询代码长期 0% 覆盖。
+
+Rank 5 解决方案：把 MR 的形式从 `parse(x) == parse(T(x))` 扩展到 `P(parse(x)) == P(parse(T(x)))`，其中 P 是任何**公开的标量返回查询方法**。框架通过**反射**自动发现每个 SUT 暴露的方法名（NEVER 硬编码 per-SUT），LLM 在 Phase B 看到这些名字并构造 `API_QUERY_INVARIANCE` MR。
+
+**反射机制（按语言）**：
+- **Java（htsjdk）**：`Class.getMethods()` 过滤为 public、零参、标量返回（boolean / int / long / String / Enum）的 getter 风格方法。CLI：`BioTestHarness --mode discover_methods VCF`。
+- **Python（pysam / biopython / reference）**：`dir()` + `inspect.signature()` 过滤为 public、effectively-nullary、标量返回。Pydantic v2 类走 `model_fields` 快路径以避开 `model_dump`/`model_validate` 等框架噪声。
+- **C / C++ / Rust**：rustdoc JSON / libclang AST walk 出方法清单 → 生成 dispatch adapter（`harnesses/_reflect/`）。详见 §13。
+
+**ParserRunner opt-in 契约**（与 `supports_write_roundtrip` 同形）：
+```python
+supports_query_methods: bool = False
+def discover_query_methods(self, format_type: str) -> list[dict]: ...
+def run_query_methods(self, input_path, format_type, method_names) -> RunnerResult: ...
+```
+默认 `supports_query_methods = False`，runner 不参与 query 投票。htsjdk / pysam / biopython / reference 全部 opt-in。
+
+**Oracle 投票规则**（`get_query_consensus`）：对每个被 MR 请求的方法 m：
+- 同一 voter 在 x 和 T(x) 上结果不同 → `methods_changed`（MR 错了，或所有 SUT 同时坏了）；
+- voter 间结果不一致 → `methods_cross_sut_disagreement`（差分 bug）；
+- voter 报 `__error__`（方法不存在 / 调用崩溃）→ 该 voter 在该方法上不参与投票。
+
+主 SUT 在 `methods_changed` 中即触发 `_OracleFailure`，Hypothesis 启动收缩，生成最小复现 bug 报告——与 metamorphic / rejection 同一 pipeline。
+
+**MR DSL 扩展**：`MetamorphicRelation` 增加 `query_methods: list[str]` 字段。LLM 在生成 MR 时把要比较的方法名填入此字段；orchestrator 的 `_handle_query_consensus` 分支检测 `query_method_roundtrip in transform_steps`，从 `mr_dict["query_methods"]` 读取列表，再调用各 voter 的 `run_query_methods`。
+
+> **References**:
+> - Chen, T. Y., Kuo, F.-C., Liu, H., Tse, T. H. (2018). "Metamorphic
+>   Testing: A Review of Challenges and Opportunities." *ACM Computing
+>   Surveys* 51(1):4, §3.2 — API-level metamorphic relations.
+> - Xu, C., Terragni, V., Zhu, H., Wu, J., Cheung, S.-C. (2024).
+>   "MR-Scout: Mining Metamorphic Relations from Existing Test Cases."
+>   *ACM TOSEM* 33(6), arXiv:2304.07548. Reports +13.5 pp line coverage
+>   from MRs of exactly this form, validating the +5–10 pp lift we
+>   target.
+> - Blasi, A., Gorla, A., Ernst, M. D., Pezzè, M., Carzaniga, A. (2021).
+>   "MeMo: Automatically Identifying Metamorphic Relations in Javadoc
+>   Comments for Test Automation." *Journal of Systems and Software*
+>   181:111041 — auto-mines equivalence MRs from Javadoc; could pre-fill
+>   our discover_query_methods output with semantic prior in a future
+>   iteration.
 
 ### 6. 故障分诊与最小化 Bug 报告生成 (Triage & Bug Reporting)
 
@@ -1077,6 +1154,75 @@ runtime_capabilities = _compute_runtime_capabilities(enabled_suts, primary_targe
 
 **效果**：用户在配置里启用纯解析 SUT（例如没有写功能的 `ReferenceRunner`）时，`sut_write_roundtrip` 自动从 LLM 菜单消失；用户把 `supports_write_roundtrip=True` 的 runner（htsjdk / pysam / 新加的 writer）启用后，菜单自动复活。整个框架对"新 SUT 支持 writer"这一事件的反应是零配置的。
 
+#### 🌱 第七层：LLM 驱动的种子合成并行于 MR 挖掘 (Rank 1 — Seed Synthesis Parallel to MR Mining)
+
+**文件**：`mr_engine/agent/seed_synthesizer.py` + `mr_engine/agent/seed_synth_prompts.py`
+
+MR-only 测试在文件格式解析器上的**天花板**约为 25–40% 行覆盖率（Ba 2025, arXiv:2508.16307；Chen & Kuo 2018）——因为 MR 必须保持输入合法性，所以永远不会触发拒绝分支、二进制编解码、罕见 INFO 类型等代码路径。Rank 1 杠杆从另一方向攻击：让 LLM 基于"未覆盖代码切片"直接**合成新种子**，而不是合成新 MR。
+
+每个 Phase D 迭代（从第 2 轮起）**同时**做两件事（user: 所谓"parallel"指"并行发生，都在做"，实现上顺序执行以避开 ChromaDB 并发 + seeds/ 目录 race）：
+1. **种子合成**（新）：用 `blindspot_text` 中已含的 "UNCOVERED CODE" 切片调用 `llm.invoke([HumanMessage(prompt)])`（零 ReAct，对称于 `engine.py:717::_synthesize_from_recursion_failure`），要求输出 N 份 triple-fenced VCF/SAM 文件。
+2. **MR 挖掘**（已有）：同一个 ticket 送给 ReAct agent，返回新的 MRs。
+
+**验证管线（严格把关）**：每个候选种子依次通过：
+- Header 检查（VCF 必须以 `##fileformat=VCF` 开头，SAM 以 `@HD`/`@SQ` 开头）；
+- 大小 ≤ 500 KB（与 `fetch_real_world.py` 同一上限）；
+- **结构解析**走框架自己的 `normalize_vcf_text` / `normalize_sam_text`——Phase C 所有真实种子用的是同一个 gate，保证不会放进解析不了的垃圾；
+- SHA-256 内容哈希去重（跨迭代、跨轮次）；
+- **原子写**：`seeds/vcf/synthetic_iter{N}_{hash8}.vcf.tmp → os.replace`，防止 SeedCorpus 中途 glob 到半写入文件。
+
+成功的种子落在 `seeds/{vcf,sam}/synthetic_iter{N}_{hash8}.{vcf,sam}`，统一 `.gitignore`。下一轮 Phase C 重新实例化 `SeedCorpus`（已有行为），自动发现。
+
+**配置**：
+```yaml
+feedback_control:
+  seed_synthesis:
+    enabled: true
+    max_seeds_per_iteration: 5
+    max_file_bytes: 524288
+```
+
+**预期增益**：+8–15 pp（SeedMind arXiv:2411.18143；SeedAIchemy arXiv:2511.12448；TitanFuzz ISSTA'23；Fuzz4All ICSE'24——这类 LLM 驱动种子合成在 DL 库 fuzzing 中普遍带来 30–50% 的覆盖率提升，我们的上限保守）。
+
+**失败处理**：整条 synth 路径在 `run_phase_d` 里被 `try/except` 包住，任何异常只 log warning 不中断当轮 B/C。`enabled: false` 可一键关停。
+
+#### 🧭 第八层：hypothesis.target() 覆盖导向 (Rank 4 — Coverage-Seeking Directive)
+
+**文件**：`test_engine/orchestrator.py::_run_mr_with_hypothesis`
+
+Hypothesis 内建的 `Phase.target` 会放大 `target()` 声明的标量目标值较高的测试样本（类似 libFuzzer 的轻量替代，无需 C 级插桩）。我们利用这一点，给 `@given` 闭包内的每次例子后加两个 `target()` 标签：
+
+```python
+# 每次 _run_single_test 调用前/后快照三个计数器
+before_mv, before_dv, before_cr = result.metamorphic_failures, ...
+try:
+    _run_single_test(...)
+finally:
+    divergence = (
+        (result.metamorphic_failures - before_mv)
+        + (result.differential_failures - before_dv)
+        + (result.crashes - before_cr)
+    )
+    target(float(divergence), label="divergence")   # 共识分歧数
+    target(float(len(lines)), label="seed_size")    # 种子行数
+```
+
+**原理**：`target()` 只需目标值的**单调性**，不需要精确覆盖率。`divergence` 奖励那些触发 SUT 间不一致的种子（高信号输入），`seed_size` 给出一个连续的推力避免退化到同一种子。`Phase.target` 会据此优先生成让这两个标签增长的样本，等价于"覆盖率导向的 Hypothesis"。
+
+**为何不用 HypoFuzz**：HypoFuzz 需要 pytest 级 `@given` 发现，而我们的 `@given` 是 orchestrator 内部闭包；包 HypoFuzz 要做一个 23 条 pytest 入口的 shim，运维成本高。`target()` 内联方案约 20 行代码，零新文件、零新依赖，收益 +2–5 pp，性价比压倒性。
+
+**安全网**：`target()` 本身抛异常时被内部 `try/except` 吞掉，绝不会掩盖真正的 `_OracleFailure`——用 `test_orchestrator_target.py::test_target_exception_does_not_mask_oracle_failure` 守住。
+
+> **References**:
+> - MacIver, D. R. & Hatfield-Dodds, Z. *Hypothesis: A Property-Based Testing
+>   Framework for Python* — `hypothesis.readthedocs.io`. The `target()`
+>   directive + `Phase.target` are documented at
+>   `hypothesis.works/articles/coverage-guided-property-based-testing/`.
+> - For the planned upgrade to true branch-coverage feedback see HypoFuzz
+>   (Hatfield-Dodds, 2024-2026, `hypofuzz.com`) — Rank 7 in the coverage
+>   plan; it plugs branch-coverage feedback directly into Hypothesis
+>   strategy choices, going beyond `target()`'s scalar-objective search.
+
 ### 4. 框架终止条件 (Termination Conditions)
 
 **文件**：`test_engine/feedback/loop_controller.py`
@@ -1255,3 +1401,62 @@ Phase D 新增的所有模块均通过了实际数据的冒烟验证：
 | htslib  | `test_engine/runners/htslib_runner.py`           | (CLI 本身就是 round-trip)                  | `bcftools view -O v` / `samtools view -h`                      |
 
 **菜单自动生效**：Phase D 每轮在进入 Phase B 之前通过 `_compute_runtime_capabilities` 扫描所有启用 SUT，凡是有任何 runner 的 `supports_write_roundtrip=True`，就会在 runtime capabilities 集合里注入 `primary_sut_has_writer`，从而让 `sut_write_roundtrip` transform 出现在 LLM 的菜单里。无写入能力时自动隐藏，LLM 永远不会白选。
+
+### 12. 🧭 SUT 覆盖率作用域写法 (Per-SUT Coverage Filter — REQUIRED for a new SUT)
+
+onboard 一个新 SUT 时，harness + runner **不是**全部的契约。用户还必须明确写一段 `coverage.target_filters.<FMT>.<sut_name>` YAML，告诉框架这个 SUT 的"VCF 代码"或"SAM 代码"具体是哪些包/文件。否则：
+
+- 不写 → 该 SUT 的 coverage collector 收不到任何过滤器 → 要么 0% 覆盖率（路径不匹配），要么 denominator 里混进整个库（htsjdk 的 CRAM/BAM/legacy/JEXL 都会被计入）。
+- **两种情况都会让 coverage 数字失真，进而污染 Phase D 的 blindspot ticket 和 SCC 计算。**
+
+**YAML 结构（2026-04-18 起的 nested 写法）**：
+
+```yaml
+coverage:
+  target_filters:
+    VCF:
+      htsjdk:
+        - htsjdk/variant/vcf
+        - htsjdk/variant/variantcontext::-JEXL,-Jexl,-*JEXL*,-*Jexl*
+        - htsjdk/variant/variantcontext/writer::VCF,Variant
+      pysam:
+        - pysam
+    SAM:
+      htsjdk:
+        - htsjdk/samtools::SAM,Sam
+      biopython:
+        - Bio/Align/sam
+      seqan3:
+        - seqan3/io/sam_file
+        - format_sam
+        - cigar
+      pysam:
+        - pysam
+```
+
+**Pattern 语法**（每条 entry）：
+
+| 写法                       | 语义                                                     |
+| :------------------------- | :-------------------------------------------------------- |
+| `pkg/path`                 | 整个包/目录，所有源文件都纳入                              |
+| `pkg/path::VCF,Variant`    | 包 + 白名单前缀：只纳入以 `VCF` 或 `Variant` 开头的文件    |
+| `pkg/path::-JEXL,-Jexl`    | 包 + 黑名单前缀：纳入除这些前缀外的所有文件                |
+| `pkg/path::*SV*,-BCF2*`    | 通配符：`*Foo*` = 包含 `Foo` 的；`-BCF2*` = 排除以 `BCF2` 开头 |
+
+**向后兼容**：旧版扁平结构 `target_filters.VCF: [list]` 仍然识别，整条列表会扇出给所有 SUT（这就是为什么 htsjdk 包名在 pysam collector 里自然不匹配）。但新 SUT 必须用 nested 写法——只有这样才能精确圈住它自己的代码。
+
+**`coverage_collector.py::MultiCoverageCollector._resolve_sut_filter`** 是分发点：给 `(fmt, sut_name)` 返回对应的 pattern 列表；如果 fmt 下没有该 sut 的条目，就返回 `None`（collector 走它自己的 default scope）。
+
+**落在哪些 collector**：
+- **Java / JaCoCo** (`JaCoCoCollector`)：把 pattern 当成 Java 包名，匹配 `<package name="…">` + 文件名前缀/通配符。
+- **Python / coverage.py** (`CoveragePyCollector`)：把 pattern 当成 dotted 包名或目录 substring，匹配已安装包的文件路径。
+- **C++ / gcovr** (`GcovrCollector`)：把 pattern 当成源路径 substring，匹配 gcovr JSON 里的 `file` 字段。
+
+每个 collector 看到自己语言匹配不上的 entry 就静默跳过，所以同一个 fmt 下可以混放多语言 pattern 而互不干扰。
+
+**onboarding checklist**（新 SUT 必做三件套，不是两件）：
+1. 写 harness（`harnesses/<lang>/<sut>_harness.*`）
+2. 写 runner 子类（`test_engine/runners/<sut>_runner.py`）
+3. **写 coverage 作用域** (`biotest_config.yaml::coverage.target_filters.<FMT>.<sut>`)
+
+缺了第 3 条，Phase D 的 feedback signal 就是垃圾数据。

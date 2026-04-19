@@ -66,6 +66,13 @@ from mr_engine.transforms.sam import (
     reorder_header_records,
     toggle_cigar_hard_soft_clipping,
 )
+from mr_engine.transforms.malformed import (
+    violate_info_number_a_cardinality,
+    violate_required_fixed_columns,
+    violate_fileformat_first_line,
+    violate_gt_index_bounds,
+    violate_cigar_seq_length,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -799,3 +806,66 @@ def _dispatch_permute_csq_annotations(
                 continue
         result.append(line)
     return result
+
+
+# ===========================================================================
+# Rank 3 — spec-rule-targeted malformed-input mutators (VCF + SAM).
+# Each delegates to the corresponding `violate_*` transform verbatim —
+# they already take `(lines, seed)` shape.
+# ===========================================================================
+
+
+@_register("violate_info_number_a_cardinality")
+def _dispatch_violate_info_number_a_cardinality(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_info_number_a_cardinality(lines, seed=seed)
+
+
+@_register("violate_required_fixed_columns")
+def _dispatch_violate_required_fixed_columns(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_required_fixed_columns(lines, seed=seed)
+
+
+@_register("violate_fileformat_first_line")
+def _dispatch_violate_fileformat_first_line(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_fileformat_first_line(lines, seed=seed)
+
+
+@_register("violate_gt_index_bounds")
+def _dispatch_violate_gt_index_bounds(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_gt_index_bounds(lines, seed=seed)
+
+
+@_register("violate_cigar_seq_length")
+def _dispatch_violate_cigar_seq_length(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return violate_cigar_seq_length(lines, seed=seed)
+
+
+# ===========================================================================
+# Rank 5 — query_method_roundtrip
+# ===========================================================================
+#
+# This transform has NO file-mutation effect. The actual API-query work
+# happens inside the orchestrator's `_handle_query_consensus` branch
+# (test_engine/orchestrator.py), which detects the transform name in
+# the MR's transform_steps and routes the MR to the query-consensus
+# oracle instead of the deep-equal consensus.
+#
+# We register a no-op dispatch wrapper so that:
+#   1. The transform validates against the whitelist in the DSL compiler,
+#   2. apply_mr_transforms can iterate transform_steps without crashing
+#      when a non-mutating step appears in the chain.
+@_register("query_method_roundtrip")
+def _dispatch_query_method_roundtrip(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    return list(lines)

@@ -41,8 +41,11 @@ phase_a:
 phase_b:
   enabled: true
 
-  # Behavior themes to target — full 6-theme matrix. Bounded per-attempt
+  # Behavior themes to target — full 7-theme matrix. Bounded per-attempt
   # via recursion_limit=15 in agent/engine.py so slow LLM loops terminate.
+  # `api_query_invariance` (Rank 5) is gated at runtime: the prompt
+  # filter hides query_method_roundtrip when no enabled SUT sets
+  # supports_query_methods=True, so listing it here is safe.
   themes:
     - ordering_invariance
     - semantics_preserving_permutation
@@ -50,6 +53,7 @@ phase_b:
     - rejection_invariance
     - coordinate_indexing_invariance
     - round_trip_invariance
+    - api_query_invariance
 
   # NOTE: the formats to mine are NOT configured here. They are derived
   # automatically from `phase_c.format_filter` below — the single source
@@ -100,7 +104,7 @@ phase_c:
   #              below), and blindspot tickets all scope to this format.
   # Leave at `null` to run BOTH formats (only do this if you have plenty
   # of LLM quota + time — it doubles Phase B's API calls).
-  format_filter: VCF
+  format_filter: SAM
 
   # Systems Under Test — real parser implementations from SUTfolder/
   # (only actual external parsers; the built-in reference normalizer is
@@ -179,7 +183,7 @@ feedback_control:
   # Primary Target: this SUT DRIVES the feedback loop.
   # SCC, code coverage hints, and blindspot tickets are derived from
   # this parser only. Other SUTs act as auxiliary differential oracles.
-  primary_target: htsjdk
+  primary_target: biopython
 
   # Prioritized-queueing window: each iteration shows the LLM the Top-K
   # highest-priority uncovered rules (sorted by complexity → proximity
@@ -198,6 +202,38 @@ feedback_control:
     biopython: .  # Uses sys.path resolution (site-packages)
     seqan3: SUTfolder/cpp/seqan3/include
     pysam: coverage_artifacts/pysam/source
+
+  # -------------------------------------------------------------------------
+  # Rank 1 lever: LLM-driven seed synthesis, in parallel to MR mining.
+  # Each Phase D iteration (from iter 2 onward) feeds the same blindspot
+  # ticket to a second LLM call and asks for raw VCF/SAM files that
+  # exercise the uncovered code paths. Validated candidates land under
+  # seeds/{vcf,sam}/synthetic_iter{N}_{hash8}.{vcf,sam} (gitignored) and
+  # are auto-discovered by SeedCorpus at the next Phase C.
+  #
+  # Grounded in SeedMind (arXiv:2411.18143), SeedAIchemy (arXiv:2511.12448),
+  # TitanFuzz (ISSTA'23), Fuzz4All (ICSE'24).
+  # -------------------------------------------------------------------------
+  seed_synthesis:
+    enabled: true                # flip to false to disable the lever
+    max_seeds_per_iteration: 5   # Top-K requested from the LLM per iteration
+    max_file_bytes: 524288       # 500 KB, same cap as fetch_real_world.py
+
+  # -------------------------------------------------------------------------
+  # Rank 6 lever: LLM-driven MR SYNTHESIS (parallel to Rank 1 seeds).
+  # Same blindspot ticket, but asks the LLM for NEW metamorphic relations
+  # composed over the existing transform whitelist. Output goes through the
+  # regular compile_mr_output pipeline (whitelist + compound-group + query-
+  # methods validators all apply), then merged into the live registry so
+  # Phase B's ReAct agent and Phase C pick them up in the same iteration.
+  #
+  # Disabled by default: enable only after Rank 5 impact has been baselined
+  # in an isolated run. Grounded in Fuzz4All (ICSE'24), PromptFuzz (CCS'24),
+  # ChatAFL (NDSS'24).
+  # -------------------------------------------------------------------------
+  mr_synthesis:
+    enabled: false               # flip to true when Rank 5 baseline is set
+    max_mrs_per_iteration: 5     # Top-K MRs requested from the LLM per iter
 
 # ---------------------------------------------------------------------------
 # Coverage Collection (Phase D)
@@ -224,33 +260,62 @@ coverage:
   # Format-aware whitelist: only these paths are relevant per format.
   # Prevents VCF coverage from polluting SAM feedback and vice versa.
   #
-  # Syntax: entries may be one of
-  #   - "pkg/path"                  — exact package match, all files included
-  #   - "pkg/path::PFX1,PFX2"       — exact package match, but only sourcefiles
-  #                                   whose name starts with PFX1 or PFX2
-  #   - "substring"                 — any path containing this substring
-  #                                   (used for Python / C++ where package
-  #                                   structure is flat)
-  # The `::` prefix filter is critical for htsjdk/samtools because that
-  # package mixes SAM + BAM + CRAM + CSI classes; the SAM entry narrows
-  # to SAM*.java / Sam*.java only.
+  # ==============================================================
+  # IMPORTANT — PER-SUT ONBOARDING CONTRACT
+  # ==============================================================
+  # When you add a new SUT (Rust parser, etc.) you MUST write THREE
+  # things, not two:
+  #   1. a harness that reads a file and prints canonical JSON
+  #   2. a `ParserRunner` subclass in `test_engine/runners/`
+  #   3. a `coverage.target_filters.{VCF,SAM}.<your_sut_name>` block
+  #      BELOW that tells the framework which source files/packages
+  #      count as "in scope" for that SUT.
+  # Without (3) the framework either sees no coverage for your SUT,
+  # or pollutes the denominator with everything your SUT's library
+  # ships. Neither is useful. The block is how we keep coverage
+  # focused on YOUR parser's VCF (or SAM) code specifically.
+  #
+  # Pattern syntax per entry:
+  #   "pkg/path"                 package only, all files
+  #   "pkg/path::VCF,Variant"    include files starting with these
+  #   "pkg/path::-JEXL,-Jexl"    exclude files starting with these
+  #   "pkg/path::VCF,-BCF2"      mixed include + exclude
+  #   "*JEXL*", "-*JEXL*"        wildcard contains-match (v2 syntax)
+  #   "prefix*", "*suffix"       wildcard prefix/suffix match
+  #
+  # ==============================================================
   target_filters:
     VCF:
-      - htsjdk/variant/vcf
-      - htsjdk/variant/variantcontext::VCF,Variant
-      # Writer subpackage is a SEPARATE Java package from variantcontext/
-      # itself, so exact-match filter rules miss it. This entry pulls in
-      # VCFWriter / VariantContextWriterBuilder, which are hit whenever a
-      # write-roundtrip MR (e.g. htsjdk_write_roundtrip) runs.
-      - htsjdk/variant/variantcontext/writer::VCF,Variant
-      - pysam                          # pysam handles VCF via HTSlib
+      # Java / htsjdk — JaCoCoCollector scope.
+      # Includes the parser package, the VCF data-model package
+      # (with JEXL filter-expression classes removed via -*JEXL*/-*Jexl*
+      # substring wildcards — they sneak past prefix-only filters
+      # because they start with "Variant" or "Genotype"), and the
+      # writer subpackage scoped to VCF text writers only (BCF2*
+      # implicitly excluded by the VCF,Variant prefix filter).
+      htsjdk:
+        - htsjdk/variant/vcf
+        - htsjdk/variant/variantcontext::-JEXL,-Jexl,-*JEXL*,-*Jexl*
+        - htsjdk/variant/variantcontext/writer::VCF,Variant
+      # pysam — CoveragePyCollector / PysamDockerCoverageCollector scope.
+      pysam:
+        - pysam
     SAM:
-      - htsjdk/samtools::SAM,Sam
-      - Bio/Align/sam
-      - seqan3/io/sam_file
-      - format_sam
-      - cigar
-      - pysam                          # pysam handles SAM via HTSlib
+      # Java / htsjdk — htsjdk/samtools mixes SAM + BAM + CRAM +
+      # CSI + index code; narrow to SAM-named classes only.
+      htsjdk:
+        - htsjdk/samtools::SAM,Sam
+      # Biopython — CoveragePyCollector scope.
+      biopython:
+        - Bio/Align/sam
+      # seqan3 — GcovrCollector substring scope on C++ paths.
+      seqan3:
+        - seqan3/io/sam_file
+        - format_sam
+        - cigar
+      # pysam — shared scope for SAM (via libhts).
+      pysam:
+        - pysam
 
 # ---------------------------------------------------------------------------
 # CI Integration (future)

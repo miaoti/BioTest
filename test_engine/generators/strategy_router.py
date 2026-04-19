@@ -41,6 +41,7 @@ def _build_map() -> dict[str, Callable]:
         st_permute_bcf_header_dictionary,
         st_permute_csq_annotations,
         st_sut_write_roundtrip as st_sut_write_roundtrip_vcf,
+        st_query_method_roundtrip as st_query_method_roundtrip_vcf,
     )
     from .sam_strategies import (
         st_permute_optional_tags,
@@ -48,6 +49,14 @@ def _build_map() -> dict[str, Callable]:
         st_cigar_split_merge,
         st_toggle_clipping,
         st_sut_write_roundtrip as st_sut_write_roundtrip_sam,
+        st_query_method_roundtrip as st_query_method_roundtrip_sam,
+    )
+    from .malformed_strategies import (
+        st_violate_info_number_a_cardinality,
+        st_violate_required_fixed_columns,
+        st_violate_fileformat_first_line,
+        st_violate_gt_index_bounds,
+        st_violate_cigar_seq_length,
     )
 
     return {
@@ -82,11 +91,25 @@ def _build_map() -> dict[str, Callable]:
         # at get_strategy() time based on the MR's primary format.
         "sut_write_roundtrip": st_sut_write_roundtrip_vcf,
 
+        # Rank 5 — query_method_roundtrip (API-query MRs).
+        # MR-Scout (Xu et al., TOSEM 2024). Default VCF scope; SAM
+        # variant registered in the format-scoped map below.
+        "query_method_roundtrip": st_query_method_roundtrip_vcf,
+
         # SAM transforms
         "permute_optional_tag_fields": st_permute_optional_tags,
         "reorder_header_records": st_reorder_header,
         "split_or_merge_adjacent_cigar_ops": st_cigar_split_merge,
         "toggle_cigar_hard_soft_clipping": st_toggle_clipping,
+
+        # Rank 3 malformed-input mutators (REJECTION_INVARIANCE behavior).
+        # Paired with the error-consensus oracle so voters tag
+        # accept / reject / crash / silent_skip instead of deep_equal.
+        "violate_info_number_a_cardinality": st_violate_info_number_a_cardinality,
+        "violate_required_fixed_columns":    st_violate_required_fixed_columns,
+        "violate_fileformat_first_line":     st_violate_fileformat_first_line,
+        "violate_gt_index_bounds":           st_violate_gt_index_bounds,
+        "violate_cigar_seq_length":          st_violate_cigar_seq_length,
     }
 
 
@@ -98,13 +121,17 @@ def _build_format_scoped_map() -> dict[tuple[str, str], Callable]:
     """
     from .vcf_strategies import (
         st_sut_write_roundtrip as st_sut_write_roundtrip_vcf,
+        st_query_method_roundtrip as st_query_method_roundtrip_vcf,
     )
     from .sam_strategies import (
         st_sut_write_roundtrip as st_sut_write_roundtrip_sam,
+        st_query_method_roundtrip as st_query_method_roundtrip_sam,
     )
     return {
         ("sut_write_roundtrip", "VCF"): st_sut_write_roundtrip_vcf,
         ("sut_write_roundtrip", "SAM"): st_sut_write_roundtrip_sam,
+        ("query_method_roundtrip", "VCF"): st_query_method_roundtrip_vcf,
+        ("query_method_roundtrip", "SAM"): st_query_method_roundtrip_sam,
     }
 
 

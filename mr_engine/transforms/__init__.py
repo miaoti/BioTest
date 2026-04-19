@@ -70,7 +70,7 @@ def register_transform(
 
 
 # Import submodules to trigger registration
-from . import vcf, sam  # noqa: E402, F401
+from . import vcf, sam, malformed, query  # noqa: E402, F401
 
 
 def get_whitelist() -> list[str]:

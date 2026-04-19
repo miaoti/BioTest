@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-from hypothesis import given, settings, HealthCheck, Phase, assume, Verbosity
+from hypothesis import given, settings, HealthCheck, Phase, assume, Verbosity, target
 from hypothesis import strategies as st
 
 from .config import MR_REGISTRY_PATH, BUG_REPORTS_DIR
@@ -177,6 +177,23 @@ def _run_single_test(
 
     first_failure: Optional[_OracleFailure] = None
 
+    # Rank 3 branch: if any transform step is a malformed-input mutator,
+    # route this MR through the error-consensus oracle (accept / reject /
+    # crash / silent_skip vote) instead of the deep_equal consensus. The
+    # two paths are mutually exclusive: a malformed seed never has
+    # "semantics to preserve", so comparing canonical_JSON is meaningless.
+    from mr_engine.transforms.malformed import MALFORMED_TRANSFORM_NAMES
+    is_rejection_mr = any(
+        step in MALFORMED_TRANSFORM_NAMES for step in transform_steps
+    )
+
+    # Rank 5 branch: API-query MRs check `P(parse(x)) == P(parse(T(x)))`
+    # for one or more public query methods on the parsed object. Routes
+    # through query_consensus instead of deep_equal. Detected by the
+    # presence of `query_method_roundtrip` in transform_steps.
+    is_query_mr = "query_method_roundtrip" in transform_steps
+    query_method_names = list(mr_dict.get("query_methods", []) or [])
+
     try:
         # --- Collect every runner's output on x and T(x) once,
         #     for use by BOTH the per-parser metamorphic check AND the
@@ -186,6 +203,40 @@ def _run_single_test(
         for runner in applicable:
             results_x[runner.name] = runner.run(seed_path, fmt)
             results_tx[runner.name] = runner.run(transformed_path, fmt)
+
+        if is_query_mr:
+            query_failure = _handle_query_consensus(
+                applicable=applicable,
+                mr_dict=mr_dict,
+                method_names=query_method_names,
+                seed_path=seed_path,
+                transformed_path=transformed_path,
+                rng_seed=rng_seed,
+                fmt=fmt,
+                result=result,
+                primary_target=primary_target,
+            )
+            if query_failure is not None:
+                raise query_failure
+            return
+
+        if is_rejection_mr:
+            rejection_failure = _handle_rejection_consensus(
+                results_x=results_x,
+                results_tx=results_tx,
+                applicable=applicable,
+                mr_dict=mr_dict,
+                seed_path=seed_path,
+                rng_seed=rng_seed,
+                result=result,
+                primary_target=primary_target,
+            )
+            # Skip the deep_equal consensus + metamorphic + differential
+            # blocks — all three assume semantics-preserving input.
+            # finally: still cleans up transformed_path.
+            if rejection_failure is not None:
+                raise rejection_failure
+            return
 
         # Format-aware eligibility: consensus.py drops any parser whose
         # supported_formats excludes `fmt`, OR whose RunnerResult carries
@@ -350,6 +401,272 @@ def _run_single_test(
         raise first_failure
 
 
+def _handle_query_consensus(
+    *,
+    applicable: list[ParserRunner],
+    mr_dict: dict[str, Any],
+    method_names: list[str],
+    seed_path: Path,
+    transformed_path: Path,
+    rng_seed: int,
+    fmt: str,
+    result: TestSuiteResult,
+    primary_target: str,
+) -> Optional[_OracleFailure]:
+    """Rank 5 branch: score an API-query MR via query-consensus.
+
+    For each eligible runner that supports query methods, invoke
+    `runner.run_query_methods(seed_path, fmt, method_names)` and
+    `runner.run_query_methods(transformed_path, fmt, method_names)`.
+    The query-consensus oracle then compares per-method scalar results
+    across x and T(x) (intra-runner) and across runners (cross-SUT).
+
+    Returns an `_OracleFailure` when the primary target's query results
+    differ across T(x), or when SUTs disagree about the result on x —
+    so Hypothesis can shrink the example. None on pass.
+
+    Reference: Chen-Kuo-Liu-Tse (ACM CSUR 2018) §3.2 API metamorphic
+    relations; MR-Scout (Xu et al., TOSEM 2024, arXiv:2304.07548).
+    """
+    from .oracles.query_consensus import get_query_consensus
+
+    mr_id = mr_dict["mr_id"]
+    mr_name = mr_dict.get("mr_name", "")
+
+    if not method_names:
+        # MR didn't specify query_methods. Treat as a no-op test (count
+        # it but don't fail anybody).
+        result.total_tests += 1
+        result.det_tracker.record(DETEvent(
+            mr_id=mr_id,
+            test_type="api_query",
+            parser_names=[r.name for r in applicable],
+            passed=True,
+            difference_count=0,
+            seed_id=seed_path.name,
+            failure_type=None,
+            failure_cause="no_methods_specified",
+            primary_target=primary_target or None,
+        ))
+        return None
+
+    # Only runners that opt into supports_query_methods participate.
+    voters = [r for r in applicable if getattr(r, "supports_query_methods", False)]
+    if not voters:
+        result.total_tests += 1
+        result.det_tracker.record(DETEvent(
+            mr_id=mr_id,
+            test_type="api_query",
+            parser_names=[r.name for r in applicable],
+            passed=True,
+            difference_count=0,
+            seed_id=seed_path.name,
+            failure_type=None,
+            failure_cause="no_query_capable_runners",
+            primary_target=primary_target or None,
+        ))
+        return None
+
+    results_x: dict[str, RunnerResult] = {}
+    results_tx: dict[str, RunnerResult] = {}
+    for runner in voters:
+        try:
+            results_x[runner.name] = runner.run_query_methods(
+                seed_path, fmt, method_names,
+            )
+            results_tx[runner.name] = runner.run_query_methods(
+                transformed_path, fmt, method_names,
+            )
+        except NotImplementedError:
+            logger.debug(
+                "Runner %s claims supports_query_methods but raised NIE; skipping",
+                runner.name,
+            )
+        except Exception as e:
+            logger.debug("Runner %s query call raised: %s", runner.name, e)
+
+    verdict = get_query_consensus(results_x, results_tx, method_names)
+
+    primary_failure: Optional[_OracleFailure] = None
+
+    for runner in voters:
+        result.total_tests += 1
+        per_voter = verdict.per_voter.get(runner.name, {})
+        # voter passed iff none of the methods registered as False
+        voter_passed = not any(v is False for v in per_voter.values())
+
+        failure_cause: Optional[str] = None
+        if not voter_passed:
+            failure_cause = "query_changed"
+        elif runner.name in verdict.dissenting_voters:
+            failure_cause = "cross_sut_disagreement"
+
+        result.det_tracker.record(DETEvent(
+            mr_id=mr_id,
+            test_type="api_query",
+            parser_names=[runner.name],
+            passed=voter_passed,
+            difference_count=sum(1 for v in per_voter.values() if v is False),
+            seed_id=seed_path.name,
+            failure_type="api_query" if not voter_passed else None,
+            failure_cause=failure_cause,
+            primary_target=primary_target or None,
+        ))
+
+        if not voter_passed:
+            result.metamorphic_failures += 1
+            logger.warning(
+                "  API-QUERY FAILURE [%s]: %s on %s (seed=%d) — methods that "
+                "changed: %s",
+                failure_cause or "unknown", runner.name, seed_path.name,
+                rng_seed,
+                [m for m, v in per_voter.items() if v is False],
+            )
+            is_primary = (not primary_target) or runner.name == primary_target
+            if is_primary and primary_failure is None:
+                from .oracles.metamorphic import OracleResult as _OR
+                oracle_result = _OR(
+                    passed=False,
+                    mr_id=mr_id,
+                    mr_name=mr_name,
+                    parser_name=runner.name,
+                    error_type="api_query_invariant_violation",
+                    differences=[
+                        f"Method {m!r} returned different scalar values "
+                        f"on x vs T(x)"
+                        for m, v in per_voter.items() if v is False
+                    ],
+                )
+                primary_failure = _OracleFailure(
+                    oracle_result.differences, oracle_result,
+                )
+
+    if not primary_failure and verdict.methods_cross_sut_disagreement:
+        # Differential bug across SUTs (no per-voter intra-pair
+        # disagreement triggered a primary failure but voters disagreed
+        # across each other). Log + count, no shrink.
+        result.differential_failures += 1
+        logger.warning(
+            "  API-QUERY DIFFERENTIAL: methods diverged across SUTs on %s "
+            "(seed=%d): %s — voters: %s",
+            seed_path.name, rng_seed,
+            verdict.methods_cross_sut_disagreement,
+            verdict.dissenting_voters,
+        )
+
+    return primary_failure
+
+
+def _handle_rejection_consensus(
+    *,
+    results_x: dict[str, RunnerResult],
+    results_tx: dict[str, RunnerResult],
+    applicable: list[ParserRunner],
+    mr_dict: dict[str, Any],
+    seed_path: Path,
+    rng_seed: int,
+    result: TestSuiteResult,
+    primary_target: str,
+) -> Optional[_OracleFailure]:
+    """Rank 3 branch: score a malformed-input MR via error-consensus.
+
+    Each voter's RunnerResult on the mutated seed maps to an ErrorVote
+    (accept / silent_skip / reject / crash / ineligible). The majority
+    verdict is expected to be REJECT/CRASH — any SUT that voted
+    ACCEPT/SILENT_SKIP against that majority is silently tolerating a
+    spec violation and gets a bug report.
+
+    Returns an `_OracleFailure` when the primary target silently accepted
+    a spec-violating input (so Hypothesis can shrink the example). None
+    otherwise.
+    """
+    from .oracles.error_consensus import (
+        ErrorVote,
+        get_error_consensus,
+    )
+
+    mr_id = mr_dict["mr_id"]
+
+    # Derive original record count for SILENT_SKIP detection. We look
+    # for any successful runner output on x and use its "records" list.
+    input_record_count = 0
+    for r in results_x.values():
+        if r.success and r.canonical_json:
+            recs = r.canonical_json.get("records")
+            if isinstance(recs, list):
+                input_record_count = max(input_record_count, len(recs))
+
+    verdict = get_error_consensus(results_tx, input_record_count=input_record_count)
+
+    primary_silent_failure: Optional[_OracleFailure] = None
+
+    # Emit a DETEvent per voter so the existing DET report surfaces the
+    # rejection-mode results alongside the metamorphic / differential ones.
+    for runner in applicable:
+        vote = verdict.per_voter_vote.get(runner.name, ErrorVote.INELIGIBLE)
+        if vote is ErrorVote.INELIGIBLE:
+            continue
+        result.total_tests += 1
+
+        is_dissenter = runner.name in verdict.dissenting_voters
+        is_silent_acceptor = runner.name in verdict.silent_acceptors
+        passed = not is_silent_acceptor  # only silent-accept = real bug
+
+        failure_cause: Optional[str] = None
+        if is_silent_acceptor:
+            # Majority rejected, this parser silently accepted → real bug.
+            failure_cause = "silent_accept_bug"
+        elif is_dissenter:
+            # Majority accepted, this parser rejected → over-strict.
+            failure_cause = "over_strict"
+        elif verdict.is_inconclusive:
+            failure_cause = "inconclusive"
+
+        result.det_tracker.record(DETEvent(
+            mr_id=mr_id,
+            test_type="rejection",
+            parser_names=[runner.name],
+            passed=passed,
+            difference_count=0,
+            seed_id=seed_path.name,
+            failure_type="rejection" if not passed else None,
+            failure_cause=failure_cause,
+            primary_target=primary_target or None,
+        ))
+
+        if is_silent_acceptor:
+            result.metamorphic_failures += 1
+            logger.warning(
+                "  REJECTION FAILURE [silent_accept_bug]: %s on %s (seed=%d) "
+                "— majority %s rejected, this parser voted %s",
+                runner.name, seed_path.name, rng_seed,
+                verdict.majority_vote.value if verdict.majority_vote else "?",
+                vote.value,
+            )
+            # Trigger Hypothesis shrinking only when the primary target
+            # is the offender. A non-primary silent-accept is still
+            # recorded but doesn't spend shrink budget.
+            is_primary = (not primary_target) or runner.name == primary_target
+            if is_primary and primary_silent_failure is None:
+                from .oracles.metamorphic import OracleResult as _OR
+                oracle_result = _OR(
+                    passed=False,
+                    mr_id=mr_id,
+                    mr_name=mr_dict.get("mr_name", ""),
+                    parser_name=runner.name,
+                    error_type="silent_accept_bug",
+                    differences=[
+                        f"{runner.name} silently accepted malformed input "
+                        f"while majority rejected (vote={vote.value})",
+                    ],
+                )
+                primary_silent_failure = _OracleFailure(
+                    oracle_result.differences, oracle_result,
+                )
+
+    return primary_silent_failure
+
+
 def _classify_metamorphic(
     runner_name: str,
     res_x: RunnerResult,
@@ -507,17 +824,44 @@ def _run_mr_with_hypothesis(
         lines = params["lines"]
         rng_seed = params["rng_seed"]
 
-        _run_single_test(
-            seed_path=seed_path,
-            seed_lines=lines,
-            rng_seed=rng_seed,
-            mr_dict=mr_dict,
-            applicable=applicable,
-            result=result,
-            output_dir=output_dir,
-            fmt=fmt,
-            primary_target=primary_target,
-        )
+        # Rank 4 lever — hypothesis.target() for coverage-seeking search.
+        # We snapshot the per-example deltas in three independent signals:
+        #   (a) oracle-violation delta  — metamorphic + differential failures
+        #       caused by THIS example. Violations imply new code paths
+        #       (rejection branches, diverging serializers) were hit.
+        #   (b) crash delta              — parser aborts, usually a new
+        #       error-handling path.
+        #   (c) transformed-size proxy   — len(lines). Monotonic with how
+        #       much record content feeds the parsers per example.
+        # `target()` only needs MONOTONICITY of each label to steer
+        # Phase.target generation — exact values don't matter.
+        before_mv = result.metamorphic_failures
+        before_dv = result.differential_failures
+        before_cr = result.crashes
+        try:
+            _run_single_test(
+                seed_path=seed_path,
+                seed_lines=lines,
+                rng_seed=rng_seed,
+                mr_dict=mr_dict,
+                applicable=applicable,
+                result=result,
+                output_dir=output_dir,
+                fmt=fmt,
+                primary_target=primary_target,
+            )
+        finally:
+            try:
+                divergence = (
+                    (result.metamorphic_failures - before_mv)
+                    + (result.differential_failures - before_dv)
+                    + (result.crashes - before_cr)
+                )
+                target(float(divergence), label="divergence")
+                target(float(len(lines)), label="seed_size")
+            except Exception:
+                # target() misbehavior must never mask a real oracle failure.
+                pass
 
     # Execute — Hypothesis manages the loop, shrinking, and examples
     try:

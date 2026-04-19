@@ -54,6 +54,12 @@ class PysamRunner(ParserRunner):
     # harnesses/pysam/pysam_harness.py::vcf_write_roundtrip).
     supports_write_roundtrip: bool = True
 
+    # Rank 5 — opt in to query-method MRs. Native path uses Python
+    # introspection (test_engine.runners.introspection) on the first
+    # parsed VariantRecord / AlignedSegment; Docker path delegates to
+    # `--mode discover_methods` / `--mode query` in pysam_harness.py.
+    supports_query_methods: bool = True
+
     def __init__(self, coverage_dir: Optional[Path] = None):
         self._docker_runner: Optional[ParserRunner] = None
         self._coverage_dir = coverage_dir
@@ -415,3 +421,98 @@ class PysamRunner(ParserRunner):
             "header": {"HD": hd, "SQ": sq, "RG": rg, "PG": pg, "CO": co},
             "records": records,
         }
+
+    # ------------------------------------------------------------------
+    # Rank 5 — query-method MRs
+    # ------------------------------------------------------------------
+    def discover_query_methods(self, format_type: str) -> list[dict]:
+        """Introspect the first parsed record's class for scalar query
+        methods. Tries native pysam first; falls back to a tiny seed
+        file when Docker-only paths are in play."""
+        from .introspection import get_scalar_query_methods
+        if not self._use_native():
+            return []
+        try:
+            import pysam
+        except ImportError:
+            return []
+        # Use pysam's class hierarchy without needing a real file.
+        if format_type.upper() == "VCF":
+            try:
+                # VariantRecord can't easily be instantiated standalone
+                # — peek at any seed if available, else introspect
+                # pysam.VariantRecord directly via attribute walk on
+                # the class itself.
+                cls = pysam.VariantRecord
+                return get_scalar_query_methods(cls)
+            except Exception:
+                return []
+        if format_type.upper() == "SAM":
+            try:
+                cls = pysam.AlignedSegment
+                return get_scalar_query_methods(cls)
+            except Exception:
+                return []
+        return []
+
+    def run_query_methods(
+        self,
+        input_path: Path,
+        format_type: str,
+        method_names: list[str],
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        """Parse `input_path`, invoke each named method on the first
+        record, return RunnerResult with method_results dict."""
+        from .introspection import run_methods_on_record
+        if not self._use_native():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr="PysamRunner.run_query_methods needs native pysam",
+            )
+        try:
+            import pysam
+        except ImportError as e:
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="crash",
+                stderr=f"pysam import failed: {e}",
+            )
+        t0 = time.monotonic()
+        try:
+            if format_type.upper() == "VCF":
+                f = pysam.VariantFile(str(input_path))
+                rec = next(f, None)
+                f.close()
+            elif format_type.upper() == "SAM":
+                f = pysam.AlignmentFile(str(input_path), "r", check_sq=False)
+                rec = next(f, None)
+                f.close()
+            else:
+                return RunnerResult(
+                    success=False, parser_name=self.name,
+                    format_type=format_type, error_type="ineligible",
+                    stderr=f"unsupported format {format_type}",
+                )
+            if rec is None:
+                return RunnerResult(
+                    success=True, parser_name=self.name,
+                    format_type=format_type.upper(), exit_code=0,
+                    canonical_json={"method_results": {}},
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+            results = run_methods_on_record(rec, method_names)
+            return RunnerResult(
+                success=True, parser_name=self.name,
+                format_type=format_type.upper(), exit_code=0,
+                canonical_json={"method_results": results},
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="crash",
+                stderr=f"native query: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )

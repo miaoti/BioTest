@@ -5,6 +5,7 @@ import htsjdk.variant.variantcontext.writer.*;
 import htsjdk.variant.vcf.*;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
@@ -35,13 +36,22 @@ public class BioTestHarness {
             System.exit(1);
         }
 
-        // Parse --mode <name> + positional args. Keeps backward compat:
-        // old two-positional-arg invocations still route to parse mode.
+        // Parse --mode <name> + optional --writer-variant + --methods +
+        // positional args. Keeps backward compat: old two-positional-arg
+        // invocations still route to parse mode.
         String mode = "parse";
+        String writerVariant = "standard";      // VCF write-roundtrip only
+        String methodsArg = "";                  // Rank 5: comma-list of method names
         List<String> positional = new ArrayList<>();
         for (int i = 0; i < args.length; i++) {
             if ("--mode".equals(args[i]) && i + 1 < args.length) {
                 mode = args[i + 1];
+                i++;
+            } else if ("--writer-variant".equals(args[i]) && i + 1 < args.length) {
+                writerVariant = args[i + 1];
+                i++;
+            } else if ("--methods".equals(args[i]) && i + 1 < args.length) {
+                methodsArg = args[i + 1];
                 i++;
             } else {
                 positional.add(args[i]);
@@ -50,9 +60,19 @@ public class BioTestHarness {
 
         try {
             if ("write_roundtrip".equals(mode)) {
-                // CLI grammar: --mode write_roundtrip <VCF|SAM> <file_path>
-                // (legacy single-arg form — <vcf_path> only — is kept
-                // for backward compat with older Python callers.)
+                // CLI grammar:
+                //   --mode write_roundtrip <VCF|SAM> <file_path>
+                //     [--writer-variant {standard|advanced}]   (VCF only)
+                //
+                // Legacy single-arg form — <vcf_path> only — is kept for
+                // backward compat with older Python callers.
+                //
+                // writer-variant selects which writer plumbing to exercise
+                // on VCF: "standard" is the minimal clearOptions() path;
+                // "advanced" keeps default options + .buffered() so
+                // AsyncVariantContextWriter and the IndexCreator branches
+                // of VariantContextWriterBuilder get covered. See the
+                // comment on writeRoundtripVcf() for details.
                 if (positional.isEmpty()) {
                     System.err.println(
                         "--mode write_roundtrip requires <VCF|SAM> <file_path>");
@@ -69,12 +89,72 @@ public class BioTestHarness {
                     rtPath = positional.get(0);
                 }
                 if ("VCF".equals(rtFormat)) {
-                    System.out.print(writeRoundtripVcf(rtPath));
+                    System.out.print(writeRoundtripVcf(rtPath, writerVariant));
                 } else if ("SAM".equals(rtFormat)) {
                     System.out.print(writeRoundtripSam(rtPath));
                 } else {
                     System.err.println(
                         "--mode write_roundtrip: unknown format " + rtFormat);
+                    System.exit(1);
+                }
+                return;
+            }
+
+            if ("discover_methods".equals(mode)) {
+                // Rank 5 (Chen-Kuo-Liu-Tse 2018 §3.2; MR-Scout TOSEM 2024).
+                // CLI:  --mode discover_methods <VCF|SAM>
+                //
+                // Emits JSON {"methods": [{"name": str, "returns": str,
+                // "args": []}, ...]} listing public scalar-returning,
+                // zero-param methods on htsjdk's parsed-record class
+                // (VariantContext for VCF, SAMRecord for SAM). Used by
+                // HTSJDKRunner.discover_query_methods to feed the
+                // Phase B prompt with the LIVE htsjdk API surface.
+                if (positional.isEmpty()) {
+                    System.err.println(
+                        "--mode discover_methods requires <VCF|SAM>");
+                    System.exit(1);
+                }
+                String dFmt = positional.get(0).toUpperCase();
+                Class<?> cls;
+                if ("VCF".equals(dFmt)) {
+                    cls = VariantContext.class;
+                } else if ("SAM".equals(dFmt)) {
+                    cls = SAMRecord.class;
+                } else {
+                    System.err.println("Unknown format: " + dFmt);
+                    System.exit(1);
+                    return;
+                }
+                System.out.print(discoverMethodsJson(cls));
+                return;
+            }
+
+            if ("query".equals(mode)) {
+                // Rank 5 (Chen-Kuo-Liu-Tse 2018 §3.2; MR-Scout TOSEM 2024).
+                // CLI:  --mode query <VCF|SAM> <file_path> --methods name1,name2
+                //
+                // Parses the file, takes the FIRST record, and invokes each
+                // named method via java.lang.reflect.Method.invoke. Emits
+                // {"method_results": {name: scalar, ...}}.
+                if (positional.size() < 2) {
+                    System.err.println(
+                        "--mode query requires <VCF|SAM> <file_path>");
+                    System.exit(1);
+                }
+                String qFmt = positional.get(0).toUpperCase();
+                String qPath = positional.get(1);
+                List<String> methodNames = methodsArg.isEmpty()
+                    ? Collections.emptyList()
+                    : Arrays.stream(methodsArg.split(","))
+                        .map(String::trim).filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
+                if ("VCF".equals(qFmt)) {
+                    System.out.print(queryVcf(qPath, methodNames));
+                } else if ("SAM".equals(qFmt)) {
+                    System.out.print(querySam(qPath, methodNames));
+                } else {
+                    System.err.println("Unknown format: " + qFmt);
                     System.exit(1);
                 }
                 return;
@@ -109,12 +189,31 @@ public class BioTestHarness {
     // -----------------------------------------------------------------------
     // VCF Write Roundtrip — parse-then-write exercise for the WRITE path.
     //
-    // Hits VCFEncoder, VCFWriter, VariantContextWriterBuilder, and most of
-    // VariantContextBuilder. The output VCF text is returned to the
-    // caller (Python HTSJDKRunner.run_write_roundtrip) which re-parses it
-    // and compares canonical JSON against the original.
+    // Two flavors are available so `HTSJDKRunner.run_write_roundtrip` can
+    // rotate between them and cover *different* subsets of htsjdk's writer
+    // plumbing across Phase C. Both return functionally-equivalent VCF text;
+    // the harness output is oracle-compared, the coverage difference is the
+    // side-effect we care about.
+    //
+    //   "standard" — the minimal path. clearOptions() + just the two writer
+    //                Options we need. Exercises VCFEncoder, VCFWriter,
+    //                VariantContextWriterBuilder's simple branches.
+    //   "advanced" — the buffered path. .buffered() wraps the writer in
+    //                AsyncVariantContextWriter (background IO thread),
+    //                INDEX_ON_THE_FLY adds an IndexCreator invocation, and
+    //                WRITE_FULL_FORMAT_FIELD + ALLOW_MISSING_FIELDS_IN_HEADER
+    //                together hit the full conditional ladder in
+    //                VariantContextWriterBuilder.build().
+    //
+    // These two together reach AsyncVariantContextWriter, IndexCreator
+    // branches, and the non-clearOptions default path — all of which sat at
+    // 0% coverage before this split.
     // -----------------------------------------------------------------------
     private static String writeRoundtripVcf(String path) throws IOException {
+        return writeRoundtripVcf(path, "standard");
+    }
+
+    private static String writeRoundtripVcf(String path, String variant) throws IOException {
         File outFile = File.createTempFile("biotest_rt_", ".vcf");
         outFile.deleteOnExit();
 
@@ -128,10 +227,26 @@ public class BioTestHarness {
             VCFHeader writableHeader = forceVcfVersionToV42(header);
 
             VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-                .setOutputFile(outFile)
-                .clearOptions()               // disable all defaults (no index, no MD5)
-                .setOption(Options.WRITE_FULL_FORMAT_FIELD)
-                .setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER);
+                .setOutputFile(outFile);
+
+            if ("advanced".equals(variant)) {
+                // Keep the default options (no clearOptions()), add .buffered()
+                // so the writer gets wrapped in AsyncVariantContextWriter,
+                // and opt into WRITE_FULL_FORMAT_FIELD + ALLOW_MISSING_FIELDS
+                // explicitly so they remain even if future htsjdk defaults
+                // drop them.
+                builder = builder
+                    .setBuffer(1 << 14)               // 16 KB buffer
+                    .setOption(Options.WRITE_FULL_FORMAT_FIELD)
+                    .setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER);
+            } else {
+                // Standard: clearOptions() strips index-on-the-fly, MD5, etc.
+                // Minimal writer path — matches the original contract.
+                builder = builder
+                    .clearOptions()
+                    .setOption(Options.WRITE_FULL_FORMAT_FIELD)
+                    .setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER);
+            }
             if (writableHeader.getSequenceDictionary() != null) {
                 builder = builder.setReferenceDictionary(writableHeader.getSequenceDictionary());
             }
@@ -584,5 +699,135 @@ public class BioTestHarness {
         if (pg.getProgramVersion() != null) sb.append(",\"VN\":").append(jsonStr(pg.getProgramVersion()));
         sb.append("}");
         return sb.toString();
+    }
+
+    // ====================================================================
+    // Rank 5 — query-method MR support (Java reflection)
+    //
+    // Reference: Chen, Kuo, Liu, Tse — ACM CSUR 2018 §3.2 (API MRs);
+    // MR-Scout — Xu et al., TOSEM 2024, arXiv:2304.07548.
+    //
+    // The framework's query-consensus oracle compares scalar results of
+    // public, zero-arg, getter-style methods on htsjdk's parsed-record
+    // classes (VariantContext for VCF, SAMRecord for SAM) across x and
+    // T(x). All method enumeration / invocation goes through
+    // java.lang.reflect — NO hardcoded method names.
+    // ====================================================================
+
+    private static final Set<String> SCALAR_RETURNS = new HashSet<>(Arrays.asList(
+        "boolean", "Boolean", "int", "Integer", "long", "Long",
+        "float", "Float", "double", "Double", "char", "Character",
+        "java.lang.String", "String"
+    ));
+
+    private static boolean isScalarReturn(Class<?> rt) {
+        if (rt == void.class || rt == Void.class) return false;
+        if (rt.isPrimitive()) return true;
+        if (rt.isEnum()) return true;
+        return SCALAR_RETURNS.contains(rt.getName())
+            || SCALAR_RETURNS.contains(rt.getSimpleName());
+    }
+
+    private static String discoverMethodsJson(Class<?> cls) {
+        // Filter: public, zero-parameter, scalar-returning instance methods
+        // whose name doesn't start with `set`, `add`, `remove`, `clear`
+        // (mutators / commands — not pure query methods).
+        Set<String> mutatorPrefixes = new HashSet<>(Arrays.asList(
+            "set", "add", "remove", "clear", "init", "destroy", "close"
+        ));
+        // Methods inherited from Object/Class are always uninteresting.
+        Set<String> objectNoise = new HashSet<>(Arrays.asList(
+            "hashCode", "toString", "getClass", "wait", "notify",
+            "notifyAll", "equals", "clone"
+        ));
+
+        List<String> entries = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        Method[] methods = cls.getMethods();
+        Arrays.sort(methods, Comparator.comparing(Method::getName));
+        for (Method m : methods) {
+            if (m.getParameterCount() != 0) continue;
+            int mods = m.getModifiers();
+            if ((mods & java.lang.reflect.Modifier.PUBLIC) == 0) continue;
+            if ((mods & java.lang.reflect.Modifier.STATIC) != 0) continue;
+            String name = m.getName();
+            if (objectNoise.contains(name)) continue;
+            if (seen.contains(name)) continue;
+            // Drop obvious mutators
+            String lower = name.toLowerCase(Locale.ROOT);
+            boolean isMutator = false;
+            for (String pfx : mutatorPrefixes) {
+                if (lower.startsWith(pfx)) { isMutator = true; break; }
+            }
+            if (isMutator) continue;
+            Class<?> rt = m.getReturnType();
+            if (!isScalarReturn(rt)) continue;
+            seen.add(name);
+            entries.add(
+                "{\"name\":" + jsonStr(name)
+                + ",\"returns\":" + jsonStr(rt.getSimpleName())
+                + ",\"args\":[]}"
+            );
+            if (entries.size() >= 50) break;
+        }
+        return "{\"methods\":[" + String.join(",", entries) + "]}";
+    }
+
+    private static String queryVcf(String path, List<String> methodNames) throws IOException {
+        try (VCFFileReader reader = new VCFFileReader(Path.of(path), false)) {
+            Iterator<VariantContext> it = reader.iterator();
+            VariantContext rec = it.hasNext() ? it.next() : null;
+            return invokeAndPack(rec, VariantContext.class, methodNames);
+        }
+    }
+
+    private static String querySam(String path, List<String> methodNames) throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(Path.of(path))) {
+            Iterator<SAMRecord> it = reader.iterator();
+            SAMRecord rec = it.hasNext() ? it.next() : null;
+            return invokeAndPack(rec, SAMRecord.class, methodNames);
+        }
+    }
+
+    private static String invokeAndPack(
+        Object rec, Class<?> cls, List<String> methodNames
+    ) {
+        StringBuilder sb = new StringBuilder("{\"method_results\":{");
+        boolean first = true;
+        for (String name : methodNames) {
+            if (!first) sb.append(",");
+            first = false;
+            sb.append(jsonStr(name)).append(":");
+            if (rec == null) {
+                sb.append("null");
+                continue;
+            }
+            try {
+                Method m = cls.getMethod(name);
+                Object value = m.invoke(rec);
+                sb.append(scalarToJson(value));
+            } catch (NoSuchMethodException nsme) {
+                sb.append("{\"__error__\":")
+                  .append(jsonStr("NoSuchMethod: " + name))
+                  .append("}");
+            } catch (Exception e) {
+                sb.append("{\"__error__\":")
+                  .append(jsonStr(e.getClass().getSimpleName() + ": "
+                                  + (e.getMessage() == null ? "" : e.getMessage())))
+                  .append("}");
+            }
+        }
+        sb.append("}}");
+        return sb.toString();
+    }
+
+    private static String scalarToJson(Object value) {
+        if (value == null) return "null";
+        if (value instanceof Boolean) return value.toString();
+        if (value instanceof Number) return value.toString();
+        if (value instanceof Enum<?>) return jsonStr(((Enum<?>) value).name());
+        return jsonStr(value.toString());
     }
 }

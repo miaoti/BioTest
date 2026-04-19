@@ -207,6 +207,52 @@ SEED_SOURCES: list[tuple[str, str, str, str]] = [
     ("sam", "real_world_samtools_ce.sam",
      "https://raw.githubusercontent.com/samtools/samtools/develop/test/ce.sam",
      "samtools C. elegans genome test"),
+
+    # ---------------------------------------------------------------
+    # htslib test corpus (github.com/samtools/htslib/test/)
+    # Curated by upstream htslib maintainers to exercise BCF/CRAM
+    # codec edge cases, exotic INFO types, Unicode sample names,
+    # CIGAR bounds, unmapped reads, OSS-Fuzz regression seeds.
+    # MIT-equivalent.
+    #
+    # URL ENCODING: htslib filenames with '#' (used as a convention
+    # for test variants, e.g. `c1#clip.sam`) MUST be URL-encoded as
+    # %23 in the raw URL — `requests.get` silently strips '#' as a
+    # fragment separator and returns a 404.
+    # ---------------------------------------------------------------
+    ("vcf", "real_world_htslib_index.vcf",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/index.vcf",
+     "htslib test/index.vcf — indexed VCF with multiple contigs"),
+    ("vcf", "real_world_htslib_formatcols.vcf",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/formatcols.vcf",
+     "htslib FORMAT column edge case (Unicode sample name)"),
+    ("vcf", "real_world_htslib_formatmissing.vcf",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/formatmissing.vcf",
+     "htslib missing-value handling in FORMAT columns"),
+    ("vcf", "real_world_htslib_noroundtrip.vcf",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/noroundtrip.vcf",
+     "htslib intentional round-trip edge case"),
+    ("sam", "real_world_htslib_ce_1.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%231.sam",
+     "htslib C. elegans mapping (ce#1.sam)"),
+    ("sam", "real_world_htslib_c1_clip.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23clip.sam",
+     "htslib CIGAR soft/hard clipping edge cases (c1#clip.sam)"),
+    ("sam", "real_world_htslib_c1_bounds.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23bounds.sam",
+     "htslib CIGAR boundary conditions (c1#bounds.sam)"),
+    ("sam", "real_world_htslib_auxf_values.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/auxf%23values.sam",
+     "htslib optional auxiliary tag value types (auxf#values.sam)"),
+    ("sam", "real_world_htslib_ce_unmap.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23unmap.sam",
+     "htslib unmapped reads edge case (ce#unmap.sam)"),
+    ("sam", "real_world_htslib_md_1.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/md%231.sam",
+     "htslib MD tag parsing (md#1.sam)"),
+    ("sam", "real_world_htslib_xx_tlen.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/xx%23tlen.sam",
+     "htslib TLEN (template length) edge cases (xx#tlen.sam)"),
 ]
 
 

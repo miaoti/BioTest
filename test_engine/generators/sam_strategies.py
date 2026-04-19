@@ -78,3 +78,18 @@ def st_sut_write_roundtrip(draw, corpus: SeedCorpus):
     rng_seed = draw(st.integers(0, 2**32 - 1))
     return {"transform": "sut_write_roundtrip", "seed_path": seed_path,
             "lines": lines, "rng_seed": rng_seed}
+
+
+@composite
+def st_query_method_roundtrip(draw, corpus: SeedCorpus):
+    """SAM-flavored strategy for query_method_roundtrip (Rank 5).
+
+    Twin of the VCF-flavored strategy in vcf_strategies. Method names
+    come from the MR's `query_methods` field; the strategy just supplies
+    a valid SAM seed."""
+    seed_path = draw(st.sampled_from(corpus.sam_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    assume(any(l.startswith("@HD") or l.startswith("@SQ") for l in lines))
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {"transform": "query_method_roundtrip", "seed_path": seed_path,
+            "lines": lines, "rng_seed": rng_seed}

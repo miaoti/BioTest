@@ -209,6 +209,20 @@ def st_sut_write_roundtrip(draw, corpus: SeedCorpus):
             "lines": lines, "rng_seed": rng_seed}
 
 
+@composite
+def st_query_method_roundtrip(draw, corpus: SeedCorpus):
+    """Precondition: any valid VCF; the orchestrator's query-consensus
+    branch dispatches to whichever runner sets supports_query_methods=True.
+    Method names come from the MR's `query_methods` field, not from the
+    strategy. Same shape as st_sut_write_roundtrip (Rank 5 mirror)."""
+    seed_path = draw(st.sampled_from(corpus.vcf_seeds))
+    lines = SeedCorpus.read_lines(seed_path)
+    assume(any(l.startswith("##fileformat=VCF") for l in lines))
+    rng_seed = draw(st.integers(0, 2**32 - 1))
+    return {"transform": "query_method_roundtrip", "seed_path": seed_path,
+            "lines": lines, "rng_seed": rng_seed}
+
+
 # ---------------------------------------------------------------------------
 # CSQ/ANN annotation ordering strategy
 # ---------------------------------------------------------------------------

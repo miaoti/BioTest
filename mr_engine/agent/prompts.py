@@ -18,6 +18,7 @@ def build_system_prompt(
     primary_target: str = "",
     available_suts: list[str] | None = None,
     runtime_capabilities: set[str] | None = None,
+    query_methods: list[dict] | None = None,
 ) -> str:
     """
     Return the complete system prompt string for one mining run.
@@ -72,10 +73,65 @@ def build_system_prompt(
     if header:
         prompt = header + "\n\n" + prompt
 
+    # Rank 5 — append the discovered API-query method catalog if the
+    # primary SUT exposes any. The agent uses these names verbatim in
+    # MR `query_methods` fields when constructing API_QUERY_INVARIANCE
+    # MRs paired with the `query_method_roundtrip` transform.
+    if query_methods:
+        prompt += "\n\n" + _build_query_methods_block(query_methods)
+
     if blindspot_context:
         prompt += "\n\n" + blindspot_context
 
     return prompt
+
+
+def _build_query_methods_block(query_methods: list[dict]) -> str:
+    """Render the discovered query-method catalog from the primary SUT.
+
+    Each entry is a dict {name, returns, args} produced by the runner's
+    `discover_query_methods` (see test_engine/runners/base.py + the
+    introspection helper at test_engine/runners/introspection.py).
+    """
+    lines: list[str] = [
+        "=" * 60,
+        "AVAILABLE QUERY METHODS ON THE PRIMARY SUT (Rank 5)",
+        "=" * 60,
+        "These are public scalar-returning methods discovered by",
+        "runtime reflection on the primary SUT's parsed-record class.",
+        "",
+        "*** MANDATORY FOR API_QUERY_INVARIANCE MRs ***",
+        "If your MR's `transform_steps` contains `query_method_roundtrip`,",
+        "you MUST populate the top-level `query_methods` field with a",
+        "non-empty JSON list of method NAMES taken verbatim from below.",
+        "Example:",
+        "  {",
+        '    "mr_name": "SV query invariance under meta shuffle",',
+        '    "scope": "VCF.record",',
+        '    "transform_steps": ["shuffle_meta_lines", "query_method_roundtrip"],',
+        '    "query_methods": ["isStructural", "getNAlleles", "isBiallelic"],',
+        '    "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",',
+        '    "preconditions": [...],',
+        '    "evidence": [...]',
+        "  }",
+        "",
+        "If `query_methods` is empty or missing, the Pydantic validator",
+        "WILL REJECT the MR and you'll have to retry. Pick 2-5 methods",
+        "whose scalar output should be invariant under the chosen transform.",
+        "",
+        "The framework will invoke each method on the parsed record from",
+        "x and from T(x), then assert the scalar values are equal.",
+        "Per Chen-Kuo-Liu-Tse 2018 §3.2 + MR-Scout (TOSEM 2024).",
+        "",
+        "Methods (cap 50, use these names EXACTLY):",
+    ]
+    for m in query_methods[:50]:
+        n = m.get("name", "?")
+        r = m.get("returns", "Any")
+        a = ",".join(m.get("args", []))
+        sig = f"{n}({a})" if a else f"{n}()"
+        lines.append(f"  - {sig} -> {r}")
+    return "\n".join(lines)
 
 
 def _build_primary_target_block(

@@ -19,8 +19,19 @@ from .schema import (
 )
 
 
-def normalize_sam_text(lines: list[str]) -> CanonicalSam:
-    """Parse raw SAM text lines into a CanonicalSam object."""
+def normalize_sam_text(
+    lines: list[str],
+    strict_mode: bool = False,
+) -> CanonicalSam:
+    """Parse raw SAM text lines into a CanonicalSam object.
+
+    Args:
+        lines: raw SAM text lines (with or without trailing newlines).
+        strict_mode: when True, raise ValueError on spec violations that
+            non-strict silently tolerates — specifically: sum of
+            query-consuming CIGAR ops != len(SEQ) when both are non-'*'.
+            Used by the error-consensus oracle (Rank 3 lever).
+    """
     header_lines: list[str] = []
     alignment_lines: list[str] = []
 
@@ -34,7 +45,7 @@ def normalize_sam_text(lines: list[str]) -> CanonicalSam:
             alignment_lines.append(stripped)
 
     header = _parse_header(header_lines)
-    records = [_parse_alignment(al) for al in alignment_lines]
+    records = [_parse_alignment(al, strict_mode=strict_mode) for al in alignment_lines]
     return CanonicalSam(header=header, records=records)
 
 
@@ -74,7 +85,10 @@ def _parse_tag_fields(fields: list[str]) -> dict[str, str]:
     return result
 
 
-def _parse_alignment(line: str) -> CanonicalSamRecord:
+def _parse_alignment(
+    line: str,
+    strict_mode: bool = False,
+) -> CanonicalSamRecord:
     """Parse a SAM alignment line into CanonicalSamRecord."""
     cols = line.split("\t")
     if len(cols) < 11:
@@ -93,6 +107,18 @@ def _parse_alignment(line: str) -> CanonicalSamRecord:
     tlen = int(cols[8])
     seq = None if cols[9] == "*" else cols[9]
     qual = None if cols[10] == "*" else cols[10]
+
+    # Strict-mode guard: sum of query-consuming CIGAR ops must equal
+    # len(SEQ) per SAM v1 spec. Only applies when both CIGAR and SEQ
+    # are non-'*'.
+    if strict_mode and cigar is not None and seq is not None:
+        query_len = sum(op.len for op in cigar if op.op in ("M", "I", "S", "=", "X"))
+        if query_len != len(seq):
+            raise ValueError(
+                "SAM spec violation: sum of query-consuming CIGAR ops "
+                f"({query_len}) != len(SEQ) ({len(seq)}) on record "
+                f"{qname!r}"
+            )
 
     # Optional tags (columns 12+)
     tags: dict[str, TagValue] = {}

@@ -33,6 +33,77 @@ logger = logging.getLogger(__name__)
 # Line Range Aggregation Helper
 # ---------------------------------------------------------------------------
 
+def parse_filter_rules(
+    entries: list[str],
+) -> list[tuple[str, tuple[str, ...], tuple[str, ...]]]:
+    """Parse `target_filters` config entries into (package, includes, excludes)
+    triples.
+
+    Supported syntax per entry:
+      "pkg/path"                    → package only, all files included
+      "pkg/path::VCF,Variant"       → include files starting with VCF or Variant
+      "pkg/path::-BCF2,-JEXL"       → exclude files starting with BCF2 or JEXL
+      "pkg/path::VCF,-BCF2"         → mixed: include VCF*, ALSO exclude BCF2*
+
+    A sourcefile is admitted iff:
+      (no include prefixes OR filename matches some include prefix)
+      AND (no exclude prefix matches the filename).
+    """
+    out: list[tuple[str, tuple[str, ...], tuple[str, ...]]] = []
+    for entry in entries:
+        if "::" in entry:
+            pkg, raw = entry.split("::", 1)
+            includes: list[str] = []
+            excludes: list[str] = []
+            for p in raw.split(","):
+                p = p.strip()
+                if not p:
+                    continue
+                if p.startswith("-"):
+                    excludes.append(p[1:])
+                else:
+                    includes.append(p)
+            out.append((pkg.strip(), tuple(includes), tuple(excludes)))
+        else:
+            out.append((entry.strip(), (), ()))
+    return out
+
+
+def _pattern_matches(src_name: str, pattern: str) -> bool:
+    """Match a sourcefile against a single pattern.
+
+    Supported forms:
+      "Foo"        prefix match        src_name.startswith("Foo")
+      "Foo*"       prefix match        same as above (explicit wildcard)
+      "*Foo"       suffix match        src_name.endswith("Foo")
+      "*Foo*"      contains match      "Foo" in src_name
+    """
+    if pattern.startswith("*") and pattern.endswith("*") and len(pattern) >= 2:
+        return pattern[1:-1] in src_name
+    if pattern.startswith("*"):
+        return src_name.endswith(pattern[1:])
+    if pattern.endswith("*"):
+        return src_name.startswith(pattern[:-1])
+    # No wildcards — default to prefix match (backward compat).
+    return src_name.startswith(pattern)
+
+
+def filter_file_matches(
+    src_name: str,
+    includes: tuple[str, ...],
+    excludes: tuple[str, ...],
+) -> bool:
+    """Decide whether a sourcefile name passes the include/exclude filter.
+
+    Each pattern supports optional `*` wildcards — see `_pattern_matches`.
+    """
+    if includes and not any(_pattern_matches(src_name, p) for p in includes):
+        return False
+    if excludes and any(_pattern_matches(src_name, p) for p in excludes):
+        return False
+    return True
+
+
 def _aggregate_ranges(lines: list[int]) -> list[str]:
     """
     Collapse contiguous line numbers into compact range strings.
@@ -225,25 +296,13 @@ class JaCoCoCollector(CoverageCollector):
         # Use format-specific filter if provided, else fall back to default whitelist
         active_filter = format_filter if format_filter else self.filter_packages
 
-        # Parse each entry into (package, file_prefixes) pairs.
-        # Syntax "pkg/path::PFX1,PFX2" -> exact package + file prefix whitelist.
-        # Syntax "pkg/path" -> exact package, all files.
-        parsed_rules: list[tuple[str, Optional[tuple[str, ...]]]] = []
-        for entry in active_filter:
-            if "::" in entry:
-                pkg, prefixes = entry.split("::", 1)
-                parsed_rules.append((pkg.strip(), tuple(p.strip() for p in prefixes.split(",") if p.strip())))
-            else:
-                parsed_rules.append((entry.strip(), None))
+        parsed_rules = parse_filter_rules(active_filter)
 
-        def package_matches(pkg_name: str) -> Optional[tuple[str, ...]]:
-            """Return file-prefix whitelist for this package, or None if excluded.
-
-            An empty tuple means 'all files included'; None means package excluded.
-            """
-            for rule_pkg, prefixes in parsed_rules:
+        def package_rule(pkg_name: str) -> Optional[tuple[tuple[str, ...], tuple[str, ...]]]:
+            """Return (includes, excludes) for this package, or None if not listed."""
+            for rule_pkg, includes, excludes in parsed_rules:
                 if pkg_name == rule_pkg:
-                    return prefixes if prefixes is not None else ()
+                    return (includes, excludes)
             return None
 
         try:
@@ -256,14 +315,15 @@ class JaCoCoCollector(CoverageCollector):
 
             for pkg in root.findall(".//package"):
                 pkg_name = pkg.get("name", "")
-                file_prefixes = package_matches(pkg_name)
-                if file_prefixes is None:
+                rule = package_rule(pkg_name)
+                if rule is None:
                     continue
+                includes, excludes = rule
 
                 for src in pkg.findall("sourcefile"):
                     src_name = src.get("name", "")
-                    # Apply sourcefile-name prefix filter if rule specified one
-                    if file_prefixes and not any(src_name.startswith(p) for p in file_prefixes):
+                    # Apply sourcefile-name prefix filter: include-list + exclude-list
+                    if not filter_file_matches(src_name, includes, excludes):
                         continue
 
                     missed_lines: list[int] = []
@@ -393,8 +453,12 @@ class CoveragePyCollector(CoverageCollector):
         all_regions: list[str] = []
 
         for filepath in cov.get_data().measured_files():
+            # Normalize to forward slashes so filters like "Bio/Align/sam"
+            # match on Windows where measured_files() returns backslashed paths.
+            norm_path = filepath.replace("\\", "/")
             if active_filter and not any(
-                f in filepath for f in active_filter
+                f.replace("\\", "/").replace(".", "/") in norm_path
+                for f in active_filter
             ):
                 continue
 
@@ -438,8 +502,10 @@ class CoveragePyCollector(CoverageCollector):
 
         for cls in root.findall(".//class"):
             filename = cls.get("filename", "")
+            norm_path = filename.replace("\\", "/")
             if active_filter and not any(
-                f in filename for f in active_filter
+                f.replace("\\", "/").replace(".", "/") in norm_path
+                for f in active_filter
             ):
                 continue
 
@@ -917,6 +983,44 @@ class MultiCoverageCollector:
                 source_root=Path(cfg["gcovr_source_root"]) if cfg.get("gcovr_source_root") else None,
             )))
 
+    def _resolve_sut_filter(
+        self, format_context: str, sut_name: str,
+    ) -> Optional[list[str]]:
+        """Pick the coverage filter list for a specific SUT + format.
+
+        Supports two YAML shapes for `coverage.target_filters`:
+
+        Nested (preferred, explicit per-SUT scope — required when onboarding
+        a new SUT):
+
+            target_filters:
+              VCF:
+                htsjdk: [htsjdk/variant/vcf, ...]
+                pysam:  [pysam]
+
+        Legacy flat (applied to all SUTs; some entries are ignored by
+        collectors for other languages):
+
+            target_filters:
+              VCF: [htsjdk/variant/vcf, ..., pysam]
+
+        Returns None if no filter is configured for this (fmt, sut).
+        """
+        if not format_context:
+            return None
+        fmt_entry = self._target_filters.get(format_context.upper())
+        if fmt_entry is None:
+            return None
+        if isinstance(fmt_entry, list):
+            return fmt_entry  # legacy flat
+        if isinstance(fmt_entry, dict):
+            return fmt_entry.get(sut_name)
+        logger.warning(
+            "target_filters.%s must be list (legacy) or dict (per-SUT); got %s",
+            format_context.upper(), type(fmt_entry).__name__,
+        )
+        return None
+
     def collect_all(
         self,
         format_context: str = "",
@@ -927,16 +1031,14 @@ class MultiCoverageCollector:
         Args:
             format_context: Current format being tested ("VCF" or "SAM").
                             If set, coverage is filtered to format-relevant
-                            paths via target_filters config.
+                            paths via target_filters config — and further
+                            per-SUT when the YAML uses the nested shape.
             primary_target: If set (e.g. "htsjdk"), only that SUT's
                             collector runs. Other SUTs are skipped because
                             Phase D's feedback signal is driven solely by
                             the primary target (Flow.md §1.3). Leave empty
                             to fall back to all-SUT collection (legacy).
         """
-        # Resolve format-specific whitelist
-        fmt_filter = self._target_filters.get(format_context.upper()) if format_context else None
-
         active: list[tuple[str, CoverageCollector]] = [
             (n, c) for (n, c) in self.collectors
             if (not primary_target) or n == primary_target
@@ -944,9 +1046,10 @@ class MultiCoverageCollector:
 
         results = []
         for sut_name, collector in active:
+            sut_filter = self._resolve_sut_filter(format_context, sut_name)
             if collector.is_available():
                 try:
-                    results.append(collector.collect(format_filter=fmt_filter))
+                    results.append(collector.collect(format_filter=sut_filter))
                 except Exception as e:
                     logger.warning("Coverage collection failed: %s", e)
             else:

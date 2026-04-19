@@ -185,21 +185,32 @@ def check_chromadb_chunks() -> CheckResult:
 def check_seeds() -> CheckResult:
     vcf_dir = ROOT / "seeds" / "vcf"
     sam_dir = ROOT / "seeds" / "sam"
-    vcf_count = len(list(vcf_dir.glob("*.vcf"))) if vcf_dir.exists() else 0
-    sam_count = len(list(sam_dir.glob("*.sam"))) if sam_dir.exists() else 0
-    total = vcf_count + sam_count
-    # Bar: need the 3 hand-crafted Tier-1 VCFs + at least a handful of
-    # Tier-2 real-world VCFs to exercise meaningful diversity. Bumped
-    # from the old ">= 6" threshold after the corpus expansion.
-    if vcf_count < 15:
+    # Count three tiers separately — the ≥15 bar must be cleared by Tier-1 +
+    # Tier-2, NOT by LLM-synthesized Tier-3 seeds. A pipeline that passes
+    # preflight purely on synthetic seeds would be chasing its own tail
+    # (synthesis is driven by a blindspot ticket that needs coverage data
+    # from a working Phase C first).
+    all_vcf = list(vcf_dir.glob("*.vcf")) if vcf_dir.exists() else []
+    all_sam = list(sam_dir.glob("*.sam")) if sam_dir.exists() else []
+    synth_vcf = [p for p in all_vcf if p.name.startswith("synthetic_iter")]
+    synth_sam = [p for p in all_sam if p.name.startswith("synthetic_iter")]
+    nonsynth_vcf = len(all_vcf) - len(synth_vcf)
+    nonsynth_sam = len(all_sam) - len(synth_sam)
+
+    if nonsynth_vcf < 15:
         return CheckResult(
             "Seed corpus",
             False,
-            f"{vcf_count} VCF + {sam_count} SAM (need >=15 VCF)",
+            f"{nonsynth_vcf} Tier-1/2 VCF + {nonsynth_sam} SAM "
+            f"(need >=15 non-synthetic VCF; {len(synth_vcf)} synthetic not counted)",
             "Run: `py -3.12 seeds/fetch_real_world.py` to populate Tier-2 seeds",
         )
-    return CheckResult("Seed corpus", True,
-                       f"{vcf_count} VCF + {sam_count} SAM seeds")
+    detail = (
+        f"{nonsynth_vcf} Tier-1/2 VCF + {nonsynth_sam} SAM seeds"
+    )
+    if synth_vcf or synth_sam:
+        detail += f" (+ {len(synth_vcf)} VCF / {len(synth_sam)} SAM synthetic)"
+    return CheckResult("Seed corpus", True, detail)
 
 
 def check_coverage_tools() -> CheckResult:
