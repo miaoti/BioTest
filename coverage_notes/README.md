@@ -13,7 +13,9 @@ coverage_notes/
       biotest.md     # all BioTest runs on htsjdk/VCF (Runs 1-6)
       evosuite.md    # EvoSuite 1.2.0 baseline on htsjdk/VCF
     sam/             # (empty — no SAM runs yet)
-  biopython/         # (empty — future)
+  biopython/
+    sam/
+      biotest.md     # BioTest runs on biopython/SAM (Run 1)
   pysam/             # (empty — future)
   seqan3/            # (empty — future)
 ```

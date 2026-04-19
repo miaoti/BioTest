@@ -76,13 +76,20 @@ def _parse_header(header_lines: list[str]) -> CanonicalSamHeader:
 
 
 def _parse_tag_fields(fields: list[str]) -> dict[str, str]:
-    """Parse TAG:VALUE header fields into a dict."""
+    """Parse TAG:VALUE header fields into a dict.
+
+    Keys are sorted for canonical stability: the SAMv1 spec does not
+    impose an ordering on TAG:VALUE pairs within @HD/@SQ/@RG/@PG lines,
+    so a permutation is semantics-preserving. Sorting here makes the
+    canonical JSON invariant under within-record tag permutation — the
+    basis of Phase 2's shuffle_*_record_subtags metamorphic relations.
+    """
     result: dict[str, str] = {}
     for field in fields:
         if ":" in field:
             key, val = field.split(":", 1)
             result[key] = val
-    return result
+    return dict(sorted(result.items()))
 
 
 def _parse_alignment(

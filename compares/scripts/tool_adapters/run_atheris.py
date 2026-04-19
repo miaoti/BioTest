@@ -39,7 +39,7 @@ def run(
     out_dir: Path,
     time_budget_s: int,
     format_hint: str = "VCF",
-    python_bin: str = "python3",
+    python_bin: str = "/opt/atheris-venv/bin/python",
     **_kwargs,
 ) -> AdapterResult:
     corpus_dir, crashes_dir, log_file = prepare_out_dir(out_dir)
@@ -82,7 +82,11 @@ def _cli() -> None:
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--time-budget-s", type=int, default=7200)
     p.add_argument("--format", default="VCF")
-    p.add_argument("--python-bin", default="python3")
+    p.add_argument("--python-bin", default="/opt/atheris-venv/bin/python",
+                   help="Python interpreter with atheris installed. Inside "
+                        "the benchmark image this is /opt/atheris-venv/bin/python "
+                        "(a 3.11 venv because atheris 2.3.0 has no Python "
+                        "3.12 support).")
     args = p.parse_args()
 
     res = run(args.sut, args.seed_corpus, args.out_dir, args.time_budget_s,

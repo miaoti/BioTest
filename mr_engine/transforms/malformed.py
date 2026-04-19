@@ -39,6 +39,14 @@ MALFORMED_TRANSFORM_NAMES: frozenset[str] = frozenset({
     "violate_fileformat_first_line",
     "violate_gt_index_bounds",
     "violate_cigar_seq_length",
+    # Phase 2 of SAM coverage plan — 3 new SAM-side malformed mutators
+    # targeting REJECTION_INVARIANCE. Each breaks exactly one CRITICAL
+    # spec rule so the error-consensus oracle (accept / silent_skip /
+    # reject / crash) can surface parsers that silently tolerate the
+    # violation.
+    "violate_tlen_sign_consistency",
+    "violate_optional_tag_type_character",
+    "violate_flag_bit_exclusivity",
 })
 
 
@@ -296,6 +304,170 @@ def violate_cigar_seq_length(
         # Append `5M` — consumes query but SEQ is untouched, so sum no
         # longer equals len(SEQ).
         cols[5] = cigar + "5M"
+        new_line = "\t".join(cols)
+        if line.endswith("\n"):
+            new_line += "\n"
+        out.append(new_line)
+        mutated = True
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 SAM mutators — REJECTION_INVARIANCE coverage lever
+# ---------------------------------------------------------------------------
+
+
+@register_transform(
+    "violate_tlen_sign_consistency",
+    format="SAM",
+    group="malformed_sam_tlen",
+    description=(
+        "Break SAM spec rule: for a paired read whose mate is mapped, "
+        "the two reads of a template MUST carry equal-magnitude "
+        "opposite-signed TLEN values (SAMv1 §1.4). The mutator picks "
+        "the first record with non-zero TLEN, keeps its magnitude, and "
+        "flips its sign to match what its mate would have (creating "
+        "two same-signed TLENs across the template)."
+    ),
+    contextual_hint=(
+        "the seed has at least one alignment record with a non-zero "
+        "TLEN (column 9) — any paired-read SAM satisfies this."
+    ),
+    preconditions=("has_nonzero_tlen",),
+)
+def violate_tlen_sign_consistency(
+    seed_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Flip the sign of the first non-zero TLEN. Leaves mate records
+    untouched so the two reads of the same template now share a sign.
+    """
+    out = []
+    mutated = False
+    for line in seed_lines:
+        stripped = line.rstrip("\r\n")
+        if mutated or stripped.startswith("@") or "\t" not in stripped:
+            out.append(line)
+            continue
+        cols = stripped.split("\t")
+        if len(cols) < 11:
+            out.append(line)
+            continue
+        try:
+            tlen = int(cols[8])
+        except ValueError:
+            out.append(line)
+            continue
+        if tlen == 0:
+            out.append(line)
+            continue
+        # Flip the sign. The mate record carries +/- TLEN for a normal
+        # pair, so negating this read's TLEN creates a same-signed pair
+        # across the template — the spec-forbidden state.
+        cols[8] = str(-tlen)
+        new_line = "\t".join(cols)
+        if line.endswith("\n"):
+            new_line += "\n"
+        out.append(new_line)
+        mutated = True
+    return out
+
+
+@register_transform(
+    "violate_optional_tag_type_character",
+    format="SAM",
+    group="malformed_sam_tags",
+    description=(
+        "Break SAMtags §2.1: an optional tag's type character MUST be "
+        "one of `AifZHB` (plus numeric subtypes inside `B`). The mutator "
+        "replaces the type of the first optional tag on the first "
+        "alignment with an illegal character (`X`), producing a field "
+        "like `NM:X:0` that spec-compliant parsers must reject."
+    ),
+    contextual_hint=(
+        "the seed has at least one alignment record carrying at least "
+        "one optional TAG:TYPE:VALUE field."
+    ),
+    preconditions=("has_optional_tag",),
+)
+def violate_optional_tag_type_character(
+    seed_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Replace the type character of the first optional tag on the
+    first alignment with the illegal character `X`."""
+    out = []
+    mutated = False
+    for line in seed_lines:
+        stripped = line.rstrip("\r\n")
+        if mutated or stripped.startswith("@") or "\t" not in stripped:
+            out.append(line)
+            continue
+        cols = stripped.split("\t")
+        if len(cols) < 12:  # must have at least one optional tag
+            out.append(line)
+            continue
+        tag_field = cols[11]
+        tag_parts = tag_field.split(":", 2)
+        if len(tag_parts) != 3:
+            out.append(line)
+            continue
+        tag_name, _tag_type, tag_val = tag_parts
+        cols[11] = f"{tag_name}:X:{tag_val}"  # illegal type char
+        new_line = "\t".join(cols)
+        if line.endswith("\n"):
+            new_line += "\n"
+        out.append(new_line)
+        mutated = True
+    return out
+
+
+@register_transform(
+    "violate_flag_bit_exclusivity",
+    format="SAM",
+    group="malformed_sam_flag",
+    description=(
+        "Break SAMv1 §1.4.1: when flag 0x4 (segment unmapped) is set, "
+        "RNAME MUST be `*` and POS MUST be 0; conversely a record with "
+        "RNAME != `*` and POS > 0 implies the segment is mapped, so "
+        "0x4 MUST NOT be set. The mutator sets 0x4 on a mapped record "
+        "while leaving RNAME and POS intact, producing the flag-bit "
+        "inconsistency the spec forbids."
+    ),
+    contextual_hint=(
+        "the seed has at least one alignment with RNAME != `*` and "
+        "POS > 0 (any normal mapped read satisfies this)."
+    ),
+    preconditions=("has_mapped_read",),
+)
+def violate_flag_bit_exclusivity(
+    seed_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Set bit 0x4 (unmapped) on the first mapped record, creating a
+    mapped-yet-flagged-unmapped contradiction."""
+    out = []
+    mutated = False
+    for line in seed_lines:
+        stripped = line.rstrip("\r\n")
+        if mutated or stripped.startswith("@") or "\t" not in stripped:
+            out.append(line)
+            continue
+        cols = stripped.split("\t")
+        if len(cols) < 11:
+            out.append(line)
+            continue
+        rname = cols[2]
+        try:
+            pos = int(cols[3])
+            flag = int(cols[1])
+        except ValueError:
+            out.append(line)
+            continue
+        if rname == "*" or pos == 0 or (flag & 0x4):
+            out.append(line)
+            continue
+        cols[1] = str(flag | 0x4)  # force unmapped bit on mapped record
         new_line = "\t".join(cols)
         if line.endswith("\n"):
             new_line += "\n"

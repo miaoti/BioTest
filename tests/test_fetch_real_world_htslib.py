@@ -51,7 +51,13 @@ class TestHtslibSourceRegistration:
     def test_naming_convention(self):
         for subdir, name, url, desc in _htslib_entries():
             assert name.startswith("real_world_htslib_"), name
-            assert name.endswith(f".{subdir}"), (name, subdir)
+            # Under seeds/sam/ we accept both text SAM (.sam) and BAM
+            # (.bam, binary) since SeedCorpus will grow to a single glob
+            # once Phase 3's BAM round-trip goes in.
+            if subdir == "sam":
+                assert name.endswith(".sam") or name.endswith(".bam"), (name, subdir)
+            else:
+                assert name.endswith(f".{subdir}"), (name, subdir)
 
     def test_raw_github_host(self):
         for _, name, url, _ in _htslib_entries():

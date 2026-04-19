@@ -253,6 +253,131 @@ SEED_SOURCES: list[tuple[str, str, str, str]] = [
     ("sam", "real_world_htslib_xx_tlen.sam",
      "https://raw.githubusercontent.com/samtools/htslib/develop/test/xx%23tlen.sam",
      "htslib TLEN (template length) edge cases (xx#tlen.sam)"),
+
+    # ---------------------------------------------------------------
+    # htslib SAM corpus expansion (Phase 1 of SAM coverage plan)
+    # All under the 500 KB cap; every filename verified via the
+    # github.com/samtools/htslib develop tree at plan time. These
+    # triple the SAM Tier-2 corpus from 7 to ~30+ files without
+    # any per-SUT wiring — SeedCorpus auto-discovers them.
+    # ---------------------------------------------------------------
+    # CIGAR / padding / clip edge cases ('c1', 'c2' series)
+    ("sam", "real_world_htslib_c1_noseq.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23noseq.sam",
+     "htslib no-SEQ alignment (c1#noseq.sam) — SEQ='*' with CIGAR='*'"),
+    ("sam", "real_world_htslib_c1_pad1.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23pad1.sam",
+     "htslib CIGAR padding op 'P' variant 1 (c1#pad1.sam)"),
+    ("sam", "real_world_htslib_c1_pad2.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23pad2.sam",
+     "htslib CIGAR padding op 'P' variant 2 (c1#pad2.sam)"),
+    ("sam", "real_world_htslib_c1_pad3.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23pad3.sam",
+     "htslib CIGAR padding op 'P' variant 3 (c1#pad3.sam)"),
+    ("sam", "real_world_htslib_c1_unknown.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c1%23unknown.sam",
+     "htslib CIGAR op 'B' (back-op) edge case (c1#unknown.sam)"),
+    ("sam", "real_world_htslib_c2_pad.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/c2%23pad.sam",
+     "htslib CIGAR padding op corner case (c2#pad.sam)"),
+
+    # C. elegans alignment diversity ('ce' series)
+    ("sam", "real_world_htslib_ce_2.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%232.sam",
+     "htslib ce#2.sam — variant of ce#1 with different record set"),
+    ("sam", "real_world_htslib_ce_5.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%235.sam",
+     "htslib ce#5.sam — multi-record alignment"),
+    ("sam", "real_world_htslib_ce_5b.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%235b.sam",
+     "htslib ce#5b.sam — ce#5 variant b"),
+    ("sam", "real_world_htslib_ce_supp.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23supp.sam",
+     "htslib supplementary alignments (ce#supp.sam) — flag 0x800"),
+    ("sam", "real_world_htslib_ce_tag_depadded.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23tag_depadded.sam",
+     "htslib depadded CIGAR with MD tag (ce#tag_depadded.sam)"),
+    ("sam", "real_world_htslib_ce_tag_padded.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23tag_padded.sam",
+     "htslib padded CIGAR with MD tag (ce#tag_padded.sam)"),
+    ("sam", "real_world_htslib_ce_unmap1.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23unmap1.sam",
+     "htslib unmapped reads variant 1 (ce#unmap1.sam)"),
+    ("sam", "real_world_htslib_ce_unmap2.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/ce%23unmap2.sam",
+     "htslib unmapped reads variant 2 (ce#unmap2.sam) — 5.5 KB"),
+
+    # MD / NM / embedded tags
+    ("sam", "real_world_htslib_embed_md.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/embed_MD.sam",
+     "htslib embedded MD tag in SEQ-less record (embed_MD.sam)"),
+
+    # Index / range tests (text SAM form — exercise record selection)
+    ("sam", "real_world_htslib_index2.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/index2.sam",
+     "htslib index-test SAM (index2.sam) — multi-contig reads"),
+    ("sam", "real_world_htslib_index3.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/index3.sam",
+     "htslib index-test SAM (index3.sam)"),
+    ("sam", "real_world_htslib_index3_exp.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/index3_exp.sam",
+     "htslib index expected output (index3_exp.sam)"),
+    ("sam", "real_world_htslib_index_dos.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/index_dos.sam",
+     "htslib SAM with CRLF line endings (index_dos.sam)"),
+
+    # Field-arithmetic and realign (exercise POS / CIGAR / SEQ interplay)
+    ("sam", "real_world_htslib_fieldarith.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/fieldarith.sam",
+     "htslib field arithmetic test (fieldarith.sam)"),
+    ("sam", "real_world_htslib_realn01.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn01.sam",
+     "htslib realign input 01 (realn01.sam)"),
+    ("sam", "real_world_htslib_realn01_exp.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn01_exp.sam",
+     "htslib realign expected 01 (realn01_exp.sam)"),
+    ("sam", "real_world_htslib_realn01_exp_a.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn01_exp-a.sam",
+     "htslib realign expected 01-a (realn01_exp-a.sam)"),
+    ("sam", "real_world_htslib_realn01_exp_e.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn01_exp-e.sam",
+     "htslib realign expected 01-e (realn01_exp-e.sam)"),
+    ("sam", "real_world_htslib_realn02.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn02.sam",
+     "htslib realign input 02 (realn02.sam)"),
+    ("sam", "real_world_htslib_realn02_r.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn02-r.sam",
+     "htslib realign reverse variant (realn02-r.sam)"),
+    ("sam", "real_world_htslib_realn02_exp.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn02_exp.sam",
+     "htslib realign expected 02 (realn02_exp.sam)"),
+    ("sam", "real_world_htslib_realn02_exp_a.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn02_exp-a.sam",
+     "htslib realign expected 02-a (realn02_exp-a.sam)"),
+    ("sam", "real_world_htslib_realn02_exp_e.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn02_exp-e.sam",
+     "htslib realign expected 02-e (realn02_exp-e.sam)"),
+    ("sam", "real_world_htslib_realn03.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn03.sam",
+     "htslib realign input 03 (realn03.sam) — tiny, 138 B"),
+    ("sam", "real_world_htslib_realn03_exp.sam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/realn03_exp.sam",
+     "htslib realign expected 03 (realn03_exp.sam) — tiny, 172 B"),
+
+    # BAM corpus — binary files for runners that support BAM natively.
+    # Downloaded into seeds/sam/ so SeedCorpus discovers them alongside
+    # SAM text; the format validator below accepts BGZF magic bytes.
+    # These are used by Phase 3's sam_bam_round_trip MR as "already-binary"
+    # parse targets for pysam / htsjdk / samtools.
+    ("sam", "real_world_htslib_colons.bam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/colons.bam",
+     "htslib BAM with colons in names (colons.bam)"),
+    ("sam", "real_world_htslib_no_hdr_sq.bam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/no_hdr_sq_1.bam",
+     "htslib BAM without @SQ header records (no_hdr_sq_1.bam)"),
+    ("sam", "real_world_htslib_range.bam",
+     "https://raw.githubusercontent.com/samtools/htslib/develop/test/range.bam",
+     "htslib BAM for range-query tests (range.bam)"),
 ]
 
 
@@ -299,12 +424,19 @@ def download_one(url: str, dest: Path, timeout: int = 30) -> int:
             return 0
     content = b"".join(chunks)
 
-    # Sanity check: must look like VCF or SAM
-    head = content[:200].decode("utf-8", errors="replace")
+    # Sanity check: must look like VCF, SAM, or BAM (BGZF-compressed).
+    # BGZF magic = \x1f\x8b\x08\x04 (gzip with BGZF extension byte).
+    # BAM files live in seeds/sam/ alongside text SAM so SeedCorpus
+    # picks them up via a single glob.
     fmt = dest.parent.name
+    is_bgzf = content[:4] == b"\x1f\x8b\x08\x04"
+    name_is_bam = dest.suffix.lower() == ".bam"
+    head = content[:200].decode("utf-8", errors="replace")
     if fmt == "vcf" and not head.startswith("##"):
         print(f"    WARN: does not look like VCF (missing ##fileformat)", file=sys.stderr)
-    elif fmt == "sam" and not head.startswith("@"):
+    elif fmt == "sam" and name_is_bam and not is_bgzf:
+        print(f"    WARN: does not look like BAM (missing BGZF magic)", file=sys.stderr)
+    elif fmt == "sam" and not name_is_bam and not head.startswith("@"):
         print(f"    WARN: does not look like SAM (missing @HD/@SQ)", file=sys.stderr)
 
     dest.parent.mkdir(parents=True, exist_ok=True)

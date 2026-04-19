@@ -1,0 +1,212 @@
+# Unified benchmark image — all tools needed by compares/DESIGN.md §13.1.
+#
+# One container holds every per-language toolchain + every fuzzer + every
+# mutation tool + the BioTest Python deps. Built on Ubuntu 22.04 because
+# that's the cleanest host for libseqan3-dev + LLVM 18 + deadsnakes
+# Python 3.12 side-by-side.
+#
+# Build (from repo root):
+#     docker build -t biotest-bench:latest -f compares/docker/Dockerfile.bench compares/docker
+#
+# Run (with repo mounted at /work):
+#     docker run --rm -it -v "$(pwd)":/work -w /work biotest-bench:latest bash
+#
+# Size: ~7 GB when fully populated. That's the price of one-container
+# reproducibility. Per-language split images are left as future work.
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/tools/bin:/opt/jazzer:/opt/mull/bin:/usr/lib/llvm-18/bin:${PATH}" \
+    JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+
+# ---- Base apt toolchain --------------------------------------------------
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl wget gnupg gpg-agent software-properties-common \
+        git git-lfs \
+        build-essential cmake ninja-build pkg-config \
+        zlib1g-dev libbz2-dev liblzma-dev libcurl4-openssl-dev libssl-dev \
+        libffi-dev libreadline-dev libsqlite3-dev \
+        unzip jq \
+        procps less nano ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# ---- Temurin JDK 17 ------------------------------------------------------
+
+RUN mkdir -p /etc/apt/keyrings && \
+    wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public \
+        | gpg --dearmor > /etc/apt/keyrings/adoptium.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb jammy main" \
+        > /etc/apt/sources.list.d/adoptium.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        temurin-17-jdk && \
+    rm -rf /var/lib/apt/lists/* && \
+    java -version
+
+# ---- LLVM / Clang 18 + libFuzzer + AddressSanitizer ---------------------
+
+RUN wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key \
+        | gpg --dearmor > /etc/apt/keyrings/llvm.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" \
+        > /etc/apt/sources.list.d/llvm.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        clang-18 clang-tools-18 clang-format-18 clang-tidy-18 \
+        lld-18 lldb-18 llvm-18 llvm-18-dev llvm-18-tools \
+        libclang-rt-18-dev libc++-18-dev libc++abi-18-dev && \
+    rm -rf /var/lib/apt/lists/* && \
+    update-alternatives --install /usr/bin/clang   clang   /usr/bin/clang-18   100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100 && \
+    clang --version
+
+# ---- seqan3 (C++23 SAM/BAM library) + gcovr -----------------------------
+# Installed BEFORE Python 3.12 so apt's system-Python-3.10-linked gcovr +
+# lxml land cleanly. Swapping python3 to 3.12 later breaks gcovr's
+# shebang resolution; we keep /usr/bin/python3 pointing at 3.10 and call
+# python3.12 explicitly everywhere else.
+#
+# Ubuntu 22.04's libseqan3-dev (3.1.0) omits sdsl-lite; include <seqan3/*>
+# fails with "The sdsl library was not included correctly". Fix: clone
+# sdsl-lite into /opt/sdsl-lite/include and add to CPLUS_INCLUDE_PATH.
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libseqan3-dev seqan3-doc \
+        gcovr lcov python3-lxml && \
+    rm -rf /var/lib/apt/lists/* && \
+    # seqan3 3.1 requires the modernised sdsl-lite v3 (ships version.hpp
+    # with sdsl_version_major == 3). The upstream simongog/sdsl-lite is
+    # v2 and missing version.hpp; the header-only xxsds/sdsl-lite fork is
+    # what seqan3 submodules from.
+    git clone --depth 1 https://github.com/xxsds/sdsl-lite.git /opt/sdsl-lite && \
+    test -f /opt/sdsl-lite/include/sdsl/version.hpp && \
+    dpkg -l libseqan3-dev | grep libseqan3-dev && \
+    gcovr --version
+
+ENV CPLUS_INCLUDE_PATH="/opt/sdsl-lite/include:${CPLUS_INCLUDE_PATH:-}"
+
+# ---- Python 3.11 + 3.12 (deadsnakes) + pip -------------------------------
+# Both interpreters live side-by-side with the system python3 (3.10).
+# We never remap /usr/bin/python3, so apt-managed Python tools (gcovr,
+# apt-listchanges, etc.) keep their 3.10 shebang.
+#
+# - python3.12  → BioTest orchestration + adapters (repo is pinned to 3.12).
+# - python3.11  → Atheris venv (atheris 2.3.0 uses the PRECALL opcode
+#                 that Python 3.12 removed; no newer atheris release
+#                 exists that supports 3.12 as of April 2026).
+
+RUN add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3.11 python3.11-dev python3.11-venv \
+        python3.12 python3.12-dev python3.12-venv \
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
+    python3.12 --version && python3.12 -m pip --version && \
+    python3.11 --version && python3.11 -m pip --version
+
+# ---- Gradle (for Jazzer harness build) -----------------------------------
+
+ENV GRADLE_VERSION=8.5
+RUN curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip && \
+    unzip -q /tmp/gradle.zip -d /opt && \
+    ln -s "/opt/gradle-${GRADLE_VERSION}/bin/gradle" /usr/local/bin/gradle && \
+    rm /tmp/gradle.zip && \
+    gradle --version
+
+# ---- Maven (for PIT mutation runs on htsjdk) ----------------------------
+
+RUN apt-get update && apt-get install -y --no-install-recommends maven && \
+    rm -rf /var/lib/apt/lists/* && \
+    mvn -version
+
+# ---- Jazzer CLI (release JAR + agent) -----------------------------------
+
+ENV JAZZER_VERSION=0.22.1
+RUN mkdir -p /opt/jazzer && \
+    curl -fsSL "https://github.com/CodeIntelligenceTesting/jazzer/releases/download/v${JAZZER_VERSION}/jazzer-linux.tar.gz" \
+        -o /tmp/jazzer.tar.gz && \
+    tar -xzf /tmp/jazzer.tar.gz -C /opt/jazzer && \
+    rm /tmp/jazzer.tar.gz && \
+    ls /opt/jazzer && \
+    /opt/jazzer/jazzer --help >/dev/null 2>&1 || true
+
+# ---- EvoSuite JAR (for htsjdk white-box anchor) --------------------------
+
+ENV EVOSUITE_VERSION=1.2.0
+RUN mkdir -p /opt/evosuite && \
+    curl -fsSL "https://github.com/EvoSuite/evosuite/releases/download/v${EVOSUITE_VERSION}/evosuite-${EVOSUITE_VERSION}.jar" \
+        -o /opt/evosuite/evosuite.jar && \
+    ls -la /opt/evosuite
+
+# ---- PIT (Pitest) command-line JAR for Java mutation scoring ------------
+
+ENV PIT_VERSION=1.15.3
+RUN mkdir -p /opt/pit && \
+    curl -fsSL "https://repo.maven.apache.org/maven2/org/pitest/pitest-command-line/${PIT_VERSION}/pitest-command-line-${PIT_VERSION}.jar" \
+        -o /opt/pit/pitest-command-line.jar && \
+    curl -fsSL "https://repo.maven.apache.org/maven2/org/pitest/pitest/${PIT_VERSION}/pitest-${PIT_VERSION}.jar" \
+        -o /opt/pit/pitest.jar && \
+    curl -fsSL "https://repo.maven.apache.org/maven2/org/pitest/pitest-entry/${PIT_VERSION}/pitest-entry-${PIT_VERSION}.jar" \
+        -o /opt/pit/pitest-entry.jar && \
+    ls -la /opt/pit
+
+# ---- mull (LLVM-IR mutation testing for seqan3 / C++) --------------------
+# Only used for the gated C++ mutation path. Release asset names drift
+# per version; if the pinned URL 404s we install from mull's apt repo
+# instead, and if both fail we log + continue (the seqan3 mutation row
+# is already asterisked per DESIGN.md §9 Risk 1).
+
+ENV MULL_VERSION=0.18.0
+RUN set +e; \
+    curl -fsSL "https://github.com/mull-project/mull/releases/download/${MULL_VERSION}/Mull-18-${MULL_VERSION}-LLVM-18.0-ubuntu-22.04.deb" -o /tmp/mull.deb && \
+        apt-get update && apt-get install -y /tmp/mull.deb && rm /tmp/mull.deb && rm -rf /var/lib/apt/lists/* && exit 0; \
+    echo "[mull] release deb not found at pinned URL; trying apt repo"; \
+    curl -fsSL https://raw.githubusercontent.com/mull-project/mull/main/infrastructure/apt/public.key | gpg --dearmor -o /etc/apt/keyrings/mull.gpg && \
+        echo "deb [signed-by=/etc/apt/keyrings/mull.gpg] https://cdn.mull.project.com/debian stable main" > /etc/apt/sources.list.d/mull.list && \
+        apt-get update && apt-get install -y mull-18 && rm -rf /var/lib/apt/lists/* && exit 0; \
+    echo "[mull] install failed; C++ mutation row will be asterisked. Non-fatal."; \
+    exit 0
+
+# ---- Atheris venv (Python 3.11) -----------------------------------------
+# Dedicated venv for Atheris + its SUTs (pysam/biopython). Isolated so
+# pysam/biopython version pinning during the bug-bench doesn't collide
+# with BioTest's 3.12 deps.
+
+RUN python3.11 -m venv /opt/atheris-venv && \
+    CC=clang CXX=clang++ /opt/atheris-venv/bin/pip install --no-cache-dir \
+        atheris==2.3.0 \
+        pysam==0.22.1 \
+        biopython==1.85 \
+        coverage==7.6.0
+
+# ---- Python 3.12 benchmark tools ----------------------------------------
+
+RUN python3.12 -m pip install --no-cache-dir \
+        mutmut==3.0.0 \
+        coverage==7.6.0 \
+        pysam==0.22.1 \
+        biopython==1.85 \
+        pyyaml==6.0.2 \
+        hypothesis==6.112.1
+
+# ---- BioTest Python dependencies ----------------------------------------
+
+# requirements.txt is copied in at build time. This image layer is
+# rebuilt whenever requirements.txt changes.
+COPY requirements.txt /opt/biotest-requirements.txt
+RUN python3.12 -m pip install --no-cache-dir -r /opt/biotest-requirements.txt || \
+    echo "requirements.txt install had issues; proceed and debug at run time"
+
+# ---- Entrypoint ---------------------------------------------------------
+
+WORKDIR /work
+CMD ["bash"]
+
+# ---- Smoke-test entry (optional) ----------------------------------------
+# Invoke: docker run --rm biotest-bench:latest /opt/tools/verify.sh
+# Populated by build.sh; expected to exist at /opt/tools/verify.sh.

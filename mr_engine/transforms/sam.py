@@ -286,3 +286,175 @@ def toggle_cigar_hard_soft_clipping(
         new_qual = new_qual[:-trim_back]
 
     return _unparse_cigar(new_ops), new_seq, new_qual
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 of SAM coverage plan — 5 new semantics-preserving header transforms.
+#
+# Each shuffles TAG:VALUE pairs WITHIN a header line of a given type. The
+# SAMv1 spec §1.3 does not impose an order on the TAG:VALUE pairs inside
+# @HD/@SQ/@RG/@PG, so permutation preserves semantics. The canonicalizer
+# in test_engine/canonical/sam_normalizer.py now sorts header-subtag dicts
+# (see _parse_tag_fields), so these MRs produce byte-identical canonical
+# JSON on any conformant parser — the metamorphic oracle passes.
+# ---------------------------------------------------------------------------
+
+
+def _split_hd_line(line: str) -> tuple[str, list[str]]:
+    """Return (record_tag, [tag:value, ...]) for a single header line."""
+    parts = line.rstrip("\r\n").split("\t")
+    return parts[0], parts[1:]
+
+
+def _rebuild_header_line(tag: str, kv_fields: list[str]) -> str:
+    """Reconstruct a header line preserving trailing-newline absence."""
+    return "\t".join([tag, *kv_fields])
+
+
+def _shuffle_subtags_of_record_type(
+    header_lines: list[str],
+    record_type: str,
+    seed: Optional[int],
+) -> list[str]:
+    """Return a copy of `header_lines` with TAG:VALUE pairs shuffled
+    within every line whose record tag matches `record_type`.
+
+    Lines of other types (including @HD ordering and @CO text) are left
+    byte-identical. Line-level order is preserved; only intra-line field
+    ordering changes. Callers use this helper to implement the five
+    Phase 2 subtag-shuffle transforms.
+    """
+    rng = random.Random(seed)
+    out: list[str] = []
+    for line in header_lines:
+        tag, kv = _split_hd_line(line)
+        if tag != record_type or len(kv) <= 1:
+            out.append(line)
+            continue
+        shuffled = list(kv)
+        rng.shuffle(shuffled)
+        out.append(_rebuild_header_line(tag, shuffled))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 5. shuffle_hd_subtags
+# ---------------------------------------------------------------------------
+@register_transform(
+    "shuffle_hd_subtags",
+    format="SAM",
+    description=(
+        "Shuffle the TAG:VALUE pairs INSIDE the @HD header line "
+        "(e.g. `VN:1.6\\tSO:coordinate\\tGO:none` -> `GO:none\\tVN:1.6\\tSO:coordinate`). "
+        "SAMv1 §1.3 does not order these pairs, so this is semantics-"
+        "preserving; the canonical normalizer sorts them so the oracle "
+        "passes for conformant parsers."
+    ),
+    preconditions=("has_hd_line",),
+)
+def shuffle_hd_subtags(
+    header_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Permute TAG:VALUE pairs within the @HD header line."""
+    return _shuffle_subtags_of_record_type(header_lines, "@HD", seed)
+
+
+# ---------------------------------------------------------------------------
+# 6. shuffle_sq_record_subtags
+# ---------------------------------------------------------------------------
+@register_transform(
+    "shuffle_sq_record_subtags",
+    format="SAM",
+    description=(
+        "Independently shuffle the TAG:VALUE pairs INSIDE each @SQ "
+        "reference-sequence record (e.g. `SN:chr1\\tLN:248956422\\tM5:abc` "
+        "-> `M5:abc\\tLN:248956422\\tSN:chr1`). Preserves @SQ line order — "
+        "only intra-line field order changes. SAMv1 §1.3 leaves this "
+        "unconstrained."
+    ),
+    preconditions=("has_sq_line",),
+)
+def shuffle_sq_record_subtags(
+    header_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Permute TAG:VALUE pairs within every @SQ header record."""
+    return _shuffle_subtags_of_record_type(header_lines, "@SQ", seed)
+
+
+# ---------------------------------------------------------------------------
+# 7. shuffle_rg_record_subtags
+# ---------------------------------------------------------------------------
+@register_transform(
+    "shuffle_rg_record_subtags",
+    format="SAM",
+    description=(
+        "Independently shuffle the TAG:VALUE pairs INSIDE each @RG "
+        "read-group record (e.g. `ID:sample1\\tLB:libA\\tSM:subject1` -> "
+        "`SM:subject1\\tID:sample1\\tLB:libA`). Preserves @RG line order; "
+        "only intra-line field order changes."
+    ),
+    preconditions=("has_rg_line",),
+)
+def shuffle_rg_record_subtags(
+    header_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Permute TAG:VALUE pairs within every @RG header record."""
+    return _shuffle_subtags_of_record_type(header_lines, "@RG", seed)
+
+
+# ---------------------------------------------------------------------------
+# 8. shuffle_pg_record_subtags
+# ---------------------------------------------------------------------------
+@register_transform(
+    "shuffle_pg_record_subtags",
+    format="SAM",
+    description=(
+        "Independently shuffle the TAG:VALUE pairs INSIDE each @PG "
+        "program record (e.g. `ID:bwa\\tPN:bwa\\tVN:0.7.17\\tPP:samtools` "
+        "-> `PP:samtools\\tID:bwa\\tVN:0.7.17\\tPN:bwa`). Preserves @PG "
+        "line order so PP parent-program pointers remain valid; only "
+        "intra-line field order changes."
+    ),
+    preconditions=("has_pg_line",),
+)
+def shuffle_pg_record_subtags(
+    header_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Permute TAG:VALUE pairs within every @PG header record."""
+    return _shuffle_subtags_of_record_type(header_lines, "@PG", seed)
+
+
+# ---------------------------------------------------------------------------
+# 9. shuffle_co_comments
+# ---------------------------------------------------------------------------
+@register_transform(
+    "shuffle_co_comments",
+    format="SAM",
+    description=(
+        "Shuffle the order of @CO comment lines within the header. "
+        "SAMv1 §1.3 declares @CO to be free-text comments with no "
+        "ordering semantics; the canonical normalizer sorts them, so "
+        "this MR passes deterministically on conformant parsers."
+    ),
+    preconditions=("has_co_lines",),
+)
+def shuffle_co_comments(
+    header_lines: list[str],
+    seed: Optional[int] = None,
+) -> list[str]:
+    """Shuffle @CO lines while leaving every other header line's order
+    (and every non-@CO line) byte-identical."""
+    rng = random.Random(seed)
+    co_indices = [i for i, ln in enumerate(header_lines) if ln.startswith("@CO")]
+    if len(co_indices) < 2:
+        return list(header_lines)
+    co_lines = [header_lines[i] for i in co_indices]
+    rng.shuffle(co_lines)
+    out = list(header_lines)
+    for pos, new_line in zip(co_indices, co_lines):
+        out[pos] = new_line
+    return out

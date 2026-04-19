@@ -67,8 +67,9 @@ class TestRegistry:
             assert name in TRANSFORM_REGISTRY, (
                 f"{name} listed in MALFORMED_TRANSFORM_NAMES but not in registry"
             )
-        # No stale entries.
-        assert len(MALFORMED_TRANSFORM_NAMES) == 5
+        # No stale entries. 5 originals + 3 SAM mutators from Phase 2
+        # of the SAM coverage plan (TLEN / tag-type / FLAG bits).
+        assert len(MALFORMED_TRANSFORM_NAMES) == 8
 
 
 # ---------------------------------------------------------------------------

@@ -30,6 +30,16 @@ from mr_engine.transforms.sam import (
     reorder_header_records,
     split_or_merge_adjacent_cigar_ops,
     toggle_cigar_hard_soft_clipping,
+    shuffle_hd_subtags,
+    shuffle_sq_record_subtags,
+    shuffle_rg_record_subtags,
+    shuffle_pg_record_subtags,
+    shuffle_co_comments,
+)
+from mr_engine.transforms.malformed import (
+    violate_tlen_sign_consistency,
+    violate_optional_tag_type_character,
+    violate_flag_bit_exclusivity,
 )
 
 
@@ -38,14 +48,16 @@ from mr_engine.transforms.sam import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_26_transforms(self):
+    def test_whitelist_has_34_transforms(self):
         # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
         # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip) +
         # 5 Rank-3 spec-rule-targeted malformed-input mutators +
         # 1 Rank-5 query-method MR transform (query_method_roundtrip;
-        # MR-Scout TOSEM 2024).
+        # MR-Scout TOSEM 2024) +
+        # 5 Phase-2 SAM header-subtag / @CO shuffles +
+        # 3 Phase-2 SAM malformed mutators (TLEN / tag-type / FLAG).
         wl = get_whitelist()
-        assert len(wl) == 26, f"Expected 26 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 34, f"Expected 34 transforms, got {len(wl)}: {wl}"
 
     def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
         # One writer transform forever, spanning BOTH formats — the
@@ -341,6 +353,180 @@ class TestToggleClipping:
         cigar, seq, qual = toggle_cigar_hard_soft_clipping("10M", "ACGTACGTAC", "IIIIIIIIII")
         assert cigar == "10M"
         assert seq == "ACGTACGTAC"
+
+
+# ===========================================================================
+# Phase-2 SAM subtag shuffles — verify semantics-preserving invariants
+# ===========================================================================
+
+class TestShuffleHeaderSubtags:
+    HEADER = [
+        "@HD\tVN:1.6\tSO:coordinate\tGO:none",
+        "@SQ\tSN:chr1\tLN:248956422\tM5:abc1234",
+        "@SQ\tSN:chr2\tLN:242193529",
+        "@RG\tID:sample1\tLB:libA\tSM:subject1\tPL:ILLUMINA",
+        "@PG\tID:bwa\tPN:bwa\tVN:0.7.17\tCL:bwa mem ref.fa in.fq",
+        "@CO\tfirst comment",
+        "@CO\tsecond comment",
+    ]
+
+    def test_hd_shuffle_preserves_kv_set(self):
+        out = shuffle_hd_subtags(self.HEADER, seed=42)
+        # The @HD line changed order but contents are preserved
+        orig_kv = set(self.HEADER[0].split("\t")[1:])
+        new_kv = set(out[0].split("\t")[1:])
+        assert orig_kv == new_kv
+        assert out[0].startswith("@HD\t")
+
+    def test_hd_shuffle_only_touches_hd(self):
+        out = shuffle_hd_subtags(self.HEADER, seed=42)
+        # Every non-@HD line is byte-identical
+        for orig, new in zip(self.HEADER[1:], out[1:]):
+            assert orig == new
+
+    def test_hd_shuffle_deterministic(self):
+        a = shuffle_hd_subtags(self.HEADER, seed=7)
+        b = shuffle_hd_subtags(self.HEADER, seed=7)
+        assert a == b
+
+    def test_sq_shuffle_preserves_line_order(self):
+        out = shuffle_sq_record_subtags(self.HEADER, seed=42)
+        # @SQ chr1 still comes before @SQ chr2
+        sn_order = [ln for ln in out if ln.startswith("@SQ")]
+        assert "chr1" in sn_order[0]
+        assert "chr2" in sn_order[1]
+
+    def test_sq_shuffle_preserves_kv_set_per_line(self):
+        out = shuffle_sq_record_subtags(self.HEADER, seed=42)
+        orig_sq = [set(ln.split("\t")[1:]) for ln in self.HEADER if ln.startswith("@SQ")]
+        new_sq = [set(ln.split("\t")[1:]) for ln in out if ln.startswith("@SQ")]
+        assert orig_sq == new_sq
+
+    def test_rg_shuffle_preserves_set(self):
+        out = shuffle_rg_record_subtags(self.HEADER, seed=42)
+        orig = set(self.HEADER[3].split("\t")[1:])
+        new = set(out[3].split("\t")[1:])
+        assert orig == new
+
+    def test_pg_shuffle_preserves_set(self):
+        out = shuffle_pg_record_subtags(self.HEADER, seed=42)
+        orig = set(self.HEADER[4].split("\t")[1:])
+        new = set(out[4].split("\t")[1:])
+        assert orig == new
+
+    def test_co_shuffle_preserves_co_multiset(self):
+        out = shuffle_co_comments(self.HEADER, seed=42)
+        orig_co = sorted(ln for ln in self.HEADER if ln.startswith("@CO"))
+        new_co = sorted(ln for ln in out if ln.startswith("@CO"))
+        assert orig_co == new_co
+
+    def test_co_shuffle_preserves_non_co_lines(self):
+        out = shuffle_co_comments(self.HEADER, seed=42)
+        orig_non_co = [ln for ln in self.HEADER if not ln.startswith("@CO")]
+        new_non_co = [ln for ln in out if not ln.startswith("@CO")]
+        assert orig_non_co == new_non_co
+
+    def test_single_subtag_line_is_noop(self):
+        # Lines with only one TAG:VALUE can't be shuffled meaningfully.
+        header = ["@HD\tVN:1.6"]
+        assert shuffle_hd_subtags(header, seed=42) == header
+
+
+class TestSubtagShuffleCanonicalInvariance:
+    """The canonicalizer's `_parse_tag_fields` sorts dict keys, so every
+    shuffle_*_subtags transform MUST produce byte-identical canonical
+    JSON. Without this invariant the metamorphic oracle would fail on
+    every parser and the MR would be auto-quarantined."""
+
+    HEADER = [
+        "@HD\tVN:1.6\tSO:coordinate\tGO:none",
+        "@SQ\tSN:chr1\tLN:248956422\tM5:abc1234",
+        "@SQ\tSN:chr2\tLN:242193529",
+        "@RG\tID:sample1\tLB:libA\tSM:subject1",
+    ]
+    # Minimal record line so normalize_sam_text has something to parse.
+    RECORD = "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+
+    def _canonical(self, lines):
+        from test_engine.canonical.sam_normalizer import normalize_sam_text
+        return normalize_sam_text(lines).model_dump()
+
+    def test_hd_shuffle_canonical_equal(self):
+        orig = self.HEADER + [self.RECORD]
+        shuffled = shuffle_hd_subtags(self.HEADER, seed=42) + [self.RECORD]
+        assert self._canonical(orig) == self._canonical(shuffled)
+
+    def test_sq_shuffle_canonical_equal(self):
+        orig = self.HEADER + [self.RECORD]
+        shuffled = shuffle_sq_record_subtags(self.HEADER, seed=42) + [self.RECORD]
+        assert self._canonical(orig) == self._canonical(shuffled)
+
+    def test_rg_shuffle_canonical_equal(self):
+        orig = self.HEADER + [self.RECORD]
+        shuffled = shuffle_rg_record_subtags(self.HEADER, seed=42) + [self.RECORD]
+        assert self._canonical(orig) == self._canonical(shuffled)
+
+
+# ===========================================================================
+# Phase-2 SAM malformed mutators — verify each breaks exactly one rule
+# ===========================================================================
+
+class TestMalformedSamMutators:
+    HEADER = [
+        "@HD\tVN:1.6\tSO:coordinate",
+        "@SQ\tSN:chr1\tLN:248956422",
+    ]
+    PAIRED_RECS = [
+        "r1\t99\tchr1\t100\t30\t10M\t=\t200\t110\tACGTACGTAC\tIIIIIIIIII\tNM:i:0",
+        "r1\t147\tchr1\t200\t30\t10M\t=\t100\t-110\tACGTACGTAC\tIIIIIIIIII\tNM:i:0",
+    ]
+
+    def test_violate_tlen_sign_flips_sign(self):
+        lines = self.HEADER + self.PAIRED_RECS
+        out = violate_tlen_sign_consistency(lines, seed=0)
+        # Find the first record line (index 2)
+        first_rec_cols = out[2].rstrip("\n").split("\t")
+        orig_tlen = int(self.PAIRED_RECS[0].split("\t")[8])
+        new_tlen = int(first_rec_cols[8])
+        assert new_tlen == -orig_tlen
+        # Mate record unchanged
+        assert out[3] == self.PAIRED_RECS[1]
+
+    def test_violate_tlen_noop_when_zero(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGT\tIIII"
+        ]
+        assert violate_tlen_sign_consistency(lines, seed=0) == lines
+
+    def test_violate_optional_tag_type_injects_x(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\tNM:i:0\tMD:Z:10"
+        ]
+        out = violate_optional_tag_type_character(lines, seed=0)
+        # First optional tag at col 11 (0-indexed)
+        cols = out[2].rstrip("\n").split("\t")
+        assert cols[11].split(":")[1] == "X", f"expected X type char, got {cols[11]}"
+
+    def test_violate_optional_tag_noop_when_no_tags(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGT\tIIII"
+        ]
+        assert violate_optional_tag_type_character(lines, seed=0) == lines
+
+    def test_violate_flag_bit_exclusivity_sets_unmapped(self):
+        lines = self.HEADER + self.PAIRED_RECS
+        out = violate_flag_bit_exclusivity(lines, seed=0)
+        new_flag = int(out[2].rstrip("\n").split("\t")[1])
+        orig_flag = int(self.PAIRED_RECS[0].split("\t")[1])
+        assert new_flag & 0x4, "expected 0x4 (unmapped) bit to be set"
+        assert new_flag == orig_flag | 0x4
+
+    def test_violate_flag_noop_when_unmapped(self):
+        lines = self.HEADER + [
+            # RNAME=* implies already unmapped
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII"
+        ]
+        assert violate_flag_bit_exclusivity(lines, seed=0) == lines
 
 
 # ===========================================================================

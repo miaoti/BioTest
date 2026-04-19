@@ -550,33 +550,95 @@ An operational, step-by-step todo list for actually running the comparative eval
 
 ### 13.1 Environment prerequisites (one-time)
 
-- [ ] **Host OS**: Ensure a Linux / WSL2 (Ubuntu 22.04+) environment is available. Windows host is not sufficient for Atheris or libFuzzer.
-  - [ ] If on Windows: install WSL2 via `wsl --install -d Ubuntu-22.04`.
-  - [ ] Inside WSL2: `sudo apt update && sudo apt upgrade -y`.
-- [ ] **Java toolchain**: install Temurin JDK 17 (EvoSuite + Jazzer compatibility).
-  - [ ] `sudo apt install -y temurin-17-jdk` (after adding Adoptium repo).
-  - [ ] Verify: `java -version` → `17.x`.
-- [ ] **Python 3.12**: install in WSL2 (Windows-side Python is fine for BioTest orchestration but not for Atheris).
-  - [ ] `sudo apt install -y python3.12 python3.12-venv python3.12-dev`.
-  - [ ] Create a benchmark venv: `python3.12 -m venv ~/biotest-bench && source ~/biotest-bench/bin/activate`.
-- [ ] **Clang toolchain** (libFuzzer + mull dependencies).
-  - [ ] `sudo apt install -y clang-18 libclang-18-dev llvm-18 llvm-18-dev`.
-  - [ ] `sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100`.
-  - [ ] Verify: `clang++ --version` → `18.x`.
-- [ ] **seqan3 C++23 library** **[gated]**.
-  - [ ] `sudo apt install -y libseqan3-dev` OR clone + install from source.
-  - [ ] Verify: `echo '#include <seqan3/core/debug_stream.hpp>' | clang++-18 -std=c++23 -x c++ -E - >/dev/null`.
-- [ ] **Docker** (pysam harness container is already used by BioTest).
-  - [ ] `sudo apt install -y docker.io` and add current user to `docker` group.
-  - [ ] Build pysam image: `py -3.12 harnesses/pysam/build_docker.py`.
-- [ ] **Coverage instrumentation prerequisites**.
-  - [ ] `sudo apt install -y gcovr lcov` (for seqan3 coverage).
-  - [ ] `pip install coverage==7.6.0` (for pysam/biopython coverage).
-- [ ] **BioTest Python dependencies**.
-  - [ ] `pip install -r requirements.txt` (from repo root inside the venv).
-- [ ] **Git LFS** if seqan3 source clone is required.
-  - [ ] `sudo apt install -y git-lfs && git lfs install`.
-- [ ] **Disk space**: verify ≥ 50 GB free under `compares/` (bug-bench artefacts + fuzzer corpora dominate).
+**Primary path — Docker container.** One `docker build` gives every tool
+§13.1 needs; no WSL2 distribution to maintain by hand. Docker Desktop
+on Windows already uses WSL2 as its backend, so this is *using* WSL2
+without *managing* it. Verified end-to-end on 2026-04-19: image
+`biotest-bench:latest` (4.64 GB), `verify.sh` reports 30 PASS / 1 WARN
+(mull, optional) / 0 FAIL, exit code 0.
+
+- [x] **Docker Desktop running** with the WSL2 backend (default on
+  Windows 10/11). Verify: `docker --version && docker info | grep -i osType`.
+- [x] **Disk space**: ≥ 50 GB free under `compares/` + ≥ 15 GB free
+  for the Docker image.
+- [x] **Build + verify** (one command does both):
+  - [x] `bash compares/docker/build.sh` — builds `biotest-bench:latest`
+    AND automatically runs `verify.sh` at the end. First build takes
+    ~12 min and produces a 4.64 GB image; subsequent rebuilds use
+    Docker's layer cache.
+- [x] **Image contents** (final, verified): Temurin JDK 17, Python 3.12
+  + Python 3.11 (separate venv at `/opt/atheris-venv/`), Clang 18 +
+  libFuzzer + AddressSanitizer/UBSan, libseqan3-dev + xxsds/sdsl-lite v3
+  (C++23), gcovr + lcov, Gradle 8.5, Maven, Jazzer 0.22.1, EvoSuite
+  1.2.0, PIT 1.15.3 (command-line + entry + pitest JARs under
+  `/opt/pit/`), Atheris 2.3.0, mutmut 3.0.0, pysam 0.22.1, biopython
+  1.85, coverage.py 7.6.0, plus everything in `requirements.txt`. mull
+  0.18.0 is soft-installed — it fails over to a WARN if the pinned deb
+  URL 404s (C++ mutation is already asterisked per §9 Risk 1).
+- [x] **Re-verify at any time**:
+  - [x] `bash compares/docker/run.sh bash compares/docker/verify.sh` —
+    prints `OK` / `WARN` / `FAIL` per tool, exits non-zero only if a
+    **required** tool is broken. WARN is reserved for gated-optional
+    tools like mull.
+- [ ] **Pysam runner container** (separate image, already used by
+  BioTest Phase C):
+  - [ ] From repo root, outside the bench image:
+    `py -3.12 harnesses/pysam/build_docker.py`. Independent of
+    `biotest-bench`; both images coexist.
+
+**Two Python environments inside the image** (documented here because it
+surprises people):
+
+| Interpreter | Path | Purpose |
+| :--- | :--- | :--- |
+| System `python3` (3.10) | `/usr/bin/python3` | apt-managed tools only (gcovr, apt-listchanges). Never called by our scripts. |
+| `python3.12` | `/usr/bin/python3.12` | BioTest orchestration, adapters, mutmut, coverage.py. The benchmark default. |
+| `python3.11` venv | `/opt/atheris-venv/bin/python` | Atheris + its SUT deps. Atheris 2.3.0 uses the `PRECALL` opcode which Python 3.12 removed; 3.11 is the newest interpreter it builds against, and no 3.12-compatible Atheris exists as of April 2026. `run_atheris.py` defaults its `--python-bin` to this path. |
+
+**Daily workflow**:
+
+```bash
+# Interactive shell inside the image with repo at /work
+bash compares/docker/run.sh
+
+# From inside the container, every benchmark script works verbatim:
+(container) $ python3.12 compares/scripts/bug_bench_driver.py --verify-only
+(container) $ /opt/atheris-venv/bin/python compares/harnesses/atheris/fuzz_pysam.py …
+```
+
+**If you skipped the Dockerfile** and want to know why specific decisions
+live there, the Dockerfile is self-documenting in comments around each
+workaround. The four build-loop lessons worth knowing:
+
+1. `/usr/bin/python3` stays at system 3.10 — otherwise gcovr's
+   apt-bundled `python3-lxml` (built for 3.10) fails to import under
+   3.12 and the whole seqan3 layer breaks.
+2. Atheris lives in a 3.11 venv, not the 3.12 site-packages.
+3. `libseqan3-dev 3.1.0` on Ubuntu 22.04 ships without `sdsl-lite`; we
+   clone `xxsds/sdsl-lite` (v3, ships `sdsl/version.hpp`) into
+   `/opt/sdsl-lite/include` and export `CPLUS_INCLUDE_PATH`. The older
+   `simongog/sdsl-lite` v2.1.1 is v2 and seqan3 rejects it at compile
+   time with `sdsl_version_major != 3`.
+4. `mull 0.18.0` is soft-installed — if the release asset URL rots, the
+   build continues and `mull` is listed as WARN in `verify.sh`.
+
+---
+
+**Alternative path — bare WSL2 install.** Only pick this if you need
+bare-metal fuzzing performance (~5–10% faster than Docker I/O on
+Windows) or if Docker is unavailable. Longer, less reproducible.
+
+- [ ] `wsl --install -d Ubuntu-22.04`, `sudo apt update && sudo apt upgrade -y`.
+- [ ] Temurin JDK 17: add Adoptium apt repo, `sudo apt install -y temurin-17-jdk`.
+- [ ] Python 3.12 via deadsnakes: `sudo apt install -y python3.12 python3.12-venv python3.12-dev`.
+- [ ] Clang 18 via apt.llvm.org: `sudo apt install -y clang-18 libclang-18-dev llvm-18 llvm-18-dev lld-18`.
+- [ ] `sudo apt install -y libseqan3-dev gcovr lcov git-lfs maven`.
+- [ ] Install Gradle 8.5 manually (tar from gradle.org).
+- [ ] Download Jazzer 0.22.1, EvoSuite 1.2.0, PIT 1.15.3, and mull 0.18.0 release artefacts into `/opt/`.
+- [ ] `python3.12 -m venv ~/biotest-bench && source ~/biotest-bench/bin/activate`.
+- [ ] `CC=clang-18 pip install atheris==2.3.0 mutmut==3.0.0 coverage==7.6.0 pysam==0.22.1 biopython==1.85`.
+- [ ] `pip install -r requirements.txt` from the repo root.
+- [ ] Verify: run the same checks as `compares/docker/verify.sh` but on the bare host.
 
 ### 13.2 Per-tool installation, build, and smoke test
 

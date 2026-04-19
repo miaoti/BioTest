@@ -65,6 +65,33 @@ Source: `github.com/samtools/bcftools/test/`
 | `real_world_bcftools_polysomy.vcf` | Aneuploid (polysomy) records |
 | `real_world_samtools_ce.sam` | C. elegans SAM test |
 
+### htslib SAM / BAM corpus (MIT-equivalent)
+Source: `github.com/samtools/htslib/test/`. Phase 1 of the SAM-coverage plan triples the SAM Tier-2 corpus (7 → ~30+ files) by pulling every htslib-curated SAM edge case under the 500 KB cap. Each `#` in the upstream filename is URL-encoded as `%23` in the fetch URL; the committed filename strips it.
+
+| File | Diversity axis |
+| :--- | :--- |
+| `real_world_htslib_ce_1/2/5/5b/supp.sam` | C. elegans alignment variety (ce series) |
+| `real_world_htslib_ce_tag_padded/depadded.sam` | Padded vs depadded CIGAR with MD tag |
+| `real_world_htslib_ce_unmap/unmap1/unmap2.sam` | Unmapped-read flag + pair variants |
+| `real_world_htslib_c1_clip.sam` | Hard/soft clipping corner cases |
+| `real_world_htslib_c1_bounds.sam` | CIGAR length-boundary conditions |
+| `real_world_htslib_c1_noseq.sam` | SEQ='*' alignments (no sequence) |
+| `real_world_htslib_c1_pad1/pad2/pad3.sam`, `c2_pad.sam` | CIGAR `P` (pad) op variants — triggers padding-specific branches |
+| `real_world_htslib_c1_unknown.sam` | CIGAR `B` (back) op — rare/optional spec op |
+| `real_world_htslib_auxf_values.sam` | Optional auxiliary tag type-B (array) values |
+| `real_world_htslib_md_1.sam`, `embed_md.sam` | MD tag parsing + embedded-MD records |
+| `real_world_htslib_xx_tlen.sam` | TLEN (template length) edge cases |
+| `real_world_htslib_index2/index3/index3_exp/index_dos.sam` | Index-selection + CRLF line endings |
+| `real_world_htslib_fieldarith.sam` | Field arithmetic on POS/MAPQ/TLEN |
+| `real_world_htslib_realn01/01_exp/01_exp-a/01_exp-e.sam` | Realign test inputs + expected outputs, variant A/E |
+| `real_world_htslib_realn02/02-r/02_exp/02_exp-a/02_exp-e.sam` | Realign 02 with reverse-strand variant |
+| `real_world_htslib_realn03/03_exp.sam` | Tiny realign edge case (138 / 172 bytes) |
+| `real_world_htslib_colons.bam` | BAM with colons in read names — binary |
+| `real_world_htslib_no_hdr_sq.bam` | BAM without @SQ header — binary |
+| `real_world_htslib_range.bam` | BAM for range-query tests — binary |
+
+**BAM files note.** Downloaded into `seeds/sam/` (alongside text SAM) so a single glob discovers both once the corpus is extended in Phase 3 (SAM↔BAM↔CRAM round-trip). Until then they are inert baggage — no SUT is run against them. The `fetch_real_world.py` format validator accepts BGZF magic (`\x1f\x8b\x08\x04`) on BAM-named files.
+
 ### hts-specs test corpus (MIT-equivalent)
 Source: `github.com/samtools/hts-specs/test/vcf/`
 
