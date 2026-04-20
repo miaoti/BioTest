@@ -420,10 +420,18 @@ coverage:
   # Each entry resolves (via PythonCoverageContext) to an installed
   # package directory that coverage.py instruments. Add a new pattern
   # here for every pure-Python SUT you onboard.
+  #
+  # 2026-04-20: note that PythonCoverageContext's resolver strips
+  # a trailing ".py" via `str.rstrip(".py")` — which ALSO strips any
+  # of the chars '.', 'p', 'y' from the right. So a bare "vcfpy"
+  # would be mangled to "vcf". Use a specific sub-module name that
+  # doesn't end in a stripped char (e.g. `vcfpy.reader`) — the
+  # resolver walks up to the parent dir, so the whole vcfpy package
+  # still gets traced.
   coveragepy_data_file: coverage_artifacts/.coverage
   coveragepy_source_filter:
     - Bio.Align.sam
-    - vcfpy
+    - vcfpy.reader
   # pysam Docker coverage (fragments combined from mounted volume)
   pysam_coverage_dir: coverage_artifacts/pysam
   pysam_source_filter:
@@ -492,16 +500,41 @@ coverage:
         - libcbcf
         - libcvcf
         - bcftools.py
-      # vcfpy (bihealth) — pure-Python VCF parser. The entire package is
-      # VCF-specific so the whole vcfpy tree is in scope.
+      # vcfpy (bihealth) — pure-Python VCF parser.
+      # Scope matches exactly what BioTest exercises on this SUT:
+      #   parse          → reader.py, parser.py, header.py, record.py
+      #   write_roundtrip→ writer.py
+      #   query_methods  → record.py (Record, Call, Substitution)
+      # Excluded on purpose (not exercised by any BioTest codepath):
+      #   bgzf.py        — BGZF compression (we test plain .vcf, not .vcf.gz)
+      #   tabix.py       — tabix indexing (no random-access tests)
+      # Same rationale as htsjdk above (exclude JEXL filter engine).
       vcfpy:
-        - vcfpy
-      # noodles-vcf — Rust crate. NoodlesCoverageCollector filters the
-      # cargo-llvm-cov JSON to files under the noodles-vcf crate source
-      # tree. Keep the path substring matching the crate's sub-path
-      # inside the noodles monorepo.
+        - vcfpy/reader
+        - vcfpy/parser
+        - vcfpy/header
+        - vcfpy/record
+        - vcfpy/writer
+      # noodles-vcf — Rust crate.
+      # Scope matches exactly what BioTest exercises:
+      #   parse          → src/io/reader, src/header, src/record, src/variant
+      #   write_roundtrip→ src/io/writer
+      # Excluded on purpose:
+      #   src/async      — async I/O (BioTest's subprocess harness is sync)
+      #   src/fs         — filesystem helpers not on our parse/write path
+      # NoodlesCoverageCollector matches these as path substrings
+      # against the cargo-llvm-cov JSON `filename` field; Cargo's
+      # registry cache puts noodles-vcf at
+      #   .cargo/registry/src/index.crates.io-*/noodles-vcf-<ver>/src/...
+      # so "noodles-vcf/src/io/reader" locks onto the reader module
+      # alone, not `async/io/reader`.
       noodles:
-        - noodles-vcf
+        - noodles-vcf/src/io/reader
+        - noodles-vcf/src/io/writer
+        - noodles-vcf/src/header
+        - noodles-vcf/src/record
+        - noodles-vcf/src/variant
+        - noodles-vcf/src/lib.rs
     SAM:
       # Java / htsjdk — htsjdk/samtools mixes SAM + BAM + CRAM +
       # CSI + index code; narrow to SAM-named classes only.

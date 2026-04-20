@@ -236,6 +236,8 @@ both formats — no per-format duplicates to maintain.
 |:------------|:---------------------------------------------------------------|:-----------------------------------------------|
 | **htsjdk**  | `VCFWriter` + `SAMFileWriterFactory`                           | `harnesses/java/BioTestHarness.java`           |
 | **pysam**   | `pysam.VariantFile("w")` + `pysam.AlignmentFile("wh")`         | `harnesses/pysam/pysam_harness.py`             |
+| **vcfpy**   | `vcfpy.Writer.from_path`                                       | `test_engine/runners/vcfpy_runner.py`          |
+| **noodles** | `noodles_vcf::io::writer::Writer`                              | `harnesses/rust/noodles_harness/src/main.rs` (`write_roundtrip`) |
 | **htslib**  | `bcftools view` / `samtools view` (already a round-trip)       | `test_engine/runners/htslib_runner.py`         |
 
 ### Opt-out is silent
@@ -466,10 +468,15 @@ coverage:
   enabled: true
   target_filters:
     VCF:
+      # Scope follows the "measure what we exercise" rule: each SUT's
+      # list names ONLY the modules the three ops (parse / write_roundtrip /
+      # query_methods) touch — nothing else.
       htsjdk:  [htsjdk/variant/vcf, htsjdk/variant/variantcontext/writer]
       pysam:   [libcbcf, libcvcf, bcftools.py]   # narrow — see pysam caveat below
-      vcfpy:   [vcfpy]
-      noodles: [noodles-vcf]
+      vcfpy:   [vcfpy/reader, vcfpy/parser, vcfpy/header, vcfpy/record, vcfpy/writer]
+      noodles: [noodles-vcf/src/io/reader, noodles-vcf/src/io/writer,
+                noodles-vcf/src/header, noodles-vcf/src/record,
+                noodles-vcf/src/variant, noodles-vcf/src/lib.rs]
     SAM:
       htsjdk:    [htsjdk/samtools]
       biopython: [Bio/Align/sam]
@@ -518,16 +525,21 @@ Exported to `data/det_report.json`, tracked per MR and per parser pair.
 
 ## SUT Matrix
 
-| SUT           | Language | VCF | SAM | Coverage                | Independent impl? | Role                                   |
-|:--------------|:---------|:---:|:---:|:------------------------|:-----------------:|:---------------------------------------|
-| **htsjdk**    | Java     | ✓   | ✓   | JaCoCo                  | ✓                 | Regular voter                          |
-| **pysam**     | Python   | ✓   | ✓   | coverage.py *(limited)* | ✗ (wraps htslib)  | Regular voter                          |
-| **biopython** | Python   | —   | ✓   | coverage.py             | ✓                 | Regular voter (SAM)                    |
-| **seqan3**    | C++      | —   | ✓   | gcovr/gcov              | ✓                 | Regular voter (SAM)                    |
-| **vcfpy**     | Python   | ✓   | —   | coverage.py             | ✓                 | Regular voter (VCF)                    |
-| **noodles**   | Rust     | ✓   | —   | cargo-llvm-cov          | ✓                 | Regular voter (VCF)                    |
-| **htslib**    | CLI      | ✓   | ✓   | —                       | (reference)       | **Tie-breaker (gold standard)**        |
-| reference     | Python   | ✓   | ✓   | —                       | —                 | Independent canonical impl.            |
+| SUT           | Language | VCF | SAM | parse | write_roundtrip | query_methods | Coverage                | Independent impl? | Role                                   |
+|:--------------|:---------|:---:|:---:|:-----:|:---------------:|:-------------:|:------------------------|:-----------------:|:---------------------------------------|
+| **htsjdk**    | Java     | ✓   | ✓   | ✓     | ✓               | ✓             | JaCoCo                  | ✓                 | Regular voter                          |
+| **pysam**     | Python   | ✓   | ✓   | ✓     | ✓               | ✓             | coverage.py *(limited)* | ✗ (wraps htslib)  | Regular voter                          |
+| **biopython** | Python   | —   | ✓   | ✓     | —               | ✓             | coverage.py             | ✓                 | Regular voter (SAM)                    |
+| **seqan3**    | C++      | —   | ✓   | ✓     | —               | —             | gcovr/gcov              | ✓                 | Regular voter (SAM)                    |
+| **vcfpy**     | Python   | ✓   | —   | ✓     | ✓               | ✓             | coverage.py             | ✓                 | Regular voter (VCF)                    |
+| **noodles**   | Rust     | ✓   | —   | ✓     | ✓               | —†            | cargo-llvm-cov          | ✓                 | Regular voter (VCF)                    |
+| **htslib**    | CLI      | ✓   | ✓   | ✓     | ✓ (CLI)         | —             | —                       | (reference)       | **Tie-breaker (gold standard)**        |
+| reference     | Python   | ✓   | ✓   | ✓     | —               | —             | —                       | —                 | Independent canonical impl.            |
+
+> **†** noodles deliberately skips `query_methods` because Rust has no
+> runtime reflection (same choice as seqan3). The framework's
+> runtime-capability resolver hides `query_method_roundtrip` from the
+> LLM menu when no primary SUT opts in, so the gap is harmless.
 
 > **pysam coverage caveat.** `pysam`'s VCF/SAM logic lives in Cython-
 > compiled `libcbcf.pyx` / `libcsam*.pyx` → native `.so`. `coverage.py`

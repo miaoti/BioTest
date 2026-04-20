@@ -1146,8 +1146,8 @@ SCC 回答的问题是："规范中哪些规则已经被测试触及？" 它从 
 | **biopython** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=` 指向 site-packages 包目录 | `.coverage` SQLite → `analysis2()` → missing lines | `target_filters.SAM: Bio/Align/sam` |
 | **pysam** | coverage.py (容器内) | `--coverage /cov` 标志 → coverage 先于 pysam 导入启动 | `summary.*.json` → 宿主直接读取（仅 .py 文件；Cython .so 不可见） | `target_filters.VCF: libcbcf, libcvcf, bcftools.py` |
 | **seqan3** | gcovr/gcov | 编译时 `--coverage` 标志 → `.gcda` 自动累积 | `gcovr --json` → 解析 JSON | `target_filters.SAM: seqan3/io/sam_file` |
-| **vcfpy** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=vcfpy` 指向 site-packages | 与 biopython 相同的 `.coverage` → `analysis2()` | `target_filters.VCF: vcfpy` |
-| **noodles** | cargo-llvm-cov | `RUSTFLAGS="-C instrument-coverage"` + `LLVM_PROFILE_FILE=<dir>/*.profraw` | `cargo llvm-cov report --json` → `NoodlesCoverageCollector` 读取 | `target_filters.VCF: noodles-vcf` |
+| **vcfpy** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=vcfpy.reader` 让解析器走到 `vcfpy` 包目录 | 与 biopython 相同的 `.coverage` → `analysis2()` | `target_filters.VCF: vcfpy/reader, parser, header, record, writer`（排除 bgzf/tabix —— BioTest 不走这些路径） |
+| **noodles** | cargo-llvm-cov | `RUSTFLAGS="-C instrument-coverage"` + `LLVM_PROFILE_FILE=<dir>/*.profraw` | `cargo llvm-cov report --json --package noodles-vcf` → `NoodlesCoverageCollector` 读取 | `target_filters.VCF: noodles-vcf/src/io/reader, io/writer, header, record, variant, lib.rs`（排除 async —— BioTest 的 harness 是同步的） |
 
 **行号区间聚合算法 (`_aggregate_ranges`)**：将零散未覆盖行 `[10, 11, 12, 13, 50, 52]` 压缩为 `["10-13", "50", "52"]`，防止 LLM 令牌溢出。参见 `coverage_collector.py:36-60`。
 

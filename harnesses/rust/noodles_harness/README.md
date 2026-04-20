@@ -26,9 +26,24 @@ Produces: `harnesses/rust/noodles_harness/target/release/noodles_harness(.exe)`
 cargo llvm-cov --no-report \
     --manifest-path harnesses/rust/noodles_harness/Cargo.toml \
     run -- VCF seeds/vcf/minimal_single.vcf
+
+# Include noodles-vcf (an external crate) explicitly — by default
+# cargo-llvm-cov's report step shows only workspace packages. The
+# --package flags below pull noodles-vcf + harness into the JSON.
 cargo llvm-cov report --json \
     --manifest-path harnesses/rust/noodles_harness/Cargo.toml \
+    --package noodles-vcf --package noodles_harness \
     > coverage_artifacts/noodles/llvm-cov.json
+```
+
+## Usage contract
+
+```bash
+# Parse mode (default) — prints canonical JSON:
+noodles_harness VCF <input.vcf>
+
+# Write-roundtrip mode — re-serializes via noodles-vcf's Writer:
+noodles_harness --mode write_roundtrip VCF <input.vcf> <output.vcf>
 ```
 
 `NoodlesCoverageCollector` reads the JSON at
@@ -38,15 +53,10 @@ config). The framework calls `cargo llvm-cov report --json` automatically
 if `.profraw` files exist under `coverage_artifacts/noodles/` but no
 JSON report is found yet.
 
-## Usage contract
-
-```bash
-noodles_harness VCF <input.vcf>      # prints canonical JSON; exit 0 / non-0
-```
-
 The canonical-JSON shape matches `test_engine/canonical/schema.py`
 (`CanonicalVcf`). POS is emitted 1-based (noodles-vcf is 1-based
-natively — no +1 shim).
+natively — no +1 shim). Capability parity with `BioTestHarness.java`
+is covered in `SUTfolder/rust/noodles-vcf/README.md`.
 
 ## Graceful degradation
 

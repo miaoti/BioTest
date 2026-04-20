@@ -197,3 +197,101 @@ class NoodlesRunner(ParserRunner):
                 stderr=f"{type(e).__name__}: {e}",
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
+
+    def run_write_roundtrip(
+        self,
+        input_path: Path,
+        format_type: str = "VCF",
+        timeout_s: float = SUBPROCESS_TIMEOUT_S,
+    ) -> RunnerResult:
+        """Parse + re-serialize via noodles-vcf's Writer (subprocess).
+
+        Mirrors HTSJDKRunner.run_write_roundtrip: stages temp files,
+        invokes the harness in write-roundtrip mode, reads the rewritten
+        file back and returns it as canonical_json["rewritten_text"].
+        """
+        import tempfile
+
+        fmt = format_type.upper()
+        if fmt != "VCF":
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr=f"NoodlesRunner.run_write_roundtrip: VCF only (got {fmt})",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=fmt, error_type="parse_error",
+                stderr=(
+                    f"noodles_harness not built at {self._binary_path} — "
+                    "see harnesses/rust/noodles_harness/README.md"
+                ),
+            )
+
+        tmp = tempfile.NamedTemporaryFile(
+            suffix=".vcf", delete=False, mode="w", encoding="utf-8"
+        )
+        tmp_path = Path(tmp.name)
+        tmp.close()
+
+        cmd = [
+            str(self.active_binary),
+            "--mode", "write_roundtrip",
+            "VCF", str(input_path), str(tmp_path),
+        ]
+        env = os.environ.copy()
+        if (
+            self._coverage_binary_path
+            and self.active_binary == self._coverage_binary_path
+            and self._llvm_profile_dir
+        ):
+            self._llvm_profile_dir.mkdir(parents=True, exist_ok=True)
+            env["LLVM_PROFILE_FILE"] = str(
+                self._llvm_profile_dir / "noodles-%p-%m.profraw"
+            )
+
+        t0 = time.monotonic()
+        try:
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, encoding="utf-8",
+                timeout=timeout_s, env=env, creationflags=creation_flags,
+            )
+            duration = (time.monotonic() - t0) * 1000
+
+            if proc.returncode != 0:
+                return RunnerResult(
+                    success=False, parser_name=self.name, format_type=fmt,
+                    exit_code=proc.returncode, stderr=proc.stderr,
+                    error_type="crash", duration_ms=duration,
+                )
+
+            rewritten = tmp_path.read_text(encoding="utf-8")
+            return RunnerResult(
+                success=True,
+                canonical_json={"rewritten_text": rewritten},
+                parser_name=self.name, format_type=fmt,
+                exit_code=0, stderr=proc.stderr, duration_ms=duration,
+            )
+        except subprocess.TimeoutExpired:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="timeout",
+                stderr=f"noodles write_roundtrip timed out after {timeout_s}s",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="crash",
+                stderr=f"{type(e).__name__}: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        finally:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass

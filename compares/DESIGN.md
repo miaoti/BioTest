@@ -1983,25 +1983,440 @@ deltas pending completion.
 - [ ] Take a system snapshot: `uname -a`, `free -h`, `nproc`, `lscpu` → `compares/results/env.txt`.
 - [ ] Record BioTest git SHA, SUT versions, tool versions → `compares/results/versions.json`.
 
-#### Phase 1 — Validity probe (≤ 1 hour)
+#### Phase 1 — Validity probe (≤ 1 hour per full sweep)
 
-- [ ] Run `compares/scripts/validity_probe.py` against each tool's smoke-test corpus from §13.2 (confirms the probe works before long runs).
-- [ ] Verify output schema matches DESIGN.md §4.5.
+`validity_probe.py` walks each tool's generated corpus, reparses every
+file with a reference parser (`bcftools view` for VCF, htsjdk lenient
+for SAM), and emits `validity.json` per cell. BioTest-specific
+commands are omitted here per the §13.5 scope (the user already runs
+those); the list below covers **every baseline cell** in §4.1 plus
+the EvoSuite anchor. All commands are idempotent — re-running
+overwrites the per-cell JSON only.
+
+**One-time script promotion** (from §6 Phase 0 checklist): the entry
+point `compares/scripts/validity_probe.py` currently exists as a
+placeholder. Promote once:
+
+```bash
+# expected placeholder shape:
+python3.12 compares/scripts/validity_probe.py \
+    --corpus <dir> --sut <name> --format {VCF,SAM} \
+    --out <validity.json>
+```
+
+**Per-cell invocations** (run after Phase 2 has produced corpora, OR
+against the §13.2 smoke-test corpora for a pre-flight dry-run):
+
+- [ ] **Jazzer × htsjdk** (VCF + SAM — one cell, two format
+      reparses):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/jazzer/htsjdk_vcf/corpus \
+      --sut htsjdk --format VCF \
+      --out compares/results/validity/jazzer/htsjdk_vcf/validity.json
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/jazzer/htsjdk_sam/corpus \
+      --sut htsjdk --format SAM \
+      --out compares/results/validity/jazzer/htsjdk_sam/validity.json
+  ```
+- [ ] **Atheris × vcfpy** (VCF only — vcfpy has no SAM parser):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/atheris/vcfpy/corpus \
+      --sut vcfpy --format VCF \
+      --out compares/results/validity/atheris/vcfpy/validity.json
+  ```
+- [ ] **Atheris × biopython** (SAM only):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/atheris/biopython/corpus \
+      --sut biopython --format SAM \
+      --out compares/results/validity/atheris/biopython/validity.json
+  ```
+- [ ] **cargo-fuzz × noodles-vcf** (VCF only):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/cargo_fuzz/noodles/corpus \
+      --sut noodles --format VCF \
+      --out compares/results/validity/cargo_fuzz/noodles/validity.json
+  ```
+- [ ] **libFuzzer × seqan3** (SAM only — seqan3 has no VCF parser):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/libfuzzer/seqan3/corpus \
+      --sut seqan3 --format SAM \
+      --out compares/results/validity/libfuzzer/seqan3/validity.json
+  ```
+- [ ] **AFL++ × seqan3** (verified alternate on same harness; run
+      only if libFuzzer regresses or a cross-fuzzer sanity check is
+      wanted):
+  ```bash
+  python3.12 compares/scripts/validity_probe.py \
+      --corpus compares/results/coverage/aflpp/seqan3/corpus \
+      --sut seqan3 --format SAM \
+      --out compares/results/validity/aflpp/seqan3/validity.json
+  ```
+- [ ] **Pure Random × every SUT** (6 probes; the floor baseline
+      must land on the same grid as every real tool):
+  ```bash
+  # htsjdk — both formats, one cell
+  for FMT in VCF SAM; do
+    LCASE=$(echo $FMT | tr A-Z a-z)
+    python3.12 compares/scripts/validity_probe.py \
+        --corpus compares/results/coverage/pure_random/htsjdk_${LCASE}/corpus \
+        --sut htsjdk --format $FMT \
+        --out compares/results/validity/pure_random/htsjdk_${LCASE}/validity.json
+  done
+  # VCF-only primaries
+  for SUT in vcfpy noodles; do
+    python3.12 compares/scripts/validity_probe.py \
+        --corpus compares/results/coverage/pure_random/${SUT}/corpus \
+        --sut $SUT --format VCF \
+        --out compares/results/validity/pure_random/${SUT}/validity.json
+  done
+  # SAM-only primaries
+  for SUT in biopython seqan3; do
+    python3.12 compares/scripts/validity_probe.py \
+        --corpus compares/results/coverage/pure_random/${SUT}/corpus \
+        --sut $SUT --format SAM \
+        --out compares/results/validity/pure_random/${SUT}/validity.json
+  done
+  ```
+- [ ] **EvoSuite anchor × htsjdk**: the anchor emits JUnit tests,
+      not a raw-file corpus, so the validity-ratio metric does not
+      apply — skip this row. The §4.3 detection criterion for
+      EvoSuite is `FAIL pre-fix ∧ PASS post-fix` on the JUnit output,
+      recorded during Phase 4's anchor sub-pipeline.
+
+- [ ] **Verify output schema** matches §4.5. Quick sanity script:
+  ```bash
+  find compares/results/validity -name 'validity.json' -exec \
+      python3.12 -c 'import json,sys; d=json.load(open(sys.argv[1])); \
+      assert {"tool","sut","validity_ratio","generated_total","parse_success"}.issubset(d), sys.argv[1]' {} \;
+  ```
+- [ ] **Record each cell's validity_ratio** into
+      `compares/results/validity/summary.csv` for the final report.
 
 #### Phase 2 — Coverage growth (~1 wall-day parallelised 4-way)
 
-- [ ] Run `compares/scripts/coverage_sampler.py --budget 7200 --reps 3` for each of the 15 primary cells (§4.1). Parallelise with 4 concurrent workers: one SUT per worker.
-- [ ] Monitor: confirm log ticks `{1, 10, 60, 300, 1800, 7200}` appear in each `growth_<run_idx>.json`.
-- [ ] Back up `compares/results/coverage/` to off-machine storage after completion.
-- [ ] EvoSuite anchor: run `measure_evosuite_coverage.sh` once; record coverage under `compares/results/coverage/evosuite_anchor/htsjdk/`.
+2 h × 3 reps per cell, coverage sampled at log ticks
+`{1, 10, 60, 300, 1800, 7200}` seconds (§3.2). 10 baseline cells
+(matrix — BioTest) + 1 EvoSuite anchor = **11 cells** covered by
+this phase per the current §13.5 scope. Each cell produces three
+`growth_<run_idx>.json` files so the final report plots 95% CI bands.
+
+**Orchestrator**: `compares/scripts/coverage_sampler.py` (placeholder
+to promote per §6 Phase 0). Expected signature — delegates to the
+per-tool adapter under the hood:
+
+```bash
+python3.12 compares/scripts/coverage_sampler.py \
+    --tool <name> --sut <name> --format {VCF,SAM} \
+    --seed-corpus compares/results/bench_seeds/{vcf,sam} \
+    --budget 7200 --reps 3 \
+    --out compares/results/coverage/<tool>/<sut>[_<fmt>]/
+```
+
+**Per-tool execution blocks** — each block is one cell per line;
+parallelise up to 4 cells at a time (one per CPU group) via GNU
+`parallel` or manual shell backgrounding.
+
+- [ ] **Jazzer × htsjdk** (2 formats, run as separate cells so
+      coverage attribution stays clean):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool jazzer --sut htsjdk --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/jazzer/htsjdk_vcf/
+
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool jazzer --sut htsjdk --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/jazzer/htsjdk_sam/
+  ```
+  JaCoCo collector produces `growth_<idx>.json` + `.exec` per rep.
+- [ ] **Atheris × vcfpy** (VCF only):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool atheris --sut vcfpy --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/atheris/vcfpy/
+  ```
+  coverage.py collector traces the `vcfpy/` package tree. Atheris
+  runs under `/opt/atheris-venv/bin/python` automatically.
+- [ ] **Atheris × biopython** (SAM only):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool atheris --sut biopython --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/atheris/biopython/
+  ```
+  coverage.py collector scoped to `Bio/Align/sam.py`.
+- [ ] **cargo-fuzz × noodles-vcf** (VCF only):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool cargo_fuzz --sut noodles --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/cargo_fuzz/noodles/
+  ```
+  `NoodlesCoverageCollector` runs `cargo llvm-cov report --json`
+  against `/tmp/llvm-profile-*` collected during the fuzz run (set
+  `LLVM_PROFILE_FILE` in the adapter env). **Pre-requisite**: one-time
+  `cargo fuzz build noodles_vcf_target --release` (§13.2.7).
+- [ ] **libFuzzer × seqan3** (SAM only):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool libfuzzer --sut seqan3 --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/libfuzzer/seqan3/
+  ```
+  gcovr collector scoped to `include/seqan3/io/sam_file/**`. The
+  harness must be built with `--coverage` (primary libFuzzer path in
+  the bench image already does this; see §13.2.4).
+- [ ] **AFL++ × seqan3** (alternate; run only if cross-fuzzer
+      corroboration is wanted, otherwise skip):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool aflpp --sut seqan3 --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 7200 --reps 3 \
+      --out compares/results/coverage/aflpp/seqan3/
+  ```
+- [ ] **Pure Random × every SUT** (6 commands — floor baseline
+      must span the full matrix for the 95% CI bands to be
+      comparable):
+  ```bash
+  for FMT in VCF SAM; do
+    LCASE=$(echo $FMT | tr A-Z a-z)
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut htsjdk --format $FMT \
+        --seed-corpus compares/results/bench_seeds/${LCASE} \
+        --budget 7200 --reps 3 \
+        --out compares/results/coverage/pure_random/htsjdk_${LCASE}/
+  done
+  # vcfpy + noodles — VCF-only primaries
+  for SUT in vcfpy noodles; do
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut $SUT --format VCF \
+        --seed-corpus compares/results/bench_seeds/vcf \
+        --budget 7200 --reps 3 \
+        --out compares/results/coverage/pure_random/${SUT}/
+  done
+  # biopython + seqan3 — SAM-only primaries
+  for SUT in biopython seqan3; do
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut $SUT --format SAM \
+        --seed-corpus compares/results/bench_seeds/sam \
+        --budget 7200 --reps 3 \
+        --out compares/results/coverage/pure_random/${SUT}/
+  done
+  ```
+- [ ] **EvoSuite anchor × htsjdk** — not a per-tick coverage run;
+      EvoSuite emits a generated JUnit suite, then JaCoCo measures
+      coverage on that suite. Existing host-side driver handles it:
+  ```bash
+  SEARCH_BUDGET=7200 bash compares/scripts/run_evosuite.sh \
+      --classes 'htsjdk.variant.vcf.*,htsjdk.samtools.*'
+  bash compares/scripts/measure_evosuite_coverage.sh
+  # Landed JSON:
+  #   compares/results/coverage/evosuite_anchor/htsjdk/growth.json
+  ```
+  Reps = 1 because EvoSuite's genetic-algorithm search is
+  deterministic at a fixed search budget; §4.2 exempts the anchor
+  from the 3-rep rule.
+
+- [ ] **Monitor**: confirm log ticks `{1, 10, 60, 300, 1800, 7200}`
+      appear in each `growth_<run_idx>.json`. One-liner check:
+  ```bash
+  find compares/results/coverage -name 'growth_*.json' -exec \
+      python3.12 -c 'import json,sys; d=json.load(open(sys.argv[1])); \
+      ticks=sorted({s["t_s"] for s in d["coverage_growth"]}); \
+      assert {1,10,60,300,1800,7200}.issubset(ticks), (sys.argv[1], ticks)' {} \;
+  ```
+- [ ] **Parallelisation layout**: 4 concurrent workers, one per
+      CPU group. Recommended split (keeps coverage tools on distinct
+      JVMs / venvs / cargo builds):
+      worker-1 = Jazzer (htsjdk VCF + SAM back-to-back);
+      worker-2 = Atheris (vcfpy + biopython);
+      worker-3 = cargo-fuzz (noodles) + libFuzzer (seqan3);
+      worker-4 = Pure Random (all 6 SUTs serially — each is fast so
+      the serial walltime is ~6h vs ~2h per heavy-tool worker).
+- [ ] **Back up** `compares/results/coverage/` to off-machine
+      storage after the full sweep completes.
 
 #### Phase 3 — Mutation score (~2 overnights, 1 per 2 SUTs)
 
-- [ ] For each SUT, for each tool, point the mutation driver at that tool's accepted-input corpus from Phase 2.
-  - [ ] `py -3.12 compares/scripts/mutation_driver.py --sut htsjdk --tool biotest --corpus compares/results/coverage/biotest/htsjdk/corpus/ --budget 7200`.
-  - [ ] Repeat for each (tool, SUT) cell.
-- [ ] Ensure Ollama / local LLMs are **stopped** during these runs (mutation testing is RAM-hungry).
-- [ ] Confirm per-cell `summary.json` has `{killed, reachable, score}`.
+For each (tool, SUT) cell, the mutation driver (a) picks the right
+per-language mutation engine — PIT (Java) / mutmut (Python) /
+cargo-mutants (Rust) / mull (C++); (b) reads the tool's accepted-
+input corpus from Phase 2 as the test suite; (c) runs each mutant
+against that suite; (d) emits `summary.json` with
+`{killed, reachable, score}`.
+
+**Orchestrator**: `compares/scripts/mutation_driver.py` (placeholder
+to promote per §6 Phase 0). Expected signature:
+
+```bash
+py -3.12 compares/scripts/mutation_driver.py \
+    --tool <name> --sut <name> \
+    --corpus <path to Phase-2 accepted inputs> \
+    --budget <seconds> \
+    --out compares/results/mutation/<tool>/<sut>/
+```
+
+**Pre-flight** (do this once per overnight batch):
+- [ ] **Stop Ollama / local LLMs.** Mutation testing is RAM-hungry
+      and any background LLM will OOM PIT's fork pool.
+- [ ] **Confirm Phase 2 corpora exist** at
+      `compares/results/coverage/<tool>/<sut>[_<fmt>]/corpus/`. Each
+      tool's corpus becomes that tool's test suite.
+
+**Per-cell invocations** (10 baseline cells + 1 EvoSuite anchor;
+11 total; BioTest rows deliberately omitted per §13.5 scope):
+
+- [ ] **Jazzer × htsjdk — PIT (Java)**:
+  ```bash
+  # VCF corpus
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool jazzer --sut htsjdk --corpus \
+      compares/results/coverage/jazzer/htsjdk_vcf/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/jazzer/htsjdk_vcf/
+  # SAM corpus
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool jazzer --sut htsjdk --corpus \
+      compares/results/coverage/jazzer/htsjdk_sam/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/jazzer/htsjdk_sam/
+  ```
+  Mutant scope: `src/main/java/htsjdk/variant/vcf/**` +
+  `src/main/java/htsjdk/samtools/**`. PIT under the hood; mutators =
+  DEFAULT_GROUP (§3.3).
+- [ ] **Atheris × vcfpy — mutmut (Python)**:
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool atheris --sut vcfpy --corpus \
+      compares/results/coverage/atheris/vcfpy/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/atheris/vcfpy/
+  ```
+  Mutant scope: the `vcfpy/` package tree inside
+  `compares/results/sut-envs/vcfpy/lib/python3.11/site-packages/`.
+  The driver copies vcfpy to a temp dir, runs mutmut against it, and
+  replays each tool corpus file.
+- [ ] **Atheris × biopython — mutmut (Python)**:
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool atheris --sut biopython --corpus \
+      compares/results/coverage/atheris/biopython/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/atheris/biopython/
+  ```
+  Mutant scope: `Bio/Align/sam.py` only (the SAM parser path;
+  pairwise alignment mutants would be out of scope and inflate
+  `reachable`).
+- [ ] **cargo-fuzz × noodles-vcf — cargo-mutants (Rust)**:
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool cargo_fuzz --sut noodles --corpus \
+      compares/results/coverage/cargo_fuzz/noodles/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/cargo_fuzz/noodles/
+  ```
+  Mutant scope: `cargo mutants --package noodles-vcf` restricts to
+  the `noodles-vcf` crate. The driver invokes
+  `/root/.cargo/bin/cargo-mutants` in a scratch checkout of the
+  noodles monorepo; per-mutant rebuild is incremental (~10 s).
+- [ ] **libFuzzer × seqan3 — mull (C++)**:
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool libfuzzer --sut seqan3 --corpus \
+      compares/results/coverage/libfuzzer/seqan3/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/libfuzzer/seqan3/
+  ```
+  Mutant scope: `include/seqan3/io/sam_file/**`. Requires the
+  Clang-18 + patched seqan3 IR build (§13.2.4); `mull-runner-18`
+  operates on the IR emitted during that build.
+- [ ] **AFL++ × seqan3 — mull (C++)** (alternate; run only if a
+      cross-fuzzer corroboration is desired on the mutation score):
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool aflpp --sut seqan3 --corpus \
+      compares/results/coverage/aflpp/seqan3/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/aflpp/seqan3/
+  ```
+- [ ] **Pure Random × every SUT** (6 cells; one PIT + two mutmut +
+      two mull-or-cargo-mutants calls. The floor-baseline's mutation
+      score is the key comparator for the other tools):
+  ```bash
+  # htsjdk — both formats
+  for FMT_LC in vcf sam; do
+    py -3.12 compares/scripts/mutation_driver.py \
+        --tool pure_random --sut htsjdk --corpus \
+        compares/results/coverage/pure_random/htsjdk_${FMT_LC}/corpus/ \
+        --budget 7200 \
+        --out compares/results/mutation/pure_random/htsjdk_${FMT_LC}/
+  done
+  # vcfpy (mutmut)
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool pure_random --sut vcfpy --corpus \
+      compares/results/coverage/pure_random/vcfpy/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/pure_random/vcfpy/
+  # noodles (cargo-mutants)
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool pure_random --sut noodles --corpus \
+      compares/results/coverage/pure_random/noodles/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/pure_random/noodles/
+  # biopython (mutmut)
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool pure_random --sut biopython --corpus \
+      compares/results/coverage/pure_random/biopython/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/pure_random/biopython/
+  # seqan3 (mull)
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool pure_random --sut seqan3 --corpus \
+      compares/results/coverage/pure_random/seqan3/corpus/ \
+      --budget 7200 \
+      --out compares/results/mutation/pure_random/seqan3/
+  ```
+- [ ] **EvoSuite anchor × htsjdk — PIT**. The EvoSuite-generated
+      JUnit suite *is* the test suite PIT runs against; this is the
+      one cell where the mutation-score number is directly
+      comparable to Jazzer's htsjdk number because both use PIT on
+      the same mutant set:
+  ```bash
+  py -3.12 compares/scripts/mutation_driver.py \
+      --tool evosuite_anchor --sut htsjdk --corpus \
+      compares/baselines/evosuite/results/work/evosuite-tests/ \
+      --budget 7200 \
+      --out compares/results/mutation/evosuite_anchor/htsjdk/
+  ```
+  `--corpus` is a tree of `.java` test files instead of generated
+  inputs; the driver detects the `.java` extension and routes PIT in
+  "external suite" mode rather than "replay inputs" mode.
+
+**Verification**:
+
+- [ ] Confirm every per-cell `summary.json` has
+      `{killed, reachable, score, mutator_count, mutant_count}`.
+- [ ] Spot-check: `score` ∈ [0, 1]; `killed` ≤ `reachable`;
+      `reachable` ≤ `mutant_count`. A cell with
+      `reachable / mutant_count` < 0.1 indicates the tool's corpus
+      barely exercised the target — flag for re-run with a larger
+      budget rather than reporting a near-zero score.
+- [ ] Roll up: `compares/results/mutation/summary.csv` with one row
+      per cell. `build_report.py` consumes this at Phase 6.
 
 #### Phase 4 — Real-bug benchmark (~2.5 wall-days parallelised 4-way; post-2026-04-20 refactor, 117 cells)
 
@@ -2085,8 +2500,111 @@ checkout`).
 
 #### Phase 5 — Short-budget secondary regime (≤ 6 hours)
 
-- [ ] `compares/scripts/coverage_sampler.py --budget 300 --reps 5` for every primary cell.
-- [ ] Confirm outputs land under `compares/results/coverage/<tool>/<sut>/growth_short_<run_idx>.json`.
+Reuse Phase 2's command shape with `--budget 300 --reps 5` to produce
+the proposal-matching 300 s growth curve. Outputs land next to the
+2 h results under `…/growth_short_<run_idx>.json`. Same 10 baseline
+cells + 1 anchor; BioTest rows still out of §13.5 scope.
+
+- [ ] **Jazzer × htsjdk** (both formats):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool jazzer --sut htsjdk --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/jazzer/htsjdk_vcf/
+
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool jazzer --sut htsjdk --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/jazzer/htsjdk_sam/
+  ```
+- [ ] **Atheris × vcfpy / biopython**:
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool atheris --sut vcfpy --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/atheris/vcfpy/
+
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool atheris --sut biopython --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/atheris/biopython/
+  ```
+- [ ] **cargo-fuzz × noodles-vcf**:
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool cargo_fuzz --sut noodles --format VCF \
+      --seed-corpus compares/results/bench_seeds/vcf \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/cargo_fuzz/noodles/
+  ```
+- [ ] **libFuzzer × seqan3** (+ AFL++ alternate if running both):
+  ```bash
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool libfuzzer --sut seqan3 --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/libfuzzer/seqan3/
+
+  # alternate — optional
+  python3.12 compares/scripts/coverage_sampler.py \
+      --tool aflpp --sut seqan3 --format SAM \
+      --seed-corpus compares/results/bench_seeds/sam \
+      --budget 300 --reps 5 --out-suffix short \
+      --out compares/results/coverage/aflpp/seqan3/
+  ```
+- [ ] **Pure Random × every SUT** (6 cells):
+  ```bash
+  for FMT in VCF SAM; do
+    LCASE=$(echo $FMT | tr A-Z a-z)
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut htsjdk --format $FMT \
+        --seed-corpus compares/results/bench_seeds/${LCASE} \
+        --budget 300 --reps 5 --out-suffix short \
+        --out compares/results/coverage/pure_random/htsjdk_${LCASE}/
+  done
+  for SUT in vcfpy noodles; do
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut $SUT --format VCF \
+        --seed-corpus compares/results/bench_seeds/vcf \
+        --budget 300 --reps 5 --out-suffix short \
+        --out compares/results/coverage/pure_random/${SUT}/
+  done
+  for SUT in biopython seqan3; do
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool pure_random --sut $SUT --format SAM \
+        --seed-corpus compares/results/bench_seeds/sam \
+        --budget 300 --reps 5 --out-suffix short \
+        --out compares/results/coverage/pure_random/${SUT}/
+  done
+  ```
+- [ ] **EvoSuite anchor × htsjdk** — short budget:
+  ```bash
+  SEARCH_BUDGET=300 bash compares/scripts/run_evosuite.sh \
+      --classes 'htsjdk.variant.vcf.*,htsjdk.samtools.*'
+  bash compares/scripts/measure_evosuite_coverage.sh \
+      --out compares/results/coverage/evosuite_anchor/htsjdk/growth_short.json
+  ```
+  5 reps; at 300 s per rep EvoSuite's GA search will land in a
+  qualitatively different regime from the 7 200 s run, which is
+  exactly the point of the short-budget comparator.
+
+- [ ] **Confirm outputs** land under
+      `compares/results/coverage/<tool>/<sut>[_<fmt>]/growth_short_<run_idx>.json`
+      (one file per rep). Sanity check:
+  ```bash
+  find compares/results/coverage -name 'growth_short_*.json' | wc -l
+  # Expect 10 cells × 5 reps = 50 + 1 EvoSuite JSON = 51
+  ```
+- [ ] **Total walltime**: per cell = 5 reps × 300 s = 1 500 s (25
+      min). 10 primary cells × 1 500 s = 15 000 s sequential =
+      **~4.2 cell-hours ÷ 4-way parallelism ≈ 1 wall-hour** (well
+      inside the ≤ 6-hour target). Add the EvoSuite 5 × 300 s run and
+      the AFL++ alternate (optional) and total still sits under
+      2 wall-hours.
 
 #### Phase 6 — Report (≤ 2 hours)
 
