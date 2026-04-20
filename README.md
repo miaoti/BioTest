@@ -92,13 +92,14 @@ needs a thin **Harness** that exposes a uniform contract:
 
 ### Step 1 — write the Harness
 
-| SUT language  | What to write                                      | Example                                |
-|:-------------:|----------------------------------------------------|----------------------------------------|
-| Java          | `.java` → fat JAR                                  | `harnesses/java/BioTestHarness.java`   |
-| Python (pip)  | `ParserRunner` subclass (in-process)               | `test_engine/runners/biopython_runner.py` |
-| Python (Docker) | CLI script + Dockerfile                          | `harnesses/pysam/`                     |
-| C / C++       | Binary that reads a file, prints canonical JSON    | `harnesses/cpp/biotest_harness.cpp`    |
-| Rust / Go / … | Same as C++: a process contract, JSON on stdout    | (follow the C++ pattern)               |
+| SUT language  | What to write                                      | Example                                       |
+|:-------------:|----------------------------------------------------|-----------------------------------------------|
+| Java          | `.java` → fat JAR                                  | `harnesses/java/BioTestHarness.java`          |
+| Python (pip)  | `ParserRunner` subclass (in-process)               | `test_engine/runners/biopython_runner.py`, `test_engine/runners/vcfpy_runner.py` |
+| Python (Docker) | CLI script + Dockerfile                          | `harnesses/pysam/`                            |
+| C / C++       | Binary that reads a file, prints canonical JSON    | `harnesses/cpp/biotest_harness.cpp`           |
+| Rust          | Cargo binary crate, JSON on stdout                 | `harnesses/rust/noodles_harness/`             |
+| Go / …        | Same contract: binary, stdin→canonical JSON→stdout | (follow the C++ / Rust patterns)              |
 
 > **Coordinate trap.** Canonical JSON uses 1-based positions. If your SUT is
 > 0-based internally (pysam, SeqAn3, Biopython), **add +1** to POS/PNEXT in

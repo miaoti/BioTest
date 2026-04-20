@@ -918,14 +918,22 @@ without *managing* it. Verified end-to-end on 2026-04-19: image
     AND automatically runs `verify.sh` at the end. First build takes
     ~12 min and produces a 4.64 GB image; subsequent rebuilds use
     Docker's layer cache.
-- [x] **Image contents** (final, verified): Temurin JDK 17, Python 3.12
-  + Python 3.11 (separate venv at `/opt/atheris-venv/`), Clang 18 +
-  libFuzzer + AddressSanitizer/UBSan, GCC 12 + libstdc++-12, AFL++
-  v4.21c, mull 0.33.0 for LLVM 18, patched seqan3 3.3.0 + xxsds/sdsl-lite
-  v3 (C++23), gcovr + lcov, Gradle 8.5, Maven, Jazzer 0.22.1, EvoSuite
+- [x] **Image contents** (final, verified — with 2026-04-20 additions):
+  Temurin JDK 17, Python 3.12 + Python 3.11 (separate venv at
+  `/opt/atheris-venv/`), Clang 18 + libFuzzer +
+  AddressSanitizer/UBSan, GCC 12 + libstdc++-12, AFL++ v4.21c, mull
+  0.33.0 for LLVM 18, patched seqan3 3.3.0 + xxsds/sdsl-lite v3
+  (C++23), gcovr + lcov, Gradle 8.5, Maven, Jazzer 0.22.1, EvoSuite
   1.2.0, PIT 1.15.3 (command-line + entry + pitest JARs under
-  `/opt/pit/`), Atheris 2.3.0, mutmut 3.0.0, pysam 0.22.1, biopython
-  1.85, coverage.py 7.6.0, plus everything in `requirements.txt`.
+  `/opt/pit/`), Atheris 2.3.0, mutmut 3.0.0, **vcfpy 0.14.0** (in
+  the atheris-venv for Python-3.11 compatibility), biopython 1.85,
+  coverage.py 7.6.0, **Rust toolchain** via rustup (stable 1.77+
+  pinned to the `biotest` profile with `llvm-tools-preview` for
+  `cargo-llvm-cov`), **cargo-fuzz 0.12**, **cargo-llvm-cov 0.6**,
+  **cargo-mutants 25.x**, **pysam 0.23.3 kept as a voter** (not
+  primary), plus everything in `requirements.txt`. The Rust
+  toolchain is installed into `/root/.cargo/` with
+  `CARGO_HOME=/root/.cargo` on `$PATH`.
 - [x] **Re-verify at any time**:
   - [x] `bash compares/docker/run.sh bash compares/docker/verify.sh` —
     prints `OK` / `WARN` / `FAIL` per tool, exits non-zero only if a
@@ -946,7 +954,14 @@ surprises people):
 | :--- | :--- | :--- |
 | System `python3` (3.10) | `/usr/bin/python3` | apt-managed tools only (gcovr, apt-listchanges). Never called by our scripts. |
 | `python3.12` | `/usr/bin/python3.12` | BioTest orchestration, adapters, mutmut, coverage.py. The benchmark default. |
-| `python3.11` venv | `/opt/atheris-venv/bin/python` | Atheris + its SUT deps. Atheris 2.3.0 uses the `PRECALL` opcode which Python 3.12 removed; 3.11 is the newest interpreter it builds against, and no 3.12-compatible Atheris exists as of April 2026. `run_atheris.py` defaults its `--python-bin` to this path. |
+| `python3.11` venv | `/opt/atheris-venv/bin/python` | Atheris + its SUT deps (vcfpy, biopython, pysam-as-voter). Atheris 2.3.0 uses the `PRECALL` opcode which Python 3.12 removed; 3.11 is the newest interpreter it builds against, and no 3.12-compatible Atheris exists as of April 2026. `run_atheris.py` defaults its `--python-bin` to this path. **vcfpy lives here** because the Atheris row targets vcfpy — keeping SUT + fuzzer on the same interpreter avoids double-wheel-build cost (same rationale as §13.3.4 for the sut-env venv). |
+
+**Rust toolchain** (added 2026-04-20): `rustup` at `/root/.rustup`,
+stable toolchain at `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/`.
+Cargo at `/root/.cargo/bin/cargo` on `$PATH`. Installed crates:
+`cargo-fuzz`, `cargo-llvm-cov`, `cargo-mutants`. The noodles-vcf
+harness at `harnesses/rust/noodles_harness/` builds into
+`target/release/noodles_harness` (≈ 4 MB stripped).
 
 **Daily workflow**:
 
@@ -1072,21 +1087,27 @@ invocations via `bash compares/docker/run.sh` work identically.
 | `Unsupported glob pattern: htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.*` | `--instrumentation_includes` accepts a single glob per flag, not CSV | Adapter repeats the flag per glob |
 | `VCFCodecFuzzer must define exactly one of the following two functions…` | Used `@FuzzTest` annotation; CLI expects classic `fuzzerTestOneInput` | Rewrote both harnesses to the classic signature |
 
-#### 13.2.3 Atheris (Python baseline, pysam + biopython) — verified
+#### 13.2.3 Atheris (Python baseline, vcfpy + biopython) — verified
 
 - [x] **Atheris lives in `/opt/atheris-venv/`** (Python 3.11). BioTest's
   own Python 3.12 can't host Atheris — Atheris 2.3.0 uses the `PRECALL`
   opcode that Python 3.12 removed, and no 3.12-compatible release
   exists. Probe: `/opt/atheris-venv/bin/python -c "import atheris; atheris.Setup"` → OK.
-- [x] **Smoke test pysam / VCF (60 s)**:
+- [x] **Smoke test vcfpy / VCF (60 s)** (post-2026-04-20 refactor):
   ```bash
   python3.12 compares/scripts/tool_adapters/run_atheris.py \
-    --sut pysam --seed-corpus seeds/vcf \
-    --out-dir /tmp/atheris-pysam --time-budget-s 60 --format VCF
+    --sut vcfpy --seed-corpus seeds/vcf \
+    --out-dir /tmp/atheris-vcfpy --time-budget-s 60 --format VCF
   ```
-  Verified: `exit=0 corpus=47 crashes=0`, **1.21 M runs in 60 s** at
-  ~20 k exec/s. The adapter's default `--python-bin
-  /opt/atheris-venv/bin/python` picks up the 3.11 venv automatically.
+  Expected `exit=0` and a comparable throughput to the pre-refactor
+  pysam smoke-test (~1 M runs / min, pure-Python path). The
+  adapter's default `--python-bin /opt/atheris-venv/bin/python`
+  picks up the 3.11 venv automatically; vcfpy is installed into the
+  same venv so Atheris can drive it in-process.
+  *Historical pre-refactor note*: the same smoke test against pysam
+  (now a voter, not a primary) reported `1.21 M runs / 60 s` on
+  2026-04-19 — that run is preserved in the git history and is the
+  expected floor for the new vcfpy smoke.
 - [x] **Smoke test biopython / SAM (60 s)**:
   ```bash
   python3.12 compares/scripts/tool_adapters/run_atheris.py \
@@ -1399,19 +1420,28 @@ Verified output (2026-04-19):
 | htsjdk versioned-JAR dir | ✓ | `compares/baselines/evosuite/fatjar/versioned/` (empty, populated on demand) |
 | seqan3 source clone | ✓ | `compares/baselines/seqan3/source/` (main @ `45889f9`) |
 
-### 13.4 Bug-bench pre-flight (manifest verification) — verified
+### 13.4 Bug-bench pre-flight (manifest verification) — **in refactor 2026-04-20**
 
-Result after two research passes: **23 verified / 21 dropped of 44
-candidates** (52% yield — inside the 18–25 forecast in DESIGN.md §5.2;
-full 2 h × 1 rep per-bug budget in effect). Bench shape:
+Pre-refactor result (2026-04-19): **23 verified / 21 dropped of 44
+candidates**. The 2026-04-20 pysam-demotion + vcfpy + noodles-vcf
+additions bring 16 new candidates and move 4 pysam bugs out of the
+primary bench (§A.6). Projected bench shape after the next
+install-verify pass:
 
-| SUT | Verified bugs |
+| SUT | Verified bugs (projected) |
 | :--- | :---: |
-| htsjdk | **12** — VCF + SAM (CRAM excluded by scope, see below) |
-| pysam | **4** — VCF + SAM |
-| biopython | 1 — SAM |
-| seqan3 | 6 — SAM + 1 FASTA-adjacent |
-| **total** | **23** |
+| htsjdk | **12** — VCF + SAM (CRAM excluded by scope; unchanged from pre-refactor) |
+| **vcfpy** (new) | **~5** of 7 candidates (7 × ≈70% install-verify yield — all have concrete pip pins) |
+| **noodles-vcf** (new) | **~7** of 9 candidates (9 × ≈80% yield — all have concrete Cargo pins) |
+| biopython | 1 — SAM (unchanged) |
+| seqan3 | 6 — SAM + 1 FASTA-adjacent (unchanged) |
+| *pysam (demoted to historical-only)* | *0 primary (4 pre-refactor, now §A.6)* |
+| **projected total** | **~31** (vs 23 pre-refactor — wider, not narrower) |
+
+The post-refactor install-verify pass runs after vcfpy + noodles-vcf
+candidates are added to `manifest.json` and the driver has been
+taught the `cargo_version` anchor path (§13.3.4). Tracking item in
+§13.4.3 below.
 
 Scope note: three htsjdk CRAM bugs (`1708`, `1590`, `1592`) were
 install-verified but then dropped because our runners all declare
@@ -1636,14 +1666,31 @@ fuzzer-synthesis per DESIGN.md §4.3.
 | `htsjdk-1538` | SAM | 2.24.0 → 2.24.1 | incorrect_field_value | diff vs htslib; also metamorphic | SAMRecord `mAlignmentBlocks` cache is not invalidated after mutating `setCigar()`. Subsequent `getAlignmentBlocks()` returns stale pre-mutation data. Classic cache-invalidation silent bug. |
 | `htsjdk-1489` | SAM | 2.22.0 → 2.23.0 | incorrect_field_value | diff vs htslib | Locus accumulator drops insertion events; `samtools mpileup` produces different per-site coverage than htsjdk's LocusIterator. |
 
-#### pysam (4 bugs)
+#### vcfpy (7 candidates — pending 2026-04-20 install-verify)
 
 | id | Fmt | Anchor | Category | Signal | Description |
 | :--- | :---: | :--- | :--- | :--- | :--- |
-| `pysam-1314` | VCF | 0.22.1 → 0.23.0 | incorrect_field_value | diff vs htslib | `VariantFile.write()` silently remaps records to header-contig-index-0 instead of matching by name when header contigs are hand-edited. |
-| `pysam-1308` | VCF | 0.22.1 → 0.23.0 | parse_error_missed | uncaught exception | `VariantHeader.new_record()` works on first call, throws `KeyError: 'invalid FORMAT: GT'` on every call after. Pure in-memory trigger. |
-| `pysam-1214` | SAM | 0.21.0 → 0.22.0 | incorrect_field_value | diff vs htslib | AlignmentFile iteration produces wrong per-record fields on some spec-tolerated SAM inputs; fixed with #939 as 0.22.0's AlignmentFile cleanup. |
-| `pysam-939` | SAM | 0.21.0 → 0.22.0 | incorrect_field_value | diff vs htslib | Long-standing AlignmentFile bug, packaged into the same 0.22.0 cleanup as #1214. Trigger research deferred until Phase 4 reveals which specific input exposes it. |
+| `vcfpy-176` | VCF | 0.13.8 → 0.14.0 | incorrect_field_value | uncaught exception (ValueError) | Sample GT `0\|0` with GT undeclared in header → `_genotype_updated` sees list artefact → `ValueError: invalid literal for int()`. |
+| `vcfpy-171` | VCF | 0.13.8 → 0.14.0 | round_trip_asymmetry | diff vs htslib | INFO value with `%3D`-escaped `=` is lost on rewrite; comma is escaped but `=` is not. |
+| `vcfpy-146` | VCF | 0.13.3 → 0.13.4 | parse_error_missed | uncaught exception (TypeError) | INFO flag present but header `Type=String` → `TypeError: argument of type 'bool' is not iterable`. |
+| `vcfpy-145` | VCF | 0.13.4 → 0.13.5 | parse_error_missed | uncaught exception | `.bgz`-suffixed bgzipped VCF not recognised by reader. |
+| `vcfpy-gtone-0.13` | VCF | 0.12.1 → 0.12.2 | edge_case_missed | diff vs htslib | Haploid / partial-haploid GT describing only one allele parsed incorrectly. |
+| `vcfpy-127` | VCF | 0.11.0 → 0.11.1 | parse_error_missed | uncaught exception (KeyError) | Incomplete trailing FORMAT fields (GATK 3.8 truncated output) → `KeyError: 'GQ'`. |
+| `vcfpy-nocall-0.8` | VCF | 0.8.1 → 0.9.0 | incorrect_field_value | diff vs htslib | 2017 no-call GT (`./.`) parsed incorrectly. Low confidence — 0.8.1 install-rot risk. |
+
+#### noodles-vcf (9 candidates — pending 2026-04-20 install-verify)
+
+| id | Fmt | Anchor (Cargo) | Category | Signal | Description |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| `noodles-300` | VCF | `0.63` → `0.64` | round_trip_asymmetry | diff vs htslib | Writing INFO String with `;` produces unreadable VCF; fix percent-decodes string/char values. |
+| `noodles-339` | VCF | `0.81` → `0.82` | writer_bug | diff vs htslib | Writer over-encoded `:` in INFO values and `;`/`=` in sample values; round-trip broken. |
+| `noodles-268` | VCF | `0.57` → `0.58` | writer_bug | diff vs htslib | IUPAC ambiguity codes in REF corrupt output line. |
+| `noodles-223` | VCF | `0.48` → `0.49` | incorrect_field_value | diff vs htslib | `lazy::Record::info_range` returned FILTER byte range, not INFO. |
+| `noodles-224` | VCF | `0.48` → `0.49` | parse_error_missed | diff vs htslib | Lazy reader read past end-of-record when optional trailing fields were missing. |
+| `noodles-259` | VCF | `0.55` → `0.56` | writer_bug | diff vs htslib | Multiple `##`-records emitted without newline separator → malformed header. |
+| `noodles-241` | VCF | `0.58` → `0.59` | incorrect_rejection | uncaught exception | VCF 4.2 header with raw `<`-value but no `ID=` raised `MissingId` parse error. |
+| `noodles-inforay-0.64` | VCF | `0.63` → `0.64` | incorrect_field_value | diff vs htslib | `array::values` iterator mis-counted entries / didn't terminate on empty list. |
+| `noodles-ob1-0.23` | VCF | `0.23` → `0.24` | edge_case_missed | diff vs htslib | Genotype parser silently dropped sample values after last FORMAT key; missing-newline header → infinite loop. |
 
 #### biopython (1 bug)
 
@@ -1664,15 +1711,18 @@ fuzzer-synthesis per DESIGN.md §4.3.
 
 ### §13.4 summary
 
+Pre-refactor state (2026-04-19) shown first, then the 2026-04-20
+deltas pending completion.
+
 | Item | Status | Produced / at |
 | :--- | :---: | :--- |
-| Manifest review | ✓ | 32 → 44 issue URLs checked (two research passes) |
-| Version pins populated | ✓ | 32 research entries via `apply_research.py` + `expand_research.py` |
-| Install-verification | ✓ | 26 verified, then CRAM-scope-drop → **23 verified / 21 dropped** (`dropped.json`) |
-| Frozen verified manifest | ✓ | `manifest.verified.json` (23 bugs); `bench_counts_by_sut` rollup embedded |
-| Trigger evidence | ✓ | `compares/bug_bench/triggers/<id>/` for all 23 — READMEs + issue_source.txt + original.vcf/sam where the text format is simple |
-| Verified bug catalogue | ✓ | §13.4.7 above + machine-source `compares/bug_bench/CATALOGUE.md` (regenerable) |
-| User review gate | packet ready | `compares/bug_bench/REVIEW.md`; **user sign-off pending** before Phase 4 runs |
+| Manifest review | ✓ | 32 → 44 issue URLs checked (two research passes); +16 vcfpy/noodles-vcf candidates (§A.2–A.3) pending manifest entry |
+| Version pins populated | ✓ (htsjdk/biopython/seqan3), ◐ (vcfpy/noodles-vcf) | 32 research entries via `apply_research.py` + `expand_research.py`; 16 new entries ready to append once manifest is rewritten |
+| Install-verification | ✓ pre-refactor 23/21; ◐ post-refactor re-run pending | Pre-refactor `dropped.json` kept; post-refactor will re-verify with `cargo_version` + vcfpy pip anchors |
+| Frozen verified manifest | ✓ pre-refactor only | `manifest.verified.json` (23 bugs) still on disk as the last known good; will be re-frozen after the 2026-04-20 verify pass with ~31 bugs |
+| Trigger evidence | ✓ pre-refactor; ◐ for new entries | `compares/bug_bench/triggers/<id>/` for all 23 pre-refactor bugs; vcfpy + noodles-vcf trigger folders to be generated by `write_triggers.py` after manifest update |
+| Verified bug catalogue | ✓ | §13.4.7 above (updated) + machine-source `compares/bug_bench/CATALOGUE.md` (regenerable) |
+| User review gate | packet ready (pre-refactor) | `compares/bug_bench/REVIEW.md` reflects the 23-bug frozen bench; needs a 2026-04-20 addendum once the vcfpy/noodles-vcf verify pass lands |
 
 ### 13.5 Phase execution (ordered)
 
@@ -1720,14 +1770,17 @@ matters because the verified manifest has overlaps:
 | :--- | :--- |
 | htsjdk 2.19.0 → 2.20.0 | #1364, #1389, #1372, #1401 (4) |
 | htsjdk 2.24.1 → 3.0.0 | #1554, #1544, #1561 (3) |
-| pysam 0.22.1 → 0.23.0 | pysam-1314, pysam-1308 (2) |
-| pysam 0.21.0 → 0.22.0 | pysam-1214, pysam-939 (2) |
-| *(12 singleton anchors)* | 1 bug each |
+| vcfpy 0.13.8 → 0.14.0 | vcfpy-176, vcfpy-171 (2) |
+| noodles-vcf 0.48 → 0.49 | noodles-223, noodles-224 (2) |
+| noodles-vcf 0.63 → 0.64 | noodles-300, noodles-inforay-0.64 (2) |
+| *(singleton anchors)* | 1 bug each |
 
-Install-swap math: 23 bugs × 2 swaps naive = 46; anchor-grouped =
-16 × 2 = **32 swaps (30% fewer)**. Each swap is a `pip install
---force-reinstall` or Maven-JAR `curl` or `git checkout`, which is
-seconds for pysam/biopython and sub-minute for htsjdk/seqan3.
+Install-swap math (post-2026-04-20 refactor, projected N ≈ 31): ~31
+bugs × 2 swaps naive = 62; anchor-grouped with ~6 non-singleton anchor
+groups collapsing down ≈ 50 swaps. Per-swap cost: seconds for
+vcfpy/biopython (pip), seconds for noodles-vcf (Cargo edit +
+incremental `cargo build --release` ≈ 30-60 s after the first), and
+sub-minute for htsjdk (Maven JAR swap) / seqan3 (`git checkout`).
 
 **Run commands**:
 
