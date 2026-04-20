@@ -59,8 +59,16 @@ make_venv() {
 # Python SUTs — venvs per SUT, seeded with a baseline version.
 # bug_bench_driver.py will `pip install --force-reinstall <sut>==<ver>`
 # to swap between pre-fix and post-fix anchors per DESIGN.md §5.3.
+#
+# pysam is retained as a voter (DESIGN §2.6 / §9 Risk 4), NOT a primary
+# SUT; the venv is kept so the differential oracle can call into the
+# installed pysam at oracle time.
 make_venv pysam     pysam     pysam 0.22.1
 make_venv biopython biopython Bio   1.85
+# vcfpy (2026-04-20) — new primary VCF SUT, replaces pysam in the
+# scored primary matrix. Same Python 3.11 interpreter family as the
+# other Atheris-driven SUTs.
+make_venv vcfpy     vcfpy     vcfpy 0.14.0
 
 # htsjdk — a versioned-JAR directory that bug_bench_driver populates on
 # demand via `curl https://repo.maven.apache.org/maven2/.../htsjdk-<v>.jar`.

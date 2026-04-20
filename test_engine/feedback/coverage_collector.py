@@ -764,12 +764,23 @@ class NoodlesCoverageCollector(CoverageCollector):
     """
     Collect cargo-llvm-cov JSON coverage for the noodles-vcf harness.
 
-    The harness is built with `cargo llvm-cov --no-report run ...` which
-    drops `.profraw` files under `profile_dir`. When no JSON report is
-    present yet, this collector shells out to
-    `cargo llvm-cov report --json` to produce one, then filters it to
-    files whose path contains any `filter_paths` entry (e.g. "noodles-vcf")
-    so only the crate's own source counts — not noodles-core, tokio, etc.
+    Two-part filter so the denominator reflects EXACTLY the codepath
+    BioTest exercises (the sync text reader + record/variant/header
+    models), not the whole crate:
+
+      1. `crate_anchor`  — substring every kept file's path must contain.
+         Anchors to the noodles-vcf crate regardless of how Cargo resolved
+         it (crates.io injects a `-<version>/` suffix; git and path deps
+         don't). Default `"noodles-vcf"` matches all three flavors AND
+         excludes noodles-core / noodles-sam / serde.
+
+      2. `filter_paths` — sub-path substrings; at least one must appear.
+         Used to exclude writer / indexed_reader / async from the crate
+         even though they're part of noodles-vcf itself.
+
+    A file is kept iff BOTH conditions hold. `format_filter`
+    (`target_filters.VCF.noodles` in the YAML) overrides `filter_paths`
+    when provided.
     """
 
     def __init__(
@@ -778,11 +789,16 @@ class NoodlesCoverageCollector(CoverageCollector):
         manifest_path: Optional[Path] = None,
         profile_dir: Optional[Path] = None,
         filter_paths: Optional[list[str]] = None,
+        crate_anchor: str = "noodles-vcf",
     ):
         self.report_path = report_path
         self.manifest_path = manifest_path
         self.profile_dir = profile_dir
-        self.filter_paths = filter_paths or ["noodles-vcf"]
+        self.filter_paths = filter_paths or [
+            "src/lib", "src/header", "src/record",
+            "src/variant", "src/io/reader",
+        ]
+        self.crate_anchor = crate_anchor
 
     def is_available(self) -> bool:
         if self.report_path.exists():
@@ -843,10 +859,16 @@ class NoodlesCoverageCollector(CoverageCollector):
             # We iterate over files, keep those whose path matches the
             # crate filter, and sum line counts from summary when
             # available (falling back to per-segment counts).
+            anchor = self.crate_anchor
             for run_block in data.get("data", []):
                 for file_data in run_block.get("files", []):
                     filename = file_data.get("filename", "")
                     norm = filename.replace("\\", "/")
+                    # Part 1: crate anchor — drop anything outside noodles-vcf.
+                    if anchor and anchor not in norm:
+                        continue
+                    # Part 2: sub-path whitelist — drop writer/indexed_reader
+                    # /async etc. within the crate itself.
                     if active_filter and not any(
                         f.replace("\\", "/").replace(".", "/") in norm
                         for f in active_filter
@@ -1147,7 +1169,8 @@ class MultiCoverageCollector:
                 report_path=Path(noodles_report),
                 manifest_path=Path(cfg["noodles_manifest_path"]) if cfg.get("noodles_manifest_path") else None,
                 profile_dir=Path(cfg["noodles_profile_dir"]) if cfg.get("noodles_profile_dir") else None,
-                filter_paths=cfg.get("noodles_filter_paths", ["noodles-vcf"]),
+                filter_paths=cfg.get("noodles_filter_paths"),
+                crate_anchor=cfg.get("noodles_crate_anchor", "noodles-vcf"),
             )))
 
     def _resolve_sut_filter(

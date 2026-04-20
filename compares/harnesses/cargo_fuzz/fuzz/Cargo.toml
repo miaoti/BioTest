@@ -1,0 +1,25 @@
+[package]
+name = "noodles-vcf-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+# Pinned to match the primary noodles_harness Cargo.toml. Bumped by
+# bug_bench_driver._install_noodles when swapping pre_fix/post_fix
+# versions during Phase 4.
+noodles-vcf = "0.70"
+
+[[bin]]
+name = "noodles_vcf_target"
+path = "fuzz_targets/noodles_vcf_target.rs"
+test = false
+doc = false
+bench = false
+
+[profile.release]
+debug = 1

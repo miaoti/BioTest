@@ -320,6 +320,114 @@ current MR demands at run time. All are grounded in published literature:
   `htsjdk_write_roundtrip` / `pysam_vcf_write_roundtrip` pair into one
   entry; the LLM menu has one writer transform forever.
 
+#### 🆕 arsenal expansion (v4 — 2026-04-19 SAM coverage plan)
+
+V4 raises the transform count to **36 (17 VCF + 16 SAM + 1 SUT-agnostic
+writer + 2 cross-format round-trip + 8 malformed)** by addressing the
+SAM-side leverage gap identified after biopython/SAM Run 1 plateaued at
+44.0 %. All 10 new transforms live behind the existing 3-piece
+onboarding contract — no runner / harness / coverage-filter changes
+were needed. Grounded in SAMv1 §1.3 / §1.4 / §1.4.1, SAMtags §2.1,
+and Bonfield 2022 CRAM 3.1 lossy-edge enumeration.
+
+**Header TAG:VALUE subtag shuffles** (5 transforms — SAMv1 §1.3 does
+not order the subtags within any header record line, so shuffling
+them is semantics-preserving; the canonical normalizer
+`_parse_tag_fields` sorts the resulting dict so the oracle passes
+deterministically).
+
+**21. `shuffle_hd_subtags`** [SAM header]
+* **Rationale**: Within `@HD` (e.g. `VN:1.6\tSO:coordinate\tGO:none`)
+  the TAG:VALUE pairs have no spec-imposed order. Shuffling exercises
+  header-subtag-parsing branches that fixed test files never vary.
+* **Preconditions**: `has_hd_line`, ≥2 subtags.
+
+**22. `shuffle_sq_record_subtags`** [SAM header]
+* **Rationale**: Independent subtag shuffle inside each `@SQ` line
+  (e.g. `SN:chr1\tLN:248956422\tM5:abc` ↔ `M5:abc\tLN:248956422\tSN:chr1`).
+  Preserves `@SQ` line order — only intra-line field order changes —
+  so the reference-dictionary index remains intact.
+* **Preconditions**: ≥1 `@SQ` line with ≥2 subtags.
+
+**23. `shuffle_rg_record_subtags`** [SAM header]
+* **Rationale**: Same pattern, inside each `@RG` read-group record.
+  Exercises read-group tag-dispatch logic (PL / LB / SM / ID extraction).
+* **Preconditions**: ≥1 `@RG` line with ≥2 subtags.
+
+**24. `shuffle_pg_record_subtags`** [SAM header]
+* **Rationale**: Same pattern, inside each `@PG` program record.
+  Preserves `@PG` line order so `PP:` parent-program pointers stay
+  valid — only intra-line order changes.
+* **Preconditions**: ≥1 `@PG` line with ≥2 subtags.
+
+**25. `shuffle_co_comments`** [SAM header, already canonical-sorted]
+* **Rationale**: `@CO` free-text comments carry no ordering
+  semantics (SAMv1 §1.3). The canonical normalizer already sorts them,
+  so this MR passes deterministically on every conformant parser.
+* **Preconditions**: ≥2 `@CO` lines.
+
+**SAM↔binary round-trip via htslib** (2 transforms — analogue of
+VCF's `vcf_bcf_round_trip`; gated at runtime by `samtools_available`
+so deployments without the CLI never see them in the LLM menu).
+
+**26. `sam_bam_round_trip`** [SAM whole-file]
+* **Rationale**: BAM is the binary equivalent of SAM (SAMv1 §4). The
+  transform pipes SAM through `samtools view -b --no-PG | samtools
+  view -h --no-PG`, decodes back to text, feeds the result into the
+  normal consensus + metamorphic oracle. Exposes BAM-codec bugs in
+  SUTs that support BAM natively (pysam, htsjdk) and stress-tests
+  canonicalization in text-only parsers (biopython, seqan3).
+* **Implementation**: `_samtools_binary()` resolves via
+  `shutil.which("samtools")`. On Windows without native samtools, a
+  wrapper at `C:\Users\miaot\bin\samtools.cmd` shims to a WSL Ubuntu
+  install via a Python path-translation helper — see
+  `coverage_notes/biopython/sam/biotest.md` Run 4 for the setup.
+* **Preconditions**: `samtools_available`.
+
+**27. `sam_cram_round_trip`** [SAM whole-file]
+* **Rationale**: CRAM is the reference-compressed binary equivalent of
+  SAM. The transform pipes SAM through `samtools view -C -T ref.fa`.
+  CRAM is LOSSY by spec (Bonfield 2022): `=/X` collapses to `M`, and
+  NM/MD can be recomputed. The canonical normalizer's `cram_safe`
+  mode collapses `=/X→M` on both sides so the oracle sees equal
+  records pre- and post-CRAM.
+* **Implementation**: uses the committed toy reference at
+  `seeds/ref/toy.fa`; the strategy router's `assume()` filters seeds
+  whose `@SQ` SN names are not in that reference.
+* **Preconditions**: `samtools_available` AND
+  `cram_reference_available`.
+
+**SAM malformed mutators** (3 new transforms — append to the Rank-3
+REJECTION_INVARIANCE set below. Each targets ONE CRITICAL or spec-
+forbidden SAM rule so `error_consensus` can vote `accept / silent_skip
+/ reject / crash`).
+
+**28. `violate_tlen_sign_consistency`** [SAM record, malformed]
+* **Spec rule**: SAMv1 §1.4 requires opposite-signed TLEN across the
+  two reads of a paired template. The mutator flips the sign of the
+  first non-zero TLEN, leaving its mate untouched, so both reads
+  end up same-signed.
+* **Preconditions**: `has_nonzero_tlen`.
+
+**29. `violate_optional_tag_type_character`** [SAM record, malformed]
+* **Spec rule**: SAMtags §2.1 restricts the optional-tag TYPE
+  character to `AifZHB`. The mutator rewrites the type of the first
+  optional tag on the first alignment to the illegal letter `X` —
+  spec-compliant parsers must reject.
+* **Preconditions**: `has_optional_tag`.
+
+**30. `violate_flag_bit_exclusivity`** [SAM record, malformed]
+* **Spec rule**: SAMv1 §1.4.1 — when FLAG 0x4 (segment unmapped) is
+  set, RNAME MUST be `*` and POS MUST be 0. The mutator sets 0x4 on
+  a mapped record whose RNAME and POS are real, producing the
+  mapped/unmapped contradiction the spec forbids.
+* **Preconditions**: `has_mapped_read`.
+
+All three auto-register into `MALFORMED_TRANSFORM_NAMES` so
+`_run_single_test` routes them through the error-consensus oracle,
+and each has a SAM-corpus strategy in
+`test_engine/generators/malformed_strategies.py`.
+
 #### 📚 文献支撑与合理性分析 (Citations & References)
 
 这些原子操作绝非随机臆造，而是根植于明确的生物信息学标准与变体检测理论。这种设计保证了我们的测试生成具有严格的**生物学语义等价性 (Biological Semantic Equivalence)**。
@@ -364,7 +472,11 @@ current MR demands at run time. All are grounded in published literature:
 
 3. **归一化不变性 (Normalization Invariance)**：如 CIGAR 字符串相邻同类操作符的拆分/合并（`10M` ↔ `4M6M`）。
 
-4. **拒绝不变性 (Rejection Invariance)**：注入规范明确禁止的非法字符或零长度字段，测试软件防御性。**Rank 3 实装 (2026 v3 扩展)**：通过 `mr_engine/transforms/malformed.py` 提供 5 个针对具体 CRITICAL 规则的突变器（violate_info_number_a_cardinality、violate_required_fixed_columns、violate_fileformat_first_line、violate_gt_index_bounds、violate_cigar_seq_length）。每个都针对一条具体的规范条款（Number=A 基数、必填列、##fileformat 首行、GT 索引上界、CIGAR/SEQ 长度）。与 `error_consensus` 预言机配合（见 Phase C §5.4），通过 `accept / silent_skip / reject / crash` 四元投票暴露默默接受非法输入的 SUT。Grounded in Gmutator (Donaldson et al., TOSEM 2025)。
+4. **拒绝不变性 (Rejection Invariance)**：注入规范明确禁止的非法字符或零长度字段，测试软件防御性。**Rank 3 实装**：通过 `mr_engine/transforms/malformed.py` 提供 8 个针对具体 CRITICAL 规则的突变器，分两批：
+   * **v3 扩展 (2026-04-17)** — 5 个：`violate_info_number_a_cardinality`、`violate_required_fixed_columns`、`violate_fileformat_first_line`、`violate_gt_index_bounds`、`violate_cigar_seq_length`（Number=A 基数、必填列、##fileformat 首行、GT 索引上界、CIGAR/SEQ 长度）。
+   * **v4 SAM coverage plan (2026-04-19)** — 3 个新增 SAM 突变器：`violate_tlen_sign_consistency`（配对 read TLEN 符号一致性违规，SAMv1 §1.4）、`violate_optional_tag_type_character`（optional tag 类型字符非法，SAMtags §2.1）、`violate_flag_bit_exclusivity`（FLAG 0x4 unmapped 与 RNAME/POS 互斥性违规，SAMv1 §1.4.1）。
+
+与 `error_consensus` 预言机配合（见 Phase C §5.4），通过 `accept / silent_skip / reject / crash` 四元投票暴露默默接受非法输入的 SUT。Grounded in Gmutator (Donaldson et al., TOSEM 2025)。
 
 5. **坐标系与索引不变性 (Coordinate & Indexing Invariance)**：在 1-based (SAM/VCF 原生) 和 0-based (Biopython 解析后) 之间进行映射，验证软件对于 0 长度区间或半开闭区间的处理是否越界。
 

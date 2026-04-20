@@ -31,6 +31,11 @@ def _harness_for(sut: str) -> Path:
         return HARNESS_DIR / "fuzz_pysam.py"
     if sut == "biopython":
         return HARNESS_DIR / "fuzz_biopython.py"
+    if sut == "vcfpy":
+        # Added 2026-04-20 as part of the pysam → vcfpy+noodles refactor
+        # (DESIGN §2.1 + §13.2.3). vcfpy lives in the atheris-venv so the
+        # same `--python-bin` default works.
+        return HARNESS_DIR / "fuzz_vcfpy.py"
     raise ValueError(f"Atheris adapter does not support SUT {sut!r}")
 
 

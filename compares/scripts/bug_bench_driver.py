@@ -44,6 +44,19 @@ SUT_VENV_BIO_PIP = (REPO_ROOT / "compares" / "results" / "sut-envs"
                     / "biopython" / "bin" / "pip")
 SUT_VENV_BIO_PY = (REPO_ROOT / "compares" / "results" / "sut-envs"
                    / "biopython" / "bin" / "python")
+# vcfpy venv — created 2026-04-20 by prepare_sut_install_envs.sh.
+# Same 3.11 interpreter family as pysam/biopython.
+SUT_VENV_VCFPY_PIP = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                      / "vcfpy" / "bin" / "pip")
+SUT_VENV_VCFPY_PY = (REPO_ROOT / "compares" / "results" / "sut-envs"
+                     / "vcfpy" / "bin" / "python")
+# noodles-vcf — version swap rewrites BOTH Cargo.toml files so the
+# canonical-JSON harness and the cargo-fuzz target stay on the same
+# noodles-vcf crate version. Both rebuild in the same helper call.
+NOODLES_HARNESS_DIR = (REPO_ROOT / "harnesses" / "rust" / "noodles_harness")
+NOODLES_CARGO_TOML = NOODLES_HARNESS_DIR / "Cargo.toml"
+NOODLES_FUZZ_DIR = (REPO_ROOT / "compares" / "harnesses" / "cargo_fuzz" / "fuzz")
+NOODLES_FUZZ_CARGO_TOML = NOODLES_FUZZ_DIR / "Cargo.toml"
 
 # Ensure adapter module imports resolve.
 sys.path.insert(0, str(ADAPTERS_DIR))
@@ -54,9 +67,14 @@ sys.path.insert(0, str(ADAPTERS_DIR))
 # here if the Clang build ever regresses.
 MATRIX: dict[str, list[str]] = {
     "htsjdk":    ["biotest", "jazzer", "pure_random", "evosuite_anchor"],
-    "pysam":     ["biotest", "atheris", "pure_random"],
+    "vcfpy":     ["biotest", "atheris", "pure_random"],
+    "noodles":   ["biotest", "cargo_fuzz", "pure_random"],
     "biopython": ["biotest", "atheris", "pure_random"],
     "seqan3":    ["biotest", "libfuzzer", "pure_random"],
+    # pysam is retained as a voter in the differential/consensus oracle
+    # (see DESIGN §2.6 + §9 Risk 4). It is NOT a scored primary SUT any
+    # more, so no MATRIX row — bug_bench_driver skips SUTs absent from
+    # MATRIX. Historical pysam-era bugs live in Appendix A.6.
 }
 
 
@@ -103,6 +121,78 @@ def _install_biopython(version: str) -> None:
     )
 
 
+def _install_vcfpy(version: str) -> None:
+    """Pip --force-reinstall vcfpy into its dedicated 3.11 venv.
+
+    Added 2026-04-20 as part of the pysam → vcfpy/noodles refactor
+    (DESIGN §12 change log, §13.3.4).
+    """
+    if not SUT_VENV_VCFPY_PIP.exists():
+        raise RuntimeError(
+            f"vcfpy sut-env venv missing at {SUT_VENV_VCFPY_PIP.parent.parent}. "
+            "Run: bash compares/scripts/prepare_sut_install_envs.sh")
+    subprocess.run(
+        [str(SUT_VENV_VCFPY_PIP), "install", "--force-reinstall",
+         f"vcfpy=={version}"],
+        check=True, capture_output=True,
+    )
+
+
+def _rewrite_noodles_pin(cargo_toml: Path, version: str) -> None:
+    """Rewrite the `noodles-vcf = ...` version pin in a Cargo.toml file."""
+    import re
+    text = cargo_toml.read_text(encoding="utf-8")
+    patterns = [
+        (r'(noodles-vcf\s*=\s*")[^"]+(")',
+         rf'\g<1>{version}\g<2>'),
+        (r'(noodles-vcf\s*=\s*\{[^}]*version\s*=\s*")[^"]+(")',
+         rf'\g<1>{version}\g<2>'),
+    ]
+    new_text = text
+    for pat, repl in patterns:
+        new_text = re.sub(pat, repl, new_text)
+    if new_text == text:
+        raise RuntimeError(
+            f"could not find noodles-vcf version pin in {cargo_toml}")
+    cargo_toml.write_text(new_text, encoding="utf-8")
+
+
+def _install_noodles(version: str) -> None:
+    """Pin noodles-vcf = "<version>" in BOTH Cargo.tomls and rebuild.
+
+    Added 2026-04-20. Rewrites the canonical-JSON harness AND the
+    cargo-fuzz target so they stay on the same crate version, then
+    runs `cargo build --release` on each. Incremental cargo keeps
+    per-swap wall-time ≤ 30-60 s after the first build.
+
+    If the cargo-fuzz target hasn't been scaffolded yet, only the
+    canonical-JSON harness is rewritten — the driver still works on
+    the canonical-JSON side and the cargo-fuzz adapter will surface
+    its own "binary not built" error at adapter-invoke time.
+    """
+    if not NOODLES_CARGO_TOML.exists():
+        raise RuntimeError(
+            f"noodles harness Cargo.toml missing at {NOODLES_CARGO_TOML}. "
+            "Run: bash compares/scripts/prepare_sut_install_envs.sh")
+
+    # Primary harness (canonical-JSON). Always rewrite + rebuild.
+    _rewrite_noodles_pin(NOODLES_CARGO_TOML, version)
+    subprocess.run(
+        ["cargo", "build", "--release",
+         "--manifest-path", str(NOODLES_CARGO_TOML)],
+        check=True, capture_output=True,
+    )
+
+    # cargo-fuzz target. Best-effort: if the fuzz Cargo.toml exists,
+    # keep its pin in sync. The `cargo fuzz build` rebuild is left to
+    # adapter-invoke time (cargo-fuzz needs Clang + its own wrapper).
+    if NOODLES_FUZZ_CARGO_TOML.exists():
+        try:
+            _rewrite_noodles_pin(NOODLES_FUZZ_CARGO_TOML, version)
+        except RuntimeError:
+            pass  # no pin present; don't fail the whole install swap
+
+
 def _install_htsjdk_jar(version: str, out_path: Path) -> None:
     """Download the versioned htsjdk JAR from Maven Central."""
     url = ("https://repo.maven.apache.org/maven2/com/github/samtools/htsjdk/"
@@ -130,6 +220,10 @@ def install_sut(sut: str, anchor: dict[str, Any], which: str) -> None:
         _install_pysam(version)
     elif sut == "biopython":
         _install_biopython(version)
+    elif sut == "vcfpy":
+        _install_vcfpy(version)
+    elif sut == "noodles":
+        _install_noodles(version)
     elif sut == "htsjdk":
         # Drop the versioned JAR into a known path the htsjdk runner uses.
         dest = REPO_ROOT / "compares" / "baselines" / "evosuite" / "fatjar" / (
@@ -189,6 +283,8 @@ def invoke_adapter(
         from run_libfuzzer import run as _run  # type: ignore
     elif tool == "aflpp":
         from run_aflpp import run as _run  # type: ignore
+    elif tool == "cargo_fuzz":
+        from run_cargo_fuzz import run as _run  # type: ignore
     elif tool == "pure_random":
         from run_pure_random import run as _run  # type: ignore
     elif tool == "evosuite_anchor":

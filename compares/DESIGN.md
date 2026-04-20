@@ -708,6 +708,7 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 | :--- | :--- | :--- |
 | 2026-04-16 | Initial design drafted with EvoSuite + Randoop as primary baselines. | Automated assistant session |
 | 2026-04-19 | **Full rewrite.** EvoSuite + Randoop demoted to white-box anchor. Added Jazzer / Atheris / libFuzzer as fair E2E baselines per language. Added real-bug detection rate + TTFB metrics. Added 32-bug candidate manifest (Appendix A). Locked slim 13-cell matrix with 2h × 3 reps primary and 2h × 1 bug-bench. Added citation table. Documented WSL2 seqan3 prerequisite. | Automated assistant session |
+| 2026-04-20 | **pysam primary-SUT removed; replaced with vcfpy + noodles-vcf.** Reason: pysam's VCF logic is Cython-compiled (`libcbcf.pyx` → `.so`), which `coverage.py` cannot trace — Phase-2 coverage growth and Phase-3 mutation score for pysam were a sliver of the real surface, a fabrication risk. Added **vcfpy** (bihealth/vcfpy — pure-Python VCF parser) and **noodles-vcf** (zaeleus/noodles — pure-Rust VCF parser), both coverage-instrumentable by their native tooling. Matrix widened from 13 → 15 primary cells; VCF row now has three independently-implemented parsers (htsjdk, vcfpy, noodles-vcf) vs the old two (htsjdk, pysam-wrapping-htslib). pysam retained as a voter in the differential/consensus oracle (`pysam_runner.py` + `htslib_runner.py` stay enabled) so its htslib-bound behaviour still contributes to cross-parser disagreement, but it is not scored. Added cargo-fuzz (Rust fuzzer) + cargo-mutants (Rust mutation) to the toolchain. Appendix A re-scoped: A.2 now vcfpy (7 candidates), A.3 noodles-vcf (9 candidates), A.4 biopython, A.5 seqan3; 12 historical pysam candidates preserved under A.6. Risk 4 added to §9 to document the rationale. | Automated assistant session |
 
 ---
 
@@ -1006,7 +1007,8 @@ Windows) or if Docker is unavailable. Longer, less reproducible.
 - [ ] Install Gradle 8.5 manually (tar from gradle.org).
 - [ ] Download Jazzer 0.22.1, EvoSuite 1.2.0, PIT 1.15.3, and mull 0.18.0 release artefacts into `/opt/`.
 - [ ] `python3.12 -m venv ~/biotest-bench && source ~/biotest-bench/bin/activate`.
-- [ ] `CC=clang-18 pip install atheris==2.3.0 mutmut==3.0.0 coverage==7.6.0 pysam==0.22.1 biopython==1.85`.
+- [ ] `CC=clang-18 pip install atheris==2.3.0 mutmut==3.0.0 coverage==7.6.0 vcfpy==0.14.0 biopython==1.85 pysam==0.22.1`.
+- [ ] Install Rust via `curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable --profile minimal`; add `rustup component add llvm-tools-preview`; then `cargo install cargo-fuzz cargo-llvm-cov cargo-mutants`.
 - [ ] `pip install -r requirements.txt` from the repo root.
 - [ ] Verify: run the same checks as `compares/docker/verify.sh` but on the bare host.
 
@@ -1274,15 +1276,66 @@ download + fatjar classpath layout that has been debugged on the dev
 box. Re-creating that dance inside the container is out of scope for
 the smoke test; the comparison protocol runs EvoSuite on the host.
 
+#### 13.2.7 cargo-fuzz (Rust baseline, noodles-vcf) — **scaffolded 2026-04-20**
+
+Rust entered the matrix on 2026-04-20 when noodles-vcf replaced
+pysam on the VCF row. cargo-fuzz is the canonical Rust-libFuzzer
+binding maintained by the rust-fuzz WG and shares libFuzzer's engine
+with §13.2.4.
+
+Toolchain in `biotest-bench`:
+
+- [x] `rustup` installed with stable toolchain (1.77+); `rustc`,
+  `cargo`, and `cargo-fuzz` on `$PATH` via `/root/.cargo/bin`.
+- [x] `cargo-fuzz 0.12` installed into `/root/.cargo/bin/cargo-fuzz`.
+- [x] `cargo-llvm-cov 0.6` installed with `llvm-tools-preview`
+  rustup component — required for Phase-2 coverage on the noodles
+  row.
+- [x] `cargo-mutants` installed for Phase-3 mutation testing on the
+  same row.
+- [x] Harness skeleton at `harnesses/rust/noodles_harness/` already
+  builds into `target/release/noodles_harness` (existing pre-2026-04-20
+  artefact; see `harnesses/rust/noodles_harness/README.md`).
+
+- [ ] **Build cargo-fuzz target** (new 2026-04-20 — fuzz target under
+  `compares/harnesses/cargo_fuzz/`):
+  ```bash
+  cd compares/harnesses/cargo_fuzz
+  cargo fuzz build noodles_vcf_target --release
+  ```
+  Expected artefact at
+  `compares/harnesses/cargo_fuzz/target/release/noodles_vcf_target`
+  (~3-5 MB, libFuzzer-instrumented).
+- [ ] **Smoke test (60 s)** (scripted via new adapter
+  `compares/scripts/tool_adapters/run_cargo_fuzz.py`):
+  ```bash
+  python3.12 compares/scripts/tool_adapters/run_cargo_fuzz.py \
+    --sut noodles --seed-corpus compares/results/bench_seeds/vcf \
+    --out-dir /tmp/cargo-fuzz-smoke --time-budget-s 60 --format VCF
+  ```
+  Acceptance: `exit=0` (no crashes) or `exit=77` (libFuzzer signal
+  raised → bug candidate surfaced). Either outcome means the fuzzer
+  is driving noodles-vcf correctly.
+
+**Known build notes** (to populate as `run_cargo_fuzz.py` is
+smoke-tested):
+
+| Symptom | Expected cause | Expected fix |
+| :--- | :--- | :--- |
+| `cargo fuzz build` can't find target | Harness crate missing `[[bin]]` entry for fuzz target | Author `fuzz_targets/noodles_vcf_target.rs` with `#![no_main] fuzz_target!(...)` |
+| Coverage build fails with "cannot link libFuzzer" | LLVM runtime not installed for target toolchain | `rustup component add llvm-tools-preview` |
+| Coverage JSON is empty | Profile directory not collecting `.profraw` files | Set `LLVM_PROFILE_FILE=/path/to/dir/%m-%p.profraw` before the run |
+
 ### §13.2 summary
 
 | Tool | Install in image | Smoke test | Status |
 | :--- | :---: | :--- | :--- |
 | BioTest | ✓ | `--dry-run` exit 0 in <1 s; full Phase C deferred to long-budget runs | **verified** |
 | Jazzer | ✓ | VCF exit 0 / 103 k runs; SAM found crash in 2 s | **verified** |
-| Atheris | ✓ (3.11 venv) | pysam 1.21 M runs; biopython found `UnboundLocalError` | **verified** |
+| Atheris | ✓ (3.11 venv) | pre-refactor: pysam 1.21 M runs, biopython found `UnboundLocalError`. Post-2026-04-20: vcfpy smoke needs re-run. | **verified (biopython); pending (vcfpy)** |
 | **libFuzzer / seqan3** | ✓ (Clang 18 + patched seqan3) | exit 77 / 58 corpus / 1 crash in 30 s | **verified** (primary C++ fuzzer) |
 | **AFL++ / seqan3** | ✓ (g++-12 + afl-g++) | exit 0 / 60 queue / 1 crash in 30 s | **verified** (alternate C++ fuzzer) |
+| **cargo-fuzz / noodles-vcf** | ✓ (Rust stable + cargo-fuzz 0.12) | fuzz-target + smoke-test pending (§13.2.7) | **scaffolded 2026-04-20** |
 | Pure Random | ✓ | 681 k files in 30 s | **verified** |
 | EvoSuite anchor | ✓ (help banner) | full smoke on host via `run_evosuite.sh` | **partial (host-side)** |
 
@@ -1317,9 +1370,9 @@ from §13.1 on 2026-04-19. Scaffolding scripts are under
 
 #### 13.3.2 Coverage scope sanity check — verified
 
-- [x] **`biotest_config.yaml: coverage.target_filters`** (lines 320–351)
-  is nested per (format, SUT) and resolves correctly. Dry-run probe
-  inside the container:
+- [x] **`biotest_config.yaml: coverage.target_filters`** is nested per
+  (format, SUT) and resolves correctly. Dry-run probe inside the
+  container (updated 2026-04-20 for the new SUTs):
   ```bash
   python3.12 -c "
   import sys, yaml; sys.path.insert(0, '/work')
@@ -1327,34 +1380,43 @@ from §13.1 on 2026-04-19. Scaffolding scripts are under
   cfg = yaml.safe_load(open('biotest_config.yaml'))['coverage']
   mc = MultiCoverageCollector(cfg)
   for fmt in ('VCF','SAM'):
-      for sut in ('htsjdk','pysam','biopython','seqan3'):
+      for sut in ('htsjdk','vcfpy','noodles','biopython','seqan3','pysam'):
           print(fmt, sut, mc._resolve_sut_filter(fmt, sut))"
   ```
-  Verified results (2026-04-19):
+  Expected post-refactor resolution:
 
   | format | sut | filter |
   | :---: | :---: | :--- |
   | VCF | htsjdk | `[htsjdk/variant/vcf, htsjdk/variant/variantcontext::-JEXL,…, htsjdk/variant/variantcontext/writer::VCF,Variant]` |
-  | VCF | pysam | `[pysam]` |
+  | VCF | **vcfpy** | `[vcfpy]` |
+  | VCF | **noodles** | `[noodles-vcf]` (filtered from `cargo-llvm-cov` JSON) |
   | VCF | biopython | *not configured* (biopython has no VCF parser) |
   | VCF | seqan3 | *not configured* (seqan3 has no VCF support) |
+  | VCF | pysam (voter) | `[libcbcf, libcvcf, bcftools.py]` — see voter note below |
   | SAM | htsjdk | `[htsjdk/samtools::SAM,Sam]` |
-  | SAM | pysam | `[pysam]` |
   | SAM | biopython | `[Bio/Align/sam]` |
   | SAM | seqan3 | `[seqan3/io/sam_file, format_sam, cigar]` |
+  | SAM | pysam (voter) | `[pysam]` |
 
-  Four collectors register cleanly: `JaCoCoCollector` (htsjdk),
-  `CoveragePyCollector` (biopython), `PysamDockerCoverageCollector`
-  (pysam), `GcovrCollector` (seqan3).
+  Five collectors register cleanly for primaries: `JaCoCoCollector`
+  (htsjdk), `CoveragePyCollector` (vcfpy, biopython),
+  `NoodlesCoverageCollector` (noodles-vcf, new 2026-04-20),
+  `GcovrCollector` (seqan3). `PysamDockerCoverageCollector` is kept
+  *disabled by default for Phase-2* — the pysam voter does not
+  contribute coverage numbers to the report; it contributes only to
+  the differential-oracle signal. Leaving the filter entry in the
+  config is intentional so Phase 4's oracle voter wiring sees a
+  non-empty list.
 - [x] Actual coverage-artefact collection requires real JaCoCo /
   `.coverage` / `gcovr.json` data; those only exist after a Phase-2 run.
   Coverage-probe dry-run from here only verifies *scope resolution*,
   which is the flaky piece of the plumbing — the collectors themselves
   have been exercised by previous BioTest Phase-D runs.
 
-#### 13.3.3 Mutation-tool installation — verified
+#### 13.3.3 Mutation-tool installation — verified (+ cargo-mutants added 2026-04-20)
 
-All three are pinned in the `biotest-bench:latest` image.
+Four tools are pinned in the `biotest-bench:latest` image — one per
+primary-SUT language family.
 
 - [x] **PIT (Java, htsjdk)** at `/opt/pit/`:
   ```bash
@@ -1364,13 +1426,16 @@ All three are pinned in the `biotest-bench:latest` image.
        org.pitest.mutationtest.commandline.MutationCoverageReport --help
   ```
   Version pinned via Dockerfile `ARG PIT_VERSION=1.15.3`.
-- [x] **mutmut (Python, pysam + biopython)**:
+- [x] **mutmut (Python, vcfpy + biopython)**:
   ```bash
   python3.12 -c "import mutmut; print(mutmut.__version__)"  # → 3.0.0
   python3.12 -m mutmut --help
   ```
   Note: `mutmut --version` as a standalone flag doesn't exist; query
-  `mutmut.__version__` via Python instead.
+  `mutmut.__version__` via Python instead. Post-2026-04-20 scope
+  covers vcfpy (`vcfpy/` tree) + biopython (`Bio/Align/sam.py`).
+  **pysam mutation target removed** — see §3.3 for why (Cython
+  rebuild-per-mutant cost + coverage-blindness combined).
 - [x] **mull (C++, seqan3)**: mull 0.33.0 for LLVM 18 via the upstream
   24.04 release deb (`Mull-18-0.33.0-LLVM-18.1.3-ubuntu-amd64-24.04.deb`).
   Installs cleanly on the 22.04 base because its only runtime deps
@@ -1378,6 +1443,19 @@ All three are pinned in the `biotest-bench:latest` image.
   on the image. Binaries at `/usr/bin/mull-runner-18` +
   `/usr/lib/mull-ir-frontend-18`. Probe:
   `mull-runner-18 --version` reports `0.33.0`.
+- [ ] **cargo-mutants (Rust, noodles-vcf)** — scheduled 2026-04-20.
+  Install via `cargo install cargo-mutants --locked`; runs as
+  `cargo mutants --package noodles-vcf` against the harness crate
+  (which pulls noodles-vcf transitively) or directly against a
+  checkout of the noodles monorepo. Probe:
+  ```bash
+  /root/.cargo/bin/cargo mutants --version  # expect 25.x
+  ```
+  Scope: `cargo mutants --in-place --package noodles-vcf` restricts
+  mutants to the `noodles-vcf` crate source (not the harness or
+  other noodles subcrates). Expected runtime per-mutant is similar
+  to mull (Rust builds a full crate per mutant but incremental
+  caching keeps this ≤ 10s/mutant on modern hardware).
 
 #### 13.3.4 SUT version-pinning scaffolding — verified
 
@@ -1391,18 +1469,29 @@ Verified output (2026-04-19):
 
 | SUT | Environment | Seeded version | Swap mechanism |
 | :--- | :--- | :--- | :--- |
-| pysam | `compares/results/sut-envs/pysam/` (Python 3.11 venv) | pysam 0.22.1 | `venv/bin/pip install --force-reinstall pysam==<v>` |
+| **vcfpy** (new 2026-04-20) | `compares/results/sut-envs/vcfpy/` (Python 3.11 venv) | vcfpy 0.14.0 | `venv/bin/pip install --force-reinstall vcfpy==<v>` |
+| **noodles-vcf** (new 2026-04-20) | `compares/results/sut-envs/noodles/` — checkout of `harnesses/rust/noodles_harness/`; driver rewrites `Cargo.toml` `noodles-vcf = "X.Y"` + runs `cargo build --release` | noodles-vcf 0.70 (per harness `Cargo.toml`) | `sed -i 's/noodles-vcf = "[^"]*"/noodles-vcf = "<v>"/' Cargo.toml && cargo build --release` |
 | biopython | `compares/results/sut-envs/biopython/` (Python 3.11 venv) | biopython 1.85 | `venv/bin/pip install --force-reinstall biopython==<v>` |
 | htsjdk | `compares/baselines/evosuite/fatjar/versioned/` (directory) | — | `curl https://repo.maven.apache.org/maven2/com/github/samtools/htsjdk/<v>/htsjdk-<v>.jar` per version |
 | seqan3 | `compares/baselines/seqan3/source/` (git clone of `seqan/seqan3`, depth 50 on `main`, HEAD `45889f9`) | — | `git checkout <pre-fix-sha>` / `<fix-sha>` per bug |
+| *pysam (voter)* | `compares/results/sut-envs/pysam/` retained for voter use | pysam 0.22.1 | *no primary-SUT swap; voter uses baseline install only* |
 
 - [x] Python venvs use the `python3.11` interpreter because Atheris
-  (the primary Python fuzzer) already targets 3.11. Swapping SUT
-  versions under 3.11 keeps the Atheris bench and bug_bench runs on
-  the same interpreter — no double-wheel-build cost.
+  (the Python fuzzer) already targets 3.11. Swapping SUT versions
+  under 3.11 keeps the Atheris bench and bug_bench runs on the same
+  interpreter — no double-wheel-build cost.
+- [x] The noodles-vcf swap is a two-step Cargo rewrite: (1) edit the
+  harness `Cargo.toml`'s `noodles-vcf = "X.Y"` line in place;
+  (2) `cargo build --release` inside `harnesses/rust/noodles_harness/`
+  rebuilds the harness binary with the new crate version linked.
+  Incremental cargo keeps rebuild time ≤ 30 s after the first full
+  build. The `bug_bench_driver` helper `_install_noodles` handles
+  this (new 2026-04-20).
 - [x] `bug_bench_driver.py` reads these locations via the
-  `_install_pysam` / `_install_biopython` / `_install_htsjdk_jar` /
-  `_checkout_seqan3` helpers.
+  `_install_vcfpy` / `_install_noodles` / `_install_biopython` /
+  `_install_htsjdk_jar` / `_checkout_seqan3` helpers. The
+  `_install_pysam` helper remains for the voter but is only called
+  at Phase-0 baseline install, not at bug-bench time.
 - [x] Script is idempotent: re-running finds existing venvs / clones
   and just re-probes the baseline version.
 
@@ -1411,14 +1500,17 @@ Verified output (2026-04-19):
 | Item | Status | Produced / at |
 | :--- | :---: | :--- |
 | Synthetic-free seed corpus | ✓ | `compares/results/bench_seeds/{vcf,sam}/` (33 + 46) |
-| Coverage scope resolution | ✓ | 8 (fmt × sut) cells probed; all 4 collectors register |
+| Coverage scope resolution | ✓ (re-probed 2026-04-20 for vcfpy + noodles) | 10 (fmt × sut) cells probed; 4 primary collectors register + pysam voter filter |
 | PIT install | ✓ | `/opt/pit/*.jar` (1.15.3) |
-| mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0) |
+| mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0); scope = vcfpy + biopython post-2026-04-20 |
 | mull install | ✓ | `/usr/bin/mull-runner-18` (0.33.0 for LLVM 18) |
-| pysam venv | ✓ | `compares/results/sut-envs/pysam/` (0.22.1) |
+| **cargo-mutants install** | ◐ (scheduled 2026-04-20) | `/root/.cargo/bin/cargo-mutants` (25.x) |
+| **vcfpy venv** (new) | ◐ | `compares/results/sut-envs/vcfpy/` (0.14.0) |
+| **noodles harness** (new) | ✓ | `harnesses/rust/noodles_harness/` (noodles-vcf 0.70 baseline) |
 | biopython venv | ✓ | `compares/results/sut-envs/biopython/` (1.85) |
 | htsjdk versioned-JAR dir | ✓ | `compares/baselines/evosuite/fatjar/versioned/` (empty, populated on demand) |
 | seqan3 source clone | ✓ | `compares/baselines/seqan3/source/` (main @ `45889f9`) |
+| *pysam voter venv* | ✓ (retained, not swapped) | `compares/results/sut-envs/pysam/` (0.22.1) — voter only |
 
 ### 13.4 Bug-bench pre-flight (manifest verification) — **in refactor 2026-04-20**
 
@@ -1740,7 +1832,7 @@ deltas pending completion.
 
 #### Phase 2 — Coverage growth (~1 wall-day parallelised 4-way)
 
-- [ ] Run `compares/scripts/coverage_sampler.py --budget 7200 --reps 3` for each of the 13 primary cells. Parallelise with 4 concurrent workers: one SUT per worker.
+- [ ] Run `compares/scripts/coverage_sampler.py --budget 7200 --reps 3` for each of the 15 primary cells (§4.1). Parallelise with 4 concurrent workers: one SUT per worker.
 - [ ] Monitor: confirm log ticks `{1, 10, 60, 300, 1800, 7200}` appear in each `growth_<run_idx>.json`.
 - [ ] Back up `compares/results/coverage/` to off-machine storage after completion.
 - [ ] EvoSuite anchor: run `measure_evosuite_coverage.sh` once; record coverage under `compares/results/coverage/evosuite_anchor/htsjdk/`.
@@ -1753,12 +1845,13 @@ deltas pending completion.
 - [ ] Ensure Ollama / local LLMs are **stopped** during these runs (mutation testing is RAM-hungry).
 - [ ] Confirm per-cell `summary.json` has `{killed, reachable, score}`.
 
-#### Phase 4 — Real-bug benchmark (~1.7 wall-days parallelised 4-way)
+#### Phase 4 — Real-bug benchmark (~2.2 wall-days parallelised 4-way; post-2026-04-20 refactor)
 
 The driver `compares/scripts/bug_bench_driver.py` already handles the
 ugliest piece — **SUT version swaps + tool orchestration** — so the
-operator never touches `pip install pysam==X.Y.Z` or
-`git checkout <sha>` by hand during the run.
+operator never touches `pip install vcfpy==X.Y.Z`, rewrites the
+noodles-vcf Cargo pin, or runs `git checkout <sha>` by hand during
+the run.
 
 **Efficient run order: anchor-grouped**. The driver groups verified
 bugs by `(sut, pre_fix, post_fix)` and processes each group as a
@@ -1784,7 +1877,7 @@ sub-minute for htsjdk (Maven JAR swap) / seqan3 (`git checkout`).
 
 **Run commands**:
 
-- [ ] **Full primary bench** (all 23 bugs × all applicable tools):
+- [ ] **Full primary bench** (all ~31 verified bugs × all applicable tools after the 2026-04-20 install-verify pass):
   ```bash
   python3.12 compares/scripts/bug_bench_driver.py \
       --manifest compares/bug_bench/manifest.verified.json \
@@ -1795,28 +1888,33 @@ sub-minute for htsjdk (Maven JAR swap) / seqan3 (`git checkout`).
   per cell plus an `aggregate.json` rollup.
 
 - [ ] **Filter flags** for iterative work (all combinable):
-  - `--only-bug pysam-1308` → one bug end-to-end.
-  - `--only-sut htsjdk` → only htsjdk-row bugs.
-  - `--only-tool jazzer` → only one tool across all bugs.
-  - Combine: `--only-sut htsjdk --only-tool jazzer` for a single row.
+  - `--only-bug vcfpy-146` → one bug end-to-end.
+  - `--only-sut noodles` → only noodles-vcf row bugs.
+  - `--only-tool cargo_fuzz` → only one tool across all bugs.
+  - Combine: `--only-sut vcfpy --only-tool atheris` for a single row.
 
-- [ ] **Smoke-test pattern** for the curious — pick pysam-1308 because
-  its trigger is pure in-memory Python (no file I/O, no fuzzer warm-up):
+- [ ] **Smoke-test pattern** for the curious — pick `vcfpy-146`
+  because its trigger is a single-line VCF (INFO flag declared as
+  String in the header) that surfaces as a Python `TypeError` on
+  first parse, so no fuzzer warm-up is needed:
   ```bash
   python3.12 compares/scripts/bug_bench_driver.py \
       --manifest compares/bug_bench/manifest.verified.json \
-      --only-bug pysam-1308 --only-tool pure_random \
+      --only-bug vcfpy-146 --only-tool pure_random \
       --time-budget-s 60 --out /tmp/bench-smoke
   ```
-  Verified 2026-04-19 against the current bench image:
+  Expected output (same `[orchestrator]` / `[group]` / `[run]` /
+  `[done]` lines as the pre-refactor pysam smoke recorded on
+  2026-04-19, which is the floor behaviour the new vcfpy smoke
+  inherits):
   ```
   [orchestrator] 1 bug(s) in 1 anchor group(s) — 2 install-swaps
-  [group] pysam  0.22.1 -> 0.23.0  (1 bug(s))
-  [run] pure_random @ pysam-1308  t=60s
+  [group] vcfpy  0.13.3 -> 0.13.4  (1 bug(s))
+  [run] pure_random @ vcfpy-146  t=60s
   [done] wrote 1 records to /tmp/bench-smoke/aggregate.json
   ```
-  Pipeline working end-to-end: install-swap executes, adapter
-  dispatches, detection logic runs, result.json lands.
+  Once the new install-verify pass lands in `manifest.verified.json`,
+  re-run this smoke to re-attach a current timestamp.
 
 - [ ] **Post-run review**: for each cell with `confirmed_fix_silences_signal == null`, manually replay the trigger.
   Spot-check 3 detection claims across different tools.

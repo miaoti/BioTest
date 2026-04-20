@@ -1,8 +1,8 @@
 {
   "$schema": "./schema.json",
-  "benchmark_version": "0.3.0-research-expansion",
-  "status": "research_expanded_pending_install_verify",
-  "description": "Candidate real-bug benchmark for BioTest comparative evaluation. 32 historical VCF/SAM-related bugs across 4 SUTs. All htsjdk/pysam/biopython entries are UNVERIFIED \u2014 pre_fix/post_fix versions must be confirmed in Phase-0 pre-flight against release notes before they enter the live benchmark. Seqan3 entries use commit SHAs directly. Bugs that fail verification are dropped per Bohme et al. ICSE'22 discipline. Expected post-verification N: 18-25 of 32.",
+  "benchmark_version": "0.4.0-vcfpy-noodles",
+  "status": "vcfpy_noodles_appended_pending_install_verify",
+  "description": "Candidate real-bug benchmark for BioTest comparative evaluation. 32 historical VCF/SAM-related bugs across 4 SUTs. All htsjdk/pysam/biopython entries are UNVERIFIED — pre_fix/post_fix versions must be confirmed in Phase-0 pre-flight against release notes before they enter the live benchmark. Seqan3 entries use commit SHAs directly. Bugs that fail verification are dropped per Bohme et al. ICSE'22 discipline. Expected post-verification N: 18-25 of 32.",
   "bugs": [
     {
       "id": "htsjdk-1708",
@@ -148,7 +148,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "release_notes_must_reference_1117_or_BCF2LazyGenotypesDecoder_NPE",
-        "dropped_reason": "NPE in BCF2LazyGenotypesDecoder \u2014 no linked PR in release notes"
+        "dropped_reason": "NPE in BCF2LazyGenotypesDecoder — no linked PR in release notes"
       },
       "trigger": {
         "category": "null_ptr",
@@ -173,7 +173,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "release_notes_must_reference_1686_or_spanning_deletion_getType",
-        "dropped_reason": "spanning-deletion getType \u2014 issue open, no merged fix"
+        "dropped_reason": "spanning-deletion getType — issue open, no merged fix"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -199,7 +199,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "release_notes_must_reference_1026_or_multithreaded_VCFEncoder",
-        "dropped_reason": "multithreaded VCFEncoder \u2014 PR #1636 remains unmerged as of 2022-11"
+        "dropped_reason": "multithreaded VCFEncoder — PR #1636 remains unmerged as of 2022-11"
       },
       "trigger": {
         "category": "incorrect_rejection",
@@ -225,7 +225,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "release_notes_must_reference_761_or_filename_bcf_substring",
-        "dropped_reason": "filename '.bcf' substring \u2014 no linked PR or resolution"
+        "dropped_reason": "filename '.bcf' substring — no linked PR or resolution"
       },
       "trigger": {
         "category": "writer_bug",
@@ -251,7 +251,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "release_notes_must_reference_423_or_multiallelic_AF_AC_per_allele",
-        "dropped_reason": "multiallelic AF/AC \u2014 feature request, no merged fix"
+        "dropped_reason": "multiallelic AF/AC — feature request, no merged fix"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -378,7 +378,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_or_release_notes_must_reference_1225_or_haploid_PL_tuple",
-        "dropped_reason": "haploid PL tuple \u2014 no PR linked, no fix version documented"
+        "dropped_reason": "haploid PL tuple — no PR linked, no fix version documented"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -479,7 +479,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_or_release_notes_must_reference_771_or_write_segfault_no_header",
-        "dropped_reason": "VariantFile.write segfault on incomplete header \u2014 no merged PR"
+        "dropped_reason": "VariantFile.write segfault on incomplete header — no merged PR"
       },
       "trigger": {
         "category": "null_ptr",
@@ -555,14 +555,14 @@
         "pre_fix": "N/A",
         "post_fix": "N/A",
         "verification_rule": "CONTEXT_ONLY_not_a_bug",
-        "dropped_reason": "Native BAM parsing \u2014 feature request, not a bug (per manifest notes)"
+        "dropped_reason": "Native BAM parsing — feature request, not a bug (per manifest notes)"
       },
       "trigger": {
         "category": "feature_gap",
         "logic_bug": false,
         "description": "Native BAM parsing not implemented; requires external CLI. Feature gap, not a bug.",
         "evidence_dir": "compares/bug_bench/triggers/biopython-4868/",
-        "notes": "DROP CANDIDATE \u2014 include only as context in report narrative."
+        "notes": "DROP CANDIDATE — include only as context in report narrative."
       },
       "expected_signal": {
         "type": "N/A",
@@ -579,7 +579,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_rst_must_reference_4731_or_CIGAR_op_exposure",
-        "dropped_reason": "CIGAR op details \u2014 no PR linked, no fix version documented"
+        "dropped_reason": "CIGAR op details — no PR linked, no fix version documented"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -605,7 +605,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_rst_must_reference_1913_or_local_alignment_zero_score",
-        "dropped_reason": "zero-score start residue \u2014 no merged PR found"
+        "dropped_reason": "zero-score start residue — no merged PR found"
       },
       "trigger": {
         "category": "edge_case_missed",
@@ -630,7 +630,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_rst_must_reference_1699_or_soft_clip_query_coords",
-        "dropped_reason": "soft-clip query coords \u2014 no PR linked"
+        "dropped_reason": "soft-clip query coords — no PR linked"
       },
       "trigger": {
         "category": "parse_error_missed",
@@ -656,7 +656,7 @@
         "pre_fix": "PENDING_VERIFICATION",
         "post_fix": "PENDING_VERIFICATION",
         "verification_rule": "NEWS_rst_must_reference_4769_or_PairwiseAligner_pairwise2_divergence",
-        "dropped_reason": "PairwiseAligner vs pairwise2 \u2014 closed without linked PR"
+        "dropped_reason": "PairwiseAligner vs pairwise2 — closed without linked PR"
       },
       "trigger": {
         "category": "incorrect_field_value",
@@ -791,7 +791,7 @@
         "logic_bug": true,
         "description": "FASTA parser fails on IDs containing '>' character; treats '> >MyID' as ID 'MyID' instead of '>MyID'.",
         "evidence_dir": "compares/bug_bench/triggers/seqan3-2869/",
-        "notes": "FASTA-adjacent \u2014 may be out of SAM scope; evaluate during pre-flight."
+        "notes": "FASTA-adjacent — may be out of SAM scope; evaluate during pre-flight."
       },
       "expected_signal": {
         "type": "differential_disagreement",
@@ -817,7 +817,7 @@
         "logic_bug": false,
         "description": "BGZF stream data race condition in concurrent reads; non-deterministic corruption.",
         "evidence_dir": "compares/bug_bench/triggers/seqan3-3406/",
-        "notes": "Data race \u2014 requires multithreaded harness; may be hard to trigger reliably in 2h."
+        "notes": "Data race — requires multithreaded harness; may be hard to trigger reliably in 2h."
       },
       "expected_signal": {
         "type": "intermittent_differential_disagreement",
@@ -936,13 +936,13 @@
         "type": "install_version",
         "pre_fix": "2.20.0",
         "post_fix": "2.20.1",
-        "verification_rule": "htsjdk 2.20.1 release notes cite 'fix bug in VariantContextBuilder (#1403)' \u2014 explicitly a hotfix for the 2.20.0 regression",
+        "verification_rule": "htsjdk 2.20.1 release notes cite 'fix bug in VariantContextBuilder (#1403)' — explicitly a hotfix for the 2.20.0 regression",
         "confidence": "high"
       },
       "trigger": {
         "category": "incorrect_field_value",
         "logic_bug": true,
-        "description": "Regression in VariantContextBuilder introduced in htsjdk 2.20.0 \u2014 the builder emits incorrect field values under certain chains; hotfix in 2.20.1 reverts the regression.",
+        "description": "Regression in VariantContextBuilder introduced in htsjdk 2.20.0 — the builder emits incorrect field values under certain chains; hotfix in 2.20.1 reverts the regression.",
         "evidence_dir": "compares/bug_bench/triggers/htsjdk-1403/"
       },
       "expected_signal": {
@@ -1018,7 +1018,7 @@
       "trigger": {
         "category": "parse_error_missed",
         "logic_bug": true,
-        "description": "Pre-fix SAM header parser silently accepts @HD / @SQ / @RG / @PG lines with tag keys longer or shorter than 2 characters (SAM spec \u00a71.3 mandates exactly 2). Malformed headers pass through pre-fix and produce SAMFileHeader objects with garbage-keyed attributes.",
+        "description": "Pre-fix SAM header parser silently accepts @HD / @SQ / @RG / @PG lines with tag keys longer or shorter than 2 characters (SAM spec §1.3 mandates exactly 2). Malformed headers pass through pre-fix and produce SAMFileHeader objects with garbage-keyed attributes.",
         "evidence_dir": "compares/bug_bench/triggers/htsjdk-1561/"
       },
       "expected_signal": {
@@ -1128,6 +1128,417 @@
         "type": "differential_disagreement",
         "against": [
           "htslib"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-176",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/issues/176",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.13.8",
+        "post_fix": "0.14.0",
+        "verification_rule": "Changelog 0.14.0 Bug Fixes: \"A sample column value of 0|0 is not being parsed correctly (#176) (#187)\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "Sample GT value '0|0' with GT undeclared in header causes a list artefact to leak into _genotype_updated, raising ValueError: invalid literal for int() with base 10: \"['0\".",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-176/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "vcfpy"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-171",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/issues/171",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.13.8",
+        "post_fix": "0.14.0",
+        "verification_rule": "Changelog 0.14.0 Bug Fixes: \"escaped equal sign in INFO fields (#171) (#172)\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "Escaped '=' in INFO (e.g., p.Lys%3D) is lost on re-write; comma is escaped but '=' is not, breaking round-trip.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-171/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-146",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/issues/146",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.13.3",
+        "post_fix": "0.13.4",
+        "verification_rule": "Changelog 0.13.4: \"Fix INFO flag raises TypeError (#146)\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "INFO flag present but header declares it as String type; raises TypeError: argument of type 'bool' is not iterable.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-146/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "vcfpy"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-145",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/issues/145",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.13.4",
+        "post_fix": "0.13.5",
+        "verification_rule": "Changelog 0.13.5: \"Treat .bgz files the same as .gz (#145, #149)\"",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "'.bgz'-suffixed bgzipped VCF not recognized by reader; open fails.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-145/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "vcfpy"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-gtone-0.13",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/blob/main/CHANGELOG.md",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.12.1",
+        "post_fix": "0.12.2",
+        "verification_rule": "Changelog 0.12.2: \"Fixing bug in case GT describes only one allele.\"",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "edge_case_missed",
+        "logic_bug": true,
+        "description": "Haploid / partial-haploid GT describing only one allele parsed incorrectly.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-gtone-0.13/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-127",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/issues/127",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.11.0",
+        "post_fix": "0.11.1",
+        "verification_rule": "Changelog 0.11.1: \"Working around problem in HTSJDK output with incomplete FORMAT fields (#127)\"",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": false,
+        "description": "Incomplete trailing FORMAT fields (e.g. GATK 3.8 truncated output) raises KeyError: 'GQ'.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-127/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "vcfpy"
+        ]
+      }
+    },
+    {
+      "id": "vcfpy-nocall-0.8",
+      "sut": "vcfpy",
+      "issue_url": "https://github.com/bihealth/vcfpy/blob/main/CHANGELOG.md",
+      "format": "VCF",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "0.8.1",
+        "post_fix": "0.9.0",
+        "verification_rule": "Changelog 0.9.0: \"Fixing parsing of no-call GT fields\"",
+        "confidence": "low"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "No-call GT (./.) parsed incorrectly in very early vcfpy. Install-rot risk on 0.8.1 under modern Python.",
+        "evidence_dir": "compares/bug_bench/triggers/vcfpy-nocall-0.8/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-300",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/issues/300",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.63",
+        "post_fix": "0.64",
+        "verification_rule": "Changelog 0.64: \"vcf/record/info/field/value: Percent-decode character and string values ([#300])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "round_trip_asymmetry",
+        "logic_bug": true,
+        "description": "Writing an INFO String containing ';' produced unreadable VCF; round-trip broke. Fix: percent-decoding of string/char values.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-300/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-339",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/issues/339",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.81",
+        "post_fix": "0.82",
+        "verification_rule": "Changelog 0.82: \"vcf/io/writer/record/info/field/value: Remove colon (:) from encode set ([#339])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Writer over-encoded ':' in INFO values and ';'/'=' in sample values, producing non-round-trippable output.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-339/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-268",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/issues/268",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.57",
+        "post_fix": "0.58",
+        "verification_rule": "Changelog 0.58: \"vcf/io/writer/record/reference_bases: Resolve IUPAC ambiguity codes ([#268])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "IUPAC ambiguity codes in REF caused writer to emit corrupted / truncated lines (e.g. two records merged).",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-268/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-223",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/pull/223",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.48",
+        "post_fix": "0.49",
+        "verification_rule": "Changelog 0.49: \"vcf/lazy/record/bounds: Fix range for info field ([#223])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "lazy::Record::info_range returned the FILTER byte range instead of INFO; callers reading INFO saw FILTER bytes.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-223/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-224",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/pull/224",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.48",
+        "post_fix": "0.49",
+        "verification_rule": "Changelog 0.49: \"vcf/reader/lazy_record: Disallow newlines to appear in fields ([#224])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Lazy reader read past end-of-record into next line when optional trailing fields were missing, corrupting the buffer.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-224/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-259",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/issues/259",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.55",
+        "post_fix": "0.56",
+        "verification_rule": "Changelog 0.56: \"vcf/io/writer/header/record: Write newlines for records in other collections ([#259])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Writer emitted multiple '##'-prefixed header records without separator newlines, producing a malformed header.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-259/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-241",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/issues/241",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.58",
+        "post_fix": "0.59",
+        "verification_rule": "Changelog 0.59: \"Parse other header record values that start with a map prefix (<) as a string if there is no map identifier ([#241])\"",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_rejection",
+        "logic_bug": false,
+        "description": "VCF 4.2 header with raw value starting with '<' but no ID= (e.g., ##ID=<Description=\"...\">) raised MissingId parse error.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-241/"
+      },
+      "expected_signal": {
+        "type": "uncaught_exception",
+        "against": [
+          "noodles"
+        ]
+      }
+    },
+    {
+      "id": "noodles-inforay-0.64",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/blob/master/noodles-vcf/CHANGELOG.md",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.63",
+        "post_fix": "0.64",
+        "verification_rule": "Changelog 0.64 Fixed: \"Fix counting number of values\" / \"Fix iterating over empty lists\"",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "array::values iterator mis-counted entries and didn't terminate on empty lists; wrong length / infinite loop for INFO/FORMAT arrays.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-inforay-0.64/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
+        ]
+      }
+    },
+    {
+      "id": "noodles-ob1-0.23",
+      "sut": "noodles",
+      "issue_url": "https://github.com/zaeleus/noodles/blob/master/noodles-vcf/CHANGELOG.md",
+      "format": "VCF",
+      "anchor": {
+        "type": "cargo_version",
+        "pre_fix": "0.23",
+        "post_fix": "0.24",
+        "verification_rule": "Changelog 0.24: \"vcf/record/genotypes/genotype: Fail parsing when there are more values than keys.\"",
+        "confidence": "medium"
+      },
+      "trigger": {
+        "category": "edge_case_missed",
+        "logic_bug": true,
+        "description": "Genotype parser silently dropped sample values after the last FORMAT key; header without trailing newline triggered an infinite loop.",
+        "evidence_dir": "compares/bug_bench/triggers/noodles-ob1-0.23/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "htsjdk"
         ]
       }
     }
