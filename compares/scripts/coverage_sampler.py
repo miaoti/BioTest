@@ -156,19 +156,12 @@ HTSJDK_CLASSES_DIR_DEFAULT = (
 # Log ticks at which coverage is sampled (DESIGN.md §3.2).
 DEFAULT_TICKS_S: tuple[int, ...] = (1, 10, 60, 300, 1800, 7200)
 
-# Per-format scope for the JaCoCo report (matches biotest_config.yaml
-# coverage.target_filters.VCF/SAM.htsjdk). We apply the filter at report
-# time rather than at agent-instrumentation time so the agent can keep a
-# single `includes=htsjdk.*` pattern — easier to reason about.
-FORMAT_SCOPES: dict[str, tuple[str, ...]] = {
-    "VCF": (
-        "htsjdk/variant/vcf",
-        "htsjdk/variant/variantcontext/writer",
-    ),
-    "SAM": (
-        "htsjdk/samtools",
-    ),
-}
+# Per-format scope is NOT hardcoded here — we delegate to the fairness
+# recipe (compares/scripts/measure_coverage.py + biotest_config.yaml
+# :coverage.target_filters) so any tool measured against a given
+# (format, sut) sees exactly the same filter rules the feedback loop +
+# all baselines see. Change rules once in biotest_config.yaml; every
+# measurement picks them up automatically. See compares/scripts/README.md.
 
 JAZZER_TARGET_CLASS: dict[str, tuple[str, tuple[str, ...]]] = {
     "VCF": (
@@ -311,48 +304,47 @@ def _wait_for_port(port: int, deadline_s: float) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# JaCoCo report parsing (reuses the same logic as test_engine.feedback
-# .coverage_collector.JaCoCoCollector but specialised for package-prefix
-# filtering on the Phase-2 scope list).
+# Coverage measurement — delegates to the fairness recipe
+# (compares/scripts/measure_coverage.py + biotest_config.yaml) so the
+# number this sampler prints is the same number the feedback loop + any
+# baseline tool would print. Filter rules live in
+# biotest_config.yaml:coverage.target_filters[<FMT>][<sut>] — change
+# there, every measurement sees it. See compares/scripts/README.md.
 # ---------------------------------------------------------------------------
 
-def _parse_coverage_xml(xml_path: Path, scope: tuple[str, ...]) -> tuple[int, int, int, int]:
-    """Sum (covered_lines, total_lines, covered_branches, total_branches)
-    across every <sourcefile> whose enclosing <package name=...> starts
-    with any element in `scope`."""
-    covered_l = total_l = 0
-    covered_b = total_b = 0
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-    for pkg in root.findall(".//package"):
-        pkg_name = pkg.get("name", "")
-        if not any(pkg_name == s or pkg_name.startswith(s + "/") for s in scope):
-            continue
-        for src in pkg.findall("sourcefile"):
-            for counter in src.findall("counter"):
-                c_type = counter.get("type", "")
-                c = int(counter.get("covered", 0))
-                m = int(counter.get("missed", 0))
-                if c_type == "LINE":
-                    covered_l += c
-                    total_l += c + m
-                elif c_type == "BRANCH":
-                    covered_b += c
-                    total_b += c + m
-    return covered_l, total_l, covered_b, total_b
+# Import the fairness-recipe CLI as a module. `measure_coverage.py` has
+# no shebang-less import path, so we load it by spec.
+import importlib.util as _importlib_util
+
+_MC_SPEC = _importlib_util.spec_from_file_location(
+    "measure_coverage", Path(__file__).resolve().parent / "measure_coverage.py"
+)
+_measure_coverage = _importlib_util.module_from_spec(_MC_SPEC)
+sys.modules.setdefault("measure_coverage", _measure_coverage)
+_MC_SPEC.loader.exec_module(_measure_coverage)
+_FAIR_MEASURE = _measure_coverage.measure
 
 
 def _exec_to_tick(
     exec_path: Path,
     classfiles: Path,
-    scope: tuple[str, ...],
+    sut: str,
+    format_hint: str,
+    config_path: Path,
     t_s: int,
     java_bin: str,
     jacococli_jar: Path,
     work_dir: Path,
 ) -> CoverageTick:
-    """Convert a single `.exec` snapshot into a `CoverageTick` by running
-    `jacococli report` with XML output and summing the filtered counters."""
+    """Convert a single `.exec` snapshot into a `CoverageTick`.
+
+    Steps:
+      1. `jacococli report --xml` converts the exec into a per-package
+         / per-sourcefile JaCoCo XML.
+      2. `measure_coverage.measure(xml, sut, fmt, config, metric=…)`
+         applies BioTest's authoritative filter rules (JEXL-exclude
+         etc.) and returns the filtered, weighted line / branch %.
+    """
     xml_out = work_dir / f"tick_{t_s}.xml"
     cmd = [
         java_bin, "-jar", str(jacococli_jar), "report", str(exec_path),
@@ -367,10 +359,28 @@ def _exec_to_tick(
             exec_path.name, proc.returncode, proc.stderr.decode(errors="replace")[:200],
         )
         return CoverageTick(t_s=t_s, line_pct=0.0, branch_pct=0.0)
-    cl, tl, cb, tb = _parse_coverage_xml(xml_out, scope)
-    line_pct = (cl / tl * 100.0) if tl else 0.0
-    branch_pct = (cb / tb * 100.0) if tb else 0.0
-    return CoverageTick(t_s=t_s, line_pct=line_pct, branch_pct=branch_pct)
+
+    try:
+        line_r = _FAIR_MEASURE(
+            report_path=xml_out, sut=sut, format_=format_hint.upper(),
+            config_path=config_path, metric="LINE",
+        )
+        branch_r = _FAIR_MEASURE(
+            report_path=xml_out, sut=sut, format_=format_hint.upper(),
+            config_path=config_path, metric="BRANCH",
+        )
+    except Exception as exc:
+        logger.warning(
+            "measure_coverage failed for %s (%s) — emitting zero tick",
+            xml_out.name, exc,
+        )
+        return CoverageTick(t_s=t_s, line_pct=0.0, branch_pct=0.0)
+
+    return CoverageTick(
+        t_s=t_s,
+        line_pct=line_r.weighted_pct,
+        branch_pct=branch_r.weighted_pct,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -391,6 +401,7 @@ def _run_jazzer_rep(
     jacococli_jar: Path,
     java_bin: str,
     tcp_port_start: int,
+    config_path: Path,
 ) -> list[CoverageTick]:
     """Run one Jazzer rep with JaCoCo TCP sampling. Returns the ordered
     list of CoverageTick snapshots (one per tick that fell inside the
@@ -546,13 +557,17 @@ def _run_jazzer_rep(
                 pass
             proc.wait(timeout=5)
 
-    # Convert each tick exec to a coverage % via `jacococli report`.
-    scope = FORMAT_SCOPES[fmt]
+    # Convert each tick exec to a coverage % via `jacococli report` +
+    # the fairness recipe. Filter rules come from
+    # biotest_config.yaml:coverage.target_filters[<FMT>][<sut>] —
+    # identical to what the feedback loop + any baseline tool sees.
     for t, exec_path in sorted(tick_exec_paths.items()):
         tick = _exec_to_tick(
             exec_path=exec_path,
             classfiles=classes_dir,
-            scope=scope,
+            sut=sut,
+            format_hint=fmt,
+            config_path=config_path,
             t_s=t,
             java_bin=java_bin,
             jacococli_jar=jacococli_jar,
@@ -574,7 +589,8 @@ def _run_jazzer_rep(
             # the downstream plot has SOMETHING at the low-t end.
             t0 = ticks_in_budget[0] if ticks_in_budget else min(ticks)
             tick_snapshots.append(_exec_to_tick(
-                exec_path=moved, classfiles=classes_dir, scope=scope,
+                exec_path=moved, classfiles=classes_dir,
+                sut=sut, format_hint=fmt, config_path=config_path,
                 t_s=t0, java_bin=java_bin, jacococli_jar=jacococli_jar,
                 work_dir=exec_dir,
             ))
@@ -1538,6 +1554,7 @@ def _dispatch_run(
             jacococli_jar=Path(opts.jacococli_jar),
             java_bin=opts.java_bin,
             tcp_port_start=opts.jacoco_port_start + rep_idx,
+            config_path=Path(opts.config),
         )
     if tool == "cargo_fuzz":
         # Build the instrumented binary once per run_cell() invocation and
@@ -1691,6 +1708,11 @@ def _cli() -> int:
                    help="java binary to run jacococli with (CLI only; Jazzer uses its own JDK)")
     p.add_argument("--jacoco-port-start", type=int, default=6300,
                    help="TCP port the agent binds to; rep N uses start+N")
+    p.add_argument("--config", default=str(REPO_ROOT / "biotest_config.yaml"),
+                   help="Path to biotest_config.yaml — the single source of "
+                        "truth for coverage.target_filters (the fairness "
+                        "recipe, see compares/scripts/measure_coverage.py). "
+                        "Change filter rules there, not here.")
 
     p.add_argument("--atheris-image", default="biotest-bench:latest",
                    help="Docker image holding the Atheris-venv; used by "
