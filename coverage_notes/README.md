@@ -10,9 +10,10 @@ combinations have been measured.
 coverage_notes/
   htsjdk/
     vcf/
-      biotest.md     # all BioTest runs on htsjdk/VCF (Runs 1-6)
+      biotest.md     # all BioTest runs on htsjdk/VCF (Runs 1-8)
       evosuite.md    # EvoSuite 1.2.0 baseline on htsjdk/VCF
-    sam/             # (empty — no SAM runs yet)
+    sam/
+      biotest.md     # BioTest runs on htsjdk/SAM (Run 9)
   biopython/
     sam/
       biotest.md     # BioTest runs on biopython/SAM (Run 1)
@@ -23,10 +24,12 @@ coverage_notes/
 ## Guidelines for adding a measurement
 
 1. File path mirrors the combination: `<sut>/<format>/<tool>.md`.
-2. Always report against the exact filter rules in
-   `biotest_config.yaml: coverage.target_filters[<sut>][<format>]`.
-   Copy those rules verbatim into the doc so the denominator is
-   reproducible.
+2. **Always compute numbers via `compares/scripts/measure_coverage.py`**
+   — never write inline filter code. The script reads filter rules from
+   `biotest_config.yaml: coverage.target_filters[<format>][<sut>]` so
+   every tool and every run is graded on the same scope.
+   See `compares/scripts/README.md` for the full fairness recipe and
+   the checklist for adding a new baseline testing tool.
 3. Include a timeline table if the same tool is re-run; never overwrite
    a prior run's numbers in place.
 4. Name JaCoCo / coverage-data snapshots as

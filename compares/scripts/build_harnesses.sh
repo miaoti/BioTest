@@ -50,6 +50,27 @@ build_libfuzzer() {
   cd - >/dev/null
 }
 
+build_libfuzzer_cov() {
+  # Offline coverage-replay binary. Same seqan3 source as the libFuzzer
+  # target, but built with --coverage (gcov instrumentation) so it
+  # emits .gcda files per invocation. Reads one corpus file on stdin
+  # via the default main() and exits. Used by coverage_sampler.py to
+  # measure cumulative line coverage at log ticks.
+  local dir="$ROOT/compares/harnesses/libfuzzer"
+  echo "[harness] libFuzzer coverage replay (Clang 18 + --coverage) @ $dir"
+  mkdir -p "$dir/build-cov"
+  cd "$dir/build-cov"
+  local cxx="${CXX:-$(command -v clang++-18 || command -v clang++)}"
+  if [[ -z "$cxx" ]]; then
+    echo "[harness] ERROR: clang++ not found; install Clang 18+" >&2
+    return 1
+  fi
+  cmake -DCMAKE_CXX_COMPILER="$cxx" \
+        -DCMAKE_CXX_FLAGS="-DSEQAN3_DISABLE_COMPILER_CHECK" ..
+  make seqan3_sam_fuzzer_cov
+  cd - >/dev/null
+}
+
 build_aflpp() {
   # AFL++ + GCC 12. Works today; this is the production C++ fuzzer
   # target for the comparison.
@@ -91,13 +112,15 @@ for tgt in $TARGETS; do
       build_jazzer
       build_aflpp || echo "[harness] AFL++ skipped (missing GCC 12 / AFL++)"
       build_libfuzzer || echo "[harness] libFuzzer skipped (missing Clang 18 / patched seqan3)"
+      build_libfuzzer_cov || echo "[harness] libFuzzer coverage replay skipped (missing Clang 18 / patched seqan3)"
       build_atheris_env
       ;;
-    jazzer)      build_jazzer ;;
-    aflpp)       build_aflpp ;;
-    libfuzzer)   build_libfuzzer ;;
-    atheris)     build_atheris_env ;;
-    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'atheris'"; exit 1 ;;
+    jazzer)         build_jazzer ;;
+    aflpp)          build_aflpp ;;
+    libfuzzer)      build_libfuzzer ;;
+    libfuzzer_cov)  build_libfuzzer_cov ;;
+    atheris)        build_atheris_env ;;
+    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'libfuzzer_cov', 'atheris'"; exit 1 ;;
   esac
 done
 

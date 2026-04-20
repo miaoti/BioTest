@@ -1,0 +1,204 @@
+# BioTest — htsjdk / SAM line coverage
+
+Source-of-truth for every BioTest coverage measurement taken against the
+**htsjdk** SUT in **SAM** mode. All numbers use the filter defined in
+`biotest_config.yaml: coverage.target_filters.SAM.htsjdk`:
+
+```
+htsjdk/samtools::SAM,Sam
+```
+
+The filter admits any sourcefile under `htsjdk/samtools` whose name
+starts with `SAM` or `Sam` — i.e. the SAM-format code surface, plus any
+utility class that ships under that package with the same prefix. Total
+denominator on the locally-built (Java-21 bytecode) htsjdk jar is
+**5 207 lines**, significantly larger than the VCF 3-path scope (3 760
+lines) because the SAM package houses more API-only utility classes
+(`SamFileValidator`, `SamFileHeaderMerger`, `SAMRecordSetBuilder`, etc.).
+
+Run-by-run snapshots are archived as
+`coverage_artifacts/jacoco/jacoco_post_run{N}.xml`.
+
+---
+
+## Timeline
+
+| Run | Date       | Wall   | Iters | **Weighted SAM** | Covered / Total | Enforced MRs | Notes |
+|:-:|:--|:-:|:-:|:-:|:-:|:-:|:--|
+| **9** | **2026-04-20** | **225 m** (timeout) | **3** | **21.0 %** | **1 092 / 5 207** | **1** | First htsjdk/SAM baseline. Run-6-style defaults (Rank 6 off, Tier 2 off). Coverage flat across all 3 iters. |
+
+---
+
+## Run 9 detailed breakdown (2026-04-20)
+
+Fresh-corpus baseline with reverted Run-6 defaults:
+`max_iterations=4`, `mr_synthesis.enabled=false`, `prompt_enrichment.*=false`,
+`max_seeds_per_iteration=5`, `max_mrs_per_iteration=5`. Hit
+`timeout_minutes=180` mid-iter 3 (ran to 225 min because timeout only
+checks between iterations — same overshoot pattern documented under the
+VCF writeup's "Runtime-overshoot finding" section).
+
+### Per-file coverage top-10 (Run 9 final jacoco.xml)
+
+| Sourcefile | Lines covered / total | % | Notes |
+|:--|:-:|:-:|:--|
+| `SAMTag.java` | 75 / 77 | 97.4 % | Enum-heavy; nearly-full coverage via parse |
+| `SAMLineParser.java` | 128 / 178 | 71.9 % | Core record parser — main parse path |
+| `SAMTextHeaderCodec.java` | 176 / 251 | 70.1 % | Header parser — well exercised |
+| `SAMTextReader.java` | 39 / 65 | 60.0 % | Text SAM reader |
+| `SAMSortOrderChecker.java` | 10 / 17 | 58.8 % | Coordinate-sort validator |
+| `SAMRecord.java` | **167 / 824** | **20.3 %** | **Central data model — API methods unexercised** |
+| `SAMUtils.java` | 26 / 418 | 6.2 % | Utility helpers — caller-only API |
+| `SamFileValidator.java` | 0 / 438 | **0.0 %** | Never reached by file-I/O — it IS the file-I/O caller |
+| `SamFileHeaderMerger.java` | 0 / 270 | **0.0 %** | Multi-file merge utility; only reachable from API |
+| `SAMRecordSetBuilder.java` | 0 / 265 | **0.0 %** | Programmatic builder; never reached by parse flow |
+
+### Why the number landed at 21 %
+
+Same structural shape as htsjdk/VCF, just with a less forgiving
+denominator:
+
+- **Parser subtree reaches 60–97 %** on the files actually invoked by
+  reading a SAM file (`SAMLineParser`, `SAMTextHeaderCodec`,
+  `SAMTextReader`, `SAMTag`). This is BioTest's strength bucket.
+- **`SAMRecord` at 20 %** mirrors VCF's `VariantContext` pattern: the
+  central record class gets created by parse but most of its
+  accessor / mutator / type-query methods never fire. This is the
+  data-model bucket Rank 5/6 targeted on VCF with +3 pp of movement —
+  the same lever would work here IF Rank 5 were running (it isn't,
+  Run 9 used Run-6 defaults).
+- **Zero-coverage utility classes (~1 430 missed lines total)** —
+  `SamFileValidator`, `SamFileHeaderMerger`, `SAMRecordSetBuilder` are
+  API-only: callers invoke them, file parsing never does. Structurally
+  unreachable via `parse(x) → canonical_JSON`, same paradigm limit
+  documented in the VCF notes. **~27 % of the SAM denominator is in
+  this bucket**, which explains why the aggregate looks low.
+
+### Two deeper findings from Run 9
+
+**Finding 1 — Consensus oracle quarantines almost every SAM MR**
+
+Phase B mined **27 MRs across the 7 themes** (2–5 per theme in the
+initial pass, similar throughput to VCF runs). The compiler accepted
+all 27. Then the orchestrator ran them against the voter pool:
+
+| Outcome | Count |
+|:--|:-:|
+| Enforced | **1** (`violate_cigar_seq_length` — a malformed-MR that only needs all voters to *reject*, not agree on canonical JSON) |
+| Quarantined | **26** |
+
+Every semantics-preserving MR (`shuffle_hd_subtags`,
+`shuffle_sq_record_subtags`, `permute_optional_tag_fields`,
+`split_or_merge_adjacent_cigar_ops`, `sam_bam_round_trip`,
+`sut_write_roundtrip`, …) got quarantined. Quarantine fires when
+`consensus(x) ≠ consensus(T(x))` OR when htslib rejects `T(x)`. These
+MRs **are** semantics-preserving at the spec level, so the MRs are not
+wrong — the quarantine means **the 6 voters (htsjdk, pysam, biopython,
+seqan3, htslib, reference) don't agree on the canonical JSON for the
+same SAM file**.
+
+**Finding 2 — DET rate 61.5 %**
+
+For comparison, VCF Run 6 landed at ~11 % DET. SAM's **61.5 %** means
+roughly 6 out of every 10 tests show cross-parser disagreement. The
+raw bug count was **1 883** vs VCF Run 6's 339. Many of those are
+almost certainly false positives driven by canonical-SAM-normalizer
+differences between the voters. Worth auditing
+`test_engine/canonical/sam_normalizer.py` and the per-runner SAM
+canonicalization paths (pysam, biopython, seqan3) before trusting the
+bug pipeline.
+
+### Why Run 9 is slower than a typical VCF run (259 min vs Run 6's 170 min)
+
+Three structural factors, not a regression:
+
+1. **2× voters on SAM**: htsjdk + pysam + biopython + seqan3 + htslib +
+   reference = 6. VCF only has 4 (biopython is SAM-only). Phase C wall
+   time is roughly linear in voter count.
+2. **Test count per iter 2× higher**: 6 106–8 160 per iter vs Run 6's
+   ~3 000. Fewer MRs but more voters means similar total test count
+   per seed.
+3. **Timeout overshoot**: `timeout_minutes=180` but Phase D ran 225 min
+   — the between-iterations-only check let iter 3 run to completion
+   past the cap. Same pattern as VCF Run 8, documented there.
+
+### What Run 9 does NOT tell us
+
+- Whether Rank 5 API-query MRs would help SAM (Rank 5 is on by default
+  but only 1 MR of any kind survived, so we can't read the signal).
+- Whether Rank 6 + Tier 2 would shift the data-model bucket
+  (`SAMRecord` 20 %) the way they did on VCF's `variantcontext`.
+- Whether htslib tie-breaking is agreeing with 1 specific voter and
+  mechanically quarantining the rest — worth checking in the bug
+  reports under `bug_reports/`.
+
+---
+
+## How to reproduce Run 9 in the future
+
+Current defaults reproduce it. Steps:
+
+```bash
+# 1. Make sure config is set for SAM + htsjdk:
+#    feedback_control.primary_target: htsjdk
+#    phase_c.format_filter:          SAM
+
+# 2. Clean state
+rm -f seeds/vcf/synthetic_*.vcf seeds/sam/synthetic_*.sam
+rm -f data/feedback_state.json data/rule_attempts.json data/mr_registry.json
+rm -f coverage_artifacts/jacoco/jacoco.exec coverage_artifacts/jacoco/jacoco.xml
+
+# 3. Run
+py -3.12 biotest.py --phase B,C,D --verbose
+
+# 4. Measure
+py -3.12 -c "
+import xml.etree.ElementTree as ET
+from test_engine.feedback.coverage_collector import parse_filter_rules, filter_file_matches
+rules = parse_filter_rules(['htsjdk/samtools::SAM,Sam'])
+tree = ET.parse('coverage_artifacts/jacoco/jacoco.xml'); root = tree.getroot()
+tc = tt = 0
+for pkg, incl, excl in rules:
+    pkg_el = next((p for p in root.findall('.//package') if p.attrib.get('name')==pkg), None)
+    if pkg_el is None: continue
+    for sf in pkg_el.findall('sourcefile'):
+        if not filter_file_matches(sf.attrib.get('name',''), incl, excl): continue
+        for ctr in sf.findall('counter'):
+            if ctr.attrib.get('type')=='LINE':
+                tc += int(ctr.attrib.get('covered',0))
+                tt += int(ctr.attrib.get('covered',0)) + int(ctr.attrib.get('missed',0))
+print(f'Weighted SAM: {tc}/{tt} = {100*tc/tt:.1f}%')
+"
+
+# 5. Snapshot
+cp coverage_artifacts/jacoco/jacoco.xml coverage_artifacts/jacoco/jacoco_post_run{N}.xml
+```
+
+To test Tier 1+2 impact on SAM (analogous to VCF Runs 7/8):
+flip `mr_synthesis.enabled: true` and both `prompt_enrichment.*: true`
+in `biotest_config.yaml`. But note: Run 9 found that **the primary
+SAM problem is quarantine rate, not MR diversity** — so Rank 6 LLM-
+synthesized MRs would likely also get quarantined by the same
+consensus fragility. Investigate the canonical SAM normalizer first.
+
+---
+
+## Methodology
+
+Same pattern as VCF: apply `parse_filter_rules` from
+`test_engine/feedback/coverage_collector.py` to the raw `jacoco.xml`,
+with filter `["htsjdk/samtools::SAM,Sam"]`, then walk `<package>
+<sourcefile>` nodes and sum `<counter type="LINE" covered=... missed=.../>`
+over every `sourcefile` whose name starts with `SAM` or `Sam`. This
+matches exactly what the feedback loop's weighted score uses at
+runtime.
+
+## Next lever candidates (not prioritized here)
+
+1. **Audit the SAM canonical normalizer** to understand why voters
+   disagree on 61.5 % of tests — likely the single biggest coverage
+   unblocker for SAM.
+2. **Per-voter canonical-JSON diff** on 10 representative seeds to
+   isolate which normalizer branch is off.
+3. **Only-then**: re-run with Rank 5/6 enabled to see if SAMRecord's
+   data-model bucket moves the way VCF's variantcontext did.

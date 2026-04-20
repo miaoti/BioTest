@@ -23,3 +23,13 @@ coverage_artifacts/jacoco/jacoco.exec
 # Rust build output
 **/target/
 **/Cargo.lock.bak
+
+# Jazzer crash reproducer stubs — emitted to cwd on every finding.
+# coverage_sampler now pins them to per-rep reproducers/ dirs inside
+# compares/results/coverage/**, but ignore any stragglers at repo root.
+/Crash_*.java
+**/Crash_*.java
+
+# htsjdk classes extracted on demand by coverage_sampler for JaCoCo
+# --classfiles; rebuilt from the harness fatjar when missing.
+compares/harnesses/jazzer/build/htsjdk-classes/

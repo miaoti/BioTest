@@ -654,11 +654,63 @@
       ],
       "ambiguity_flags": [],
       "query_methods": []
+    },
+    {
+      "mr_id": "2dc0ee17b8ae",
+      "mr_name": "SAM CIGAR operation splitting/merging invariance under writer round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization, as total query-consumed length is preserved",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "* Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' not 'must', so implementations may differ in handling adjacent identical CIGAR operations"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31c937b866ae",
+      "mr_name": "SAM @CO comment line order invariance under writer round-trip",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines",
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Each header line begins with the character ` @' followed by one of the two-letter header record type codes defined in this section. In the header, each line is TAB-delimited and, apart from @CO lines, each data field follows a format ` TAG:VALUE' where TAG is a two-character string that defines the format and content of VALUE.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "@CO lines are free-text comments with no ordering semantics specified"
+      ],
+      "query_methods": []
     }
   ],
   "summary": {
     "enforced_count": 1,
-    "quarantine_count": 24,
-    "total": 25
+    "quarantine_count": 26,
+    "total": 27
   }
 }

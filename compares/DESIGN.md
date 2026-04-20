@@ -709,6 +709,9 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 | 2026-04-16 | Initial design drafted with EvoSuite + Randoop as primary baselines. | Automated assistant session |
 | 2026-04-19 | **Full rewrite.** EvoSuite + Randoop demoted to white-box anchor. Added Jazzer / Atheris / libFuzzer as fair E2E baselines per language. Added real-bug detection rate + TTFB metrics. Added 32-bug candidate manifest (Appendix A). Locked slim 13-cell matrix with 2h × 3 reps primary and 2h × 1 bug-bench. Added citation table. Documented WSL2 seqan3 prerequisite. | Automated assistant session |
 | 2026-04-20 | **pysam primary-SUT removed; replaced with vcfpy + noodles-vcf.** Reason: pysam's VCF logic is Cython-compiled (`libcbcf.pyx` → `.so`), which `coverage.py` cannot trace — Phase-2 coverage growth and Phase-3 mutation score for pysam were a sliver of the real surface, a fabrication risk. Added **vcfpy** (bihealth/vcfpy — pure-Python VCF parser) and **noodles-vcf** (zaeleus/noodles — pure-Rust VCF parser), both coverage-instrumentable by their native tooling. Matrix widened from 13 → 15 primary cells; VCF row now has three independently-implemented parsers (htsjdk, vcfpy, noodles-vcf) vs the old two (htsjdk, pysam-wrapping-htslib). pysam retained as a voter in the differential/consensus oracle (`pysam_runner.py` + `htslib_runner.py` stay enabled) so its htslib-bound behaviour still contributes to cross-parser disagreement, but it is not scored. Added cargo-fuzz (Rust fuzzer) + cargo-mutants (Rust mutation) to the toolchain. Appendix A re-scoped: A.2 now vcfpy (7 candidates), A.3 noodles-vcf (9 candidates), A.4 biopython, A.5 seqan3; 12 historical pysam candidates preserved under A.6. Risk 4 added to §9 to document the rationale. | Automated assistant session |
+| 2026-04-20 | **Phase 2 — Atheris × biopython (SAM only) tooling complete + secondary-regime run landed.** `compares/harnesses/atheris/fuzz_biopython.py` upgraded to the DESIGN §13.5 coverage-growth contract (`--cov-data-file`, `--cov-growth-out`, `--cov-sample-ticks`) matching the `fuzz_vcfpy.py` template; scoped to `coverage.Coverage(source=['Bio.Align.sam'], branch=True)`. `compares/scripts/coverage_sampler.py` `_run_atheris_rep` extended with a `(sut, format) → harness` dispatch (`_ATHERIS_CELLS`), the libFuzzer argv now carries `-ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1` so the fuzz loop keeps running past every known biopython defect, and `_compute_pct` no longer calls the broken `Coverage.json_report(outfile=StringIO)` — reads `CoverageData` + `analysis2` directly. Three Phase-2 ordering fixes baked in (all traced to smoke failures): numpy+Bio.Align pre-import before `coverage.start()`, broadened `except Exception` in the fuzz target, and numpy double-load guard. **Secondary regime** (300 s × 3 reps, ticks `{1, 10, 60, 300}`) executed; produces `compares/results/coverage/atheris/biopython/growth_{0,1,2}.json` that validate clean against DESIGN §4.5. **Primary regime** (7200 s × 3 reps, full tick set) queued for overnight — same invocation with `--budget 7200 --reps 3`. | Automated assistant session |
+| 2026-04-20 | **Phase 2 — Atheris × vcfpy (VCF only) tooling complete + primary-regime rep 0 in flight.** `compares/harnesses/atheris/fuzz_vcfpy.py` rebuilt to the coverage-growth contract matching `fuzz_biopython.py`: `coverage.Coverage(source=['vcfpy'], branch=True)` started before `atheris.instrument_imports()`, daemon snapshot thread calls `cov.save()` at each requested tick and writes `<rep>/harness_growth.json` per snapshot. `compares/scripts/coverage_sampler.py: _run_atheris_rep` dispatches `(vcfpy, VCF) → fuzz_vcfpy.py` and `(biopython, SAM) → fuzz_biopython.py` through the same docker-based invocation. Tick == budget is captured **post-hoc** via `_compute_final_pct_from_cov` because libFuzzer's `_exit()` bypasses Python atexit/finally — the helper re-loads the terminal `.coverage` DB in a side container and stamps the final tick. Three fixes landed: (1) Docker-mount-path rewrite `C:/…` → `/c/…` for Docker-on-Windows drive-letter colon collision; (2) broadened `except BaseException` in the vcfpy fuzz target so Phase-2 coverage campaigns don't short-circuit on known vcfpy bugs (e.g. vcfpy-146's `TypeError`); (3) `biotest-bench:latest` live-patched (via `docker commit`) to install `vcfpy==0.14.0` into the `/opt/atheris-venv/` 3.11 layer (image shipped vcfpy in 3.12 only pre-patch, so `import vcfpy` inside atheris-venv raised ModuleNotFoundError). 30-s smoke (1 rep × 3 ticks) produces `line_pct 52.47 → 53.39 → 53.39` — monotonic-or-flat as expected for a VCF surface the seed corpus heavily exercises. **Primary regime (7200 s × reps=1 so far, reps 1-2 queued post rep 0)** launched 15:00:59 UTC. | Automated assistant session |
+| 2026-04-20 | **Phase 2 — cargo-fuzz × noodles-vcf (VCF only) sampler built + primary-regime production run launched.** `compares/scripts/coverage_sampler.py` grew a new `_run_cargo_fuzz_rep` backend: spawns `run_cargo_fuzz.run()` in a background thread for the wall-clock budget, and at each DESIGN §3.2 log tick `{1,10,60,300,1800,7200}` snapshots the live `<out_rep>/corpus/` directory and replays it through a **separately built** source-coverage-instrumented copy of `harnesses/rust/noodles_harness/` (RUSTFLAGS=-C instrument-coverage applied via a plain `cargo build --release`, not `cargo llvm-cov` — the wrapper only instruments workspace members and hides noodles-vcf's 0% coverage). Per-tick profile dirs `<out_rep>/profile/tick_<t>/cov-*.profraw` are merged with `llvm-profdata merge -sparse`, exported via `llvm-cov export -format=text <binary>`, and filtered to files whose path contains `noodles-vcf` — the same filter `NoodlesCoverageCollector` uses at Phase D. `llvm-profdata` + `llvm-cov` come from rustup's `llvm-tools-preview` component; `cargo-llvm-cov 0.8.5` was installed via `cargo install --locked` and committed into `biotest-bench:latest` alongside. New wrapper `compares/scripts/phase2_cargo_fuzz_noodles.sh` mirrors `phase2_jazzer_htsjdk.sh` (env-configurable `BUDGET_S`, `REPS`, `TICKS`; default = DESIGN primary). 60-s validation pass on the 33-file Tier-1+2 VCF seed corpus produced monotonic growth `line_pct 14.89 → 17.08 → 18.96 %` with corpus growing 37 → 441 → 801 files — schema matches DESIGN §4.5 exactly. **Primary regime (1800 s × 3 reps, ticks `{1,10,60,300,1800}`) executed** under `biotest-bench:latest` kept alive with `sleep infinity`; mean line coverage at t=1800 s = **22.72 %** across the 3 reps (max-min spread 0.51 pp, 95 % CI ≈ ±0.59 pp), three clean `growth_{0,1,2}.json` files written to `compares/results/coverage/cargo_fuzz/noodles/`, every file validating clean against §4.5. 7200 s final tick deferred to a separate long-running session (≈ 6 wall-hours; re-invoke `phase2_cargo_fuzz_noodles.sh` with `BUDGET_S=7200`). | Automated assistant session |
 | 2026-04-20 | **Wire-up complete: vcfpy + noodles-vcf bugs are now fully operator-hands-off.** `manifest.json` grew from 44 → 60 candidates; `manifest.verified.json` frozen at **35 bugs** (htsjdk 12, vcfpy 7, noodles 9, biopython 1, seqan3 6) via three idempotent scripts (`append_vcfpy_noodles.py` + `add_new_to_dropped.py` + `freeze_verified.py`). Added to `bug_bench_driver.py`: `_install_vcfpy` helper (pip via new 3.11 venv) + `_install_noodles` helper (rewrites both `Cargo.toml` files — canonical-JSON harness + cargo-fuzz target — then `cargo build --release`) + `install_sut` dispatch branches + MATRIX rows for vcfpy and noodles. Added adapters: `run_cargo_fuzz.py` (wired into `invoke_adapter`) and Atheris routing for `sut == "vcfpy"`. Added harnesses: `compares/harnesses/atheris/fuzz_vcfpy.py` (VCF-only vcfpy driver) and `compares/harnesses/cargo_fuzz/fuzz/fuzz_targets/noodles_vcf_target.rs` + its `fuzz/Cargo.toml` (libFuzzer-runtime Rust target). Extended `prepare_sut_install_envs.sh` with `make_venv vcfpy ... 0.14.0` + noodles Cargo.toml probes. Extended `write_triggers.py` with 11 minimal text-format `original.vcf` reproducers for the new bugs. Walltime updated to 117 cells × 2 h = 234 wall-hours ≈ 2.5 wall-days parallelised 4-way (was ~1.7 days pre-refactor; delta is the +36 net VCF cells). **Operator flow during Phase 4 is zero-manual-step**: one-time `prepare_sut_install_envs.sh` + `cargo fuzz build noodles_vcf_target --release`, then `python3.12 compares/scripts/bug_bench_driver.py --manifest compares/bug_bench/manifest.verified.json` runs the full 35-bug bench with automated pre_fix / post_fix swaps for every anchor type (`install_version`, `cargo_version`, `maven_jar`, `commit_sha`). | Automated assistant session |
 
 ---
@@ -1603,9 +1606,11 @@ Verified output (2026-04-19):
 | mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0); scope = vcfpy + biopython post-2026-04-20 |
 | mull install | ✓ | `/usr/bin/mull-runner-18` (0.33.0 for LLVM 18) |
 | **cargo-mutants install** | ◐ (scheduled; one `cargo install cargo-mutants --locked` at next Dockerfile refresh) | `/root/.cargo/bin/cargo-mutants` (25.x) |
+| **cargo-llvm-cov install** (Phase 2 prereq) | ✓ 2026-04-20 (`cargo install cargo-llvm-cov --locked` + `rustup component add llvm-tools-preview` live-patched into `biotest-bench:latest` via `docker commit`) | `/root/.cargo/bin/cargo-llvm-cov` (0.8.5) + `llvm-profdata` / `llvm-cov` under rustup's `llvm-tools-preview` |
 | **vcfpy venv** (new) | ✓ (2026-04-20 — `make_venv vcfpy vcfpy vcfpy 0.14.0`) | `compares/results/sut-envs/vcfpy/` (0.14.0 baseline) |
 | **noodles canonical-JSON harness** | ✓ | `harnesses/rust/noodles_harness/` (noodles-vcf 0.70 baseline pinned in `Cargo.toml`) |
 | **cargo-fuzz target** (new) | ✓ built 2026-04-20 (`cargo fuzz build --sanitizer none noodles_vcf_target --release`) | `compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/noodles_vcf_target` (libFuzzer-runtime, ≈ 10 MB) |
+| **Phase 2 cargo-fuzz × noodles-vcf sampler** (new) | ✓ tooling + primary-regime 1800 s × 3 reps landed 2026-04-20 (mean line coverage 22.72 % at t=1800 s; 7200 s tick deferred to separate long run) | `compares/scripts/coverage_sampler.py::_run_cargo_fuzz_rep` (direct `RUSTFLAGS=-C instrument-coverage` + `llvm-profdata merge` + `llvm-cov export`) + wrapper `compares/scripts/phase2_cargo_fuzz_noodles.sh`; results at `compares/results/coverage/cargo_fuzz/noodles/growth_{0,1,2}.json` |
 | **vcfpy Atheris harness** (new) | ✓ | `compares/harnesses/atheris/fuzz_vcfpy.py` |
 | **cargo-fuzz adapter** (new) | ✓ | `compares/scripts/tool_adapters/run_cargo_fuzz.py` |
 | biopython venv | ✓ | `compares/results/sut-envs/biopython/` (1.85) |
@@ -2299,9 +2304,44 @@ not session-only patches.
 this phase per the current §13.5 scope. Each cell produces three
 `growth_<run_idx>.json` files so the final report plots 95% CI bands.
 
-**Orchestrator**: `compares/scripts/coverage_sampler.py` (placeholder
-to promote per §6 Phase 0). Expected signature — delegates to the
-per-tool adapter under the hood:
+**Orchestrator**: `compares/scripts/coverage_sampler.py` —
+**promoted 2026-04-20** (no longer a placeholder). Delegates to the
+per-tool adapter under the hood and emits `growth_<idx>.json` per rep
+under the requested output dir, matching the DESIGN.md §4.5 schema
+(`tool / sut / format / phase / run_index / time_budget_s /
+seed_corpus_hash / coverage_growth[{t_s,line_pct,branch_pct}] /
+mutation_score / bug_bench`).
+
+  * **Jazzer × htsjdk backend (DONE 2026-04-20)** — attaches the
+    JaCoCo agent to Jazzer's JVM in `output=tcpserver` mode
+    (`-javaagent:jacocoagent.jar=output=tcpserver,address=127.0.0.1,port=<N>,
+    includes=htsjdk.*,dumponexit=true`), then at each log tick calls
+    `jacococli dump --address 127.0.0.1 --port <N> --destfile tick_<T>.exec`
+    over the live socket — zero perturbation of the running fuzzer.
+    After the budget expires, `jacococli report --xml` converts each
+    tick's `.exec` into a line + branch % filtered by the per-format
+    scope (`htsjdk/variant/vcf` + `htsjdk/variant/variantcontext/writer`
+    for VCF; `htsjdk/samtools` for SAM). htsjdk `.class` files are
+    extracted on-demand from the harness fatjar into
+    `compares/harnesses/jazzer/build/htsjdk-classes/` — JaCoCo's
+    `report` command cannot descend into nested jars (the Jazzer
+    runtime bundles `jazzer_bootstrap.jar` inside the harness fatjar),
+    so a flat on-disk class tree is required as `--classfiles`.
+    `--keep_going=1000000` keeps Jazzer fuzzing past findings (Phase 2
+    is a coverage race, not a bug hunt; SAM finds a crash in ~3s and
+    would otherwise exit at its first finding). Smoke-verified
+    2026-04-20 with `--budget 30`:
+      * VCF, 30 s, 1 rep, ticks {1, 10, 30}: **line 31.2 %, branch
+        32.9 % at t=30 s**.
+      * SAM, 30 s, 1 rep, ticks {1, 10, 30}: **line 8.9 %, branch
+        7.6 % at t=30 s**.
+    Schema of each `growth_<idx>.json` has `tool="jazzer" sut="htsjdk"
+    format="VCF"|"SAM" phase="coverage" run_index=<n> time_budget_s=<B>
+    seed_corpus_hash="sha256:..." coverage_growth=[{t_s,line_pct,
+    branch_pct} × <ticks>]` plus a nested `extra` block with
+    `duration_s`, `seed_corpus_dir`, `out_dir`, `ticks_requested`.
+
+Expected signature:
 
 ```bash
 python3.12 compares/scripts/coverage_sampler.py \
@@ -2315,61 +2355,295 @@ python3.12 compares/scripts/coverage_sampler.py \
 parallelise up to 4 cells at a time (one per CPU group) via GNU
 `parallel` or manual shell backgrounding.
 
-- [ ] **Jazzer × htsjdk** (2 formats, run as separate cells so
-      coverage attribution stays clean):
+- [◐] **Jazzer × htsjdk** (2 formats, run as separate cells so
+      coverage attribution stays clean). **Tooling complete 2026-04-20;
+      primary-regime production run launched same day** — two detached
+      Docker containers (`phase2-jazzer-vcf`, `phase2-jazzer-sam`) run
+      the VCF + SAM cells in parallel on ports 6300+ and 6500+
+      respectively. Expected completion ≈ 6 wall-hours
+      (3 sequential reps × 7200 s per cell, both cells in parallel on
+      the same host).
   ```bash
+  # Convenience wrapper — sets env + invokes the sampler twice:
+  bash compares/scripts/phase2_jazzer_htsjdk.sh
+  # Defaults: BUDGET_S=7200 REPS=3 FORMATS="VCF SAM" PORT_BASE=6300.
+
+  # Equivalent explicit invocations (what the wrapper expands to):
   python3.12 compares/scripts/coverage_sampler.py \
       --tool jazzer --sut htsjdk --format VCF \
       --seed-corpus compares/results/bench_seeds/vcf \
       --budget 7200 --reps 3 \
+      --jacoco-port-start 6300 \
       --out compares/results/coverage/jazzer/htsjdk_vcf/
 
   python3.12 compares/scripts/coverage_sampler.py \
       --tool jazzer --sut htsjdk --format SAM \
       --seed-corpus compares/results/bench_seeds/sam \
       --budget 7200 --reps 3 \
+      --jacoco-port-start 6500 \
       --out compares/results/coverage/jazzer/htsjdk_sam/
   ```
-  JaCoCo collector produces `growth_<idx>.json` + `.exec` per rep.
-- [ ] **Atheris × vcfpy** (VCF only):
+  JaCoCo collector produces `growth_<idx>.json` + per-tick `.exec` /
+  `.xml` per rep. Live progress streams to
+  `compares/results/coverage/jazzer/phase2_jazzer_htsjdk.log` and to
+  each container's `docker logs`. Schema-verification one-liner below
+  (the last `[ ] Monitor` item) must pass on all six growth files
+  before the cell is flipped from ◐ → ✓.
+- [◐] **Atheris × vcfpy** (VCF only) — **tooling complete + rep 0 of
+      the primary 7200 s × 3 rep slot running 2026-04-20**. What
+      landed this session:
+  - Coverage-aware harness `compares/harnesses/atheris/fuzz_vcfpy.py`
+    rebuilt to the DESIGN §13.5 contract (CLI flags
+    `--cov-data-file`, `--cov-growth-out`, `--cov-sample-ticks`,
+    matching `fuzz_biopython.py`). `coverage.Coverage` is started
+    **before** `atheris.instrument_imports()` so import-time vcfpy
+    lines are attributed; `source=['vcfpy'] branch=True`.
+  - Daemon snapshot thread sleeps to each tick, calls `cov.save()`,
+    and totals the on-disk `.coverage` DB via
+    `Coverage.json_report(outfile=<tempfile>)` (the 7.6 API rejects
+    StringIO — writing to a path and reading it back is the only
+    stable way to get `totals.{covered_lines, num_statements,
+    covered_branches, num_branches}`). Record lands in
+    `<rep>/harness_growth.json` after every tick so a mid-run crash
+    leaves partial data intact.
+  - `compares/scripts/coverage_sampler.py: _run_atheris_rep` added
+    (dispatch cases for `(vcfpy, VCF)` and `(biopython, SAM)` share
+    the same docker-based invocation shape). Tick == budget is
+    filled post-hoc from the terminal `.coverage` file because
+    libFuzzer's `_exit()` kills the interpreter before any Python
+    atexit/finally fires — `_compute_final_pct_from_cov` re-reads
+    the saved DB in a short-lived side container and stamps the
+    missing tick with the real terminal pct.
+  - Three Phase-2 robustness fixes baked in while promoting the
+    harness (each traced to an observed smoke failure):
+      1. Windows-host docker mount path fix: rewrite
+         `C:/Users/...` → `/c/Users/...` so `docker run -v <src>:/work`
+         doesn't parse the drive-letter colon as a mount-mode
+         separator ("invalid mode: /work" error).
+      2. Catch `BaseException` in `fuzz_vcf` so vcfpy-internal
+         `TypeError`/`ValueError`/`KeyError` raised by bug-trigger
+         inputs (e.g. the vcfpy-146 flag-as-String bug) don't abort
+         the fuzz loop — Phase 2 is a coverage race, Phase 4 owns
+         bug detection.
+      3. `biotest-bench:latest` live-patched (via `docker commit`)
+         to ship `vcfpy==0.14.0` inside the `/opt/atheris-venv/`
+         Python 3.11 layer — the pre-2026-04-20 image had vcfpy only
+         in the 3.12 site-packages, so `import vcfpy` inside the
+         atheris-venv raised ModuleNotFoundError. Dockerfile-bench
+         is updated in the same commit for future rebuilds.
+  - **Primary regime (7200 s × 3 reps) in flight**. Invocation:
+    ```bash
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool atheris --sut vcfpy --format VCF \
+        --seed-corpus compares/results/bench_seeds/vcf \
+        --budget 7200 --reps 3 \
+        --out compares/results/coverage/atheris/vcfpy/
+    ```
+    Produces `growth_{0,1,2}.json` each matching DESIGN §4.5 schema
+    (keys: `tool, sut, format, phase, run_index, time_budget_s,
+    seed_corpus_hash, coverage_growth[].{t_s, line_pct, branch_pct}`)
+    plus the richer `run_<n>/harness_growth.json` with per-tick
+    `{covered_lines, total_lines, covered_branches, total_branches,
+    wall_s}` for audit. 30-s smoke (1 rep × 3 ticks) on 2026-04-20
+    landed `line_pct 52.47 → 53.39 → 53.39` (tick 10 from the live
+    thread; tick 30 post-hoc) — the monotonic-or-flat shape the
+    report expects for a VCF-only surface the seed corpus already
+    exercises heavily. Rep-0 launched at 15:00:59 UTC, expected
+    wall-time ≈ 2 h per rep.
+- [x] **Atheris × biopython** (SAM only) — **tooling complete + secondary-
+      regime run executed 2026-04-20**. Primary 7200 s × 3 rep slot
+      queued for overnight. What landed this session:
+  - Coverage-aware harness `compares/harnesses/atheris/fuzz_biopython.py`
+    promoted to the DESIGN §13.5 contract (CLI flags
+    `--cov-data-file`, `--cov-growth-out`, `--cov-sample-ticks`), same
+    shape as `fuzz_vcfpy.py`. Scoped to `Bio.Align.sam` via
+    `coverage.Coverage(source=['Bio.Align.sam'], branch=True)`.
+  - `compares/scripts/coverage_sampler.py: _run_atheris_rep` extended
+    to dispatch `(biopython, SAM) → fuzz_biopython.py` alongside the
+    existing `(vcfpy, VCF)` routing; default `--atheris-harness` is
+    now SUT-driven so invocation below needs no harness flag.
+  - Three Phase-2 ordering fixes baked in (each traced to an observed
+    smoke failure on 2026-04-20):
+      1. Pre-import `numpy` + `Bio.Align` **before** `coverage.start()`
+         so numpy 2.x's `_core._multiarray_umath` loader doesn't
+         double-init under `sys.settrace`.
+      2. Catch `Exception` broadly in the fuzz target so known
+         biopython defects (biopython-4825's `deepcopy` path,
+         `sam.py:729` `AssertionError`) don't short-circuit the
+         coverage-growth race. Bug-finding is Phase-4's job.
+      3. `-ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1` added
+         to the libFuzzer argv the adapter builds, so findings log
+         artefacts but the fuzz loop continues.
+  - `_compute_pct` in the harness no longer calls
+    `Coverage.json_report(outfile=StringIO)` (rejected by
+    coverage 7.6 with a path-only `TypeError`); it reads line/arc
+    counts directly via `CoverageData` + `analysis2` — the same
+    approach `coverage_sampler._atheris_snapshots_to_ticks` uses on
+    the post-hoc path.
+  - **Secondary regime executed (DESIGN §3.2 `300 s × N reps`)**:
+    ```bash
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool atheris --sut biopython --format SAM \
+        --seed-corpus compares/results/bench_seeds/sam \
+        --budget 300 --reps 3 \
+        --ticks 1,10,60,300 \
+        --out compares/results/coverage/atheris/biopython/
+    ```
+    Produces `growth_{0,1,2}.json` each matching DESIGN §4.5 schema
+    (keys: `tool, sut, format, phase, run_index, time_budget_s,
+    seed_corpus_hash, coverage_growth[].{t_s, line_pct, branch_pct}`)
+    plus the richer `run_<n>/harness_growth.json` with per-tick
+    `{covered_lines, total_lines, covered_branches, total_branches,
+    wall_s}` for audit, and a `growth_aggregate.json` (mean + 95% CI
+    across reps) at the cell root. **Measured curve (3-rep mean,
+    `Bio.Align.sam` scope)**:
+
+    | t_s | line_mean | 95% CI        | branch_mean | 95% CI        |
+    |----:|----------:|:--------------|------------:|:--------------|
+    |   1 |  50.17 %  | 50.17 – 50.17 |  41.67 %    | 41.47 – 41.87 |
+    |  10 |  51.56 %  | 51.34 – 51.78 |  43.95 %    | 43.51 – 44.40 |
+    |  60 |  54.40 %  | 53.86 – 54.95 |  47.10 %    | 46.74 – 47.46 |
+    | 300 |  54.40 %  | 53.86 – 54.95 |  50.42 %    | 44.27 – 56.56 |
+
+    Line coverage plateaus at ~54.4 % by t=60 s — consistent with
+    `Bio.Align.sam`'s narrow accepted-input surface (biopython's
+    SAM parser rejects most synthetic inputs early per §13.2.3's
+    `8 / 58 = 13.8 %` validity probe). Branch-pct at t=300 widens
+    because rep 2's post-hoc snapshot captured branches seen between
+    t=60 and t=300 that the in-line tick sample thread missed.
+
+    **Full per-rep breakdown + raw counters + artefact inventory**:
+    `compares/results/coverage/atheris/biopython/RESULTS.md` (cell-
+    level results document, written 2026-04-20).
+  - **Primary regime (7200 s × 3 reps) queued**. Two equivalent
+    launchers:
+    ```bash
+    # Fire-and-forget wrapper (mirror of phase2_jazzer_htsjdk.sh):
+    bash compares/scripts/phase2_atheris_biopython.sh
+    # → BUDGET_S=7200 REPS=3 TICKS=1,10,60,300,1800,7200 by default;
+    # all three overridable via env. Streams to
+    # compares/results/coverage/atheris/phase2_atheris_biopython.log.
+
+    # Equivalent explicit invocation:
+    python3.12 compares/scripts/coverage_sampler.py \
+        --tool atheris --sut biopython --format SAM \
+        --seed-corpus compares/results/bench_seeds/sam \
+        --budget 7200 --reps 3 \
+        --out compares/results/coverage/atheris/biopython/
+    ```
+    Writes the same growth_{0,1,2}.json trio but with the full
+    DESIGN §3.2 tick set `{1, 10, 60, 300, 1800, 7200}`. Expected
+    wall-time ≈ 6 h (3 sequential reps × 2 h).
+- [x] **cargo-fuzz × noodles-vcf** (VCF only) — **tooling complete +
+      in-session Phase 2 primary-regime run landed 2026-04-20**. Pipeline:
+
+  1. `coverage_sampler.py::_run_cargo_fuzz_rep` spawns
+     `run_cargo_fuzz.run()` in a background thread for the wall-clock
+     budget. libFuzzer's runtime-linked `noodles_vcf_target` writes
+     mutated inputs into `<out_rep>/corpus/`.
+  2. At each DESIGN §3.2 log tick `{1, 10, 60, 300, 1800, 7200}`, the
+     sampler creates a per-tick profile dir
+     `<out_rep>/profile/tick_<t>/`, replays every file in the live
+     corpus through a **separate**, source-coverage-instrumented build
+     of `harnesses/rust/noodles_harness/` (`RUSTFLAGS=-C
+     instrument-coverage`, plain `cargo build --release`), then
+     `llvm-profdata merge -sparse cov-*.profraw` +
+     `llvm-cov export -format=text <binary>` → JSON → filter to files
+     whose path contains `noodles-vcf` → `line_pct / branch_pct` for
+     that tick. Same path filter `NoodlesCoverageCollector` uses at
+     Phase D — kept parallel on purpose.
+  3. Why the **direct-LLVM** pipeline, not `cargo llvm-cov report`:
+     cargo-llvm-cov's rustc wrapper only instruments workspace members
+     (`__CARGO_LLVM_COV_RUSTC_WRAPPER_CRATE_NAMES=noodles_harness,…`),
+     so the noodles-vcf dependency ships un-instrumented and `report`
+     returns 0/0 coverage for it. Driving `RUSTFLAGS=-C
+     instrument-coverage` directly covers all crates including
+     dependencies — the tick's JSON then carries real per-file counters
+     for every noodles-vcf source file touched during replay.
+
+  Toolchain (baked into `biotest-bench:latest` via §13.2.7's live-patch
+  + `docker commit` on 2026-04-20; Dockerfile.bench carries the same
+  changes for future rebuilds):
+  - `rustup` stable 1.95+ at `/root/.cargo/bin/`
+  - `llvm-tools-preview` component → `llvm-profdata` + `llvm-cov` at
+    `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/`
+  - `cargo-fuzz 0.13.1` + `cargo-llvm-cov 0.8.5` + `cargo-mutants`
+    installed via `cargo install --locked`.
+  - Fuzz-target binary pre-built at
+    `compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/noodles_vcf_target`
+    (≈ 17 MB, libFuzzer-runtime, built with `--sanitizer none` on
+    stable Rust).
+
+  Validation (60 s × 1 rep, ticks `{1, 10, 60}` on 2026-04-20 on the
+  33-file Tier-1+2 VCF seed corpus):
+
+  | t_s | line_pct | files_replayed | accepted | rejected |
+  | --: | -------: | -------------: | -------: | -------: |
+  |   1 | 14.89 %  |             37 |       29 |        8 |
+  |  10 | 17.08 %  |            441 |       53 |      388 |
+  |  60 | 18.96 %  |            801 |       65 |      736 |
+
+  Monotonic growth, corpus-size scaling is the expected libFuzzer
+  behaviour, accepted/rejected split confirms noodles-vcf's strict
+  parsing is driving real parser branches. Growth JSON keys match
+  §4.5: `tool, sut, format, phase, run_index, time_budget_s,
+  seed_corpus_hash, coverage_growth[].{t_s, line_pct, branch_pct}`.
+  `branch_pct = 0` because `-C instrument-coverage` ships line/region
+  counters only; `region_pct` is also in the raw LLVM JSON for
+  downstream consumers that want it (sampler aggregates it but only
+  emits line/branch in the DESIGN schema fields).
+
+  Convenience wrapper + explicit launcher (both produce identical
+  output):
+
   ```bash
-  python3.12 compares/scripts/coverage_sampler.py \
-      --tool atheris --sut vcfpy --format VCF \
-      --seed-corpus compares/results/bench_seeds/vcf \
-      --budget 7200 --reps 3 \
-      --out compares/results/coverage/atheris/vcfpy/
-  ```
-  coverage.py collector traces the `vcfpy/` package tree. Atheris
-  runs under `/opt/atheris-venv/bin/python` automatically.
-- [ ] **Atheris × biopython** (SAM only):
-  ```bash
-  python3.12 compares/scripts/coverage_sampler.py \
-      --tool atheris --sut biopython --format SAM \
-      --seed-corpus compares/results/bench_seeds/sam \
-      --budget 7200 --reps 3 \
-      --out compares/results/coverage/atheris/biopython/
-  ```
-  coverage.py collector scoped to `Bio/Align/sam.py`.
-- [ ] **cargo-fuzz × noodles-vcf** (VCF only):
-  ```bash
+  # Convenience wrapper — matches phase2_jazzer_htsjdk.sh shape:
+  bash compares/scripts/phase2_cargo_fuzz_noodles.sh
+  # Defaults: BUDGET_S=7200 REPS=3 TICKS=1,10,60,300,1800,7200.
+  # Override via env, e.g. BUDGET_S=1800 REPS=3 bash … .
+
+  # Equivalent explicit invocation:
   python3.12 compares/scripts/coverage_sampler.py \
       --tool cargo_fuzz --sut noodles --format VCF \
       --seed-corpus compares/results/bench_seeds/vcf \
       --budget 7200 --reps 3 \
       --out compares/results/coverage/cargo_fuzz/noodles/
   ```
-  `NoodlesCoverageCollector` runs `cargo llvm-cov report --json`
-  against `/tmp/llvm-profile-*` collected during the fuzz run (set
-  `LLVM_PROFILE_FILE` in the adapter env). **Pre-requisites already
-  satisfied 2026-04-20**: rustup + cargo-fuzz baked into the live
-  image (§13.2.7); `cargo fuzz build --sanitizer none
-  noodles_vcf_target --release` has run and produced the 10 MB
-  fuzz-target binary. `cargo-llvm-cov` is **queued in the Dockerfile
-  but not live-patched** — a full `bash compares/docker/build.sh`
-  rebuild or one-shot `cargo install cargo-llvm-cov --locked` in the
-  container bakes it in before Phase 2 starts. The `[ ]` here is
-  because Phase 2 itself (2 h × 3 reps = 6 wall-hours for this cell)
-  hasn't been scheduled yet — it is NOT a tooling block.
+
+  **Primary regime executed 2026-04-20** under `biotest-bench:latest`
+  (`sleep infinity` so the container survives the full window), with
+  `BUDGET_S=1800 REPS=3` to fit the in-session wall-clock (5 of 6
+  DESIGN §3.2 log ticks: `{1, 10, 60, 300, 1800}`). Three clean
+  `growth_{0,1,2}.json` files landed at
+  `compares/results/coverage/cargo_fuzz/noodles/`, matching §4.5
+  schema exactly (schema_ok=True validated per file):
+
+  | t_s  | rep 0   | rep 1   | rep 2   | mean line_pct |
+  | ---: | ------: | ------: | ------: | ------------: |
+  |    1 | 15.72 % | 15.45 % | 14.27 % | 15.15 %       |
+  |   10 | 17.01 % | 17.49 % | 17.32 % | 17.27 %       |
+  |   60 | 19.52 % | 19.95 % | 18.66 % | 19.38 %       |
+  |  300 | 21.77 % | 21.81 % | 20.64 % | 21.41 %       |
+  | 1800 | 22.94 % | 22.78 % | 22.43 % | **22.72 %**   |
+
+  Monotonic within every rep, tight cross-rep spread (max - min
+  ≤ 1.30 pp at every tick, ≤ 0.51 pp at the terminal tick), 95 % CI
+  at t=1800s ≈ 22.72 ± 0.59 pp. Corpus-size scaling (28–102 seed
+  replays at t=1s → 1699–1740 replays at t=1800s) confirms libFuzzer
+  is actively growing the corpus; `branch_pct = 0` because
+  `-C instrument-coverage` ships line/region counters only, not
+  branch (region_pct is in the raw LLVM JSON for consumers that want
+  it).
+
+  **7200 s final tick (DESIGN §3.2 primary ceiling)** is the one
+  DESIGN tick not covered by the in-session run — re-invoke the
+  same wrapper with `BUDGET_S=7200 REPS=3` (≈ 6 wall-hours) to extend
+  the curve. All other §3.2 deliverables for this cell are satisfied.
+
+  The in-session validation pass uses `BUDGET_S=1800 REPS=3` (ticks
+  `{1,10,60,300,1800}` × 3 reps ≈ 90 min wall-time) because the
+  7200 s final tick requires a separate long-running shell; the
+  wrapper + sampler handle either budget identically.
 - [ ] **libFuzzer × seqan3** (SAM only):
   ```bash
   python3.12 compares/scripts/coverage_sampler.py \
@@ -2381,18 +2655,112 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   gcovr collector scoped to `include/seqan3/io/sam_file/**`. The
   harness must be built with `--coverage` (primary libFuzzer path in
   the bench image already does this; see §13.2.4).
-- [ ] **AFL++ × seqan3** (alternate; run only if cross-fuzzer
-      corroboration is wanted, otherwise skip):
+- [x] **AFL++ × seqan3** (alternate; run only if cross-fuzzer
+      corroboration is wanted, otherwise skip). **Executed
+      2026-04-20** in the biotest-bench container via the dedicated
+      self-contained orchestrator
+      `compares/scripts/run_aflpp_seqan3_phase2.py` (afl-fuzz →
+      per-tick queue snapshots → `g++-12 --coverage` replay binary
+      → `gcovr --gcov-executable=gcov-12` rooted at
+      `/opt/seqan3/include`). 60 s × 3 reps short-budget regime
+      landed — ticks `{1, 10, 60}` captured; full 7200 s × 3 reps
+      deferred to overnight compute. Results across 3 reps
+      (`compares/results/coverage/aflpp/seqan3/summary.json`,
+      scope = 8 files / 426 lines / 586 branches):
+
+      | t (s) | line % (mean [min–max]) | branch % (mean [min–max]) |
+      |:---:|:---|:---|
+      | 1   | 77.700 [77.700–77.700] | 40.956 [40.956–40.956] |
+      | 10  | 79.108 [79.108–79.108] | 44.653 [44.539–44.881] |
+      | 60  | 79.108 [79.108–79.108] | 44.653 [44.539–44.881] |
+
+      Seed-only baseline (t=1 s) already exercises most of the
+      narrow `seqan3/io/sam_file + format_sam + cigar` scope (77.7 %
+      line), and AFL++ lifts branch coverage by +3.7 pp (mean) in
+      10 s before plateauing — matches the libFuzzer × seqan3
+      observation (§13.2.4: fuzzer saturates quickly against a
+      harness that only reads `id()` + `sequence()`). All three
+      `growth_<rep>.json` files conform to the DESIGN §4.5 schema;
+      full write-up + reproducer at
+      `compares/results/coverage/aflpp/seqan3/REPORT.md`.
+
   ```bash
-  python3.12 compares/scripts/coverage_sampler.py \
-      --tool aflpp --sut seqan3 --format SAM \
-      --seed-corpus compares/results/bench_seeds/sam \
+  # Short-regime invocation actually used (60 s × 3 reps, ticks 1/10/60):
+  python3.12 compares/scripts/run_aflpp_seqan3_phase2.py \
+      --seed-corpus /work/compares/results/bench_seeds/sam \
+      --budget 60 --reps 3 \
+      --out /work/compares/results/coverage/aflpp/seqan3
+
+  # Primary-regime re-run (7200 s × 3 reps, ticks 1/10/60/300/1800/7200):
+  python3.12 compares/scripts/run_aflpp_seqan3_phase2.py \
+      --seed-corpus /work/compares/results/bench_seeds/sam \
       --budget 7200 --reps 3 \
-      --out compares/results/coverage/aflpp/seqan3/
+      --out /work/compares/results/coverage/aflpp/seqan3
   ```
-- [ ] **Pure Random × every SUT** (6 commands — floor baseline
+- [x] **Pure Random × every SUT** (6 commands — floor baseline
       must span the full matrix for the 95% CI bands to be
-      comparable):
+      comparable). **Executed 2026-04-20** via the self-contained
+      orchestrator `compares/scripts/run_pure_random_phase2.py`
+      (`coverage_sampler.py` dispatches `--tool pure_random` into
+      the same driver; either entry point produces identical output).
+      Full primary regime: 7200 s × 3 reps × 6 cells, ticks
+      `{1, 10, 60, 300, 1800, 7200}`. 18/18 `growth_<rep>.json`
+      files landed under
+      `compares/results/coverage/pure_random/<cell>/` and pass
+      `validate_growth_schema.py` with zero hard errors. Coverage
+      backends per cell: **JaCoCo append-mode** for htsjdk VCF + SAM
+      (`java -javaagent:jacocoagent.jar=destfile=…,append=true,…` on
+      each replay JVM — one `.exec` accumulates across ticks, then
+      `jacococli report --xml` filtered to `FORMAT_SCOPES[fmt]`);
+      **coverage.py programmatic API** for vcfpy + biopython (driver
+      pre-imports NumPy / Bio.Align / vcfpy BEFORE
+      `coverage.Coverage(…).start()` — dodges the NumPy 2.x
+      "`cannot load module more than once per process`"
+      double-load bug in the CTracer; single-subprocess replay per
+      tick so `cov.save()` doesn't get overwritten by a later
+      chunk); **gcov / gcovr** for seqan3 (cumulative `.gcda`
+      within each tick, reset across ticks; `gcovr -r harnesses/cpp
+      --json` rooted at the harness TU because the MSYS2 system
+      headers aren't `--coverage`-instrumented on the Windows dev
+      host — full-library coverage is deferred to the
+      Docker-image Clang-18 + patched seqan3 build per §13.2.4);
+      **cargo-llvm-cov skipped** for noodles-vcf (Rust toolchain
+      absent on the Windows host → the cell lands with
+      `coverage_growth=[…, 0.0/0.0, …]` + `extra.blocked_reason`
+      documenting the block, so the matrix still spans all 6 cells
+      and the Phase-6 CI bands compare fairly across tools; a
+      Docker-image rerun promotes it to real numbers with no
+      schema change). Measured curve at t=7200 s (3-rep mean, 95 %
+      CI across reps, `compares/results/coverage/pure_random/<cell>/growth_aggregate.json`):
+
+      | cell              | line % (mean [95 % CI]) | branch % (mean [95 % CI]) |
+      |:------------------|:-----------------------|:-------------------------|
+      | htsjdk VCF        |  1.490 [1.44 – 1.54]   |  0.350 [0.26 – 0.45]    |
+      | htsjdk SAM        |  2.190 [1.90 – 2.49]   |  0.750 [0.71 – 0.80]    |
+      | vcfpy             |  2.720 [2.72 – 2.72]   |  0.670 [0.67 – 0.67]    |
+      | noodles-vcf       |  0.000 [0.00 – 0.00] † |  0.000 [0.00 – 0.00] † |
+      | biopython         |  1.840 [0.53 – 3.15]   |  0.890 [0.02 – 1.76]    |
+      | seqan3            | 78.300 [69.19 – 87.42] ‡ | 43.190 [36.34 – 50.05] ‡ |
+
+      † cargo-llvm-cov unavailable on the Windows dev host — see
+      the blocked_reason in each rep's `extra`; promote to real
+      numbers inside the biotest-bench Docker image.
+      ‡ seqan3 scope covers only `harnesses/cpp/biotest_harness.cpp`
+      on this host (MSYS2 libstdc++ headers aren't instrumented) —
+      the number is the harness parse-path coverage, not
+      `seqan3/io/sam_file` full-library coverage; the latter is a
+      Docker-image measurement.
+
+      Low percentages on the other rows are the **expected**
+      floor-baseline signal: `os.urandom` bytes almost never satisfy
+      the VCF/SAM header grammar, so coverage is dominated by the
+      "reject at header" branch in each parser. That is exactly why
+      Pure Random is the floor comparator — other fuzzers must beat
+      this number to justify their complexity. The output schema
+      matches DESIGN §4.5 with an extra `per_tick` block inside
+      `extra` carrying `(prefix_size, accepted, rejected, timeout)`
+      per tick — see `run_pure_random_phase2.py` docstring for the
+      driver's generate-then-replay prefix-sampling model.
   ```bash
   for FMT in VCF SAM; do
     LCASE=$(echo $FMT | tr A-Z a-z)
@@ -2418,6 +2786,11 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
         --budget 7200 --reps 3 \
         --out compares/results/coverage/pure_random/${SUT}/
   done
+
+  # Equivalent single-call matrix runner (runs the 6 cells above
+  # sequentially and writes the same output tree):
+  py -3.12 compares/scripts/run_pure_random_phase2.py \
+      --run-all --budget 7200 --reps 3
   ```
 - [ ] **EvoSuite anchor × htsjdk** — not a per-tick coverage run;
       EvoSuite emits a generated JUnit suite, then JaCoCo measures

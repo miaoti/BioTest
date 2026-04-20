@@ -150,53 +150,16 @@ echo "=== Step 4: Generate jacoco.xml ==="
 echo "  Wrote $REPORT_XML"
 
 echo
-echo "=== Step 5: Apply BioTest 3-path weighted VCF filter ==="
+echo "=== Step 5: Apply BioTest filter via measure_coverage.py (single source of truth) ==="
 cd "$ROOT_UNIX"
-py -3.12 - <<PY
-import xml.etree.ElementTree as ET
-from test_engine.feedback.coverage_collector import parse_filter_rules, filter_file_matches
-
-FILTERS = [
-    "htsjdk/variant/vcf",
-    "htsjdk/variant/variantcontext::-JEXL,-Jexl,-*JEXL*,-*Jexl*",
-    "htsjdk/variant/variantcontext/writer::VCF,Variant",
-]
-rules = parse_filter_rules(FILTERS)
-
-def measure(xml_path, tag):
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-    per_bucket = []
-    for pkg, incl, excl in rules:
-        cov = miss = 0
-        pkg_el = next((p for p in root.findall(".//package")
-                       if p.attrib.get("name") == pkg), None)
-        if pkg_el is None:
-            per_bucket.append((pkg, 0, 0, 0.0)); continue
-        for sf in pkg_el.findall("sourcefile"):
-            if not filter_file_matches(sf.attrib.get("name", ""), incl, excl):
-                continue
-            for ctr in sf.findall("counter"):
-                if ctr.attrib.get("type") == "LINE":
-                    cov += int(ctr.attrib.get("covered", 0))
-                    miss += int(ctr.attrib.get("missed", 0))
-        tot = cov + miss
-        pct = 100.0 * cov / tot if tot else 0.0
-        per_bucket.append((pkg, cov, tot, pct))
-    print(f"\n{tag}:")
-    tc = tt = 0
-    for pkg, cov, tot, pct in per_bucket:
-        print(f"  {pkg:55} {cov:5}/{tot:<5} ({pct:5.1f}%)")
-        tc += cov; tt += tot
-    overall = 100.0 * tc / tt if tt else 0.0
-    print(f"  OVERALL (weighted)                                        {tc}/{tt} ({overall:.1f}%)")
-    return tc, tt, overall
-
-ec, et, eo = measure("$REPORT_XML", "EvoSuite (htsjdk 2.24.1, 21 min wall)")
-try:
-    bc, bt, bo = measure("coverage_artifacts/jacoco/jacoco_post_run6.xml",
-                         "BioTest Run 6 (htsjdk local build, 170 min wall)")
-    print(f"\nDelta: EvoSuite {eo:.1f}%  vs  BioTest {bo:.1f}%  = {eo-bo:+.1f} pp")
-except Exception as e:
-    print(f"(BioTest reference not available: {e})")
-PY
+BIOTEST_REF="coverage_artifacts/jacoco/jacoco_post_run6.xml"
+if [[ -f "$BIOTEST_REF" ]]; then
+  py -3.12 compares/scripts/measure_coverage.py \
+    --report "$REPORT_XML"   --label "EvoSuite (this run)" \
+    --report "$BIOTEST_REF"  --label "BioTest Run 6 (baseline)" \
+    --sut htsjdk --format VCF
+else
+  py -3.12 compares/scripts/measure_coverage.py \
+    --report "$REPORT_XML" --label "EvoSuite (this run)" \
+    --sut htsjdk --format VCF
+fi

@@ -79,6 +79,27 @@ else()
     message(WARNING "afl-g++ or g++-12 missing; aflpp target skipped")
 endif()
 
+# -------- Target 3: Coverage replay (Clang 18, --coverage / gcov) --------
+# Offline replay binary that consumes ONE corpus file on stdin,
+# calls LLVMFuzzerTestOneInput, and emits .gcda files for gcovr to
+# aggregate into a JSON report. Used by compares/scripts/coverage_sampler.py
+# to measure cumulative coverage at log ticks against the libFuzzer
+# corpus — libFuzzer's own binary is built for speed (no gcov), so
+# coverage measurement happens out-of-band against this sibling.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # --coverage expands to -fprofile-arcs -ftest-coverage at compile +
+    # -lgcov at link. -O0 keeps line-level fidelity; -g embeds source
+    # paths so gcovr can map .gcno/.gcda back to headers under
+    # /opt/seqan3/include.
+    set(COV_FLAGS -g -O0 --coverage)
+    add_executable(seqan3_sam_fuzzer_cov seqan3_sam_fuzzer.cpp)
+    # BIOTEST_HARNESS_LIBFUZZER is NOT set here — we want the stdin-
+    # reader main() that drives a single invocation per exec.
+    target_compile_options(seqan3_sam_fuzzer_cov PRIVATE ${COV_FLAGS})
+    target_link_options(seqan3_sam_fuzzer_cov PRIVATE ${COV_FLAGS})
+    message(STATUS "Building coverage replay target (Clang + --coverage)")
+endif()
+
 # If no compatible target was enabled above, error out. Otherwise a
 # bare `make` silently produces nothing and confuses the adapter.
 if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND NOT (AFL_GXX AND GXX_12))
