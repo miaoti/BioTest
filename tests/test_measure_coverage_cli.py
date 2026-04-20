@@ -111,6 +111,23 @@ def _write_gcovr_json(tmp_path: Path) -> Path:
 # JaCoCo path
 # ---------------------------------------------------------------------------
 
+def _write_jacoco_xml_with_branches(tmp_path: Path) -> Path:
+    """JaCoCo fixture that ships both LINE and BRANCH counters."""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<report name="fixture">
+  <package name="com/example/core">
+    <sourcefile name="Big.java">
+      <counter type="LINE" missed="80" covered="20"/>
+      <counter type="BRANCH" missed="40" covered="10"/>
+    </sourcefile>
+  </package>
+</report>
+"""
+    p = tmp_path / "jacoco_branches.xml"
+    p.write_text(xml, encoding="utf-8")
+    return p
+
+
 class TestJacocoPath:
     def test_filter_excludes_jexl_package(self, tmp_path):
         cfg = _write_config(tmp_path, {
@@ -141,6 +158,31 @@ class TestJacocoPath:
         assert r.total_covered == 28
         assert r.total_lines == 110
         assert r.weighted_pct == pytest.approx(28 / 110 * 100, abs=1e-6)
+
+    def test_metric_branch_sums_branch_counters(self, tmp_path):
+        """metric='BRANCH' returns BRANCH-counter sums instead of LINE."""
+        cfg = _write_config(tmp_path, {
+            "VCF": {"fakesut": ["com/example/core"]},
+        })
+        report = _write_jacoco_xml_with_branches(tmp_path)
+        line = mc.measure(report_path=report, sut="fakesut", format_="VCF",
+                          config_path=cfg, metric="LINE")
+        branch = mc.measure(report_path=report, sut="fakesut", format_="VCF",
+                            config_path=cfg, metric="BRANCH")
+        assert line.total_covered == 20 and line.total_lines == 100
+        assert branch.total_covered == 10 and branch.total_lines == 50
+        assert line.weighted_pct == pytest.approx(20.0)
+        assert branch.weighted_pct == pytest.approx(20.0)
+
+    def test_metric_default_is_line(self, tmp_path):
+        """Omitting metric= stays on LINE — preserves Run-6 grounding shape."""
+        cfg = _write_config(tmp_path, {
+            "VCF": {"fakesut": ["com/example/core"]},
+        })
+        report = _write_jacoco_xml_with_branches(tmp_path)
+        r = mc.measure(report_path=report, sut="fakesut", format_="VCF",
+                       config_path=cfg)
+        assert r.total_covered == 20  # line, not 10 (branch)
 
 
 # ---------------------------------------------------------------------------

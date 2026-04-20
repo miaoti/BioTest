@@ -123,6 +123,78 @@ def _regrade_one(
     }
 
 
+def _rebuild_aggregate(growth_dir: Path, per_rep_files: list[Path]) -> Path | None:
+    """Regenerate `growth_aggregate.json` from the (just-regraded)
+    per-rep growth_<idx>.json files.
+
+    Schema mirrors what the sampler writes at end-of-cell (line_pct_mean
+    / _ci_lo / _ci_hi / _n + branch equivalents per tick). A 95% CI with
+    N=1 collapses to ±0; with N≥2 we use the Student-t half-width as the
+    sampler does. If no aggregate is needed (single rep, no sibling
+    file), returns None.
+    """
+    if not per_rep_files:
+        return None
+    import statistics
+
+    # Gather per-tick lists across reps.
+    per_t_line: dict[int, list[float]] = {}
+    per_t_branch: dict[int, list[float]] = {}
+    meta: dict = {}
+    for gp in per_rep_files:
+        d = json.loads(gp.read_text(encoding="utf-8"))
+        if not meta:
+            meta = {k: d.get(k) for k in ("tool", "sut", "format", "phase",
+                                           "time_budget_s", "seed_corpus_hash")}
+        for tick in d.get("coverage_growth", []):
+            per_t_line.setdefault(int(tick["t_s"]), []).append(float(tick["line_pct"]))
+            per_t_branch.setdefault(int(tick["t_s"]), []).append(float(tick["branch_pct"]))
+
+    if not per_t_line:
+        return None
+
+    def _ci95_halfwidth(xs: list[float]) -> float:
+        """Student-t 95% CI half-width; 0 for N<=1."""
+        if len(xs) <= 1:
+            return 0.0
+        # Use stdev (sample) / sqrt(n) * t_{0.025, n-1}. For small n use
+        # a lookup for t_{0.025} so we don't pull scipy.
+        t_crit = {2: 12.706, 3: 4.303, 4: 3.182, 5: 2.776, 6: 2.571,
+                  7: 2.447, 8: 2.365, 9: 2.306, 10: 2.262}.get(len(xs), 2.0)
+        s = statistics.stdev(xs)
+        return t_crit * s / (len(xs) ** 0.5)
+
+    agg_rows = []
+    for t in sorted(per_t_line):
+        xs_l = per_t_line[t]
+        xs_b = per_t_branch.get(t, [])
+        mean_l = statistics.mean(xs_l)
+        mean_b = statistics.mean(xs_b) if xs_b else 0.0
+        hw_l = _ci95_halfwidth(xs_l)
+        hw_b = _ci95_halfwidth(xs_b) if xs_b else 0.0
+        agg_rows.append({
+            "t_s": t,
+            "line_pct_mean": round(mean_l, 3),
+            "line_pct_ci_lo": round(mean_l - hw_l, 3),
+            "line_pct_ci_hi": round(mean_l + hw_l, 3),
+            "line_pct_n": len(xs_l),
+            "branch_pct_mean": round(mean_b, 3),
+            "branch_pct_ci_lo": round(mean_b - hw_b, 3),
+            "branch_pct_ci_hi": round(mean_b + hw_b, 3),
+            "branch_pct_n": len(xs_b),
+        })
+
+    out = {
+        **meta,
+        "reps": len(per_rep_files),
+        "ticks": [r["t_s"] for r in agg_rows],
+        "coverage_growth_aggregate": agg_rows,
+    }
+    out_path = growth_dir / "growth_aggregate.json"
+    out_path.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    return out_path
+
+
 def _cli() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--growth-dir", type=Path, required=True,
@@ -141,9 +213,17 @@ def _cli() -> int:
         format="%(levelname)s %(name)s %(message)s",
     )
 
-    growth_files = sorted(args.growth_dir.glob("growth_*.json"))
+    # Match growth_<int>.json per-rep files only — skip aggregates
+    # (growth_aggregate.json) and other sampler-side derived files that
+    # don't carry a run_index / jacoco_exec sibling dir.
+    import re as _re
+    _per_rep = _re.compile(r"^growth_\d+\.json$")
+    growth_files = sorted(
+        p for p in args.growth_dir.glob("growth_*.json")
+        if _per_rep.match(p.name)
+    )
     if not growth_files:
-        logger.error("no growth_*.json files under %s", args.growth_dir)
+        logger.error("no growth_<idx>.json per-rep files under %s", args.growth_dir)
         return 2
 
     fmt = args.format_.upper()
@@ -156,11 +236,17 @@ def _cli() -> int:
         total_ticks += summary["ticks_regraded"]
         print(f"[regrade] {gf.name}: regraded {summary['ticks_regraded']} ticks")
         for t, old_l, new_l, old_b, new_b in summary["sample"]:
+            # ASCII arrow so Windows cp1252 consoles don't UnicodeEncodeError.
             print(
-                f"  t={t:>4}s  line {old_l:>6.2f} → {new_l:>6.2f}  "
-                f"branch {old_b:>6.2f} → {new_b:>6.2f}"
+                f"  t={t:>4}s  line {old_l:>6.2f} -> {new_l:>6.2f}  "
+                f"branch {old_b:>6.2f} -> {new_b:>6.2f}"
             )
     print(f"[regrade] total: {len(growth_files)} file(s), {total_ticks} tick(s) regraded")
+
+    agg_path = _rebuild_aggregate(args.growth_dir, growth_files)
+    if agg_path:
+        print(f"[regrade] rebuilt aggregate: {agg_path.name} "
+              f"(reps={len(growth_files)})")
     return 0
 
 

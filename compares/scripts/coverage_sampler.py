@@ -409,6 +409,11 @@ def _run_jazzer_rep(
     if sut != "htsjdk":
         raise ValueError(f"_run_jazzer_rep only supports sut=htsjdk, got {sut!r}")
 
+    # Jazzer's subprocess now runs under `cwd=reproducers_dir`; any
+    # relative paths (corpus/, crashes/, tool.log) would otherwise be
+    # resolved relative to that cwd and evaporate. Resolve to absolute
+    # once up-front so everything downstream stays anchored.
+    out_rep = out_rep.resolve()
     corpus_dir = out_rep / "corpus"
     crashes_dir = out_rep / "crashes"
     exec_dir = out_rep / "jacoco_exec"

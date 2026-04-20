@@ -112,8 +112,23 @@ class MeasurementResult:
 # Per-format readers
 # ---------------------------------------------------------------------------
 
-def _measure_jacoco_xml(xml_path: Path, filter_rules_text: list[str]) -> list[BucketResult]:
-    """Walk a JaCoCo XML, filter by BioTest's rules, return per-bucket counts."""
+def _measure_jacoco_xml(
+    xml_path: Path,
+    filter_rules_text: list[str],
+    metric: str = "LINE",
+) -> list[BucketResult]:
+    """Walk a JaCoCo XML, filter by BioTest's rules, return per-bucket counts.
+
+    ``metric='LINE'`` (default, grounding-preserving) sums JaCoCo
+    ``<counter type='LINE'>`` entries — the canonical BioTest coverage
+    number (Run 6 htsjdk/VCF = 46.9%). ``metric='BRANCH'`` sums
+    ``<counter type='BRANCH'>`` so the same fairness filter can also
+    grade branch coverage when the caller reports both metrics (e.g.
+    DESIGN.md §3.2 Phase-2 coverage-growth plots).
+    """
+    metric = metric.upper()
+    if metric not in {"LINE", "BRANCH"}:
+        raise ValueError(f"metric must be 'LINE' or 'BRANCH', got {metric!r}")
     rules = parse_filter_rules(filter_rules_text)
     tree = ET.parse(xml_path)
     root = tree.getroot()
@@ -133,7 +148,7 @@ def _measure_jacoco_xml(xml_path: Path, filter_rules_text: list[str]) -> list[Bu
             if not filter_file_matches(name, incl, excl):
                 continue
             for ctr in sf.findall("counter"):
-                if ctr.attrib.get("type") == "LINE":
+                if ctr.attrib.get("type") == metric:
                     cov += int(ctr.attrib.get("covered", 0))
                     miss += int(ctr.attrib.get("missed", 0))
         buckets.append(BucketResult(pkg, cov, cov + miss))
@@ -204,11 +219,22 @@ def _measure_gcovr_json(json_path: Path, filter_rules_text: list[str]) -> list[B
     return buckets
 
 
-def _dispatch_reader(report_path: Path, filter_rules_text: list[str]) -> list[BucketResult]:
-    """Pick the right reader based on extension + content."""
+def _dispatch_reader(
+    report_path: Path,
+    filter_rules_text: list[str],
+    metric: str = "LINE",
+) -> list[BucketResult]:
+    """Pick the right reader based on extension + content.
+
+    ``metric`` is only honoured by the JaCoCo XML reader today.
+    coverage.py / gcovr JSON summaries don't ship per-file branch
+    counts in the shape we parse, so ``metric='BRANCH'`` against them
+    raises — add support later if we pick up a tool whose JSON
+    exposes branches.
+    """
     suffix = report_path.suffix.lower()
     if suffix == ".xml":
-        return _measure_jacoco_xml(report_path, filter_rules_text)
+        return _measure_jacoco_xml(report_path, filter_rules_text, metric=metric)
     if suffix == ".json":
         # coverage.py vs gcovr: coverage.py has `"files": {...}` (dict);
         # gcovr has `"files": [...]` (list). Sniff and dispatch.
@@ -217,6 +243,11 @@ def _dispatch_reader(report_path: Path, filter_rules_text: list[str]) -> list[Bu
             data = json.loads(text)
         except json.JSONDecodeError as e:
             raise RuntimeError(f"Cannot parse JSON report {report_path}: {e}")
+        if metric.upper() != "LINE":
+            raise RuntimeError(
+                f"metric={metric!r} is only supported for JaCoCo XML today; "
+                f"{report_path.suffix} reports don't carry branch summary data."
+            )
         files = data.get("files")
         if isinstance(files, dict):
             return _measure_coveragepy_json(report_path, filter_rules_text)
@@ -240,6 +271,7 @@ def measure(
     format_: str,
     config_path: Path | str = "biotest_config.yaml",
     label: str = "",
+    metric: str = "LINE",
 ) -> MeasurementResult:
     """Measure coverage of a single report against BioTest's filter for
     ``(format_, sut)``. Raises if the config doesn't have a filter for
@@ -249,6 +281,13 @@ def measure(
     ``biotest_config.yaml: coverage.target_filters[<FORMAT>][<sut>]``.
     If a future SUT is added, add the rule there — never inline it
     here.
+
+    ``metric`` picks the JaCoCo counter type for JaCoCo XML reports:
+    ``'LINE'`` (default, the canonical BioTest number grounded at
+    Run 6 = 46.9%) or ``'BRANCH'`` (DESIGN.md §3.2 Phase-2 companion).
+    coverage.py and gcovr JSON only expose line-level counts in the
+    summary shape we parse — ``_dispatch_reader`` raises if you ask
+    them for branch.
     """
     report_path = Path(report_path)
     config_path = Path(config_path)
@@ -272,7 +311,7 @@ def measure(
             f"Known SUTs under {format_}: {sorted(per_fmt)}"
         )
 
-    buckets = _dispatch_reader(report_path, filter_rules)
+    buckets = _dispatch_reader(report_path, filter_rules, metric=metric)
     return MeasurementResult(
         report_path=str(report_path),
         sut=sut,

@@ -1,0 +1,30 @@
+* EvoSuite 1.2.0
+* Going to generate test cases for class: htsjdk.variant.variantcontext.GenotypeType
+* Starting Client-0
+* Connecting to master process on port 7463
+* Analyzing classpath: 
+  - C:/Users/miaot/Github/BioTest/compares/baselines/evosuite/fatjar/htsjdk-with-deps.jar
+* Finished analyzing classpath
+* Generating tests for class htsjdk.variant.variantcontext.GenotypeType
+* Test criteria:
+  - Branch Coverage
+  - Line Coverage
+Originally, MOSA was implemented with a 'RANK_CROWD_DISTANCE_TOURNAMENT' selection function. You may want to consider using it.
+* Total number of test goals for DYNAMOSA: 0
+* Search finished after 0s and 0 generations, 0 statements, best individual has fitness: 0.0
+[MASTER] 13:17:26.945 [pool-3-thread-1] ERROR ClientNodeImpl - Error when generating tests for: htsjdk.variant.variantcontext.GenotypeType with seed 1776622645770. Configuration id : null
+java.lang.NullPointerException: Cannot invoke "org.evosuite.ga.metaheuristics.mosa.structural.MultiCriteriaManager.getCoveredGoals()" because "this.goalsManager" is null
+	at org.evosuite.ga.metaheuristics.mosa.DynaMOSA.getFitnessFunctions(DynaMOSA.java:197)
+	at org.evosuite.ga.metaheuristics.TestSuiteAdapter.getFitnessFunctions(TestSuiteAdapter.java:642)
+	at org.evosuite.strategy.MOSuiteStrategy.generateTests(MOSuiteStrategy.java:161)
+	at org.evosuite.TestSuiteGenerator.generateTests(TestSuiteGenerator.java:630)
+	at org.evosuite.TestSuiteGenerator.generateTestSuite(TestSuiteGenerator.java:208)
+	at org.evosuite.rmi.service.ClientNodeImpl.lambda$startNewSearch$0(ClientNodeImpl.java:140)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+* Computation finished
+[MASTER] 13:17:27.048 [main] ERROR SearchStatistics - No statistics has been saved because EvoSuite failed to generate any test case
+[MASTER] 13:17:27.048 [main] ERROR TestGeneration - failed to write statistics data

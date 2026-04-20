@@ -1,0 +1,78 @@
+* EvoSuite 1.2.0
+* Going to generate test cases for class: htsjdk.variant.vcf.VCFReader
+* Starting Client-0
+* Connecting to master process on port 9961
+* Analyzing classpath: 
+  - C:/Users/miaot/Github/BioTest/compares/baselines/evosuite/fatjar/htsjdk-with-deps.jar
+[MASTER] 13:10:48.014 [pool-3-thread-1] ERROR ConcreteClassAnalyzer - Problem for htsjdk.variant.vcf.VCFReader. Class not found: htsjdk.variant.vcf.VCFFileReader
+[MASTER] 13:10:48.017 [pool-3-thread-1] ERROR ConcreteClassAnalyzer - Removing class from inheritance tree
+* Error while initializing target class: htsjdk/samtools/util/SamLocusIterator
+[MASTER] 13:10:48.060 [pool-3-thread-1] ERROR TestSuiteGenerator - Problem for htsjdk.variant.vcf.VCFReader. Full stack:
+java.lang.NoClassDefFoundError: htsjdk/samtools/util/SamLocusIterator
+	at java.base/java.lang.Class.getDeclaringClass0(Native Method)
+	at java.base/java.lang.Class.getEnclosingClass(Class.java:1613)
+	at org.evosuite.setup.TestUsageChecker.canUse(TestUsageChecker.java:168)
+	at org.evosuite.setup.ConcreteClassAnalyzer.tryReflection(ConcreteClassAnalyzer.java:253)
+	at org.evosuite.setup.ConcreteClassAnalyzer.handleAbstractClassOrInterface(ConcreteClassAnalyzer.java:205)
+	at org.evosuite.setup.ConcreteClassAnalyzer.computeConcreteClasses(ConcreteClassAnalyzer.java:108)
+	at org.evosuite.setup.ConcreteClassAnalyzer.lambda$getConcreteClasses$0(ConcreteClassAnalyzer.java:89)
+	at java.base/java.util.HashMap.computeIfAbsent(HashMap.java:1220)
+	at org.evosuite.setup.ConcreteClassAnalyzer.getConcreteClasses(ConcreteClassAnalyzer.java:89)
+	at org.evosuite.setup.TestClusterGenerator.addDependency(TestClusterGenerator.java:829)
+	at org.evosuite.setup.TestClusterGenerator.addDependencies(TestClusterGenerator.java:740)
+	at org.evosuite.setup.TestClusterGenerator.initializeTargetMethods(TestClusterGenerator.java:497)
+	at org.evosuite.setup.TestClusterGenerator.generateCluster(TestClusterGenerator.java:119)
+	at org.evosuite.setup.DependencyAnalysis.analyze(DependencyAnalysis.java:120)
+	at org.evosuite.setup.DependencyAnalysis.analyzeClass(DependencyAnalysis.java:136)
+	at org.evosuite.TestSuiteGenerator.initializeTargetClass(TestSuiteGenerator.java:114)
+	at org.evosuite.TestSuiteGenerator.generateTestSuite(TestSuiteGenerator.java:135)
+	at org.evosuite.rmi.service.ClientNodeImpl.lambda$startNewSearch$0(ClientNodeImpl.java:140)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.ClassNotFoundException: htsjdk/samtools/util/AbstractLocusIterator
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:158)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.loadClass(InstrumentingClassLoader.java:126)
+	... 23 common frames omitted
+Caused by: java.lang.NoClassDefFoundError: htsjdk/samtools/util/AbstractLocusIterator
+	at java.base/java.lang.ClassLoader.defineClass1(Native Method)
+	at java.base/java.lang.ClassLoader.defineClass(ClassLoader.java:1017)
+	at java.base/java.lang.ClassLoader.defineClass(ClassLoader.java:879)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:151)
+	... 24 common frames omitted
+Caused by: java.lang.ClassNotFoundException: Class not found: htsjdk/samtools/filter/FilteringSamIterator: java.lang.NullPointerException: Class not found htsjdk/samtools/filter/FilteringSamIterator
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:158)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.loadClass(InstrumentingClassLoader.java:126)
+	... 28 common frames omitted
+Caused by: java.lang.RuntimeException: Class not found: htsjdk/samtools/filter/FilteringSamIterator: java.lang.NullPointerException: Class not found htsjdk/samtools/filter/FilteringSamIterator
+	at org.evosuite.runtime.util.ComputeClassWriter.getCommonSuperClass(ComputeClassWriter.java:56)
+	at org.evosuite.shaded.org.objectweb.asm.SymbolTable.addMergedType(SymbolTable.java:1202)
+	at org.evosuite.shaded.org.objectweb.asm.Frame.merge(Frame.java:1299)
+	at org.evosuite.shaded.org.objectweb.asm.Frame.merge(Frame.java:1197)
+	at org.evosuite.shaded.org.objectweb.asm.MethodWriter.computeAllFrames(MethodWriter.java:1610)
+	at org.evosuite.shaded.org.objectweb.asm.MethodWriter.visitMaxs(MethodWriter.java:1546)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.runtime.instrumentation.LoopCounterMethodAdapter.visitMaxs(LoopCounterMethodAdapter.java:48)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:769)
+	at org.evosuite.shaded.org.objectweb.asm.commons.JSRInlinerAdapter.visitEnd(JSRInlinerAdapter.java:158)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:649)
+	at org.evosuite.shaded.org.objectweb.asm.tree.ClassNode.accept(ClassNode.java:452)
+	at org.evosuite.instrumentation.BytecodeInstrumentation.transformBytes(BytecodeInstrumentation.java:282)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.getTransformedBytes(InstrumentingClassLoader.java:135)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:149)
+	... 29 common frames omitted
+Caused by: java.lang.NullPointerException: Class not found htsjdk/samtools/filter/FilteringSamIterator
+	at org.evosuite.runtime.util.ComputeClassWriter.typeInfo(ComputeClassWriter.java:179)
+	at org.evosuite.runtime.util.ComputeClassWriter.getCommonSuperClass(ComputeClassWriter.java:53)
+	... 49 common frames omitted
+* Computation finished
+[MASTER] 13:10:48.186 [main] ERROR SearchStatistics - No statistics has been saved because EvoSuite failed to generate any test case
+[MASTER] 13:10:48.186 [main] ERROR TestGeneration - failed to write statistics data

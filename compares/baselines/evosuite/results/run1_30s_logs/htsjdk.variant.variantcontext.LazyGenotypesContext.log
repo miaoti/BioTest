@@ -1,0 +1,66 @@
+* EvoSuite 1.2.0
+* Going to generate test cases for class: htsjdk.variant.variantcontext.LazyGenotypesContext
+* Starting Client-0
+* Connecting to master process on port 10375
+* Analyzing classpath: 
+  - C:/Users/miaot/Github/BioTest/compares/baselines/evosuite/fatjar/htsjdk-with-deps.jar
+* Error while initializing target class: htsjdk/variant/vcf/AbstractVCFCodec
+[MASTER] 13:18:16.825 [pool-3-thread-1] ERROR TestSuiteGenerator - Problem for htsjdk.variant.variantcontext.LazyGenotypesContext. Full stack:
+java.lang.NoClassDefFoundError: htsjdk/variant/vcf/AbstractVCFCodec
+	at java.base/java.lang.Class.getDeclaringClass0(Native Method)
+	at java.base/java.lang.Class.getEnclosingClass(Class.java:1613)
+	at org.evosuite.setup.TestUsageChecker.canUse(TestUsageChecker.java:168)
+	at org.evosuite.setup.ConcreteClassAnalyzer.tryReflection(ConcreteClassAnalyzer.java:253)
+	at org.evosuite.setup.ConcreteClassAnalyzer.handleAbstractClassOrInterface(ConcreteClassAnalyzer.java:205)
+	at org.evosuite.setup.ConcreteClassAnalyzer.computeConcreteClasses(ConcreteClassAnalyzer.java:108)
+	at org.evosuite.setup.ConcreteClassAnalyzer.lambda$getConcreteClasses$0(ConcreteClassAnalyzer.java:89)
+	at java.base/java.util.HashMap.computeIfAbsent(HashMap.java:1220)
+	at org.evosuite.setup.ConcreteClassAnalyzer.getConcreteClasses(ConcreteClassAnalyzer.java:89)
+	at org.evosuite.setup.TestClusterGenerator.addDependency(TestClusterGenerator.java:829)
+	at org.evosuite.setup.TestClusterGenerator.addDependencies(TestClusterGenerator.java:715)
+	at org.evosuite.setup.TestClusterGenerator.initializeTargetMethods(TestClusterGenerator.java:451)
+	at org.evosuite.setup.TestClusterGenerator.generateCluster(TestClusterGenerator.java:119)
+	at org.evosuite.setup.DependencyAnalysis.analyze(DependencyAnalysis.java:120)
+	at org.evosuite.setup.DependencyAnalysis.analyzeClass(DependencyAnalysis.java:136)
+	at org.evosuite.TestSuiteGenerator.initializeTargetClass(TestSuiteGenerator.java:114)
+	at org.evosuite.TestSuiteGenerator.generateTestSuite(TestSuiteGenerator.java:135)
+	at org.evosuite.rmi.service.ClientNodeImpl.lambda$startNewSearch$0(ClientNodeImpl.java:140)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.lang.ClassNotFoundException: Class not found: htsjdk/variant/vcf/VCFInfoHeaderLine: java.lang.NullPointerException: Class not found htsjdk/variant/vcf/VCFInfoHeaderLine
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:158)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.loadClass(InstrumentingClassLoader.java:126)
+	... 23 common frames omitted
+Caused by: java.lang.RuntimeException: Class not found: htsjdk/variant/vcf/VCFInfoHeaderLine: java.lang.NullPointerException: Class not found htsjdk/variant/vcf/VCFInfoHeaderLine
+	at org.evosuite.runtime.util.ComputeClassWriter.getCommonSuperClass(ComputeClassWriter.java:62)
+	at org.evosuite.shaded.org.objectweb.asm.SymbolTable.addMergedType(SymbolTable.java:1202)
+	at org.evosuite.shaded.org.objectweb.asm.Frame.merge(Frame.java:1299)
+	at org.evosuite.shaded.org.objectweb.asm.Frame.merge(Frame.java:1197)
+	at org.evosuite.shaded.org.objectweb.asm.MethodWriter.computeAllFrames(MethodWriter.java:1610)
+	at org.evosuite.shaded.org.objectweb.asm.MethodWriter.visitMaxs(MethodWriter.java:1546)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitMaxs(MethodVisitor.java:773)
+	at org.evosuite.runtime.instrumentation.LoopCounterMethodAdapter.visitMaxs(LoopCounterMethodAdapter.java:48)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:769)
+	at org.evosuite.shaded.org.objectweb.asm.commons.JSRInlinerAdapter.visitEnd(JSRInlinerAdapter.java:158)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.evosuite.shaded.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:649)
+	at org.evosuite.shaded.org.objectweb.asm.tree.ClassNode.accept(ClassNode.java:452)
+	at org.evosuite.instrumentation.BytecodeInstrumentation.transformBytes(BytecodeInstrumentation.java:282)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.getTransformedBytes(InstrumentingClassLoader.java:135)
+	at org.evosuite.instrumentation.InstrumentingClassLoader.instrumentClass(InstrumentingClassLoader.java:149)
+	... 24 common frames omitted
+Caused by: java.lang.NullPointerException: Class not found htsjdk/variant/vcf/VCFInfoHeaderLine
+	at org.evosuite.runtime.util.ComputeClassWriter.typeInfo(ComputeClassWriter.java:179)
+	at org.evosuite.runtime.util.ComputeClassWriter.getCommonSuperClass(ComputeClassWriter.java:59)
+	... 44 common frames omitted
+* Computation finished
+[MASTER] 13:18:16.943 [main] ERROR SearchStatistics - No statistics has been saved because EvoSuite failed to generate any test case
+[MASTER] 13:18:16.943 [main] ERROR TestGeneration - failed to write statistics data

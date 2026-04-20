@@ -1,0 +1,75 @@
+* EvoSuite 1.2.0
+* Going to generate test cases for class: htsjdk.variant.variantcontext.writer.VCFWriter
+* Starting Client-0
+* Connecting to master process on port 4729
+* Analyzing classpath: 
+  - C:/Users/miaot/Github/BioTest/compares/baselines/evosuite/fatjar/htsjdk-with-deps.jar
+[MASTER] 13:20:06.613 [pool-3-thread-1] WARN  InheritanceTree - Class not in inheritance graph: java.util.Locale$IsoCountryCode
+* Finished analyzing classpath
+* Generating tests for class htsjdk.variant.variantcontext.writer.VCFWriter
+* Test criteria:
+  - Branch Coverage
+  - Line Coverage
+Originally, MOSA was implemented with a 'RANK_CROWD_DISTANCE_TOURNAMENT' selection function. You may want to consider using it.
+* Total number of test goals for DYNAMOSA: 128
+* Using seed 1776622804905
+* Starting evolution
+* Initial Number of Goals in DynaMOSA = 68 / 128
+[MASTER] 13:20:10.034 [pool-3-thread-1] WARN  TestCluster - Failed to check cache for java.util.Comparator<T> : Type points to itself
+[MASTER] 13:20:11.423 [pool-3-thread-1] WARN  TestChromosome - Functional mock problem: org.evosuite.ga.ConstructionFailedException: Have no generator for class htsjdk.variant.variantcontext.VariantContext canUseFunctionalMocks=false, canBeMocked: true
+[MASTER] 13:20:12.154 [pool-3-thread-1] WARN  TestChromosome - Functional mock problem: org.evosuite.ga.ConstructionFailedException: Failed to add constructor for java.util.HashMap due to org.evosuite.ga.ConstructionFailedException: Have no generator for class htsjdk.variant.variantcontext.VariantContext canUseFunctionalMocks=false, canBeMocked: true
+* Search finished after 31s and 574 generations, 540734 statements, best individual has fitness: 23.0
+* Minimizing test suite
+* Going to analyze the coverage criteria
+* Coverage analysis for criterion BRANCH
+* Coverage of criterion BRANCH: 88%
+* Total number of goals: 33
+* Number of covered goals: 29
+* Coverage analysis for criterion LINE
+* Coverage of criterion LINE: 80%
+* Total number of goals: 95
+* Number of covered goals: 76
+* Generated 11 tests with total length 85
+* Resulting test suite's coverage: 84% (average coverage for all fitness functions)
+* Compiling and checking tests
+WARNING: A terminally deprecated method in java.lang.System has been called
+WARNING: System::setSecurityManager has been called by org.evosuite.runtime.sandbox.MSecurityManager (file:/C:/Users/miaot/Github/BioTest/compares/baselines/evosuite/source/evosuite-1.2.0.jar)
+WARNING: Please consider reporting this to the maintainers of org.evosuite.runtime.sandbox.MSecurityManager
+WARNING: System::setSecurityManager will be removed in a future release
+[MASTER] 13:20:40.678 [pool-3-thread-1] WARN  JUnitAnalyzer - EvoSuite problem: tests set up a security manager, but they do not remove it after execution
+[MASTER] 13:20:40.684 [pool-3-thread-1] WARN  JUnitAnalyzer - Found unstable test named test0 -> class java.lang.SecurityException: Security manager blocks ("java.lang.RuntimePermission" "writeFileDescriptor")
+java.base/java.lang.Thread.getStackTrace(Thread.java:1619)
+org.evosuite.runtime.sandbox.MSecurityManager.checkPermission(MSecurityManager.java:424)
+java.base/java.lang.SecurityManager.checkWrite(SecurityManager.java:822)
+java.base/java.io.FileOutputStream.<init>(FileOutputStream.java:269)
+org.evosuite.runtime.mock.java.io.MockFileOutputStream.<init>(MockFileOutputStream.java:114)
+htsjdk.variant.variantcontext.writer.VCFWriter_11_tmp__ESTest.test0(VCFWriter_11_tmp__ESTest.java:29)
+java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+java.base/java.lang.reflect.Method.invoke(Method.java:569)
+org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:299)
+org.junit.internal.runners.statements.FailOnTimeout$CallableStatement.call(FailOnTimeout.java:293)
+java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+java.base/java.lang.Thread.run(Thread.java:840)
+
+[MASTER] 13:20:40.684 [pool-3-thread-1] WARN  JUnitAnalyzer - Failing test:
+ MockFile mockFile0 = new MockFile("##fileformat=VCFv4.2", "##fileformat=VCFv4.2");
+FileDescriptor fileDescriptor0 = new FileDescriptor();
+MockFileOutputStream mockFileOutputStream0 = new MockFileOutputStream(fileDescriptor0);
+ArrayList<SAMSequenceRecord> arrayList0 = new ArrayList<SAMSequenceRecord>();
+SAMSequenceDictionary sAMSequenceDictionary0 = new SAMSequenceDictionary(arrayList0);
+VCFWriter vCFWriter0 = new VCFWriter(mockFile0, mockFileOutputStream0, sAMSequenceDictionary0, false, true, false, false);
+
+* Permissions denied during test execution: 
+  - java.lang.RuntimePermission: 
+         writeFileDescriptor: 1
+* Writing tests to file
+* Writing JUnit test case 'VCFWriter_ESTest' to evosuite-tests
+* Done!
+
+* Computation finished
