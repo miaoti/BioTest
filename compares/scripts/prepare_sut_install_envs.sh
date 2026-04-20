@@ -77,6 +77,26 @@ mkdir -p "${HTSJDK_JARS}"
 echo "[sut-envs] htsjdk: versioned-JAR dir ready at ${HTSJDK_JARS}"
 ls -1 "${HTSJDK_JARS}" 2>/dev/null | sed 's/^/  - /' || true
 
+# noodles-vcf (2026-04-20) — the canonical-JSON harness Cargo.toml
+# lives under harnesses/rust/noodles_harness/ and the cargo-fuzz
+# target under compares/harnesses/cargo_fuzz/fuzz/. Both already
+# committed — this script just probes presence so the operator sees
+# a clear error if the tree is incomplete.
+NOODLES_HARNESS="${REPO_ROOT}/harnesses/rust/noodles_harness/Cargo.toml"
+NOODLES_FUZZ="${REPO_ROOT}/compares/harnesses/cargo_fuzz/fuzz/Cargo.toml"
+if [[ -f "${NOODLES_HARNESS}" ]]; then
+    pin="$(grep -E '^\s*noodles-vcf\s*=' "${NOODLES_HARNESS}" | head -1)"
+    echo "[sut-envs] noodles-vcf harness: ${pin}"
+else
+    echo "[sut-envs] noodles-vcf: WARN — ${NOODLES_HARNESS} missing" >&2
+fi
+if [[ -f "${NOODLES_FUZZ}" ]]; then
+    pin="$(grep -E '^\s*noodles-vcf\s*=' "${NOODLES_FUZZ}" | head -1)"
+    echo "[sut-envs] noodles-vcf fuzz target: ${pin}"
+else
+    echo "[sut-envs] noodles-vcf fuzz target: WARN — ${NOODLES_FUZZ} missing" >&2
+fi
+
 # seqan3 — source clone for commit-SHA checkout. Shallow clone; the
 # driver will deepen if it needs to check out a historical commit.
 SEQAN3_SRC="${REPO_ROOT}/compares/baselines/seqan3/source"

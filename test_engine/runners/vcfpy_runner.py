@@ -51,7 +51,25 @@ def _coerce_value(v: Any) -> Any:
 
 
 class VcfpyRunner(ParserRunner):
-    """Parser runner using vcfpy's Reader API (VCF only)."""
+    """Parser runner using vcfpy's Reader API (VCF only).
+
+    Feature parity with ``HTSJDKRunner`` for VCF:
+      - ``run``                 → parses file, emits canonical JSON.
+      - ``run_write_roundtrip`` → parses via Reader, re-serializes via
+        Writer, returns the rewritten file text. Exercises
+        ``vcfpy/writer.py``.
+      - ``discover_query_methods`` / ``run_query_methods`` → Python
+        introspection over ``vcfpy.Record`` / ``vcfpy.Call``
+        (``is_snv``, ``affected_start``, ``affected_end``, ``is_het``,
+        ``is_phased``, ``gt_type``, ``is_variant``, ``is_filtered``).
+        Exercises the Record / Call data-model code paths.
+    """
+
+    # Opt-in to base-class write roundtrip + query method contracts.
+    # Both map onto public vcfpy API methods (vcfpy.Writer for writer,
+    # vcfpy.Record/Call for query) — no private attributes touched.
+    supports_write_roundtrip: bool = True
+    supports_query_methods: bool = True
 
     @property
     def name(self) -> str:
@@ -205,3 +223,171 @@ class VcfpyRunner(ParserRunner):
             },
             "records": records,
         }
+
+    # ------------------------------------------------------------------
+    # Write roundtrip — parse(x) via Reader → serialize via Writer.
+    # Exercises vcfpy/writer.py code paths that parse-only flows skip.
+    # ------------------------------------------------------------------
+    def run_write_roundtrip(
+        self,
+        input_path: Path,
+        format_type: str = "VCF",
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        import tempfile
+
+        fmt = format_type.upper()
+        if fmt != "VCF":
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr="vcfpy supports write_roundtrip for VCF only",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=fmt, error_type="parse_error",
+                stderr="vcfpy not importable",
+            )
+
+        t0 = time.monotonic()
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self._write_roundtrip, input_path)
+                rewritten = future.result(timeout=timeout_s)
+            return RunnerResult(
+                success=True,
+                canonical_json={"rewritten_text": rewritten},
+                parser_name=self.name,
+                format_type=fmt,
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except FuturesTimeout:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="timeout",
+                stderr=f"vcfpy write_roundtrip timed out after {timeout_s}s",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="crash",
+                stderr=f"{type(e).__name__}: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+
+    def _write_roundtrip(self, input_path: Path) -> str:
+        import tempfile
+        import vcfpy
+
+        reader = vcfpy.Reader.from_path(str(input_path))
+        # Delete=False so we can re-read under Windows file-lock rules.
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".vcf", delete=False, encoding="utf-8"
+        )
+        tmp_path = Path(tmp.name)
+        tmp.close()
+        try:
+            writer = vcfpy.Writer.from_path(str(tmp_path), reader.header)
+            try:
+                for rec in reader:
+                    writer.write_record(rec)
+            finally:
+                writer.close()
+            return tmp_path.read_text(encoding="utf-8")
+        finally:
+            reader.close()
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+    # ------------------------------------------------------------------
+    # Query-method MRs — Rank 5. Introspect vcfpy.Record + vcfpy.Call.
+    # ------------------------------------------------------------------
+    def discover_query_methods(self, format_type: str) -> list[dict]:
+        if format_type.upper() != "VCF" or not self.is_available():
+            return []
+        from .introspection import get_scalar_query_methods
+        try:
+            import vcfpy
+            # Record's scalar surface + Call's phasing/variant predicates.
+            # Merge both and dedupe by name.
+            out = get_scalar_query_methods(vcfpy.Record)
+            seen = {m["name"] for m in out}
+            for m in get_scalar_query_methods(vcfpy.Call):
+                if m["name"] not in seen:
+                    out.append(m)
+                    seen.add(m["name"])
+            return out
+        except Exception:
+            return []
+
+    def run_query_methods(
+        self,
+        input_path: Path,
+        format_type: str,
+        method_names: list[str],
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        fmt = format_type.upper()
+        if fmt != "VCF":
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr="vcfpy run_query_methods: VCF only",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=fmt, error_type="parse_error",
+                stderr="vcfpy not importable",
+            )
+        if not method_names:
+            return RunnerResult(
+                success=True, parser_name=self.name,
+                format_type=fmt, exit_code=0,
+                canonical_json={"method_results": {}},
+            )
+
+        from .introspection import run_methods_on_record
+        t0 = time.monotonic()
+        try:
+            import vcfpy
+            reader = vcfpy.Reader.from_path(str(input_path))
+            try:
+                rec = next(iter(reader), None)
+            finally:
+                reader.close()
+            if rec is None:
+                return RunnerResult(
+                    success=True, parser_name=self.name,
+                    format_type=fmt, exit_code=0,
+                    canonical_json={"method_results": {}},
+                    duration_ms=(time.monotonic() - t0) * 1000,
+                )
+            # Methods can come from Record OR Call; run_methods_on_record
+            # tries the record first, then (if present) its first sample
+            # Call for Call-only methods.
+            results = run_methods_on_record(rec, method_names)
+            call_only = [n for n, v in results.items()
+                         if isinstance(v, dict) and "__error__" in v]
+            if call_only and rec.calls:
+                call_results = run_methods_on_record(rec.calls[0], call_only)
+                for n, v in call_results.items():
+                    if not (isinstance(v, dict) and "__error__" in v):
+                        results[n] = v
+            return RunnerResult(
+                success=True, parser_name=self.name,
+                format_type=fmt, exit_code=0,
+                canonical_json={"method_results": results},
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=fmt, error_type="crash",
+                stderr=f"{type(e).__name__}: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )

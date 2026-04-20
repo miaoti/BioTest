@@ -1,8 +1,8 @@
 # Verified Bug Catalogue
 
 **Generated from**: `manifest.verified.json`
-**Total bugs**: 23
-**By SUT**: biopython 1  ·  htsjdk 12  ·  pysam 4  ·  seqan3 6
+**Total bugs**: 35
+**By SUT**: biopython 1  ·  htsjdk 12  ·  noodles 9  ·  seqan3 6  ·  vcfpy 7
 
 Single-source-of-truth reference for every bug the Phase-4 bench driver will run. Edit `manifest.verified.json` and regenerate this file via `python compares/bug_bench/render_catalogue.py`.
 
@@ -165,60 +165,6 @@ Pre-fix SAMRecord mutation (e.g. setCigar) does not invalidate the cached mAlign
 Pre-fix SAM locus accumulator drops certain insertion events, under-counting coverage at insert positions. Downstream pileup statistics computed via htsjdk disagree with samtools mpileup at these sites.
 
 *Verification rule*: htsjdk 2.23.0 release notes cite 'Fixed a bug in the locus accumulator where the accumulator did not add... (#1489)'
-
-## pysam (4 bugs)
-
-### `pysam-1314` — VCF
-
-- **Issue / PR**: https://github.com/pysam-developers/pysam/issues/1314
-- **Anchor**: `install_version` — pre-fix `0.22.1` → post-fix `0.23.0`
-- **Confidence**: low
-- **Category**: `incorrect_field_value` (logic bug)
-- **Expected signal**: `differential_disagreement` against htslib
-- **Trigger folder**: `compares/bug_bench/triggers/pysam-1314/`
-
-VariantFile.write() maps records to wrong contig when header contigs manually edited.
-
-*Verification rule*: Issue #1314 filed 2024-10-21 against 0.22.1; fix expected in 0.23.0 development stream
-
-### `pysam-1308` — VCF
-
-- **Issue / PR**: https://github.com/pysam-developers/pysam/issues/1308
-- **Anchor**: `install_version` — pre-fix `0.22.1` → post-fix `0.23.0`
-- **Confidence**: high
-- **Category**: `parse_error_missed` (crash / rejection)
-- **Expected signal**: `uncaught_exception` against pysam_buggy_version
-- **Trigger folder**: `compares/bug_bench/triggers/pysam-1308/`
-
-VariantHeader.new_record() fails to set GT field on second+ record creation; KeyError: 'invalid FORMAT: GT'.
-
-*Verification rule*: pysam 0.23.0 release notes explicitly cite 'VariantHeader.new_record GT setting (#1308)'
-
-### `pysam-1214` — SAM
-
-- **Issue / PR**: https://github.com/pysam-developers/pysam/issues/1214
-- **Anchor**: `install_version` — pre-fix `0.21.0` → post-fix `0.22.0`
-- **Confidence**: medium
-- **Category**: `incorrect_field_value` (logic bug)
-- **Expected signal**: `differential_disagreement` against htslib
-- **Trigger folder**: `compares/bug_bench/triggers/pysam-1214/`
-
-Pre-fix AlignmentFile iteration over certain malformed-but-spec-tolerated SAM files produces records with incorrect per-record fields. Fixed together with #939 as part of a broader AlignmentFile robustness pass in 0.22.0.
-
-*Verification rule*: pysam 0.22.0 NEWS cites #1214 as fixed in the AlignmentFile cleanup
-
-### `pysam-939` — SAM
-
-- **Issue / PR**: https://github.com/pysam-developers/pysam/issues/939
-- **Anchor**: `install_version` — pre-fix `0.21.0` → post-fix `0.22.0`
-- **Confidence**: medium
-- **Category**: `incorrect_field_value` (logic bug)
-- **Expected signal**: `differential_disagreement` against htslib
-- **Trigger folder**: `compares/bug_bench/triggers/pysam-939/`
-
-Long-standing AlignmentFile bug in pysam <=0.21; the 0.22.0 release bundled its fix together with #1214. Specific symptom deferred to trigger-folder research.
-
-*Verification rule*: pysam 0.22.0 NEWS cites #939 as fixed in the AlignmentFile cleanup
 
 ## biopython (1 bugs)
 

@@ -1,12 +1,20 @@
 // BioTest canonical-JSON harness for noodles-vcf.
 //
 // Usage:
-//   noodles_harness VCF <input.vcf>      -> canonical JSON to stdout
+//   noodles_harness VCF <input.vcf>                         -> canonical JSON to stdout
+//   noodles_harness --mode write_roundtrip VCF <in> <out>   -> re-serialize via noodles-vcf Writer
 //
 // Exit 0 on success; non-zero with message on stderr otherwise. This
 // mirrors the contract in test_engine/canonical/schema.py and every
 // other SUT harness (harnesses/java/BioTestHarness.java,
 // harnesses/pysam/pysam_harness.py, harnesses/cpp/biotest_harness.cpp).
+//
+// Mode parity with the htsjdk harness (BioTestHarness.java):
+//   parse             (default)           ← this file's parse_vcf
+//   write_roundtrip   --mode write_roundtrip
+//   discover_methods  (not implemented — Rust has no runtime reflection;
+//                      mirrors the seqan3 harness choice)
+//   query             (not implemented — same reason)
 //
 // noodles-vcf uses 1-based POS natively for the text VCF reader; no
 // +1 shim required (unlike pysam's Cython stack).
@@ -23,7 +31,7 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::Path;
 use std::process::ExitCode;
 
@@ -32,40 +40,82 @@ use serde_json::{json, Map, Value};
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        eprintln!(
-            "usage: {} <VCF> <input_file>",
-            args.first().map(String::as_str).unwrap_or("noodles_harness")
-        );
-        return ExitCode::from(1);
-    }
-    let fmt = args[1].to_uppercase();
-    let input = &args[2];
+    let argv: Vec<&str> = args.iter().map(String::as_str).collect();
 
-    if fmt != "VCF" {
-        eprintln!(
-            "noodles_harness currently supports VCF only (got {fmt}). \
-             SAM via noodles-sam can be added as a follow-on harness."
-        );
-        return ExitCode::from(1);
-    }
-
-    match parse_vcf(Path::new(input)) {
-        Ok(v) => {
-            let stdout = io::stdout();
-            let mut lock = stdout.lock();
-            if let Err(e) = serde_json::to_writer_pretty(&mut lock, &v) {
-                eprintln!("serialize error: {e}");
+    // ------------------------------------------------------------------
+    // CLI grammar:
+    //   noodles_harness VCF <input>
+    //   noodles_harness --mode write_roundtrip VCF <input> <output>
+    // ------------------------------------------------------------------
+    match argv.as_slice() {
+        [_, "--mode", "write_roundtrip", fmt, input, output] => {
+            if fmt.to_uppercase() != "VCF" {
+                eprintln!("write_roundtrip: VCF only (got {fmt})");
                 return ExitCode::from(1);
             }
-            let _ = lock.write_all(b"\n");
-            ExitCode::SUCCESS
+            match write_roundtrip(Path::new(input), Path::new(output)) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(e) => {
+                    eprintln!("write_roundtrip error: {e}");
+                    ExitCode::from(1)
+                }
+            }
         }
-        Err(e) => {
-            eprintln!("parse error: {e}");
+        [_, fmt, input] => {
+            if fmt.to_uppercase() != "VCF" {
+                eprintln!(
+                    "noodles_harness currently supports VCF only (got {fmt}). \
+                     SAM via noodles-sam is a follow-on harness."
+                );
+                return ExitCode::from(1);
+            }
+            match parse_vcf(Path::new(input)) {
+                Ok(v) => {
+                    let stdout = io::stdout();
+                    let mut lock = stdout.lock();
+                    if let Err(e) = serde_json::to_writer_pretty(&mut lock, &v) {
+                        eprintln!("serialize error: {e}");
+                        return ExitCode::from(1);
+                    }
+                    let _ = lock.write_all(b"\n");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("parse error: {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+        _ => {
+            eprintln!(
+                "usage:\n  {bin} <VCF> <input_file>\n  \
+                 {bin} --mode write_roundtrip VCF <input> <output>",
+                bin = args.first().map(String::as_str).unwrap_or("noodles_harness"),
+            );
             ExitCode::from(1)
         }
     }
+}
+
+fn write_roundtrip(input: &Path, output: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    // Parse input via the noodles-vcf Reader, then re-serialize via the
+    // Writer API. This exercises `noodles-vcf/src/io/writer` — the
+    // mirror of htsjdk's `variantcontext/writer` code paths that
+    // parse-only flows never hit.
+    let in_file = File::open(input)?;
+    let mut reader =
+        vcf::io::reader::Builder::default().build_from_reader(BufReader::new(in_file))?;
+    let header = reader.read_header()?;
+
+    let out_file = File::create(output)?;
+    let mut writer = vcf::io::writer::Writer::new(BufWriter::new(out_file));
+    writer.write_header(&header)?;
+
+    let mut record = vcf::Record::default();
+    while reader.read_record(&mut record)? != 0 {
+        writer.write_variant_record(&header, &record)?;
+    }
+    Ok(())
 }
 
 fn parse_vcf(path: &Path) -> Result<Value, Box<dyn std::error::Error>> {

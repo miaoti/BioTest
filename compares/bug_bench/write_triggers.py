@@ -95,6 +95,124 @@ TRIGGER_FILES: dict[str, dict[str, str]] = {
             r1\t0\tchr1\t1\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII
             """),
     },
+    # ----- 2026-04-20 vcfpy additions (DESIGN §A.2) -----
+    "vcfpy-146": {
+        # INFO flag 'STR_AS_FLAG' declared as String but appears without
+        # a value → pre-fix raises TypeError.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            ##INFO=<ID=STR_AS_FLAG,Number=1,Type=String,Description="Mis-typed flag">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tA\tT\t.\t.\tSTR_AS_FLAG
+            """),
+    },
+    "vcfpy-171": {
+        # INFO value with %3D-escaped equals sign — pre-fix strips it on
+        # re-write, so round-trip diverges.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            ##INFO=<ID=HGVS,Number=1,Type=String,Description="HGVS">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tA\tT\t.\t.\tHGVS=p.Lys%3DVal
+            """),
+    },
+    "vcfpy-176": {
+        # Sample GT '0|0' with GT not declared in header — pre-fix
+        # crashes with ValueError on list-artefact leak.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1
+            1\t100\t.\tA\tT\t.\t.\t.\tGT\t0|0
+            """),
+    },
+    "vcfpy-127": {
+        # Truncated FORMAT fields (GATK 3.8 output shape) — pre-fix
+        # raises KeyError: 'GQ'.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            ##FORMAT=<ID=GT,Number=1,Type=String,Description="GT">
+            ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="AD">
+            ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="DP">
+            ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="GQ">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1
+            1\t100\t.\tA\tT\t.\t.\t.\tGT:AD:DP:GQ\t0/1:10,5:15
+            """),
+    },
+    "vcfpy-gtone-0.13": {
+        # Haploid GT describing a single allele — pre-fix mis-parses.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=MT,length=16569>
+            ##FORMAT=<ID=GT,Number=1,Type=String,Description="GT">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1
+            MT\t100\t.\tA\tT\t.\t.\t.\tGT\t1
+            """),
+    },
+    # ----- 2026-04-20 noodles-vcf additions (DESIGN §A.3) -----
+    "noodles-241": {
+        # VCF 4.2 header with raw <-prefixed value but no ID= — pre-fix
+        # (noodles-vcf 0.58) raises MissingId.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            ##META=<Description="Other record starting with '<'">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tA\tT\t.\t.\t.
+            """),
+    },
+    "noodles-300": {
+        # INFO String field containing ';' — pre-fix (noodles-vcf 0.63)
+        # writer produced unreadable output.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.3
+            ##contig=<ID=1,length=1000>
+            ##INFO=<ID=NOTE,Number=1,Type=String,Description="Free-form note">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tA\tT\t.\t.\tNOTE=val1%3Bval2
+            """),
+    },
+    "noodles-268": {
+        # IUPAC ambiguity codes in REF — pre-fix (noodles-vcf 0.57)
+        # writer corrupted output lines.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.2
+            ##contig=<ID=1,length=1000>
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tR\tA\t.\t.\t.
+            1\t200\t.\tY\tC\t.\t.\t.
+            1\t300\t.\tN\tG\t.\t.\t.
+            """),
+    },
+    "noodles-259": {
+        # Multiple ##-prefixed header records that pre-fix 0.55
+        # concatenated without newline separators on write.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.3
+            ##contig=<ID=1,length=1000>
+            ##META=<ID=A,Description="first">
+            ##META=<ID=B,Description="second">
+            ##META=<ID=C,Description="third">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+            1\t100\t.\tA\tT\t.\t.\t.
+            """),
+    },
+    "noodles-339": {
+        # INFO value containing ':' and sample value containing ';' —
+        # pre-fix 0.81 writer over-encoded them.
+        "original.vcf": textwrap.dedent("""\
+            ##fileformat=VCFv4.3
+            ##contig=<ID=1,length=1000>
+            ##INFO=<ID=URL,Number=1,Type=String,Description="URL">
+            ##FORMAT=<ID=GT,Number=1,Type=String,Description="GT">
+            ##FORMAT=<ID=NOTE,Number=1,Type=String,Description="note">
+            #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1
+            1\t100\t.\tA\tT\t.\t.\tURL=http://x:80\tGT:NOTE\t0/1:a%3Bb
+            """),
+    },
 }
 
 

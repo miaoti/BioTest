@@ -37,12 +37,29 @@ if sys.platform == "win32":
 class NoodlesRunner(ParserRunner):
     """Parser runner using noodles-vcf via a compiled Rust binary (VCF only).
 
+    Feature parity with ``HTSJDKRunner`` for VCF:
+      - ``run``                 → parse file, emit canonical JSON.
+      - ``run_write_roundtrip`` → delegate to the harness's
+        ``--mode write_roundtrip`` CLI, which re-serializes through
+        ``noodles-vcf``'s ``io::writer::Writer``. Exercises the
+        ``src/io/writer`` + ``src/variant`` writer code paths that are
+        invisible to parse-only flows (mirror of what htsjdk's
+        ``VariantContextWriterBuilder`` paths give us on the Java side).
+      - Query methods are **intentionally not implemented** — Rust has
+        no runtime reflection. Same choice as seqan3 runner. The
+        framework hides query-method MRs from the LLM menu when no
+        primary SUT sets ``supports_query_methods=True``.
+
     Supports two binaries:
-    - Standard binary: `cargo build --release` output (default).
-    - Coverage binary: `cargo llvm-cov` instrumented build. When the
-      coverage binary is used, LLVM_PROFILE_FILE is set so each invocation
-      writes a new `.profraw` next to the other coverage artifacts.
+    - Standard binary: ``cargo build --release`` output (default).
+    - Coverage binary: ``cargo llvm-cov`` instrumented build. When the
+      coverage binary is used, ``LLVM_PROFILE_FILE`` is set so each
+      invocation writes a new ``.profraw`` next to the other coverage
+      artifacts.
     """
+
+    # Opt in to the write-roundtrip contract. Query methods stay off.
+    supports_write_roundtrip: bool = True
 
     def __init__(
         self,

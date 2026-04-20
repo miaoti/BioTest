@@ -435,23 +435,12 @@ coverage:
 
   # cargo-llvm-cov for noodles-vcf (Rust). NoodlesCoverageCollector runs
   # `cargo llvm-cov report --json` against the most recent instrumented
-  # profile and aggregates per-file coverage.
-  #
-  # Two-part filter (see NoodlesCoverageCollector docstring):
-  #   - `noodles_crate_anchor` — substring every kept file's path must
-  #     contain. Anchors to the noodles-vcf crate regardless of whether
-  #     Cargo resolved it from crates.io (path has `-<version>/`), git,
-  #     or a local path dep.
-  #   - `target_filters.VCF.noodles` — sub-path substrings inside the
-  #     crate that our harness actually exercises (reader + model);
-  #     excludes writer / indexed_reader / async / fs.
-  #
-  # Harness + coverage build instructions live in
+  # profile and aggregates per-file coverage scoped to the noodles-vcf
+  # crate. Harness + coverage build instructions live in
   # harnesses/rust/noodles_harness/README.md.
   noodles_report_path: coverage_artifacts/noodles/llvm-cov.json
   noodles_manifest_path: harnesses/rust/noodles_harness/Cargo.toml
   noodles_profile_dir: coverage_artifacts/noodles
-  noodles_crate_anchor: noodles-vcf
 
   # Format-aware whitelist: only these paths are relevant per format.
   # Prevents VCF coverage from polluting SAM feedback and vice versa.
@@ -495,52 +484,24 @@ coverage:
         - htsjdk/variant/variantcontext/writer::VCF,Variant
       # pysam — CoveragePyCollector / PysamDockerCoverageCollector scope.
       # pysam's VCF logic is in Cython-compiled libcbcf.pyx → .so, which
-      # coverage.py cannot trace. Of pysam's .py files only bcftools.py
-      # is VCF-specific (samtools.py / Pileup.py are SAM). The libcbcf /
-      # libcvcf prefixes are future-proofing for Cython-aware coverage.
-      #
-      # Filter entries MUST be extensionless — the collectors normalize
-      # "." → "/" for module-style Bio.Align.sam matching, which would
-      # turn "bcftools.py" into "bcftools/py" and never match.
+      # coverage.py cannot trace. Of pysam's .py files only bcftools.py is
+      # VCF-specific (samtools.py / Pileup.py are SAM). The libcbcf/libcvcf
+      # prefixes are listed for future-proofing if Cython coverage is ever
+      # wired in (harmless today — no .pyx entries appear in the summary).
       pysam:
-        - libcbcf      # libcbcf.pyx / libcbcf*.so / libcbcftools.*
-        - libcvcf      # libcvcf.pyx / libcvcf*.so
-        - bcftools     # bcftools.py (VCF CLI wrapper)
-      # vcfpy (bihealth) — pure-Python VCF parser. Scope narrowed to the
-      # READ codepath only, because that's what BioTest exercises:
-      #   VcfpyRunner._parse_vcf: Reader.from_path → iter(reader) → fields.
-      # Excluded (runner never calls them — including them would inflate
-      # the denominator with ~520 unreachable lines):
-      #   - writer.py   (we never serialize)
-      #   - bgzf.py     (we pass plain .vcf, not .vcf.gz)
-      #   - tabix.py    (no indexed queries)
-      # Any future support for write-round-trip, compressed input, or
-      # tabix queries on vcfpy MUST extend this list in lockstep.
+        - libcbcf
+        - libcvcf
+        - bcftools.py
+      # vcfpy (bihealth) — pure-Python VCF parser. The entire package is
+      # VCF-specific so the whole vcfpy tree is in scope.
       vcfpy:
-        - vcfpy/__init__
-        - vcfpy/exceptions
-        - vcfpy/version
-        - vcfpy/reader
-        - vcfpy/parser
-        - vcfpy/header
-        - vcfpy/record
-      # noodles-vcf — Rust crate. The outer `noodles_crate_anchor`
-      # ("noodles-vcf") anchors to the right crate; THIS list is the
-      # inner sub-path whitelist applied ON TOP of the anchor.
-      # Scope: the READ codepath our harness actually runs:
-      #   noodles_harness opens a sync text VCF → read_header → read_record.
-      # Excluded from this list (harness never touches them):
-      #   - src/io/writer.rs + src/io/writer/**    (we only read)
-      #   - src/io/indexed_reader.rs + ...         (no tabix/csi queries)
-      #   - src/io/compression_method.rs           (plain text input)
-      #   - src/async.rs + src/async/**            (we use sync)
-      #   - src/fs.rs + src/fs/**                  (we open via std::fs::File)
+        - vcfpy
+      # noodles-vcf — Rust crate. NoodlesCoverageCollector filters the
+      # cargo-llvm-cov JSON to files under the noodles-vcf crate source
+      # tree. Keep the path substring matching the crate's sub-path
+      # inside the noodles monorepo.
       noodles:
-        - src/lib           # lib.rs crate entry
-        - src/header        # header.rs + header/**
-        - src/record        # record.rs + record/**
-        - src/variant       # variant.rs + variant/**
-        - src/io/reader     # io/reader.rs + io/reader/**
+        - noodles-vcf
     SAM:
       # Java / htsjdk — htsjdk/samtools mixes SAM + BAM + CRAM +
       # CSI + index code; narrow to SAM-named classes only.
