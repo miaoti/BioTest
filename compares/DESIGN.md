@@ -1511,11 +1511,70 @@ fuzzer-synthesis per DESIGN.md §4.3.
 - [ ] Ensure Ollama / local LLMs are **stopped** during these runs (mutation testing is RAM-hungry).
 - [ ] Confirm per-cell `summary.json` has `{killed, reachable, score}`.
 
-#### Phase 4 — Real-bug benchmark (~1 wall-day parallelised 4-way)
+#### Phase 4 — Real-bug benchmark (~1.7 wall-days parallelised 4-way)
 
-- [ ] Launch: `py -3.12 compares/scripts/bug_bench_driver.py --manifest compares/bug_bench/manifest.verified.json --time-budget-s 7200 --out compares/results/bug_bench/`.
-- [ ] For each (tool, bug) cell, inspect `result.json`; if `confirmed_fix_silences_signal` is `null`, manually replay the trigger.
-- [ ] Spot-check 3 detection claims across different tools (§10 verification step).
+The driver `compares/scripts/bug_bench_driver.py` already handles the
+ugliest piece — **SUT version swaps + tool orchestration** — so the
+operator never touches `pip install pysam==X.Y.Z` or
+`git checkout <sha>` by hand during the run.
+
+**Efficient run order: anchor-grouped**. The driver groups verified
+bugs by `(sut, pre_fix, post_fix)` and processes each group as a
+single unit — install pre_fix **once**, run every in-group bug × tool
+cell, install post_fix **once**, replay every detected trigger. This
+matters because the verified manifest has overlaps:
+
+| Anchor | Bugs |
+| :--- | :--- |
+| htsjdk 2.19.0 → 2.20.0 | #1364, #1389, #1372, #1401 (4) |
+| htsjdk 2.24.1 → 3.0.0 | #1554, #1544, #1561 (3) |
+| pysam 0.22.1 → 0.23.0 | pysam-1314, pysam-1308 (2) |
+| pysam 0.21.0 → 0.22.0 | pysam-1214, pysam-939 (2) |
+| *(12 singleton anchors)* | 1 bug each |
+
+Install-swap math: 23 bugs × 2 swaps naive = 46; anchor-grouped =
+16 × 2 = **32 swaps (30% fewer)**. Each swap is a `pip install
+--force-reinstall` or Maven-JAR `curl` or `git checkout`, which is
+seconds for pysam/biopython and sub-minute for htsjdk/seqan3.
+
+**Run commands**:
+
+- [ ] **Full primary bench** (all 23 bugs × all applicable tools):
+  ```bash
+  python3.12 compares/scripts/bug_bench_driver.py \
+      --manifest compares/bug_bench/manifest.verified.json \
+      --time-budget-s 7200 \
+      --out compares/results/bug_bench/
+  ```
+  Produces `compares/results/bug_bench/<tool>/<bug_id>/result.json`
+  per cell plus an `aggregate.json` rollup.
+
+- [ ] **Filter flags** for iterative work (all combinable):
+  - `--only-bug pysam-1308` → one bug end-to-end.
+  - `--only-sut htsjdk` → only htsjdk-row bugs.
+  - `--only-tool jazzer` → only one tool across all bugs.
+  - Combine: `--only-sut htsjdk --only-tool jazzer` for a single row.
+
+- [ ] **Smoke-test pattern** for the curious — pick pysam-1308 because
+  its trigger is pure in-memory Python (no file I/O, no fuzzer warm-up):
+  ```bash
+  python3.12 compares/scripts/bug_bench_driver.py \
+      --manifest compares/bug_bench/manifest.verified.json \
+      --only-bug pysam-1308 --only-tool pure_random \
+      --time-budget-s 60 --out /tmp/bench-smoke
+  ```
+  Verified 2026-04-19 against the current bench image:
+  ```
+  [orchestrator] 1 bug(s) in 1 anchor group(s) — 2 install-swaps
+  [group] pysam  0.22.1 -> 0.23.0  (1 bug(s))
+  [run] pure_random @ pysam-1308  t=60s
+  [done] wrote 1 records to /tmp/bench-smoke/aggregate.json
+  ```
+  Pipeline working end-to-end: install-swap executes, adapter
+  dispatches, detection logic runs, result.json lands.
+
+- [ ] **Post-run review**: for each cell with `confirmed_fix_silences_signal == null`, manually replay the trigger.
+  Spot-check 3 detection claims across different tools.
 - [ ] Back up `compares/results/bug_bench/` to off-machine storage.
 
 #### Phase 5 — Short-budget secondary regime (≤ 6 hours)

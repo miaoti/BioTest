@@ -270,6 +270,22 @@ def detection_from_adapter(
 
 # ---------- Main loop -------------------------------------------------
 
+def _group_by_anchor(bugs: list[dict[str, Any]]) -> dict[tuple, list[dict[str, Any]]]:
+    """Group bugs by shared (sut, anchor-type, pre_fix, post_fix).
+
+    Halves install-swap overhead: bugs that share an anchor install
+    pre_fix once, run all their tools, then install post_fix once for
+    the replay-silencing sweep. See DESIGN.md §13.5 Phase 4.
+    """
+    from collections import OrderedDict
+    groups: dict[tuple, list[dict[str, Any]]] = OrderedDict()
+    for bug in bugs:
+        a = bug["anchor"]
+        key = (bug["sut"], a.get("type"), a.get("pre_fix"), a.get("post_fix"))
+        groups.setdefault(key, []).append(bug)
+    return groups
+
+
 def run_bench(
     manifest_path: Path,
     out_root: Path,
@@ -278,72 +294,110 @@ def run_bench(
     seed_corpus_sam: Path,
     only_sut: str | None = None,
     only_tool: str | None = None,
+    only_bug: str | None = None,
 ) -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     out_root.mkdir(parents=True, exist_ok=True)
     aggregate: list[dict[str, Any]] = []
 
+    # Filter once up-front; anchor-group the survivors.
+    candidates: list[dict[str, Any]] = []
     for bug in manifest.get("bugs", []):
-        bug_id = bug["id"]
-        sut = bug["sut"]
-        if only_sut and sut != only_sut:
+        if only_sut and bug["sut"] != only_sut:
             continue
-
+        if only_bug and bug["id"] != only_bug:
+            continue
         ok, reason = verify_bug(bug)
         if not ok:
-            print(f"[skip] {bug_id}: {reason}")
+            print(f"[skip] {bug['id']}: {reason}")
+            continue
+        candidates.append(bug)
+
+    anchor_groups = _group_by_anchor(candidates)
+    print(f"[orchestrator] {len(candidates)} bug(s) in {len(anchor_groups)} "
+          f"anchor group(s) — "
+          f"{2 * len(anchor_groups)} install-swaps (vs "
+          f"{2 * len(candidates)} without grouping)")
+
+    for (sut, _atype, pre, post), group_bugs in anchor_groups.items():
+        print(f"\n[group] {sut}  {pre} -> {post}  ({len(group_bugs)} bug(s))")
+
+        # ---- Phase A: install pre_fix once, run all tools on all bugs --
+        try:
+            install_sut(sut, group_bugs[0]["anchor"], "pre_fix")
+        except Exception:
+            traceback.print_exc()
+            for bug in group_bugs:
+                aggregate.append({
+                    "bug_id": bug["id"], "sut": sut,
+                    "error": f"install pre_fix {pre} failed",
+                })
             continue
 
-        # Install post-fix baseline first so reverting after run is cheap.
-        install_sut(sut, bug["anchor"], "pre_fix")
-        seed_corpus = (
-            seed_corpus_vcf if bug.get("format") == "VCF" else seed_corpus_sam)
+        # bug_id -> list of (tool, adapter_json, detected, ttfb, trig, sig)
+        group_records: dict[str, list[dict[str, Any]]] = {b["id"]: [] for b in group_bugs}
 
-        for tool in MATRIX.get(sut, []):
-            if only_tool and tool != only_tool:
-                continue
-            tool_out = out_root / tool / bug_id
-            tool_out.mkdir(parents=True, exist_ok=True)
-            print(f"[run] {tool} @ {bug_id}  t={time_budget_s}s")
-            try:
-                adapter_json = invoke_adapter(
-                    tool, bug, tool_out, time_budget_s, seed_corpus,
-                )
-            except Exception:
-                traceback.print_exc()
-                adapter_json = {"exit_code": 99, "error": "adapter_raise"}
-
-            detected, ttfb, trig, sig = detection_from_adapter(adapter_json, bug)
-
-            confirmed = None
-            if detected and trig:
-                # Replay on post-fix to confirm silencing.
+        for bug in group_bugs:
+            seed_corpus = (
+                seed_corpus_vcf if bug.get("format") == "VCF" else seed_corpus_sam)
+            for tool in MATRIX.get(sut, []):
+                if only_tool and tool != only_tool:
+                    continue
+                tool_out = out_root / tool / bug["id"]
+                tool_out.mkdir(parents=True, exist_ok=True)
+                print(f"[run] {tool} @ {bug['id']}  t={time_budget_s}s")
                 try:
-                    install_sut(sut, bug["anchor"], "post_fix")
-                    confirmed = _replay_trigger_silenced(
-                        sut, Path(trig), bug.get("format", "VCF")
+                    adapter_json = invoke_adapter(
+                        tool, bug, tool_out, time_budget_s, seed_corpus,
                     )
                 except Exception:
                     traceback.print_exc()
-                    confirmed = None
-                finally:
-                    install_sut(sut, bug["anchor"], "pre_fix")
+                    adapter_json = {"exit_code": 99, "error": "adapter_raise"}
 
-            record = BugResult(
-                tool=tool,
-                bug_id=bug_id,
-                sut=sut,
-                detected=detected,
-                ttfb_s=ttfb,
-                trigger_input=trig,
-                signal=sig,
-                confirmed_fix_silences_signal=confirmed,
-                adapter_exit_code=int(adapter_json.get("exit_code", 0)),
-            )
-            (tool_out / "result.json").write_text(
-                json.dumps(asdict(record), indent=2), encoding="utf-8"
-            )
-            aggregate.append(asdict(record))
+                detected, ttfb, trig, sig = detection_from_adapter(adapter_json, bug)
+                group_records[bug["id"]].append({
+                    "tool": tool, "adapter_json": adapter_json,
+                    "detected": detected, "ttfb": ttfb,
+                    "trig": trig, "sig": sig, "tool_out": tool_out,
+                })
+
+        # ---- Phase B: install post_fix once, replay every detection ---
+        any_needs_replay = any(
+            r["detected"] and r["trig"]
+            for recs in group_records.values() for r in recs
+        )
+        if any_needs_replay:
+            try:
+                install_sut(sut, group_bugs[0]["anchor"], "post_fix")
+                replay_available = True
+            except Exception:
+                traceback.print_exc()
+                replay_available = False
+        else:
+            replay_available = False
+
+        for bug in group_bugs:
+            fmt = bug.get("format", "VCF")
+            for r in group_records[bug["id"]]:
+                confirmed = None
+                if r["detected"] and r["trig"] and replay_available:
+                    try:
+                        confirmed = _replay_trigger_silenced(
+                            sut, Path(r["trig"]), fmt)
+                    except Exception:
+                        traceback.print_exc()
+                        confirmed = None
+                record = BugResult(
+                    tool=r["tool"], bug_id=bug["id"], sut=sut,
+                    detected=r["detected"], ttfb_s=r["ttfb"],
+                    trigger_input=r["trig"], signal=r["sig"],
+                    confirmed_fix_silences_signal=confirmed,
+                    adapter_exit_code=int(r["adapter_json"].get("exit_code", 0)),
+                )
+                (r["tool_out"] / "result.json").write_text(
+                    json.dumps(asdict(record), indent=2), encoding="utf-8"
+                )
+                aggregate.append(asdict(record))
 
     (out_root / "aggregate.json").write_text(
         json.dumps({"results": aggregate}, indent=2), encoding="utf-8"
@@ -412,8 +466,12 @@ def _cli() -> None:
                    default=REPO_ROOT/"seeds"/"vcf")
     p.add_argument("--seed-corpus-sam", type=Path,
                    default=REPO_ROOT/"seeds"/"sam")
-    p.add_argument("--only-sut", default=None)
-    p.add_argument("--only-tool", default=None)
+    p.add_argument("--only-sut", default=None,
+                   help="Run only bugs for this SUT (htsjdk, pysam, biopython, seqan3)")
+    p.add_argument("--only-tool", default=None,
+                   help="Run only this tool (biotest, jazzer, atheris, libfuzzer, pure_random, evosuite_anchor)")
+    p.add_argument("--only-bug", default=None,
+                   help="Run only this bug id (e.g. pysam-1308) — useful for iterative debugging")
     p.add_argument("--verify-only", action="store_true")
     p.add_argument("--dropped-out", type=Path, default=None,
                    help="write a verify summary JSON to this path")
@@ -431,6 +489,7 @@ def _cli() -> None:
         seed_corpus_sam=args.seed_corpus_sam,
         only_sut=args.only_sut,
         only_tool=args.only_tool,
+        only_bug=args.only_bug,
     )
 
 
