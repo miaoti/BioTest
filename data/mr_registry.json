@@ -385,6 +385,133 @@
         "isMonomorphicInSamples",
         "isPolymorphicInSamples"
       ]
+    },
+    {
+      "mr_id": "5ea9b9ae0f5d",
+      "mr_name": "bcf_header_typing_roundtrip",
+      "scope": "VCF.header",
+      "preconditions": [
+        "Input is a valid VCF file with INFO and FORMAT fields defined"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "The parsed header's INFO and FORMAT field type definitions must be identical before and after VCF→BCF→VCF roundtrip.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "* All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "CRITICAL",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Overall file organization::p1396",
+          "quote": "* All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in r",
+          "rule_severity": "CRITICAL",
+          "section_id": "Overall file organization"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "d93dba9b0f27",
+      "mr_name": "Coordinate query method invariance under writer round-trip",
+      "scope": "VCF.record",
+      "preconditions": [
+        "primary_sut_has_writer",
+        "primary_sut_has_query_methods"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Coordinate-related query methods must return identical values after parse(write(parse(x))) round-trip",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p212",
+          "quote": "* POS — position: The reference position, with the 1st base having position 1.\n  Positions are sorted numerically, in increasing order, within each reference sequence CHROM.\n  It is permitted to have multiple records with the same POS.\n  Telomeres are indicated by using positions 0 or N+1, where N is the length of the corresponding chromosome or contig.\n  (Integer, Required)",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getStart",
+        "getEnd",
+        "getLengthOnReference",
+        "isSNP",
+        "isIndel"
+      ]
+    },
+    {
+      "mr_id": "4e6946a02a58",
+      "mr_name": "BCF header dictionary order invariance under round-trip",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary",
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Canonical JSON output after VCF→BCF→VCF round-trip must be identical regardless of header dictionary line ordering",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1304",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existing tag needs to be removed from a BCF, also all consequent tags throughout the whole BCF would have to be recoded.",
+          "rule_severity": "CRITICAL",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Dictionary of strings::p1410",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existing tag needs to be removed from a BCF, also all consequent tags throughout the whole BCF would have to be recoded.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Dictionary of strings"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "faf8a7f16c1f",
+      "mr_name": "API query invariance under BCF header dictionary permutation",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1304",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existing tag needs to be removed from a BCF, also all consequent tags throughout the whole BCF would have to be recoded.",
+          "rule_severity": "CRITICAL",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Dictionary of strings::p1410",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existing tag needs to be removed from a BCF, also all consequent tags throughout the whole BCF would have to be recoded.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Dictionary of strings"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getNAlleles",
+        "isBiallelic",
+        "isSNP",
+        "isIndel",
+        "isStructural",
+        "getNSamples"
+      ]
     }
   ],
   "quarantine": [
@@ -653,11 +780,77 @@
         "isMonomorphicInSamples",
         "isPolymorphicInSamples"
       ]
+    },
+    {
+      "mr_id": "038a83ac13a1",
+      "mr_name": "header_dictionary_order_invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "Input has multiple header lines with string dictionary dependencies"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "shuffle_meta_lines"
+      ],
+      "oracle": "The parsed dictionary of strings (used for BCF encoding) must produce equivalent lookup results despite reordering of header lines.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1304",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existing t",
+          "rule_severity": "CRITICAL",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Dictionary of strings::p1410",
+          "quote": "Defined this way, the dictionary of strings depends on the order and the presence of all preceding header lines.\nIf an existi",
+          "rule_severity": "CRITICAL",
+          "section_id": "Dictionary of strings"
+        }
+      ],
+      "ambiguity_flags": [
+        "Dictionary index values may change, but string-to-ID mapping should be consistent"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ab910ed94b58",
+      "mr_name": "bcf_integer_encoding_query_invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "Input contains integer INFO/FORMAT fields with values in different ranges"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Integer-valued query methods must return identical results before and after VCF→BCF→VCF roundtrip, regardless of BCF's 8/16/32-bit encoding choices.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1323",
+          "quote": "Integers may be encoded as 8, 16, or 32 bit values, in little-endian order.\nIt is up to the encoder to determine the appropriate ",
+          "rule_severity": "ADVISORY",
+          "section_id": "BCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::BCF2 records::p1429",
+          "quote": "Integers may be encoded as 8, 16, or 32 bit values, in little-endian order.\nIt is up to the encoder to determine the appropriate range",
+          "rule_severity": "ADVISORY",
+          "section_id": "BCF2 records"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getNAlleles",
+        "getNSamples",
+        "getStart",
+        "getEnd",
+        "getLengthOnReference"
+      ]
     }
   ],
   "summary": {
-    "enforced_count": 14,
-    "quarantine_count": 9,
-    "total": 23
+    "enforced_count": 18,
+    "quarantine_count": 11,
+    "total": 29
   }
 }

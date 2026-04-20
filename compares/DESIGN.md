@@ -470,17 +470,93 @@ Resolution baked into `biotest-bench:latest`:
 
 Full image verify (§13.1): **40 PASS, 0 WARN, 0 FAIL**.
 
-### Risk 2 — Bug-bench walltime borderline even at 2h × 1
+### Risk 2 — Bug-bench walltime — **resolved 2026-04-19**
 
-~15 verified bugs × ~3.5 tools per SUT row × 2h × 1 rep ≈ 105 wall-hours. Parallelising 4-way → ~1 wall-day. If install-version setups fail more than expected (old pysam wheels often reference libhts versions that have left apt mirrors), each failure adds 30–60 min of debug.
+**Original severity: medium. Current status: resolved.** The risk
+was that run-time install-version failures would balloon walltime and
+force a cut of per-cell budget to 1h. Both concerns are neutralised
+by the post-verification state of the bench.
 
-**Mitigation**: mandatory pre-flight install-verification pass (`bug_bench_driver.py --verify-only`) drops unverifiable bugs *before* the main run. If verified N drops below 10, per-cell budget drops from 2h to 1h — the signal is nearly as strong and walltime drops 2×.
+Resolution:
 
-### Risk 3 — Fairness equalizer mis-application
+- **Install failures moved off the critical path.** Phase-0
+  install-verify (`bug_bench_driver.py --verify-only`) has already
+  run and produced `compares/bug_bench/dropped.json` + the frozen
+  `manifest.verified.json`. Any bug whose pre-fix or post-fix failed
+  to install is already dropped — Phase 4 cannot hit an install
+  failure at run time because it reads only the verified manifest.
+- **Venv-routing eliminated the top failure mode.** `bug_bench_driver`
+  now routes pysam/biopython installs through
+  `compares/results/sut-envs/<sut>/bin/pip` (Python 3.11 venvs from
+  §13.3.4), not the system `/usr/bin/python3.12` pip. This alone
+  unblocked pysam 0.21+ installs on modern Python (§13.4.3). Details
+  in `compares/scripts/bug_bench_driver.py: _install_pysam`.
+- **Updated walltime math** against the frozen 23-bug manifest:
+  - htsjdk row: 12 bugs × 4 tools (BioTest, Jazzer, Pure Random,
+    EvoSuite anchor) = 48
+  - pysam row: 4 bugs × 3 tools = 12
+  - biopython row: 1 bug × 3 tools = 3
+  - seqan3 row: 6 bugs × 3 tools = 18
+  - **Total = 81 (tool, bug) cells × 2h × 1 rep = 162 wall-hours.**
+    Parallelised 4-way ≈ **1.7 wall-days**. Inside §5.2's projection.
+- **10-floor contingency moot.** N = 23 is well above 10; the
+  original fallback to 1h × 1 cell budget doesn't trigger.
 
-If the equalizer pass applies BioTest's **metamorphic** oracle (not just differential) to fuzzer outputs, BioTest's transform chain gets credit for inputs the fuzzer generated, inflating BioTest's numbers spuriously.
+Verify at any time: `python -c "import json;
+d=json.load(open('compares/bug_bench/manifest.verified.json'));
+print(len(d['bugs']))"` → 23.
 
-**Mitigation**: restrict the equalizer to `test_engine/oracles/differential.py` only; **never** apply `metamorphic.py` to fuzzer outputs. Documented in §4.4. Sanity check: differential-only detection count ≤ full BioTest detection count, always.
+### Risk 3 — Fairness equalizer mis-application — **resolved 2026-04-19**
+
+**Original severity: medium. Current status: resolved.** The risk
+was a *policy-only* rule (§4.4) that could slip during
+implementation. Resolution: the policy is now enforced in code at
+two layers.
+
+Why the risk mattered: if the equalizer applies BioTest's
+**metamorphic** oracle (not just differential) to fuzzer outputs,
+BioTest's transform chain takes credit for inputs the fuzzer
+generated, inflating BioTest's numbers spuriously. That invalidates
+the whole "input quality vs oracle quality" separation the bench
+relies on (§4.4).
+
+Resolution (`compares/scripts/fairness_equalizer.py`):
+
+1. **Module-level import guard.** The script asserts
+   `"test_engine.oracles.metamorphic" not in sys.modules` at load
+   time, and re-asserts after its explicit `from
+   test_engine.oracles.differential import DifferentialOracle`. Any
+   transitive pull of metamorphic aborts the pass with a loud
+   AssertionError before the oracle sees a single input.
+2. **Greppable invariant.**
+   `grep -nE "^(from|import).*metamorphic" compares/scripts/fairness_equalizer.py`
+   returns zero hits — the only mentions of "metamorphic" in the
+   file are in comments, the module-level guard string, and error
+   messages.
+3. **Sanity check function `verify_biotest_containment`.** Enforces
+   the invariant from §4.4: BioTest's differential-only detection
+   count on any scope must be ≤ its full-oracle (metamorphic +
+   differential) count. Violation raises AssertionError with a
+   message pointing at §4.4. Covered by `--self-test`.
+4. **Single oracle instance.** The equalizer only constructs
+   `DifferentialOracle(runners)`; there is no metamorphic oracle
+   constructor reachable from the script's code path.
+
+Sequencing: the equalizer is a Phase-6 prerequisite — it runs after
+`bug_bench_driver.py` writes per-(tool, bug) corpora to
+`compares/results/bug_bench/` and before `build_report.py` aggregates.
+See §13.5 Phase 6.
+
+Verify:
+```
+# Self-test passes:
+python compares/scripts/fairness_equalizer.py --self-test
+# → "self-test PASSED"
+
+# Dry-run lists runners + confirms guard is active:
+python compares/scripts/fairness_equalizer.py --dry-run
+# → "oracle : DifferentialOracle (metamorphic IS BLOCKED; see module guard)"
+```
 
 ## 10. Open Decisions
 
@@ -509,65 +585,122 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 
 ---
 
-## Appendix A — Candidate Bug List
+## Appendix A — Candidate Bug List (full 44-entry catalogue)
 
-Research input to the `bug_bench/manifest.json` hand-authoring step in Phase 0. Each entry requires pre-fix / post-fix version pinning before it enters the live benchmark.
+Research input feeding `bug_bench/manifest.json`. Two research passes
+produced 44 candidates total; install-verification + scope-audit kept
+**23 verified** (✓) and dropped **21**. The verified set is the bench
+that Phase 4 runs; §13.4.7 above mirrors the verified subset compactly.
 
-### A.1 htsjdk (10)
+Status legend:
+- **✓ verified** — anchor installs cleanly, format in scope, signal
+  plausible.
+- **✗ UNRESOLVABLE** — no PR linkage in release notes; can't anchor
+  pre/post versions.
+- **✗ build-rot** — pre-fix pysam too old to build under any modern
+  Python.
+- **✗ CRAM scope** — bug is CRAM-specific, but no runner in this repo
+  reads CRAM (see DESIGN.md §13.4 scope note).
+- **✗ feature gap** — issue is a feature request, not a bug.
 
-| # | Issue | Category | Logic? | Description |
-| :-: | :--- | :--- | :--- | :--- |
-| 1 | [#1708](https://github.com/samtools/htsjdk/pull/1708) | round_trip_asymmetry | yes | CRAM multi-container reference region state corruption |
-| 2 | [#1590](https://github.com/samtools/htsjdk/pull/1590) | parse_error_missed | yes | CRAM 'BB' read features not restored — bases silently dropped |
-| 3 | [#1592](https://github.com/samtools/htsjdk/pull/1592) | parse_error_missed | yes | CRAM scores ('SC') misdecoded during normalization |
-| 4 | [#1554](https://github.com/samtools/htsjdk/pull/1554) | incorrect_field_value | yes | AC/AN/AF include filtered genotypes marked FT |
-| 5 | [#1637](https://github.com/samtools/htsjdk/issues/1637) | round_trip_asymmetry | yes | VCF sort order change breaks merging of valid VCFs |
-| 6 | [#1117](https://github.com/samtools/htsjdk/issues/1117) | null_ptr | no (crash) | NPE in BCF2LazyGenotypesDecoder on BCF-from-VCF |
-| 7 | [#1686](https://github.com/samtools/htsjdk/issues/1686) | incorrect_field_value | yes | Inconsistent `VariantContext.getType()` on spanning deletions |
-| 8 | [#1026](https://github.com/samtools/htsjdk/issues/1026) | incorrect_rejection | no | False "Allele not in VC" in multithreaded read-then-write |
-| 9 | [#761](https://github.com/samtools/htsjdk/issues/761) | writer_bug | yes | Filename containing ".bcf" forces BCF output for VCF |
-| 10 | [#423](https://github.com/samtools/htsjdk/issues/423) | parse_error_missed | yes | Multi-allelic AF/AC not per-allele cached |
+### A.1 htsjdk (20 candidates → **12 verified, 8 dropped**)
 
-### A.2 pysam (10)
+The 10 first-pass entries came from the original 32-candidate research; the 10 second-pass entries came from the direct scan of htsjdk release-note bodies (`expand_research.py`).
 
-| # | Issue | Category | Logic? | Description |
-| :-: | :--- | :--- | :--- | :--- |
-| 1 | [#1314](https://github.com/pysam-developers/pysam/issues/1314) | incorrect_field_value | yes | `VariantFile.write()` contig remap corruption after manual header edits |
-| 2 | [#1308](https://github.com/pysam-developers/pysam/issues/1308) | parse_error_missed | no | `VariantHeader.new_record()` fails GT on 2nd+ call |
-| 3 | [#966](https://github.com/pysam-developers/pysam/issues/966) | incorrect_field_value | yes | `VariantRecord.stop` returns POS instead of END for TRA |
-| 4 | [#1175](https://github.com/pysam-developers/pysam/issues/1175) | incorrect_field_value | yes | INFO/END omitted when writing symbolic-allele SV records |
-| 5 | [#1225](https://github.com/pysam-developers/pysam/issues/1225) | incorrect_field_value | no | Wrong PL tuple length expected for haploid GT |
-| 6 | [#904](https://github.com/pysam-developers/pysam/issues/904) | incorrect_rejection | no | `VariantFile.fetch()` raises on empty VCF with valid tabix index |
-| 7 | [#1038](https://github.com/pysam-developers/pysam/issues/1038) | incorrect_rejection | no | `tabix_index()` leaks file handles under parallel load |
-| 8 | [#641](https://github.com/pysam-developers/pysam/issues/641) | writer_bug | yes | `tabix_index()` always creates CSI, ignoring user choice |
-| 9 | [#771](https://github.com/pysam-developers/pysam/issues/771) | null_ptr | no (crash) | `VariantFile.write()` segfault on missing `##FORMAT`/`##contig` |
-| 10 | [#450](https://github.com/pysam-developers/pysam/issues/450) | writer_bug | yes | Header-only VCF loses header on write (regression 0.10.0) |
+#### First-pass (10)
 
-### A.3 biopython (6, SAM only)
+| # | Issue | Format | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
+| 1 | [#1708](https://github.com/samtools/htsjdk/pull/1708) | CRAM | round_trip_asymmetry | yes | ✗ CRAM scope | CRAM multi-container reference region state corruption |
+| 2 | [#1590](https://github.com/samtools/htsjdk/pull/1590) | CRAM | parse_error_missed | yes | ✗ CRAM scope | CRAM 'BB' read features not restored — bases silently dropped |
+| 3 | [#1592](https://github.com/samtools/htsjdk/pull/1592) | CRAM | parse_error_missed | yes | ✗ CRAM scope | CRAM scores ('SC') misdecoded during normalization |
+| 4 | [#1554](https://github.com/samtools/htsjdk/pull/1554) | VCF | incorrect_field_value | yes | ✓ verified | AC/AN/AF include filtered genotypes marked FT |
+| 5 | [#1637](https://github.com/samtools/htsjdk/issues/1637) | VCF | round_trip_asymmetry | yes | ✓ verified | VCF sort order change breaks merging of valid VCFs |
+| 6 | [#1117](https://github.com/samtools/htsjdk/issues/1117) | VCF | null_ptr | no (crash) | ✗ UNRESOLVABLE | NPE in BCF2LazyGenotypesDecoder on BCF-from-VCF |
+| 7 | [#1686](https://github.com/samtools/htsjdk/issues/1686) | VCF | incorrect_field_value | yes | ✗ UNRESOLVABLE | Inconsistent `VariantContext.getType()` on spanning deletions |
+| 8 | [#1026](https://github.com/samtools/htsjdk/issues/1026) | VCF | incorrect_rejection | no | ✗ UNRESOLVABLE | False "Allele not in VC" in multithreaded read-then-write |
+| 9 | [#761](https://github.com/samtools/htsjdk/issues/761) | VCF | writer_bug | yes | ✗ UNRESOLVABLE | Filename containing ".bcf" forces BCF output for VCF |
+| 10 | [#423](https://github.com/samtools/htsjdk/issues/423) | VCF | parse_error_missed | yes | ✗ UNRESOLVABLE | Multi-allelic AF/AC not per-allele cached |
 
-| # | Issue | Category | Logic? | Description |
-| :-: | :--- | :--- | :--- | :--- |
-| 1 | [#4825](https://github.com/biopython/biopython/issues/4825) | edge_case_missed | yes | Excessive deepcopy in SAM parser (perf + correctness) |
-| 2 | [#4868](https://github.com/biopython/biopython/issues/4868) | parse_error_missed | — | Native BAM parsing not implemented (feature gap; context only) |
-| 3 | [#4731](https://github.com/biopython/biopython/issues/4731) | parse_error_missed | yes | CIGAR op details not exposed |
-| 4 | [#1913](https://github.com/biopython/biopython/issues/1913) | edge_case_missed | yes | Wrong local alignment for zero-score start residue |
-| 5 | [#1699](https://github.com/biopython/biopython/issues/1699) | parse_error_missed | no | query_start/query_end from soft-clip CIGAR not exposed |
-| 6 | [#4769](https://github.com/biopython/biopython/issues/4769) | incorrect_field_value | yes | PairwiseAligner vs legacy pairwise2 inconsistency |
+#### Second-pass expansion (10) — all VCF/SAM text, 2.x→3.x release range
 
-### A.4 seqan3 (6, confirmed fix-commit SHAs)
+| # | Issue | Format | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
+| 11 | [#1364](https://github.com/samtools/htsjdk/pull/1364) | VCF | incorrect_rejection | yes | ✓ verified | Mixed-case `NaN`/`Inf`/`Infinity` rejected by VCF codec |
+| 12 | [#1389](https://github.com/samtools/htsjdk/pull/1389) | VCF | writer_bug | yes | ✓ verified | Multi-value missing fields written as `.,.,.` instead of `.` |
+| 13 | [#1372](https://github.com/samtools/htsjdk/pull/1372) | VCF | parse_error_missed | yes | ✓ verified | VCF codec throws on FORMAT=GL with all-missing G-dimension values |
+| 14 | [#1401](https://github.com/samtools/htsjdk/pull/1401) | VCF | incorrect_field_value | yes | ✓ verified | PEDIGREE header handling diverges between VCF 4.2 and 4.3 |
+| 15 | [#1403](https://github.com/samtools/htsjdk/pull/1403) | VCF | incorrect_field_value | yes | ✓ verified | VariantContextBuilder regression in 2.20.0; 2.20.1 hotfix |
+| 16 | [#1418](https://github.com/samtools/htsjdk/pull/1418) | VCF | incorrect_rejection | no | ✓ verified | VCFHeader throws on `##contig` lines without optional `length=` |
+| 17 | [#1544](https://github.com/samtools/htsjdk/pull/1544) | VCF | incorrect_field_value | yes | ✓ verified | `VariantContext.getType()` mis-classifies gVCF `<NON_REF>` records |
+| 18 | [#1561](https://github.com/samtools/htsjdk/pull/1561) | SAM | parse_error_missed | yes | ✓ verified | SAM header tag keys not validated to be exactly 2 chars |
+| 19 | [#1538](https://github.com/samtools/htsjdk/pull/1538) | SAM | incorrect_field_value | yes | ✓ verified | SAMRecord `mAlignmentBlocks` cache not invalidated after CIGAR mutation |
+| 20 | [#1489](https://github.com/samtools/htsjdk/pull/1489) | SAM | incorrect_field_value | yes | ✓ verified | Locus accumulator drops insertion events; coverage diverges from samtools |
 
-| # | PR | Fix SHA | Category | Logic? | Description |
-| :-: | :--- | :--- | :--- | :--- | :--- |
-| 1 | [#2418](https://github.com/seqan/seqan3/pull/2418) | `8e374d7c` | parse_error_missed | yes | BAM parser skips sequence bytes on dummy alignment — stream misalignment |
-| 2 | [#3081](https://github.com/seqan/seqan3/pull/3081) | `c84f567` | writer_bug | yes | Empty SAM/BAM output missing header — file unusable |
-| 3 | [#3269](https://github.com/seqan/seqan3/pull/3269) | `11564cb3` | off_by_one_coord | yes | Banded alignment returns relative (not absolute) positions |
-| 4 | [#3098](https://github.com/seqan/seqan3/pull/3098) | `4fe54891` | incorrect_field_value | yes | Alignment traceback carry-bit tracking wrong → wrong score |
-| 5 | [#2869](https://github.com/seqan/seqan3/pull/2869) | (in PR) | parse_error_missed | yes | FASTA ID containing `>` parsed incorrectly |
-| 6 | [#3406](https://github.com/seqan/seqan3/pull/3406) | `5e5c05a4` | encoding_bug | no (data race) | BGZF concurrent-read data race |
+### A.2 pysam (12 candidates → 4 verified, 8 dropped)
 
-biopython #4868 is a feature gap rather than a bug and will likely be dropped or reframed in the manifest.
+#### First-pass (10)
 
-**Expected verified yield**: 18–25 of 32 after Phase-0 install-verification.
+| # | Issue | Format | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
+| 1 | [#1314](https://github.com/pysam-developers/pysam/issues/1314) | VCF | incorrect_field_value | yes | ✓ verified | `VariantFile.write()` contig remap corruption after manual header edits |
+| 2 | [#1308](https://github.com/pysam-developers/pysam/issues/1308) | VCF | parse_error_missed | no | ✓ verified | `VariantHeader.new_record()` fails GT on 2nd+ call |
+| 3 | [#966](https://github.com/pysam-developers/pysam/issues/966) | VCF | incorrect_field_value | yes | ✗ build-rot | `VariantRecord.stop` returns POS instead of END for TRA — pre-fix 0.16.0 unbuildable |
+| 4 | [#1175](https://github.com/pysam-developers/pysam/issues/1175) | VCF | incorrect_field_value | yes | ✗ build-rot | INFO/END omitted for symbolic-allele SVs — pre-fix 0.20.0 unbuildable |
+| 5 | [#1225](https://github.com/pysam-developers/pysam/issues/1225) | VCF | incorrect_field_value | no | ✗ UNRESOLVABLE | Wrong PL tuple length expected for haploid GT |
+| 6 | [#904](https://github.com/pysam-developers/pysam/issues/904) | VCF | incorrect_rejection | no | ✗ build-rot | `VariantFile.fetch()` raises on empty VCF — pre-fix 0.15.0 unbuildable |
+| 7 | [#1038](https://github.com/pysam-developers/pysam/issues/1038) | VCF | incorrect_rejection | no | ✗ build-rot | `tabix_index()` leaks file handles — pre-fix 0.16.0 unbuildable |
+| 8 | [#641](https://github.com/pysam-developers/pysam/issues/641) | VCF | writer_bug | yes | ✗ build-rot | `tabix_index()` always creates CSI — pre-fix 0.16.0 unbuildable |
+| 9 | [#771](https://github.com/pysam-developers/pysam/issues/771) | VCF | null_ptr | no (crash) | ✗ UNRESOLVABLE | `VariantFile.write()` segfault on missing `##FORMAT`/`##contig` |
+| 10 | [#450](https://github.com/pysam-developers/pysam/issues/450) | VCF | writer_bug | yes | ✗ build-rot | Header-only VCF loses header on write — pre-fix 0.11.0 unbuildable |
+
+#### Second-pass expansion (2) — both 0.21+ AlignmentFile fixes
+
+| # | Issue | Format | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
+| 11 | [#1214](https://github.com/pysam-developers/pysam/issues/1214) | SAM | incorrect_field_value | yes | ✓ verified | AlignmentFile produces wrong per-record fields on some spec-tolerated SAM inputs |
+| 12 | [#939](https://github.com/pysam-developers/pysam/issues/939) | SAM | incorrect_field_value | yes | ✓ verified | Long-standing AlignmentFile bug, packaged into 0.22.0 cleanup with #1214 |
+
+### A.3 biopython (6 candidates → 1 verified, 5 dropped)
+
+| # | Issue | Format | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
+| 1 | [#4825](https://github.com/biopython/biopython/issues/4825) | SAM | edge_case_missed | yes | ✓ verified | Excessive deepcopy in SAM parser (perf + correctness under bounded budget) |
+| 2 | [#4868](https://github.com/biopython/biopython/issues/4868) | SAM | parse_error_missed | — | ✗ feature gap | Native BAM parsing not implemented — not a bug |
+| 3 | [#4731](https://github.com/biopython/biopython/issues/4731) | SAM | parse_error_missed | yes | ✗ UNRESOLVABLE | CIGAR op details not exposed |
+| 4 | [#1913](https://github.com/biopython/biopython/issues/1913) | SAM | edge_case_missed | yes | ✗ UNRESOLVABLE | Wrong local alignment for zero-score start residue |
+| 5 | [#1699](https://github.com/biopython/biopython/issues/1699) | SAM | parse_error_missed | no | ✗ UNRESOLVABLE | query_start/query_end from soft-clip CIGAR not exposed |
+| 6 | [#4769](https://github.com/biopython/biopython/issues/4769) | SAM | incorrect_field_value | yes | ✗ UNRESOLVABLE | PairwiseAligner vs legacy pairwise2 inconsistency |
+
+### A.4 seqan3 (6 candidates → 6 verified, 0 dropped)
+
+All seqan3 entries anchor on commit SHAs (resolved via `git rev-parse <fix_sha>^`), not release versions.
+
+| # | PR | Format | Fix SHA | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :--- | :---: | :---: | :--- |
+| 1 | [#2418](https://github.com/seqan/seqan3/pull/2418) | SAM/BAM | `8e374d7c` | parse_error_missed | yes | ✓ verified | BAM parser skips sequence bytes on dummy alignment — stream misalignment |
+| 2 | [#3081](https://github.com/seqan/seqan3/pull/3081) | SAM/BAM | `c84f567` | writer_bug | yes | ✓ verified | Empty SAM/BAM output missing header — file unusable |
+| 3 | [#3269](https://github.com/seqan/seqan3/pull/3269) | SAM | `11564cb3` | off_by_one_coord | yes | ✓ verified | Banded alignment returns relative (not absolute) positions |
+| 4 | [#3098](https://github.com/seqan/seqan3/pull/3098) | SAM | `4fe54891` | incorrect_field_value | yes | ✓ verified | Alignment traceback carry-bit tracking wrong → wrong score |
+| 5 | [#2869](https://github.com/seqan/seqan3/pull/2869) | FASTA-adjacent | `edbfa956f` | parse_error_missed | yes | ✓ verified | FASTA ID containing `>` parsed incorrectly (FASTA, not strict-SAM) |
+| 6 | [#3406](https://github.com/seqan/seqan3/pull/3406) | SAM | `5e5c05a4` | encoding_bug | no (data race) | ✓ verified | BGZF concurrent-read data race (non-deterministic) |
+
+### Appendix A summary
+
+| | Candidates | Verified (✓) | Dropped (✗) |
+| :--- | :---: | :---: | :---: |
+| htsjdk | 20 | 12 | 8 (3 CRAM scope, 5 UNRESOLVABLE) |
+| pysam | 12 | 4 | 8 (6 build-rot, 2 UNRESOLVABLE) |
+| biopython | 6 | 1 | 5 (1 feature gap, 4 UNRESOLVABLE) |
+| seqan3 | 6 | 6 | 0 |
+| **total** | **44** | **23** | **21** |
+
+**Yield**: 52 % — inside DESIGN.md §5.2's 18–25 forecast.
+
+Out-of-scope CRAM bugs (3 entries) are kept in the table for
+historical completeness; their trigger folders also stay on disk
+under `compares/bug_bench/triggers/htsjdk-{1708,1590,1592}/` for the
+day a CRAM-aware harness is added.
 
 ---
 
@@ -1156,17 +1289,22 @@ python3.12 compares/scripts/bug_bench_driver.py --verify-only \
     --dropped-out compares/bug_bench/dropped.json
 ```
 
-Result: `Summary: 14 verified, 18 dropped of 32 candidates.` Then a
-scope-audit pass (`drop_cram_scope.py`) removed the three
-CRAM-specific htsjdk bugs because no runner in this repo reads CRAM,
-giving the final **11 verified / 21 dropped**.
+Result, after both research passes:
+- First pass (32 candidates): `Summary: 14 verified, 18 dropped`.
+- Second pass added 12 candidates (`expand_research.py`) → 44 total;
+  re-verify reported `Summary: 26 verified, 18 dropped`.
+- Scope-audit pass (`drop_cram_scope.py`) removed the three CRAM
+  htsjdk bugs because no runner in this repo reads CRAM.
 
-**Why only 11 survived**:
-- 12 UNRESOLVABLE dropped by the research step (no version anchor).
+**Final: 23 verified / 21 dropped of 44 candidates.**
+
+**Why those 21 dropped**:
+- 11 UNRESOLVABLE — no PR linkage in release notes.
+- 1 feature gap (`biopython-4868`) — not a bug.
 - 6 pre-0.21 pysam versions fail to build (`pysam==0.11/0.12/0.15/
   0.16/0.17/0.20`) even inside the Python 3.11 venv — sdist
   `pyproject.toml` missing; Cython + old libhts headers incompatible
-  with modern toolchain. Honest drop.
+  with modern toolchain.
 - 3 CRAM bugs out of scope — the runners here handle VCF/SAM only;
   `htsjdk_runner.py:61` declares `supported_formats = {"VCF", "SAM"}`
   and `BioTestHarness.java` has zero CRAM code paths. Reintroducing
@@ -1178,56 +1316,93 @@ Empirically verified with Py 3.11 venv: pysam **0.21.0, 0.22.0,
 
 #### 13.4.4 Populate trigger evidence — verified
 
-All 11 verified bugs have trigger folders under
-`compares/bug_bench/triggers/<bug_id>/`. Each folder carries at minimum
-a `README.md` (one-paragraph bug description + how the trigger surfaces
-it), with format-appropriate companions:
+All **23** verified bugs have trigger folders under
+`compares/bug_bench/triggers/<bug_id>/`. Each folder carries at
+minimum a `README.md` (one-paragraph bug description + detection
+criterion + format) and an `issue_source.txt` (release-note line that
+proves the version anchor). Where the format is plain-text VCF or
+SAM and the bug surfaces on a small synthetic input, an
+`original.vcf` / `original.sam` seed file is also shipped.
 
-| Source | Contents per trigger folder |
+Population was done in three sweeps; all driven by reproducible
+scripts that re-converge on the manifest:
+
+| Pass | Script | Produces |
+| :--- | :--- | :--- |
+| 1. seqan3 (6 bugs) | bash `git show <fix_sha> -- test/` per bug | `fix.diff`, `FIX_COMMIT.txt`, `test_files/*.cpp,hpp` extracted from the PR's regression-test additions |
+| 2. First-batch non-seqan3 (5 bugs) | manual write per Explore-agent's research | `original.vcf`/`original.sam`/`reproduce.py`/`reproduce.java` written by hand from issue-page content |
+| 3. Second-batch htsjdk + pysam (12 bugs from the expansion) | `python compares/bug_bench/write_triggers.py` | `README.md` rendered from `manifest.verified.json`; inline minimal `original.vcf`/`original.sam` written for the 7 bugs whose format is text + small-trigger-able |
+
+Concrete coverage by bug class:
+
+| Bug class | Trigger artefact |
 | :--- | :--- |
-| seqan3 × 6 (from `git show <fix_sha> -- test/`) | `fix.diff` full commit diff; `FIX_COMMIT.txt` commit metadata; `test_files/*.cpp,hpp` post-fix test source containing the embedded trigger inputs |
-| htsjdk-1554 / htsjdk-1637 | `original.vcf` minimal reproducer + `reproduce.java` for -1554 |
+| seqan3 × 6 | `fix.diff` + `FIX_COMMIT.txt` + post-fix `test_files/*` (the PR's own regression test contains the embedded SAM/BAM trigger) |
+| htsjdk VCF text-format (1554, 1637, 1364, 1389, 1372, 1418, 1544) | `original.vcf` minimal reproducer (some inline-spec, others from PR test code) + `README.md` |
+| htsjdk VCF complex (1401, 1403) | `README.md` + `issue_source.txt` only — fix involves cross-version PEDIGREE handling / Builder regression that bench driver synthesises via fuzzer fallback |
+| htsjdk SAM text-format (1561, 1538) | `original.sam` minimal reproducer + `README.md` |
+| htsjdk SAM complex (1489) | `README.md` + `issue_source.txt` only — locus-accumulator bug needs a SAM with overlapping insertions, fuzzer-synthesised |
+| htsjdk-1554 (extra) | `reproduce.java` minimal main() |
 | pysam-1314 | `original.vcf` + `reproduce.py` + `issue_source.txt` |
 | pysam-1308 | `reproduce.py` + `issue_source.txt` (pure in-memory; no file needed) |
+| pysam-1214 / -939 | `README.md` + `issue_source.txt` only — long-standing AlignmentFile bugs, specific input shape deferred to bench-time discovery |
 | biopython-4825 | `original.sam` 3-record seed + `generate_large_sam.py` (inflates to 10 k records for perf trigger) + `reproduce.py` timing wrapper + `issue_source.txt` |
 
-The three CRAM-bug folders (`htsjdk-1708`, `-1590`, `-1592`) are kept
-on disk with their `README.md` / `issue_source.txt` / (for -1708)
-`synthesise_trigger.sh`, but no longer referenced by the verified
-manifest — useful reference material if we ever extend the runners
-to read CRAM.
+The three CRAM-bug folders (`htsjdk-1708`, `-1590`, `-1592`) stay on
+disk with their `README.md` / `issue_source.txt` / (for -1708)
+`synthesise_trigger.sh` — useful reference material if a CRAM-aware
+harness is ever added to the runners. They are NOT referenced from
+the verified manifest.
 
 - [x] `compares/bug_bench/triggers/<bug_id>/README.md` for each of
-  the 11 in-scope bugs — one-paragraph description + detection
-  criterion.
-- [x] `compares/bug_bench/triggers/<bug_id>/` populated per the table
-  above. Every bug has at least (a) a trigger input OR a script that
-  produces one, AND (b) a description of the expected-signal
-  translation from §4.3 for that specific bug.
+  the 23 in-scope bugs — one-paragraph description + detection
+  criterion + format. Generated from the manifest by
+  `write_triggers.py`; manual-written entries take precedence
+  (script preserves any existing files).
+- [x] `compares/bug_bench/triggers/<bug_id>/issue_source.txt` for
+  each of the 23 — release-note citation lines for traceability.
+- [x] **Inline minimal trigger files** (`original.vcf`/`original.sam`)
+  shipped for 11 of 23 bugs where the format is text and the
+  triggering input is small (< 10 lines). The remaining 12 bugs
+  rely on (a) a bundled reproducer script (`reproduce.py`,
+  `reproduce.java`, `generate_large_sam.py`, `synthesise_trigger.sh`),
+  (b) the seqan3 PR's own test source, or (c) fuzzer-synthesis at
+  bench time per DESIGN.md §4.3.
 - [x] seqan3 bugs got their PR's own test suite pulled straight out
-  of the fix commit via `git show <fix_sha> -- test/` (done in a
-  Bash one-liner, not a script — re-runnable if seqan3 HEAD drifts).
+  of the fix commit via `git show <fix_sha> -- test/` — re-runnable
+  whenever seqan3 HEAD drifts.
+
+**Re-running the trigger pass** (idempotent):
+
+```bash
+# Re-extract seqan3 PR test files from the cloned source:
+#   (one-shot Bash loop — see 13.4.4 commit history; not script-wrapped)
+
+# Render README.md + issue_source.txt + inline trigger files from
+# the manifest for any bug whose folder is missing artefacts:
+python compares/bug_bench/write_triggers.py
+```
 
 #### 13.4.5 Freeze the verified manifest — verified
 
 - [x] `compares/bug_bench/manifest.verified.json` written by
-  `compares/bug_bench/freeze_verified.py`. 11-bug subset; preserves
-  the full `anchor` / `trigger` / `expected_signal` payload per bug
-  plus a `bench_counts_by_sut` rollup field.
-- [x] Both `manifest.json` (32 candidates, research applied) and
-  `manifest.verified.json` (11-bug frozen subset) committed. The bench
-  driver reads `--manifest` (default `manifest.json`); pass the
-  `--manifest compares/bug_bench/manifest.verified.json` flag to
-  Phase 4 to run only on the frozen subset.
+  `compares/bug_bench/freeze_verified.py`. **23-bug subset**;
+  preserves the full `anchor` / `trigger` / `expected_signal` payload
+  per bug plus a `bench_counts_by_sut` rollup field.
+- [x] Both `manifest.json` (44 candidates after the expansion pass)
+  and `manifest.verified.json` (23-bug frozen subset) committed. The
+  bench driver reads `--manifest` (default `manifest.json`); pass
+  `--manifest compares/bug_bench/manifest.verified.json` to Phase 4
+  to run only on the frozen subset.
 
 #### 13.4.6 User review gate — ready
 
 - [x] A one-page review packet written at
   `compares/bug_bench/REVIEW.md`. Contents:
-  - Headline 11 verified / 21 dropped numbers + 34 % yield.
+  - Headline **23 verified / 21 dropped of 44 candidates + 52% yield**.
   - Per-bug table with id, SUT, format, pre/post-fix anchor,
     trigger-file set, research confidence.
-  - Per-SUT bench shape rollup.
+  - Per-SUT bench shape rollup with VCF / SAM split (11 VCF / 12 SAM).
   - Drop-reason breakdown table: 11 no-PR-linkage / 1 feature gap /
     6 pre-0.21 pysam build-rot / 3 CRAM out-of-scope.
   - Five flagged concerns the user should decide on (thin htsjdk row
@@ -1350,10 +1525,34 @@ fuzzer-synthesis per DESIGN.md §4.3.
 
 #### Phase 6 — Report (≤ 2 hours)
 
-- [ ] `py -3.12 compares/scripts/build_report.py --results compares/results/ --out compares/results/comparison_report.md`.
-- [ ] Confirm all six figures generated (`coverage_growth_<sut>.png` × 4, `validity_bar_<sut>.png` × 4, `mutation_bar_<sut>.png` × 4, `bug_detection_heatmap.png`, `ttfb_violin.png`).
-- [ ] Manual review: open `comparison_report.md`; sanity-check every table row against the raw JSON in `compares/results/`.
-- [ ] Run the fairness-equalizer sanity check from §4.4: confirm BioTest's differential-only detection count ≤ full BioTest detection count.
+**Sequence (run in this order)**:
+
+1. [ ] **Fairness-equalizer pass** — DESIGN.md §4.4 / §9 Risk 3. Runs
+   once per full bench-driver output, re-feeds every tool's accepted
+   inputs through the differential-only oracle, and credits each
+   tool with the disagreements its inputs caused:
+   ```
+   python compares/scripts/fairness_equalizer.py \
+       --bench-root compares/results/bug_bench \
+       --out compares/results/fairness_equalizer
+   ```
+   The module-level import guard refuses to run if
+   `test_engine.oracles.metamorphic` is in `sys.modules`; sanity
+   assertion enforces `BioTest_diff_only ≤ BioTest_full`.
+2. [ ] **Aggregate report**:
+   ```
+   py -3.12 compares/scripts/build_report.py \
+       --results compares/results/ \
+       --out compares/results/comparison_report.md
+   ```
+   `build_report.py` consumes both the bug-bench JSON and the
+   fairness-equalizer JSON so crash-only and disagreement-only
+   detections are counted per tool-cell.
+3. [ ] Confirm all six figures generated (`coverage_growth_<sut>.png`
+   × 4, `validity_bar_<sut>.png` × 4, `mutation_bar_<sut>.png` × 4,
+   `bug_detection_heatmap.png`, `ttfb_violin.png`).
+4. [ ] Manual review: open `comparison_report.md`; sanity-check every
+   table row against the raw JSON in `compares/results/`.
 
 ### 13.6 Post-run validation
 
