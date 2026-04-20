@@ -1,0 +1,13 @@
+Excerpted from PR #1590 (https://github.com/samtools/htsjdk/pull/1590)
+and the linked upstream issue hts-specs #1379.
+
+> CRAM read features include a "BB" opcode ("bases stored as a string")
+> that the decoder reads from the CRAM external blocks but fails to
+> integrate into the reconstructed read sequence. The missing append
+> step in ReadFeatureDecoder drops those bases silently. Any CRAM
+> file that contains BB-encoded reads decodes correctly under
+> htslib/samtools but loses the BB-encoded bases under htsjdk 2.x.
+
+Fix commit: 4964045. The test resource shipped with the PR is a CRAM
+file generated against the hts-specs compliance corpus that
+specifically exercises the BB branch.

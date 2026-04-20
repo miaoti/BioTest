@@ -1,0 +1,20 @@
+Excerpted from issue #1314
+(https://github.com/pysam-developers/pysam/issues/1314).
+
+> I'm editing VCF headers by hand, adding contigs in a new order, and
+> copying records through. `rec.chrom` reports the right contig name
+> on every record I fetch, but on the output VCF every record ends up
+> on my first registered contig. Looks like `VariantFile.write` is
+> re-mapping to header-contig-index-0 instead of matching by name.
+>
+> Reproduction:
+>   hdr = pysam.VariantHeader()
+>   hdr.contigs.add("mychr", length=1000)
+>   hdr.contigs.add("Horvu_VADA_Un01G000200.1", length=2673)
+>   src = pysam.VariantFile("input.vcf")   # records on Horvu_VADA_Un01G...
+>   dst = pysam.VariantFile("out.vcf", "w", header=hdr)
+>   for rec in src: dst.write(rec)
+>   # out.vcf now shows CHROM=mychr for every record.
+
+Fix landed in pysam 0.23.0 release notes as "VariantFile.write()
+contig lookup by name, not index (#1314)".

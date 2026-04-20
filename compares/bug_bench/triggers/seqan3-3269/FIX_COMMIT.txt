@@ -1,0 +1,10 @@
+commit: 11564cb3bcea39666d6d3979080bc5d8fdbe1d7e
+author: rrahn
+date:   Tue Jul 16 17:32:10 2024 +0200
+
+Fixes #3266: Incorrect begin/end of alignment for banded alignment
+
+In case the sequences are sliced by cutting off a prefix of the original seuence due to the band configuration, the relative positions of the sliced sequences was reported inside of the alignment result.
+However, this slicing happens only internally and thus the positions reported should correspond to the ones of the original sequences.
+We fix this by tracking the offset of the prefix that was cut off and add this to the relative positions during result creation to get the absolute positions.
+

@@ -1,0 +1,18 @@
+Excerpted from issue #1637
+(https://github.com/samtools/htsjdk/issues/1637) and the revert PR
+commit e2943b7.
+
+> htsjdk 3.0.3 bundled PR #1593 which introduced an allele-string
+> tiebreaker in the VCF record comparator. Existing VCFs that were
+> coordinate-sorted under htsjdk <= 3.0.2's comparator then fail
+> htsjdk 3.0.3's `isSorted()` check because the allele tiebreaker
+> treats A->C as ordering *before* A->T, whereas the historic
+> comparator was chromosome-position-only and accepted any order of
+> same-position records. Downstream tools (GATK, bcftools-via-htsjdk)
+> that load VCF files and validate sort order now reject previously
+> valid input.
+
+The 3.0.4 hotfix reverts PR #1593 and re-introduces a pair of
+comparators — one for ordering (with allele tiebreaker) and one for
+*validating* a file as already sorted (position-only) — so that the
+validator accepts both the old and new sort conventions.

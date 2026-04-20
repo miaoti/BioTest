@@ -1,0 +1,6 @@
+Issue / PR: https://github.com/samtools/htsjdk/pull/1372
+
+Verification rule: htsjdk 2.20.0 release notes cite 'VCF codec should handle multiple missing GL fields (#1372)'
+
+Description (from manifest):
+  Pre-fix VCF codec fails to handle FORMAT=GL when multiple per-genotype GL values are each individually missing ('.'). Throws instead of producing null, even though htslib accepts the input.

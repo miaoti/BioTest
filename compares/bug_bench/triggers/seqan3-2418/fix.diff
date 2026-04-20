@@ -1,0 +1,117 @@
+commit 8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600
+Author: Enrico Seiler <enrico.seiler@hotmail.de>
+Date:   Fri Feb 26 16:11:36 2021 +0100
+
+    [FIX] BAM: Not consuming sequence
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index d7c0b7965..a584fa68c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -76,6 +76,11 @@ If possible, provide tooling that performs the changes, e.g. a shell-script.
+ * The `seqan3::views::kmer_hash` does not return wrong values when combined with `std::views::reverse` on a text of the
+   same size as the kmer ([\#2416](https://github.com/seqan/seqan3/pull/2416)).
+ 
++#### I/O
++
++* Requesting the alignment without also requesting the sequence for BAM files containing empty CIGAR strings does now
++  not result in erroneous parsing ([\#2418](https://github.com/seqan/seqan3/pull/2418)).
++
+ ## API changes
+ 
+ #### Alphabet
+diff --git a/include/seqan3/io/sam_file/format_bam.hpp b/include/seqan3/io/sam_file/format_bam.hpp
+index 1b7b3a23c..9ceae9a69 100644
+--- a/include/seqan3/io/sam_file/format_bam.hpp
++++ b/include/seqan3/io/sam_file/format_bam.hpp
+@@ -444,6 +444,13 @@ inline void format_bam::read_alignment_record(stream_type & stream,
+ 
+         if constexpr (detail::decays_to_ignore_v<seq_type>)
+         {
++            auto skip_sequence_bytes = [&] ()
++            {
++                detail::consume(seq_stream);
++                if (core.l_seq & 1)
++                    std::ranges::next(std::ranges::begin(stream_view));
++            };
++
+             if constexpr (!detail::decays_to_ignore_v<align_type>)
+             {
+                 static_assert(sequence_container<std::remove_reference_t<decltype(get<1>(align))>>,
+@@ -486,14 +493,13 @@ inline void format_bam::read_alignment_record(stream_type & stream,
+                 }
+                 else
+                 {
++                    skip_sequence_bytes();
+                     get<1>(align) = std::remove_reference_t<decltype(get<1>(align))>{}; // assign empty container
+                 }
+             }
+             else
+             {
+-                detail::consume(seq_stream);
+-                if (core.l_seq & 1)
+-                    std::ranges::next(std::ranges::begin(stream_view));
++                skip_sequence_bytes();
+             }
+         }
+         else
+diff --git a/test/unit/io/sam_file/format_bam_test.cpp b/test/unit/io/sam_file/format_bam_test.cpp
+index 76d21c3e6..b0e447f5c 100644
+--- a/test/unit/io/sam_file/format_bam_test.cpp
++++ b/test/unit/io/sam_file/format_bam_test.cpp
+@@ -22,7 +22,10 @@ struct sam_file_read<seqan3::format_bam> : public sam_file_data
+     // formatted input
+     // -----------------------------------------------------------------------------------------------------------------
+     // See format_sam_test for the corresponding input in human readable-form.
+-    // The byte sequence here are all uncompressed bam files since the file handles compression.
++    // The byte sequence here are all uncompressed (both gzip and bgzf) bam files since the file handles compression.
++    // Conversion can look like this: samtools view -u test.sam | bgzip -d
++    // -u disables gzip compression, but the output is still bgzf compressed (decompression via bgzip)
++    // pass --no-PG to samtools if you do not want PG tags which may be added automatically
+ 
+     using stream_type = std::istringstream;
+ 
+@@ -522,3 +525,43 @@ TEST_F(bam_format, too_long_cigar_string_write)
+ 
+     EXPECT_TRUE(os.str() == expected); // do not use EXPECT_EQ because if this fails the output will be huge :D
+ }
++
++// https://github.com/seqan/seqan3/issues/2417
++TEST_F(bam_format, issue2417)
++{
++    std::string const input{
++        // @HD	VN:1.6
++        // @SQ	SN:ref	LN:1904
++        // read1	117	ref	1	0	*	=	1	0	ACGTA	IIIII
++        '\x42', '\x41', '\x4D', '\x01', '\x1E', '\x00', '\x00', '\x00', '\x40', '\x48', '\x44', '\x09', '\x56', '\x4E',
++        '\x3A', '\x31', '\x2E', '\x36', '\x0A', '\x40', '\x53', '\x51', '\x09', '\x53', '\x4E', '\x3A', '\x72', '\x65',
++        '\x66', '\x09', '\x4C', '\x4E', '\x3A', '\x31', '\x39', '\x30', '\x34', '\x0A', '\x01', '\x00', '\x00', '\x00',
++        '\x04', '\x00', '\x00', '\x00', '\x72', '\x65', '\x66', '\x00', '\x70', '\x07', '\x00', '\x00', '\x2E', '\x00',
++        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x06', '\x00', '\x49', '\x12',
++        '\x00', '\x00', '\x75', '\x00', '\x05', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00',
++        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x72', '\x65', '\x61', '\x64', '\x31', '\x00', '\x12', '\x48',
++        '\x10', '\x28', '\x28', '\x28', '\x28', '\x28'
++    };
++
++    std::istringstream stream{input};
++
++    seqan3::sam_file_input fin{stream, seqan3::format_bam{}, seqan3::fields<seqan3::field::id,
++                                                                            seqan3::field::alignment>{}};
++
++    std::vector<seqan3::gapped<seqan3::dna5>> const empty_sequence{};
++
++    size_t num_records{0u};
++
++    // In 2417, the sequence was not consumed. Thus, wrong bytes were read for the following records.
++    // With the chosen `input` this also means that there will be more than 1 record in the alignment file.
++    // Hence, we need the for loop even though there is only 1 record.
++    for (auto && [id, alignment] : fin)
++    {
++        ++num_records;
++        EXPECT_RANGE_EQ(id, std::string{"read1"});
++        EXPECT_RANGE_EQ(std::get<0>(alignment), empty_sequence);
++        EXPECT_RANGE_EQ(std::get<1>(alignment), empty_sequence);
++    }
++
++    EXPECT_EQ(num_records, 1u);
++}

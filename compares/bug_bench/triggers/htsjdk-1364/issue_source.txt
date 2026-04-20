@@ -1,0 +1,6 @@
+Issue / PR: https://github.com/samtools/htsjdk/pull/1364
+
+Verification rule: htsjdk 2.20.0 release notes cite 'Tolerate mixed case NaNs and Infinities in VCF (#1364)'
+
+Description (from manifest):
+  Pre-fix VCF codec rejects QUAL / INFO float values spelled with non-lowercase 'nan' or 'inf' (e.g. 'NaN', 'Inf', 'Infinity'), which htslib accepts per the VCF spec's float production rule. Causes differential disagreement on any VCF where upstream tools emit mixed-case float literals.

@@ -1,0 +1,17 @@
+Excerpted from issue #1308
+(https://github.com/pysam-developers/pysam/issues/1308).
+
+> On pysam 0.22.1, two consecutive calls to VariantHeader.new_record
+> with identical arguments fail on the second call:
+>
+>   vcfh = pysam.VariantHeader()
+>   vcfh.contigs.add("chr1")
+>   vcfh.add_sample("sample1")
+>   vcfh.formats.add("GT", "1", "String", "Genotype")
+>   vd = {"id": "INS_1", "contig": "chr1", "start": 10, "stop": 15,
+>         "alleles": ["A", "TCGA"], "samples": [{"GT": (0, 0)}]}
+>   rec1 = vcfh.new_record(**vd)   # succeeds
+>   rec2 = vcfh.new_record(**vd)   # KeyError: 'invalid FORMAT: GT'
+
+pysam 0.23.0 release notes cite the fix under "VariantHeader.new_record
+GT setting (#1308)".

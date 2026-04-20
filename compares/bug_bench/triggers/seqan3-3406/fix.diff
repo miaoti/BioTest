@@ -1,0 +1,79 @@
+commit 5e5c05a471269703d7afc38bdc4348cef60be63b
+Author: Enrico Seiler <enrico.seiler@hotmail.de>
+Date:   Wed Mar 11 15:59:08 2026 +0100
+
+    fix(bgzf): datarace
+    
+    port from seqan2
+
+diff --git a/include/seqan3/contrib/stream/bgzf_istream.hpp b/include/seqan3/contrib/stream/bgzf_istream.hpp
+index 0f0113936..e2b89d397 100644
+--- a/include/seqan3/contrib/stream/bgzf_istream.hpp
++++ b/include/seqan3/contrib/stream/bgzf_istream.hpp
+@@ -100,7 +100,7 @@ private:
+ 
+         std::mutex cs;
+         std::condition_variable readyEvent;
+-        bool ready;
++        std::atomic<bool> ready;
+         bool bgzfEofMarker;
+ 
+         DecompressionJob() :
+@@ -121,7 +121,7 @@ private:
+             size(other.size),
+             cs(),
+             readyEvent(),
+-            ready(other.ready),
++            ready(other.ready.load()),
+             bgzfEofMarker(other.bgzfEofMarker)
+         {}
+     };
+@@ -168,7 +168,7 @@ private:
+                     job.readyEvent.wait(lock,
+                                         [&job]
+                                         {
+-                                            return job.ready;
++                                            return job.ready.load();
+                                         });
+                     assert(job.ready == true);
+                 }
+@@ -262,15 +262,16 @@ private:
+                 if (!job.ready)
+                 {
+                     // decompress block
+-                    job.size = _decompressBlock(&job.buffer[0] + MAX_PUTBACK,
+-                                                job.buffer.capacity(),
+-                                                &job.inputBuffer[0],
+-                                                job.compressedSize,
+-                                                compressionCtx);
++                    auto decompressed_size = _decompressBlock(&job.buffer[0] + MAX_PUTBACK,
++                                                              job.buffer.capacity(),
++                                                              &job.inputBuffer[0],
++                                                              job.compressedSize,
++                                                              compressionCtx);
+ 
+                     // signal that job is ready
+                     {
+                         std::unique_lock<std::mutex> lock(job.cs);
++                        job.size = decompressed_size;
+                         job.ready = true;
+                     }
+                     job.readyEvent.notify_all();
+@@ -366,7 +367,7 @@ public:
+                 job.readyEvent.wait(lock,
+                                     [&job]
+                                     {
+-                                        return job.ready;
++                                        return job.ready.load();
+                                     });
+             }
+ 
+@@ -492,7 +493,7 @@ public:
+                         job.readyEvent.wait(lock,
+                                             [&job]
+                                             {
+-                                                return job.ready;
++                                                return job.ready.load();
+                                             });
+                     }
+ 

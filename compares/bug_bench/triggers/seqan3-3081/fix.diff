@@ -1,0 +1,188 @@
+commit c84f5671665478ec1b71535201cbffbe1fdd8c82
+Author: Svenja Mehringer <svenja.mehringer@fu-berlin.de>
+Date:   Wed Oct 26 11:33:56 2022 +0200
+
+    [FIX] Empty SAM/BAM files must at least write the header information.
+
+diff --git a/include/seqan3/io/sam_file/format_sam.hpp b/include/seqan3/io/sam_file/format_sam.hpp
+index 07f4958eb..fb44980a3 100644
+--- a/include/seqan3/io/sam_file/format_sam.hpp
++++ b/include/seqan3/io/sam_file/format_sam.hpp
+@@ -113,7 +113,7 @@ namespace seqan3
+  *
+  * \remark For a complete overview, take a look at \ref io_sam_file
+  */
+-class format_sam : private detail::format_sam_base
++class format_sam : protected detail::format_sam_base
+ {
+ public:
+     /*!\name Constructors, destructor and assignment
+diff --git a/include/seqan3/io/sam_file/output.hpp b/include/seqan3/io/sam_file/output.hpp
+index 3fee46743..95e53a6c9 100644
+--- a/include/seqan3/io/sam_file/output.hpp
++++ b/include/seqan3/io/sam_file/output.hpp
+@@ -103,7 +103,8 @@ public:
+                              field::header_ptr>;
+ 
+     static_assert(
+-        []() constexpr {
++        []() constexpr
++        {
+             for (field f : selected_field_ids::as_array)
+                 if (!field_ids::contains(f))
+                     return false;
+@@ -149,8 +150,24 @@ public:
+     sam_file_output(sam_file_output &&) = default;
+     //!\brief Move assignment is defaulted.
+     sam_file_output & operator=(sam_file_output &&) = default;
+-    //!\brief Destructor is defaulted.
+-    ~sam_file_output() = default;
++    //!\brief The destructor will write the header if it has not been written before.
++    ~sam_file_output()
++    {
++        if (header_has_been_written)
++            return;
++
++        assert(!format.valueless_by_exception());
++
++        std::visit(
++            [&](auto & f)
++            {
++                if constexpr (std::same_as<ref_ids_type, ref_info_not_given>)
++                    f.write_header(*secondary_stream, options, std::ignore);
++                else
++                    f.write_header(*secondary_stream, options, *header_ptr);
++            },
++            format);
++    }
+ 
+     /*!\brief Construct from filename.
+      * \param[in] filename      Path to the file you wish to open.
+@@ -592,6 +609,9 @@ public:
+ 
+ protected:
+     //!\privatesection
++    //!\brief This is needed during deconstruction to know whether a header still needs to be written.
++    bool header_has_been_written{false};
++
+     //!\brief A larger (compared to stl default) stream buffer to use when reading from a file.
+     std::vector<char> stream_buffer{std::vector<char>(1'000'000)};
+ 
+@@ -690,6 +710,8 @@ protected:
+                 }
+             },
+             format);
++
++        header_has_been_written = true; // when writing a record, the header is written automatically
+     }
+ 
+     //!\brief Befriend iterator so it can access the buffers.
+diff --git a/include/seqan3/io/sam_file/output_format_concept.hpp b/include/seqan3/io/sam_file/output_format_concept.hpp
+index e8fa5db24..e3c4b21c4 100644
+--- a/include/seqan3/io/sam_file/output_format_concept.hpp
++++ b/include/seqan3/io/sam_file/output_format_concept.hpp
+@@ -38,8 +38,8 @@ namespace seqan3::detail
+  *
+  * \details
+  *
+- * Exposes the protected member function `write_alignment_record` from the given `format_type`, such that the file can
+- * call the proper function for the selected format.
++ * Exposes the protected member function `write_alignment_record` and `write_header` from the given `format_type`, such
++ * that the file can call the proper function for the selected format.
+  *
+  * \remark For a complete overview, take a look at \ref io_sam_file
+  */
+@@ -55,6 +55,13 @@ public:
+     {
+         format_type::write_alignment_record(std::forward<ts>(args)...);
+     }
++
++    //!\brief Forwards to `format_type::write_header`.
++    template <typename stream_t, typename header_type>
++    void write_header(stream_t & stream, sam_file_output_options const & options, header_type & header)
++    {
++        format_type::write_header(stream, options, header);
++    }
+ };
+ 
+ } // namespace seqan3::detail
+diff --git a/test/unit/io/sam_file/format_bam_test.cpp b/test/unit/io/sam_file/format_bam_test.cpp
+index c68f2ab93..378887bae 100644
+--- a/test/unit/io/sam_file/format_bam_test.cpp
++++ b/test/unit/io/sam_file/format_bam_test.cpp
+@@ -27,11 +27,19 @@ struct sam_file_read<seqan3::format_bam> : public sam_file_data
+     // pass --no-PG to samtools if you do not want PG tags which may be added automatically
+ 
+     // To print out something like the below strings, store a file in SAM format (e.g. test.sam)
++    // transform it to BAM via
++    // samtools view --no-PG -b test.sam > test.bam
+     // and use the folliwng commandline call:
+     // samtools view --no-PG -u test.bam | bgzip -d | hexdump -v -e '"\\\x" 1/1 "%02x"' | sed 's;\\;Y, Y\\;g' | sed 's;$;Y;' | tr 'Y' "'" | cut -c 4- | sed -e "s/.\{112\}/&\n/g"
+ 
+     using stream_type = std::istringstream;
+ 
++    std::string minimal_header{'\x42', '\x41', '\x4d', '\x01', '\x1c', '\x00', '\x00', '\x00', '\x40', '\x48', '\x44',
++                               '\x09', '\x56', '\x4e', '\x3a', '\x31', '\x2e', '\x36', '\x0a', '\x40', '\x53', '\x51',
++                               '\x09', '\x53', '\x4e', '\x3a', '\x72', '\x65', '\x66', '\x09', '\x4c', '\x4e', '\x3a',
++                               '\x33', '\x34', '\x0a', '\x01', '\x00', '\x00', '\x00', '\x04', '\x00', '\x00', '\x00',
++                               '\x72', '\x65', '\x66', '\x00', '\x22', '\x00', '\x00', '\x00'};
++
+     std::string big_header_input{
+         '\x42', '\x41', '\x4D', '\x01', '\xB7', '\x01', '\x00', '\x00', '\x40', '\x48', '\x44', '\x09', '\x56', '\x4E',
+         '\x3A', '\x31', '\x2E', '\x36', '\x09', '\x53', '\x4F', '\x3A', '\x63', '\x6F', '\x6F', '\x72', '\x64', '\x69',
+diff --git a/test/unit/io/sam_file/format_sam_test.cpp b/test/unit/io/sam_file/format_sam_test.cpp
+index c442296a3..36d43f4e8 100644
+--- a/test/unit/io/sam_file/format_sam_test.cpp
++++ b/test/unit/io/sam_file/format_sam_test.cpp
+@@ -20,6 +20,11 @@ struct sam_file_read<seqan3::format_sam> : public sam_file_data
+ 
+     using stream_type = std::istringstream;
+ 
++    std::string minimal_header{
++        R"(@HD	VN:1.6
++@SQ	SN:ref	LN:34
++)"};
++
+     std::string big_header_input{
+         R"(@HD	VN:1.6	SO:coordinate	SS:coordinate:queryname	GO:none
+ @PG	ID:qc	PN:quality_control	CL:qc -f file1	DS:trim reads with low qual	VN:1.0.0
+diff --git a/test/unit/io/sam_file/sam_file_format_test_template.hpp b/test/unit/io/sam_file/sam_file_format_test_template.hpp
+index d442028d0..80a3e6f3b 100644
+--- a/test/unit/io/sam_file/sam_file_format_test_template.hpp
++++ b/test/unit/io/sam_file/sam_file_format_test_template.hpp
+@@ -441,6 +441,17 @@ TYPED_TEST_P(sam_file_write, output_concept)
+     EXPECT_TRUE((seqan3::sam_file_output_format<TypeParam>));
+ }
+ 
++TYPED_TEST_P(sam_file_write, no_records)
++{
++    {
++        auto ref_lengths = this->ref_sequences | std::views::transform([] (auto const & v) { return v.size(); });
++        seqan3::sam_file_output fout{this->ostream, this->ref_ids, ref_lengths, TypeParam{}, sam_fields{}};
++    }
++
++    this->ostream.flush();
++    EXPECT_EQ(this->ostream.str(), this->minimal_header);
++}
++
+ TYPED_TEST_P(sam_file_write, write_empty_members)
+ {
+     {
+@@ -708,7 +719,8 @@ TYPED_TEST_P(sam_file_write, special_cases)
+ 
+ TYPED_TEST_P(sam_file_write, format_errors)
+ {
+-    seqan3::sam_file_output fout{this->ostream, TypeParam{}, sam_fields{}};
++    auto ref_lengths = this->ref_sequences | std::views::transform([] (auto const & v) { return v.size(); });
++    seqan3::sam_file_output fout{this->ostream, this->ref_ids, ref_lengths, TypeParam{}, sam_fields{}};
+ 
+     // ensure that only a ref_id that is listed in the header is allowed
+     EXPECT_THROW(fout.emplace_back(&(this->header),
+@@ -757,6 +769,7 @@ REGISTER_TYPED_TEST_SUITE_P(sam_file_read,
+                             issue2423);
+ 
+ REGISTER_TYPED_TEST_SUITE_P(sam_file_write,
++                            no_records,
+                             write_empty_members,
+                             output_concept,
+                             default_options_all_members_specified,

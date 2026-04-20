@@ -1,0 +1,15 @@
+Excerpted from issue #4825 and the linked fix PR #4837.
+
+> Bio/Align/sam.py line 702 does `copy.deepcopy(self.targets[index])`
+> inside AlignmentIterator.__next__. Profiling a 200 000-alignment
+> SAM shows that deepcopy accounts for ~22 s of 40 s total parse
+> time. Only `_seq` and `annotations` actually need per-alignment
+> copies; the rest of the SeqRecord is safe to share.
+>
+> PR #4837 replaces the blanket deepcopy with a targeted copy:
+>   SeqRecord(seq=copy.copy(sr.seq),
+>             annotations=copy.copy(sr.annotations),
+>             id=sr.id, name=sr.name, ...)
+> reducing 200 k-record parse from 22.3 s to 11.7 s (47% faster).
+
+Merged 2024-09-23; first shipped in Biopython 1.86.

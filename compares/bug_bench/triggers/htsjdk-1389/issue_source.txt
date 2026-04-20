@@ -1,0 +1,6 @@
+Issue / PR: https://github.com/samtools/htsjdk/pull/1389
+
+Verification rule: htsjdk 2.20.0 release notes cite 'Output missing vcf fields as a single . (#1389)'
+
+Description (from manifest):
+  Pre-fix VCF writer serialises multi-value missing fields as '.,.,.' (one dot per value) instead of the spec-canonical single '.' for fully-missing values. Round-trip through pre-fix htsjdk changes INFO/FORMAT string representation.

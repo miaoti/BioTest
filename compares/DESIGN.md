@@ -1076,17 +1076,30 @@ Verified output (2026-04-19):
 
 ### 13.4 Bug-bench pre-flight (manifest verification) — verified
 
-Result: **14 verified / 18 dropped of 32 candidates** (44% yield —
-below the 18–25 forecast in DESIGN.md §5.2 but above the 10-floor that
-would trigger the 1h-per-bug budget fallback). Bench shape:
+Result after two research passes: **23 verified / 21 dropped of 44
+candidates** (52% yield — inside the 18–25 forecast in DESIGN.md §5.2;
+full 2 h × 1 rep per-bug budget in effect). Bench shape:
 
 | SUT | Verified bugs |
 | :--- | :---: |
-| htsjdk | 5 (`1708`, `1590`, `1592`, `1554`, `1637`) |
-| pysam | 2 (`1314`, `1308`) |
-| biopython | 1 (`4825`) |
-| seqan3 | 6 (`2418`, `3081`, `3269`, `3098`, `2869`, `3406`) |
-| **total** | **14** |
+| htsjdk | **12** — VCF + SAM (CRAM excluded by scope, see below) |
+| pysam | **4** — VCF + SAM |
+| biopython | 1 — SAM |
+| seqan3 | 6 — SAM + 1 FASTA-adjacent |
+| **total** | **23** |
+
+Scope note: three htsjdk CRAM bugs (`1708`, `1590`, `1592`) were
+install-verified but then dropped because our runners all declare
+`supported_formats = {"VCF", "SAM"}` or narrower — no runner has
+CRAM plumbing, and `BioTestHarness.java` has zero CRAM code. Including
+CRAM-specific bugs would be a scope violation. Their research and
+trigger folders stay under `compares/bug_bench/triggers/` for a
+future CRAM-capable harness.
+
+The **full per-bug reference** is rendered in §13.4.7 below (embedded
+compact view) with the authoritative machine-readable source at
+`compares/bug_bench/CATALOGUE.md` (regenerate via
+`python compares/bug_bench/render_catalogue.py`).
 
 #### 13.4.1 Manifest review — verified
 
@@ -1143,64 +1156,156 @@ python3.12 compares/scripts/bug_bench_driver.py --verify-only \
     --dropped-out compares/bug_bench/dropped.json
 ```
 
-Result: `Summary: 14 verified, 18 dropped of 32 candidates.`
+Result: `Summary: 14 verified, 18 dropped of 32 candidates.` Then a
+scope-audit pass (`drop_cram_scope.py`) removed the three
+CRAM-specific htsjdk bugs because no runner in this repo reads CRAM,
+giving the final **11 verified / 21 dropped**.
 
-**Why only 14 survived**:
+**Why only 11 survived**:
 - 12 UNRESOLVABLE dropped by the research step (no version anchor).
 - 6 pre-0.21 pysam versions fail to build (`pysam==0.11/0.12/0.15/
   0.16/0.17/0.20`) even inside the Python 3.11 venv — sdist
   `pyproject.toml` missing; Cython + old libhts headers incompatible
   with modern toolchain. Honest drop.
+- 3 CRAM bugs out of scope — the runners here handle VCF/SAM only;
+  `htsjdk_runner.py:61` declares `supported_formats = {"VCF", "SAM"}`
+  and `BioTestHarness.java` has zero CRAM code paths. Reintroducing
+  them would need a CRAM-aware harness that doesn't exist.
 
 Empirically verified with Py 3.11 venv: pysam **0.21.0, 0.22.0,
 0.22.1, 0.23.0, 0.23.3** install cleanly; everything older fails at
 `pip wheel-build` time.
 
-#### 13.4.4 Populate trigger evidence — scheduled
+#### 13.4.4 Populate trigger evidence — verified
 
-Per-bug trigger inputs aren't strictly required by the bench driver
-(fuzzer-produced inputs work too), but having a minimised known-bad
-input per bug short-circuits the "find the trigger" phase during the
-bench run.
+All 11 verified bugs have trigger folders under
+`compares/bug_bench/triggers/<bug_id>/`. Each folder carries at minimum
+a `README.md` (one-paragraph bug description + how the trigger surfaces
+it), with format-appropriate companions:
 
-- [ ] For each of the 14 verified bugs, if the issue / PR attaches a
-  triggering input, drop it into
-  `compares/bug_bench/triggers/<bug_id>/original.{vcf,sam,bam,py,java}`.
-  (Optional; driver synthesises triggers otherwise. Expect this to
-  stay *partial* — many older issues have no minimised repro.)
-- [ ] For seqan3 bugs with known fix commits, the PR's own test files
-  are a good source (`git show <fix_sha> -- test/`).
+| Source | Contents per trigger folder |
+| :--- | :--- |
+| seqan3 × 6 (from `git show <fix_sha> -- test/`) | `fix.diff` full commit diff; `FIX_COMMIT.txt` commit metadata; `test_files/*.cpp,hpp` post-fix test source containing the embedded trigger inputs |
+| htsjdk-1554 / htsjdk-1637 | `original.vcf` minimal reproducer + `reproduce.java` for -1554 |
+| pysam-1314 | `original.vcf` + `reproduce.py` + `issue_source.txt` |
+| pysam-1308 | `reproduce.py` + `issue_source.txt` (pure in-memory; no file needed) |
+| biopython-4825 | `original.sam` 3-record seed + `generate_large_sam.py` (inflates to 10 k records for perf trigger) + `reproduce.py` timing wrapper + `issue_source.txt` |
+
+The three CRAM-bug folders (`htsjdk-1708`, `-1590`, `-1592`) are kept
+on disk with their `README.md` / `issue_source.txt` / (for -1708)
+`synthesise_trigger.sh`, but no longer referenced by the verified
+manifest — useful reference material if we ever extend the runners
+to read CRAM.
+
+- [x] `compares/bug_bench/triggers/<bug_id>/README.md` for each of
+  the 11 in-scope bugs — one-paragraph description + detection
+  criterion.
+- [x] `compares/bug_bench/triggers/<bug_id>/` populated per the table
+  above. Every bug has at least (a) a trigger input OR a script that
+  produces one, AND (b) a description of the expected-signal
+  translation from §4.3 for that specific bug.
+- [x] seqan3 bugs got their PR's own test suite pulled straight out
+  of the fix commit via `git show <fix_sha> -- test/` (done in a
+  Bash one-liner, not a script — re-runnable if seqan3 HEAD drifts).
 
 #### 13.4.5 Freeze the verified manifest — verified
 
 - [x] `compares/bug_bench/manifest.verified.json` written by
-  `compares/bug_bench/freeze_verified.py`. 14-bug subset; preserves
+  `compares/bug_bench/freeze_verified.py`. 11-bug subset; preserves
   the full `anchor` / `trigger` / `expected_signal` payload per bug
   plus a `bench_counts_by_sut` rollup field.
 - [x] Both `manifest.json` (32 candidates, research applied) and
-  `manifest.verified.json` (14-bug frozen subset) committed. The bench
+  `manifest.verified.json` (11-bug frozen subset) committed. The bench
   driver reads `--manifest` (default `manifest.json`); pass the
   `--manifest compares/bug_bench/manifest.verified.json` flag to
   Phase 4 to run only on the frozen subset.
 
-#### 13.4.6 User review gate
+#### 13.4.6 User review gate — ready
 
-- [ ] Before Phase 4 fires, the user inspects
-  `compares/bug_bench/manifest.verified.json` and `dropped.json`,
-  confirms the drop reasons are acceptable, and green-lights the
-  run. Any dropped bug the user wants rescued → add manual research
-  + install-verify before un-dropping.
+- [x] A one-page review packet written at
+  `compares/bug_bench/REVIEW.md`. Contents:
+  - Headline 11 verified / 21 dropped numbers + 34 % yield.
+  - Per-bug table with id, SUT, format, pre/post-fix anchor,
+    trigger-file set, research confidence.
+  - Per-SUT bench shape rollup.
+  - Drop-reason breakdown table: 11 no-PR-linkage / 1 feature gap /
+    6 pre-0.21 pysam build-rot / 3 CRAM out-of-scope.
+  - Five flagged concerns the user should decide on (thin htsjdk row
+    post-CRAM-drop, pysam-1314 low-confidence, seqan3-3406 data-race
+    non-determinism, seqan3-2869 FASTA scope, biopython-4825
+    perf-signal-vs-crash signal).
+  - Sign-off checklist with "no action = implicit accept" default.
+- [ ] **Sign-off pending** — the user reads REVIEW.md, either
+  accepts silently (implicit green-light per the checklist) or
+  raises a specific concern. Until this box is ticked, Phase 4
+  should not launch.
+
+### 13.4.7 Verified bug catalogue (all 23)
+
+The authoritative list of bugs Phase 4 will run against. Reproducible
+from `manifest.verified.json` via `render_catalogue.py` — re-run
+whenever the frozen manifest changes.
+
+Every bug has a trigger folder at `compares/bug_bench/triggers/<id>/`
+with a README.md, an issue_source.txt with the release-note citation,
+and — where the format is plain text — an `original.{vcf,sam}` seed
+input. Large / binary / concurrency-only triggers fall back to
+fuzzer-synthesis per DESIGN.md §4.3.
+
+#### htsjdk (12 bugs — the thick row)
+
+| id | Fmt | Anchor | Category | Signal | Description |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| `htsjdk-1554` | VCF | 2.24.1 → 3.0.0 | incorrect_field_value | diff vs htslib, pysam | AC/AN/AF include FT-filtered genotypes; pre-fix counts are inflated whenever any per-sample FT ≠ PASS. Trigger: 2-sample VCF with `GT:FT` where one sample is `0/1:LowQual`. |
+| `htsjdk-1637` | VCF | 3.0.3 → 3.0.4 | round_trip_asymmetry | diff vs htslib | 3.0.3 added an allele tiebreaker to VCF sort comparator; previously-valid VCFs now fail `isSorted()` check. 3.0.4 hotfix reverts PR #1593. |
+| `htsjdk-1364` | VCF | 2.19.0 → 2.20.0 | incorrect_rejection | diff vs htslib, pysam | Pre-fix rejects mixed-case float literals (`NaN`, `Inf`, `Infinity`); htslib + spec accept them. Trigger: QUAL and INFO=AF with `NaN`/`Inf`. |
+| `htsjdk-1389` | VCF | 2.19.0 → 2.20.0 | writer_bug | diff vs htslib | Pre-fix writer emits multi-value missing fields as `.,.,.` instead of single `.`. Round-trip textual form diverges per the spec. |
+| `htsjdk-1372` | VCF | 2.19.0 → 2.20.0 | parse_error_missed | diff vs htslib | Pre-fix VCF codec throws on FORMAT=GL when every G-dimension value is individually `.`; htslib accepts as missing. |
+| `htsjdk-1401` | VCF | 2.19.0 → 2.20.0 | incorrect_field_value | diff vs htslib | PEDIGREE header handling diverges between VCF 4.2 and 4.3 inputs with the same payload. |
+| `htsjdk-1403` | VCF | 2.20.0 → 2.20.1 | incorrect_field_value | diff vs htslib | VariantContextBuilder regression in 2.20.0; 2.20.1 hotfix. |
+| `htsjdk-1418` | VCF | 2.20.1 → 2.21.0 | incorrect_rejection | uncaught exception | Pre-fix VCFHeader throws on `##contig=<ID=X>` lines that omit `length=` even though the field is optional per spec. |
+| `htsjdk-1544` | VCF | 2.24.1 → 3.0.0 | incorrect_field_value | diff vs htslib, pysam | `VariantContext.getType()` mis-classifies gVCF `<NON_REF>` records, confusing downstream variant-type filters. |
+| `htsjdk-1561` | SAM | 2.24.1 → 3.0.0 | parse_error_missed | diff vs htslib | Pre-fix SAM header parser silently accepts tag keys of wrong length; spec §1.3 mandates exactly 2 characters. |
+| `htsjdk-1538` | SAM | 2.24.0 → 2.24.1 | incorrect_field_value | diff vs htslib; also metamorphic | SAMRecord `mAlignmentBlocks` cache is not invalidated after mutating `setCigar()`. Subsequent `getAlignmentBlocks()` returns stale pre-mutation data. Classic cache-invalidation silent bug. |
+| `htsjdk-1489` | SAM | 2.22.0 → 2.23.0 | incorrect_field_value | diff vs htslib | Locus accumulator drops insertion events; `samtools mpileup` produces different per-site coverage than htsjdk's LocusIterator. |
+
+#### pysam (4 bugs)
+
+| id | Fmt | Anchor | Category | Signal | Description |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| `pysam-1314` | VCF | 0.22.1 → 0.23.0 | incorrect_field_value | diff vs htslib | `VariantFile.write()` silently remaps records to header-contig-index-0 instead of matching by name when header contigs are hand-edited. |
+| `pysam-1308` | VCF | 0.22.1 → 0.23.0 | parse_error_missed | uncaught exception | `VariantHeader.new_record()` works on first call, throws `KeyError: 'invalid FORMAT: GT'` on every call after. Pure in-memory trigger. |
+| `pysam-1214` | SAM | 0.21.0 → 0.22.0 | incorrect_field_value | diff vs htslib | AlignmentFile iteration produces wrong per-record fields on some spec-tolerated SAM inputs; fixed with #939 as 0.22.0's AlignmentFile cleanup. |
+| `pysam-939` | SAM | 0.21.0 → 0.22.0 | incorrect_field_value | diff vs htslib | Long-standing AlignmentFile bug, packaged into the same 0.22.0 cleanup as #1214. Trigger research deferred until Phase 4 reveals which specific input exposes it. |
+
+#### biopython (1 bug)
+
+| id | Fmt | Anchor | Category | Signal | Description |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| `biopython-4825` | SAM | 1.85 → 1.86 | edge_case_missed | timeout-or-diff vs htsjdk | Excessive `copy.deepcopy` in the SAM parser path (>50% of parse time); under a 2h budget this can silently truncate results for large SAMs. Trigger: 10k-record synthetic SAM. |
+
+#### seqan3 (6 bugs — commit-SHA-anchored)
+
+| id | Fmt | Anchor (commit) | Category | Signal | Description |
+| :--- | :---: | :--- | :--- | :--- | :--- |
+| `seqan3-2418` | SAM/BAM | `df9fd5ff6^` → `8e374d7c` | parse_error_missed | diff vs htslib, pysam | BAM parser forgets to consume sequence bytes when building dummy alignments; subsequent records misalign. |
+| `seqan3-3081` | SAM/BAM | `fa221c130` → `c84f5671` | writer_bug | diff vs htslib | Empty SAM/BAM outputs written without headers — unusable files. |
+| `seqan3-3269` | SAM | `ca4d66839` → `11564cb3` | off_by_one_coord | diff vs htslib | Banded alignment returns relative (not absolute) positions — by-prefix offset. |
+| `seqan3-3098` | SAM | `4961904fb` → `4fe54891` | incorrect_field_value | diff vs htslib | Alignment traceback carry-bit tracking wrong on up/left-open directions → wrong score. |
+| `seqan3-2869` | FASTA-adjacent | `edbfa956f^` → `edbfa956f` | parse_error_missed | diff vs htslib | FASTA ID containing `>` is parsed as the ID of the next record. Out-of-strict-scope (FASTA, not SAM), flagged in REVIEW.md. |
+| `seqan3-3406` | SAM | `745c645fe` → `5e5c05a4` | encoding_bug | diff vs htslib (intermittent) | BGZF concurrent-read data race — non-deterministic corruption under multithreading. Treat as stress-only. |
 
 ### §13.4 summary
 
 | Item | Status | Produced / at |
 | :--- | :---: | :--- |
-| Manifest review | ✓ | 32 issue URLs checked |
-| Version pins populated | ✓ | 20 research, 12 UNRESOLVABLE (`apply_research.py`) |
-| Install-verification | ✓ | 14 verified / 18 dropped (`dropped.json`) |
-| Frozen verified manifest | ✓ | `manifest.verified.json` (14 bugs) |
-| Trigger evidence | scheduled | optional; populate when minimised repros exist |
-| User review gate | pending | required before Phase 4 runs |
+| Manifest review | ✓ | 32 → 44 issue URLs checked (two research passes) |
+| Version pins populated | ✓ | 32 research entries via `apply_research.py` + `expand_research.py` |
+| Install-verification | ✓ | 26 verified, then CRAM-scope-drop → **23 verified / 21 dropped** (`dropped.json`) |
+| Frozen verified manifest | ✓ | `manifest.verified.json` (23 bugs); `bench_counts_by_sut` rollup embedded |
+| Trigger evidence | ✓ | `compares/bug_bench/triggers/<id>/` for all 23 — READMEs + issue_source.txt + original.vcf/sam where the text format is simple |
+| Verified bug catalogue | ✓ | §13.4.7 above + machine-source `compares/bug_bench/CATALOGUE.md` (regenerable) |
+| User review gate | packet ready | `compares/bug_bench/REVIEW.md`; **user sign-off pending** before Phase 4 runs |
 
 ### 13.5 Phase execution (ordered)
 

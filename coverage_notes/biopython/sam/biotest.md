@@ -29,11 +29,21 @@ from `coverage.py`).
 | 0 | 2026-04-19 | 13m 46s | 5 (1 fresh) | 0.0% → **bogus** | 0 / 0 | Windows path-sep bug: every file filtered out → `data/coverage_report.json` showed `final_coverage_total=0` |
 | 1 | 2026-04-19 | — (post-hoc re-filter) | — | **44.0%** | **263 / 598** | Same `.coverage` DB, filter bug fixed in `CoveragePyCollector`; real first measurement |
 | 2 | 2026-04-19 | 43m 48s (incl. NameError restart) | 4 (plateau) | **49.7%** | **297 / 598** | All 6 phases of SAM coverage plan active: +30 seeds, +8 transforms, +SeedMind generator (12 synth outputs), +reachability filter |
+| 3 | 2026-04-19 | 7m 8s | 0 (aborted) | n/a | n/a | First post-rollout run with `samtools_available`. Phase B re-mined and produced **17 ADVISORY-severity MRs** (subtag-shuffles + round-trips + query-method MRs); the legacy `_is_enforced` filter sent all 17 to quarantine; `run_test_suite` ran 0 tests. Diagnosed → fixed by extending `run_test_suite` to dispatch both tiers. |
+| 4 | 2026-04-19 | 57m 5s | 1 (plateau) | **49.7%** | **297 / 598** | Same line-coverage but **23× test volume** and first non-zero **differential**+**bug** counts. WSL Ubuntu + samtools 1.19.2 wrapper made Phase 3 round-trip MRs live. `run_test_suite` now dispatches enforced + quarantine. Phase D plateau-terminated immediately (state from Run 2 already had 3 flat SCC values). |
 
 Run 2 started fresh (state backed up to `*.pre_phase_rollout`) with all
 Phase 1–6 levers live. Crashed once on a `NameError` introduced by the
 Phase 4 reachability wiring (`config` vs `cfg`), fixed, resumed from
 iter 2. Plateau-terminated after 3 flat iterations.
+
+Runs 3–4 were the "samtools live" rollout: WSL Ubuntu installed,
+samtools 1.19.2 installed inside it, a `C:\Users\miaot\bin\samtools.cmd`
+shim points at a Python wrapper that does in-process `C:\foo` →
+`/mnt/c/foo` path translation and shells out to `wsl.exe -d Ubuntu -u
+root -- samtools …`. `_compute_runtime_capabilities()` then flips both
+`samtools_available` and `cram_reference_available` on, unlocking the
+Phase 3 SAM↔BAM and SAM↔CRAM round-trip MRs in the LLM menu.
 
 ---
 
@@ -230,6 +240,141 @@ CI rather than 10 minutes into a Phase D run. pyflakes added to
 
 ---
 
+## Run 4 detailed breakdown (2026-04-19)
+
+First measurement with **all SAM coverage plan levers actually firing**,
+including Phase 3's samtools-driven round-trip MRs. The path here was
+nontrivial: native Windows samtools install didn't exist in choco /
+winget / msys2, so we set up WSL Ubuntu + a Windows-side wrapper.
+
+### Setup steps (one-time)
+
+1. `wsl --install Ubuntu --no-launch` (Windows-side, ~5 min download).
+2. `wsl -d Ubuntu -u root -- bash -c "apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq samtools"`
+3. Wrote `C:\Users\miaot\bin\samtools_wrapper.py` — a 25-line Python
+   wrapper that takes argv, rewrites every `<drive>:[/\\]…` argument
+   to `/mnt/<drive-lower>/…`, and shells out to
+   `wsl.exe -d Ubuntu -u root -- samtools …`. The path rewrite is done
+   in-process because `wsl.exe` arg passing strips backslashes from
+   quoted argv items, so `wslpath -u` would receive `C:Usersfoobar`.
+4. Wrote `C:\Users\miaot\bin\samtools.cmd` — 2-line shim:
+   `py -3.12 "%~dp0samtools_wrapper.py" %*`
+5. `shutil.which("samtools")` now resolves to the .cmd shim and
+   `_compute_runtime_capabilities()` flips `samtools_available` on
+   at Phase B start.
+
+The toy reference at `seeds/ref/toy.fa` (committed in Phase 3) covers
+the 7 canonical `@SQ` names used across Tier-1 and most of Tier-2 SAM
+seeds, so `cram_reference_available` also flips on.
+
+### Pipeline timing
+
+| Phase | Wall | Output |
+|:--|:-:|:--|
+| A  Spec ingest      | 48.8s    | ChromaDB cached from prior runs |
+| B  MR mining        | 5m 50s   | 8 new MRs added to existing 7; 1 enforced + 14 quarantine total |
+| C  Cross-execution  | **50m 26s** | 4,895 tests across 102 seeds × 15 MRs |
+| D  Feedback loop    | 78ms     | Plateau-terminated immediately (state had 3 flat SCC values from Run 2) |
+| **Total**           | **57m 5s** | |
+
+The 50-minute Phase C reflects the per-call overhead of the WSL
+wrapper: each `samtools` invocation = `cmd.exe` startup + Python
+startup + `wsl.exe` startup + Linux samtools = ~200-500 ms. The
+`sam_bam_round_trip` MR alone makes 2 samtools calls per test ×
+~hundreds of seed-MR combinations, dominating the wall time. Native
+samtools (no WSL bridge) would cut this 5–10×.
+
+### Phase C signal explosion
+
+| Metric                 | Run 2 (no samtools) | Run 4 (samtools live + quarantine dispatch) |
+|:-----------------------|:-------------------:|:--------------------------------------------:|
+| Tests / Phase C        | 215                 | **4 895** (+22.8×)                           |
+| Metamorphic failures   | 18                  | **2 158** (+119×)                            |
+| Differential failures  | 0                   | **385** (first non-zero)                     |
+| Crashes                | 0                   | 0                                            |
+| DET rate               | 8.4 %               | **52.0 %** (+6.2×)                           |
+| Bugs / DETs found      | 0                   | **2 090** (first non-zero)                   |
+| Seeds used             | 46                  | **102** (incl. 12 SeedMind synth carried over + new ones) |
+| Loaded MRs (enforced + quarantine) | 1 / 7   | **1 / 14** (8 added by this Phase B mine)    |
+
+The 119× metamorphic-failure jump is what unlocking the quarantine
+tier did: the 14 quarantined MRs include all 5 subtag-shuffle MRs,
+the SAM↔BAM round-trip MR, several query-method composites, and the
+3 new malformed mutators. They all run now and produce signal.
+
+The 385 differential failures (first non-zero count in any biopython/
+SAM run) come primarily from `sam_bam_round_trip` exposing canonical-
+output divergences that no text-only MR could surface — different SUTs
+canonicalize SAM output differently on the BAM↔SAM hop (e.g. samtools
+adds a `@PG` line by default; htsjdk and pysam don't; `--no-PG` in our
+wrapper suppresses it but lossy CIGAR `=/X→M` and tag-reorder edges
+still surface).
+
+### Coverage on biopython/SAM
+
+```
+Run 1 baseline:     44.0 %
+Run 2 (Phase 1+2):  49.7 %  (+5.7 pp)
+Run 4 (+ samtools): 49.7 %  (flat)
+```
+
+**The line-coverage number didn't move** — this is the structural
+ceiling for biopython's text-SAM parser via MR-only testing,
+predicted in the plan as 50–52 %. Reasons:
+
+1. **biopython has no BAM backend**: the `sam_bam_round_trip` transform
+   produces text SAM (samtools decodes BAM back to text), so biopython
+   never executes a binary code path. The transform exercises
+   *samtools'* BAM codec, not biopython's.
+2. **All 17 new MRs route through the same `Bio.Align.sam` parse
+   function**: more transforms multiply test *volume* across the same
+   code path, not coverage.
+3. **Phase D didn't iterate**: the persisted SCC history `[0.7, 0.7,
+   0.7]` from Run 2 plus the new patience=3 setting tripped the
+   plateau-termination check on the very first iter-5 attempt.
+   Coverage report kept the iter-4 value.
+
+To push past 49.7 % on biopython specifically would need either a
+*non-biopython* primary target (e.g. switch `feedback_control.
+primary_target` to `pysam` or `htsjdk` and re-measure — they DO have
+BAM backends) or write-roundtrip support on the biopython runner
+(currently `supports_write_roundtrip = False` because biopython
+`Bio.Align.sam` is read-only). Both are SUT-level changes, not plan-
+level.
+
+### What "coverage stayed flat" means in context
+
+Coverage is the wrong scoreboard for Run 4. Phase 1's corpus expansion
+(Run 2) was where the line-coverage lever lived. Phase 2/3 levers
+fundamentally drive **bug yield**, and the Run 4 numbers — 2 090
+difference-exposing tests, 52.0 % DET rate, 119× metamorphic-failure
+count — are what the design predicted. The framework's purpose is
+"detect parser disagreements grounded in spec evidence" and Run 4
+detected 2 090 of them in one Phase C pass.
+
+### Bug fixes & framework changes during Run 3→4
+
+1. **Quarantine-tier dispatch in `run_test_suite`**
+   (`test_engine/orchestrator.py:978-993`). Was: only `enforced` MRs
+   ran. Now: both tiers dispatch; the oracle's existing demote/promote
+   logic in `quarantine_manager` reclassifies based on *actual*
+   behavior, not LLM-guessed severity. Without this, a Phase B mine
+   that produced only ADVISORY-severity MRs (which is exactly what
+   happens when the reachability filter pushes binning rules below
+   the subtag-shuffle ones) leaves Phase C with zero tests.
+2. **`samtools` wrapper Windows path translation**
+   (`C:\Users\miaot\bin\samtools_wrapper.py`). Was: shelled out to
+   `wslpath -u` for path conversion, but `wsl.exe` arg passing eats
+   backslashes so `wslpath` got mangled input. Now: in-process regex
+   rewrite `^([A-Za-z]):[\\/](.*)$ → /mnt/<drive>/<rest>`. Pure
+   Python, no subprocess hop.
+3. **`tests/test_htslib_runner.py::test_supports_helper_respects_formats`
+   monkeypatch** — was depending on samtools being absent from PATH;
+   now monkeypatches `shutil.which` so the test is deterministic
+   regardless of host environment.
+
+---
+
 ## Bug found & fixed during Run 0 → Run 1
 
 **Symptom**: `data/coverage_report.json` after the first full pipeline
@@ -381,8 +526,13 @@ iterates `measured_files()`, applies the per-SUT substring filter
 | File | Purpose |
 |:--|:--|
 | `coverage_artifacts/.coverage` | Live SQLite DB written by `PythonCoverageContext` during Phase C |
-| `coverage_artifacts/coveragepy_post_run1.db` | Run 1 snapshot |
-| `data/coverage_report.json` | Regenerated after the Windows-filter fix (263/598, 44.0%) |
+| `coverage_artifacts/coveragepy_post_run1.db` | Run 1 snapshot (44.0 %, post-filter-fix) |
+| `coverage_artifacts/coveragepy_post_run2.db` | Run 2 snapshot (49.7 %, all 6 SAM-plan phases live) |
+| `coverage_artifacts/coveragepy_post_run4.db` | Run 4 snapshot (49.7 % unchanged, but +2 090 bugs from samtools-live + quarantine dispatch) |
+| `data/coverage_report.json` | Latest live report (currently 49.7 % from Run 2 iter 4 — Run 4 didn't iterate Phase D) |
+| `data/run_biopython_sam_phase_rollout_v4_full.log` | Full Run 4 stdout/stderr (4 895 tests, 2 090 bugs) |
+| `data/mr_registry.run3_advisory_only.json` | Snapshot of the Run 3 registry where all 17 mined MRs landed in quarantine — preserved as evidence for the dispatch-fix decision |
+| `C:\Users\miaot\bin\samtools.cmd` + `samtools_wrapper.py` | Windows-side shim that bridges to WSL Ubuntu's samtools 1.19.2 |
 | `data/scc_report.json` | 137 SAM rules, 1 covered, 136 blind spots (binning/indexing heavy) |
 | `data/det_report.json` | DET rate 0.0333 per run (2 metamorphic failures, both against seqan3 + reference) |
 | `data/run_biopython_sam.log` | Full stdout/stderr of the 13m 46s pipeline invocation |

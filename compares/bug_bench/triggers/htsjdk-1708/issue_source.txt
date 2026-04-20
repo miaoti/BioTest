@@ -1,0 +1,19 @@
+Excerpted from PR #1708 (https://github.com/samtools/htsjdk/pull/1708)
+and its test case CRAMReferenceRegionTest.testSerialStateTransitions.
+
+> The CRAM reader caches a full reference region across containers. When
+> every container in a CRAM file has reads mapped to position 1 (e.g.
+> short mitochondrial reads all pinned to the start), the cached
+> region is not invalidated when the SerialState advances between
+> containers. The reader then uses a stale slice of the reference for
+> later containers' read decoding, producing silently corrupt bases.
+
+The fix commit (PR #1708) adds a regression test resource:
+  test/resources/htsjdk/samtools/cram/mitoAlignmentStartTest_3_containers_aligned_to_pos_1.cram
+which contains 20 000+ identical reads all at position 1 of a
+mitochondrial reference, straddling CRAM's 10k-read-per-container
+default and thus generating exactly 3 containers.
+
+Running the pre-fix htsjdk 4.1.0 CRAM reader against this file returns
+different bases for reads in container 2 and 3 than htslib's
+`samtools view` does. htsjdk 4.1.1 reads the same bytes as htslib.

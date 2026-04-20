@@ -1,0 +1,175 @@
+commit 11564cb3bcea39666d6d3979080bc5d8fdbe1d7e
+Author: rrahn <rene.rahn@fu-berlin.de>
+Date:   Tue Jul 16 17:32:10 2024 +0200
+
+    Fixes #3266: Incorrect begin/end of alignment for banded alignment
+    
+    In case the sequences are sliced by cutting off a prefix of the original seuence due to the band configuration, the relative positions of the sliced sequences was reported inside of the alignment result.
+    However, this slicing happens only internally and thus the positions reported should correspond to the ones of the original sequences.
+    We fix this by tracking the offset of the prefix that was cut off and add this to the relative positions during result creation to get the absolute positions.
+
+diff --git a/include/seqan3/alignment/pairwise/alignment_algorithm.hpp b/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
+index c5c5718dd..c434e1c07 100644
+--- a/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
++++ b/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
+@@ -618,8 +618,11 @@ private:
+             res.end_positions = alignment_coordinate_t{column_index_type{this->alignment_state.optimum.column_index},
+                                                        row_index_type{this->alignment_state.optimum.row_index}};
+             // At some point this needs to be refactored so that it is not necessary to adapt the coordinate.
+-            if constexpr (traits_t::is_banded)
++            if constexpr (traits_t::is_banded) {
+                 res.end_positions.second += res.end_positions.first - this->trace_matrix.band_col_index;
++                res.end_positions.first = this->to_original_sequence1_position(res.end_positions.first);
++                res.end_positions.second = this->to_original_sequence2_position(res.end_positions.second);
++            }
+         }
+ 
+         if constexpr (traits_t::compute_begin_positions)
+@@ -631,8 +634,10 @@ private:
+                 detail::row_index_type{this->alignment_state.optimum.row_index},
+                 detail::column_index_type{this->alignment_state.optimum.column_index}};
+             auto trace_res = builder(this->trace_matrix.trace_path(optimum_coordinate));
+-            res.begin_positions.first = trace_res.first_sequence_slice_positions.first;
+-            res.begin_positions.second = trace_res.second_sequence_slice_positions.first;
++            res.begin_positions.first =
++                this->to_original_sequence1_position(trace_res.first_sequence_slice_positions.first);
++            res.begin_positions.second =
++                this->to_original_sequence2_position(trace_res.second_sequence_slice_positions.first);
+ 
+             if constexpr (traits_t::compute_sequence_alignment)
+                 res.alignment = std::move(trace_res.alignment);
+@@ -697,8 +702,10 @@ private:
+ 
+             if constexpr (traits_t::compute_end_positions)
+             {
+-                res.end_positions.first = this->alignment_state.optimum.column_index[simd_index];
+-                res.end_positions.second = this->alignment_state.optimum.row_index[simd_index];
++                res.end_positions.first =
++                    this->to_original_sequence1_position(this->alignment_state.optimum.column_index[simd_index]);
++                res.end_positions.second =
++                    this->to_original_sequence2_position(this->alignment_state.optimum.row_index[simd_index]);
+             }
+ 
+             callback(std::move(res));
+diff --git a/include/seqan3/alignment/pairwise/policy/alignment_matrix_policy.hpp b/include/seqan3/alignment/pairwise/policy/alignment_matrix_policy.hpp
+index 29c85083b..12ac2a2d3 100644
+--- a/include/seqan3/alignment/pairwise/policy/alignment_matrix_policy.hpp
++++ b/include/seqan3/alignment/pairwise/policy/alignment_matrix_policy.hpp
+@@ -142,23 +142,23 @@ private:
+     template <typename sequence1_t, typename sequence2_t>
+     constexpr auto slice_sequences(sequence1_t & sequence1,
+                                    sequence2_t & sequence2,
+-                                   align_cfg::band_fixed_size const & band) const noexcept
++                                   align_cfg::band_fixed_size const & band) noexcept
+     {
+         size_t seq1_size = std::ranges::distance(sequence1);
+         size_t seq2_size = std::ranges::distance(sequence2);
+ 
+         auto trim_sequence1 = [&]() constexpr
+         {
+-            size_t begin_pos = std::max<std::ptrdiff_t>(band.lower_diagonal - 1, 0);
++            seq1_slice_offset = std::max<std::ptrdiff_t>(band.lower_diagonal - 1, 0);
+             size_t end_pos = std::min<std::ptrdiff_t>(band.upper_diagonal + seq2_size, seq1_size);
+-            return sequence1 | views::slice(begin_pos, end_pos);
++            return sequence1 | views::slice(seq1_slice_offset, end_pos);
+         };
+ 
+         auto trim_sequence2 = [&]() constexpr
+         {
+-            size_t begin_pos = std::abs(std::min<std::ptrdiff_t>(band.upper_diagonal + 1, 0));
++            seq2_slice_offset = std::abs(std::min<std::ptrdiff_t>(band.upper_diagonal + 1, 0));
+             size_t end_pos = std::min<std::ptrdiff_t>(seq1_size - band.lower_diagonal, seq2_size);
+-            return sequence2 | views::slice(begin_pos, end_pos);
++            return sequence2 | views::slice(seq2_slice_offset, end_pos);
+         };
+ 
+         return std::tuple{trim_sequence1(), trim_sequence2()};
+@@ -192,10 +192,37 @@ private:
+         ++trace_matrix_iter;
+     }
+ 
++    /*!
++     * \brief Converts a sliced position in the alignment matrix to the corresponding position in the original sequence 1.
++     *
++     * \param position The position in the sliced alignment matrix.
++     * \return The corresponding position in the original sequence 1.
++     *
++     * Only changes the position if the sequence was sliced due to band configuration.
++     */
++    constexpr size_t to_original_sequence1_position(size_t position) const noexcept {
++        return position + seq1_slice_offset;
++    }
++
++    /*!
++     * \brief Converts a sliced position in the alignment matrix to the corresponding position in the original sequence 2.
++     *
++     * \param position The position in the sliced alignment matrix.
++     * \return The corresponding position in the original sequence 2.
++     *
++     * Only changes the position if the sequence was sliced due to band configuration.
++     */
++    constexpr size_t to_original_sequence2_position(size_t position) const noexcept {
++        return position + seq2_slice_offset;
++    }
++
+     score_matrix_t score_matrix{}; //!< The scoring matrix.
+     trace_matrix_t trace_matrix{}; //!< The trace matrix if needed.
+ 
+     typename score_matrix_t::iterator score_matrix_iter{}; //!< The matrix iterator over the score matrix.
+     typename trace_matrix_t::iterator trace_matrix_iter{}; //!< The matrix iterator over the trace matrix.
++
++    size_t seq1_slice_offset{}; //!< The offset of the first sequence slice.
++    size_t seq2_slice_offset{}; //!< The offset of the second sequence slice;
+ };
+ } // namespace seqan3::detail
+diff --git a/test/unit/alignment/pairwise/global_affine_banded_test.cpp b/test/unit/alignment/pairwise/global_affine_banded_test.cpp
+index 0b396f1a2..669759a07 100644
+--- a/test/unit/alignment/pairwise/global_affine_banded_test.cpp
++++ b/test/unit/alignment/pairwise/global_affine_banded_test.cpp
+@@ -6,6 +6,8 @@
+ 
+ #include <seqan3/alignment/pairwise/align_pairwise.hpp>
+ 
++#include <seqan3/core/debug_stream.hpp>
++
+ #include "fixture/global_affine_banded.hpp"
+ #include "pairwise_alignment_single_test_template.hpp"
+ 
+@@ -68,3 +70,37 @@ TEST_F(pairwise_global_affine_banded, invalid_band_last_cell_not_covered)
+                                        fixture.config | seqan3::align_cfg::output_score{});
+     EXPECT_THROW(result_range.begin(), seqan3::invalid_alignment_configuration);
+ }
++
++TEST(banded_alignment_issue3266_test, wrong_begin_and_end_position)
++{
++    using namespace seqan3;
++    using namespace seqan3::literals;
++
++    const auto configGeneral =
++        align_cfg::scoring_scheme{nucleotide_scoring_scheme{match_score{1}, mismatch_score{-1}}} |
++        align_cfg::gap_cost_affine{align_cfg::open_score{0}, align_cfg::extension_score{-1}} |
++         align_cfg::method_global{
++            align_cfg::free_end_gaps_sequence1_leading{true},
++            align_cfg::free_end_gaps_sequence2_leading{true},
++            align_cfg::free_end_gaps_sequence1_trailing{true},
++            align_cfg::free_end_gaps_sequence2_trailing{true}};
++
++    const auto configBanded = configGeneral | align_cfg::band_fixed_size{align_cfg::lower_diagonal{-40},
++                                                                         align_cfg::upper_diagonal{-20}};
++
++                              //0         1         2         3         4
++                              //01234567890123456789012345678901234567890
++    std::pair p{"CGTCTA"_dna4, "AAACCCGGGTTTAAACCCGGGTTTCGTGTACCCCCCCCCCC"_dna4};
++                                //                      CGTCTA
++
++    auto general_results = align_pairwise(p, configGeneral);
++    auto general_res = *std::ranges::begin(general_results);
++    auto banded_results = align_pairwise(p, configBanded);
++    auto banded_res = *std::ranges::begin(banded_results);
++
++    EXPECT_EQ(general_res.score(), banded_res.score());
++    EXPECT_EQ(general_res.sequence1_begin_position(), banded_res.sequence1_begin_position());
++    EXPECT_EQ(general_res.sequence2_begin_position(), banded_res.sequence2_begin_position());
++    EXPECT_EQ(general_res.sequence1_end_position(), banded_res.sequence1_end_position());
++    EXPECT_EQ(general_res.sequence2_end_position(), banded_res.sequence2_end_position());
++}

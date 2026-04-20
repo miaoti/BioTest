@@ -1,0 +1,6 @@
+Issue / PR: https://github.com/samtools/htsjdk/pull/1538
+
+Verification rule: htsjdk 2.24.1 release notes cite 'Invaliding out of date SAMRecord.mAlignmentBlocks cache (#1538)'
+
+Description (from manifest):
+  Pre-fix SAMRecord mutation (e.g. setCigar) does not invalidate the cached mAlignmentBlocks vector. Subsequent calls to getAlignmentBlocks() on the mutated record return stale data from before the CIGAR edit. Silent wrong answer on any mutation-followed-by-query pattern.

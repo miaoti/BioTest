@@ -1,0 +1,12 @@
+Excerpted from PR #1554 (https://github.com/samtools/htsjdk/pull/1554)
+and its test method `testGenotypeCountsRespectGenotypeFilters`.
+
+> VariantContext.getCalledChrCount() iterates every genotype and counts
+> its alleles. The method did not check the per-genotype FT filter
+> field, so genotypes marked FT=<something non-PASS> contributed to
+> AC/AN/AF even though the spec treats FT as a genotype-level exclude.
+> Downstream tools that recompute AC/AN/AF from the genotype matrix
+> therefore disagreed with htsjdk's in-place INFO values for any VCF
+> with per-sample filters applied.
+
+Fix commit merged 2021-06-10, shipped in htsjdk 3.0.0 (2022-06-06).

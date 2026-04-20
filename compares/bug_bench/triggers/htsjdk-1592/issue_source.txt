@@ -1,0 +1,11 @@
+Excerpted from PR #1592 (https://github.com/samtools/htsjdk/pull/1592).
+
+> CRAM's SC (scores) data series is a delta-encoded quality stream.
+> htsjdk's normalization pass misreads the delta direction when the
+> per-record quality block is empty, producing QUAL arrays that are
+> off by a constant offset from htslib's output. Discovered during
+> hts-specs compliance testing.
+
+Fix commit: 965ec81. Regression test: a CRAM with SC-encoded records
+interleaved with empty-quality records added under
+`test/resources/htsjdk/samtools/cram/` in the PR.

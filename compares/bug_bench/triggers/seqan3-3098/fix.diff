@@ -1,0 +1,273 @@
+commit 4fe548913e96d3f908dd524bd3dc13b48f87bfa4
+Author: rrahn <rene.rahn@fu-berlin.de>
+Date:   Mon Nov 7 17:59:43 2022 +0100
+
+    [FIX] Alignment Wrong alignment score #3043
+    
+    Added carry bit to up and left open trace directions in order to capture original open signal even if it is overwritten by the orhtogonal direction.
+    In the particular issue the left extension overrites the up open signal in the last column and fifth row.
+    The traceback now follows the vertical or horizontal direction unitl it encounters the carry bit signal.
+
+diff --git a/include/seqan3/alignment/matrix/detail/trace_directions.hpp b/include/seqan3/alignment/matrix/detail/trace_directions.hpp
+index 21f0aaa61..4cf13d931 100644
+--- a/include/seqan3/alignment/matrix/detail/trace_directions.hpp
++++ b/include/seqan3/alignment/matrix/detail/trace_directions.hpp
+@@ -32,13 +32,17 @@ enum struct trace_directions : uint8_t
+     //!\brief Trace comes from the diagonal entry.
+     diagonal = 0b00001,
+     //!\brief Trace comes from the above entry, while opening the gap.
+-    up_open = 0b00010,
++    up_open = 0b00110,
+     //!\brief Trace comes from the above entry.
+     up = 0b00100,
+     //!\brief Trace comes from the left entry, while opening the gap.
+-    left_open = 0b01000,
++    left_open = 0b11000,
+     //!\brief Trace comes from the left entry.
+-    left = 0b10000
++    left = 0b10000,
++    //!\brief Carry bit for the last up open even if it is not the maximum value.
++    carry_up_open = 0b00010,
++    //!\brief Carry bit for the last left open even if it is not the maximum value.
++    carry_left_open = 0b01000
+ };
+ 
+ } // namespace seqan3::detail
+diff --git a/include/seqan3/alignment/matrix/detail/trace_iterator_base.hpp b/include/seqan3/alignment/matrix/detail/trace_iterator_base.hpp
+index 6d9307a99..6342e8122 100644
+--- a/include/seqan3/alignment/matrix/detail/trace_iterator_base.hpp
++++ b/include/seqan3/alignment/matrix/detail/trace_iterator_base.hpp
+@@ -159,14 +159,14 @@ public:
+         {
+             derived().go_up(matrix_iter);
+             // Set new trace direction if last position was up_open.
+-            if (static_cast<bool>(old_dir & trace_directions::up_open))
++            if (static_cast<bool>(old_dir & trace_directions::carry_up_open))
+                 set_trace_direction(*matrix_iter);
+         }
+         else if (current_direction == trace_directions::left)
+         {
+             derived().go_left(matrix_iter);
+             // Set new trace direction if last position was left_open.
+-            if (static_cast<bool>(old_dir & trace_directions::left_open))
++            if (static_cast<bool>(old_dir & trace_directions::carry_left_open))
+                 set_trace_direction(*matrix_iter);
+         }
+         else
+@@ -259,12 +259,11 @@ private:
+         {
+             current_direction = trace_directions::diagonal;
+         }
+-        else if (static_cast<bool>(dir & trace_directions::up) || static_cast<bool>(dir & trace_directions::up_open))
++        else if (static_cast<bool>(dir & trace_directions::up))
+         {
+             current_direction = trace_directions::up;
+         }
+-        else if (static_cast<bool>(dir & trace_directions::left)
+-                 || static_cast<bool>(dir & trace_directions::left_open))
++        else if (static_cast<bool>(dir & trace_directions::left))
+         {
+             current_direction = trace_directions::left;
+         }
+diff --git a/include/seqan3/alignment/pairwise/alignment_algorithm.hpp b/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
+index 6ca4f3d2d..3ebbe0605 100644
+--- a/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
++++ b/include/seqan3/alignment/pairwise/alignment_algorithm.hpp
+@@ -743,14 +743,28 @@ private:
+         if constexpr (traits_t::compute_sequence_alignment)
+         {
+             auto trace_matrix_it = trace_debug_matrix.begin() + offset;
+-            std::ranges::copy(column
+-                                  | std::views::transform(
+-                                      [](auto const & tpl)
+-                                      {
+-                                          using std::get;
+-                                          return get<1>(tpl).current;
+-                                      }),
+-                              trace_debug_matrix.begin() + offset);
++            std::ranges::copy(
++                column
++                    | std::views::transform(
++                        [](auto const & tpl)
++                        {
++                            using std::get;
++                            auto trace = get<1>(tpl).current;
++
++                            if (auto _up = (trace & trace_directions::up_open); _up == trace_directions::carry_up_open)
++                                trace = trace ^ trace_directions::carry_up_open; // remove silent up open signal
++                            else if (_up == trace_directions::up_open)
++                                trace = trace ^ trace_directions::up; // display up open only with single bit.
++
++                            if (auto _left = (trace & trace_directions::left_open);
++                                _left == trace_directions::carry_left_open)
++                                trace = trace ^ trace_directions::carry_left_open; // remove silent left open signal
++                            else if (_left == trace_directions::left_open)
++                                trace = trace ^ trace_directions::left; // display left open only with single bit.
++
++                            return trace;
++                        }),
++                trace_debug_matrix.begin() + offset);
+         }
+     }
+ 
+diff --git a/include/seqan3/alignment/pairwise/detail/policy_affine_gap_with_trace_recursion.hpp b/include/seqan3/alignment/pairwise/detail/policy_affine_gap_with_trace_recursion.hpp
+index 3bb4ffe34..313a19c95 100644
+--- a/include/seqan3/alignment/pairwise/detail/policy_affine_gap_with_trace_recursion.hpp
++++ b/include/seqan3/alignment/pairwise/detail/policy_affine_gap_with_trace_recursion.hpp
+@@ -78,9 +78,11 @@ protected:
+         diagonal_score = (diagonal_score < vertical_score)
+                            ? (best_trace = previous_cell.vertical_trace(), vertical_score)
+                            : (best_trace |= previous_cell.vertical_trace(), diagonal_score);
+-        diagonal_score = (diagonal_score < horizontal_score)
+-                           ? (best_trace = previous_cell.horizontal_trace(), horizontal_score)
+-                           : (best_trace |= previous_cell.horizontal_trace(), diagonal_score);
++        diagonal_score =
++            (diagonal_score < horizontal_score)
++                ? (best_trace = previous_cell.horizontal_trace() | (best_trace & trace_directions::carry_up_open),
++                   horizontal_score)
++                : (best_trace |= previous_cell.horizontal_trace(), diagonal_score);
+ 
+         score_type tmp = diagonal_score + gap_open_score;
+         vertical_score += gap_extension_score;
+diff --git a/include/seqan3/alignment/pairwise/policy/affine_gap_policy.hpp b/include/seqan3/alignment/pairwise/policy/affine_gap_policy.hpp
+index 605af4821..9314d4e9c 100644
+--- a/include/seqan3/alignment/pairwise/policy/affine_gap_policy.hpp
++++ b/include/seqan3/alignment/pairwise/policy/affine_gap_policy.hpp
+@@ -97,8 +97,10 @@ private:
+         {
+             tmp = (tmp < score_cell.up) ? (trace_cell.current = trace_cell.up, score_cell.up)
+                                         : (trace_cell.current = trace_directions::diagonal | trace_cell.up, tmp);
+-            tmp = (tmp < score_cell.r_left) ? (trace_cell.current = trace_cell.r_left, score_cell.r_left)
+-                                            : (trace_cell.current |= trace_cell.r_left, tmp);
++            tmp = (tmp < score_cell.r_left)
++                    ? (trace_cell.current = trace_cell.r_left | (trace_cell.current & trace_directions::carry_up_open),
++                       score_cell.r_left)
++                    : (trace_cell.current |= trace_cell.r_left, tmp);
+         }
+         else
+         {
+diff --git a/test/unit/alignment/matrix/detail/debug_stream_trace_directions_test.cpp b/test/unit/alignment/matrix/detail/debug_stream_trace_directions_test.cpp
+index a238c792d..98c8cf4a8 100644
+--- a/test/unit/alignment/matrix/detail/debug_stream_trace_directions_test.cpp
++++ b/test/unit/alignment/matrix/detail/debug_stream_trace_directions_test.cpp
+@@ -18,8 +18,8 @@ static constexpr seqan3::detail::trace_directions N = seqan3::detail::trace_dire
+ static constexpr seqan3::detail::trace_directions D = seqan3::detail::trace_directions::diagonal;
+ static constexpr seqan3::detail::trace_directions u = seqan3::detail::trace_directions::up;
+ static constexpr seqan3::detail::trace_directions l = seqan3::detail::trace_directions::left;
+-static constexpr seqan3::detail::trace_directions U = seqan3::detail::trace_directions::up_open;
+-static constexpr seqan3::detail::trace_directions L = seqan3::detail::trace_directions::left_open;
++static constexpr seqan3::detail::trace_directions U = seqan3::detail::trace_directions::carry_up_open;
++static constexpr seqan3::detail::trace_directions L = seqan3::detail::trace_directions::carry_left_open;
+ 
+ TEST(debug_stream_test, ascii)
+ {
+diff --git a/test/unit/alignment/pairwise/fixture/alignment_fixture.hpp b/test/unit/alignment/pairwise/fixture/alignment_fixture.hpp
+index 830572184..e5d2bd799 100644
+--- a/test/unit/alignment/pairwise/fixture/alignment_fixture.hpp
++++ b/test/unit/alignment/pairwise/fixture/alignment_fixture.hpp
+@@ -19,8 +19,8 @@ static constexpr auto N = seqan3::detail::trace_directions::none;
+ static constexpr auto D = seqan3::detail::trace_directions::diagonal;
+ static constexpr auto u = seqan3::detail::trace_directions::up;
+ static constexpr auto l = seqan3::detail::trace_directions::left;
+-static constexpr auto U = seqan3::detail::trace_directions::up_open;
+-static constexpr auto L = seqan3::detail::trace_directions::left_open;
++static constexpr auto U = seqan3::detail::trace_directions::carry_up_open;
++static constexpr auto L = seqan3::detail::trace_directions::carry_left_open;
+ static constexpr auto DU = D | U;
+ static constexpr auto UL = U | L;
+ static constexpr auto DL = D | L;
+diff --git a/test/unit/alignment/pairwise/fixture/global_affine_unbanded.hpp b/test/unit/alignment/pairwise/fixture/global_affine_unbanded.hpp
+index 9f972410a..b86b1321e 100644
+--- a/test/unit/alignment/pairwise/fixture/global_affine_unbanded.hpp
++++ b/test/unit/alignment/pairwise/fixture/global_affine_unbanded.hpp
+@@ -417,6 +417,76 @@ static auto dna4_match_4_mismatch_5_gap_1_open_10_both_empty = []()
+     };
+ }();
+ 
++// [ISSUE #3043] Wrong alignment score https://github.com/seqan/seqan3/issues/3043
++static auto issue_3043 = []()
++{
++    using seqan3::operator""_dna4;
++
++    auto make_scheme = [] ()
++    {
++        seqan3::nucleotide_scoring_scheme<int32_t> scheme{};
++        scheme.score('A'_dna4, 'A'_dna4) = 145;
++        scheme.score('A'_dna4, 'T'_dna4) = -144;
++        scheme.score('A'_dna4, 'G'_dna4) = -153;
++        scheme.score('A'_dna4, 'C'_dna4) = -152;
++
++        scheme.score('T'_dna4, 'A'_dna4) = -144;
++        scheme.score('T'_dna4, 'T'_dna4) = 144;
++        scheme.score('T'_dna4, 'G'_dna4) = -143;
++        scheme.score('T'_dna4, 'C'_dna4) = -140;
++
++        scheme.score('G'_dna4, 'A'_dna4) = -153;
++        scheme.score('G'_dna4, 'T'_dna4) = -143;
++        scheme.score('G'_dna4, 'G'_dna4) = 144;
++        scheme.score('G'_dna4, 'C'_dna4) = -145;
++
++        scheme.score('C'_dna4, 'A'_dna4) = -152;
++        scheme.score('C'_dna4, 'T'_dna4) = -140;
++        scheme.score('C'_dna4, 'G'_dna4) = -145;
++        scheme.score('C'_dna4, 'C'_dna4) = 144;
++
++        return scheme;
++    };
++
++    return alignment_fixture
++    {
++        "GGCAAGAA"_dna4,
++        "CGAAGC"_dna4,
++        seqan3::align_cfg::method_global{} | seqan3::align_cfg::gap_cost_affine{seqan3::align_cfg::open_score{-52},
++                                                                                seqan3::align_cfg::extension_score{-58}}
++                                           | seqan3::align_cfg::scoring_scheme{make_scheme()},
++        74,
++        "GGCAAGAA--",
++        "--C--GAAGC",
++        /*.sequence1_begin_position = */ 0u,
++        /*.sequence2_begin_position = */ 0u,
++        /*.sequence1_end_position = */ 8u,
++        /*.sequence2_end_position = */ 6u,
++        std::vector
++        {
++        //    e
++        /*e*/    0,-110,-168,-226,-284,-342,-400,-458,-516,
++              -110,-145,-255, -24,-134,-192,-250,-308,-366,
++              -168,  34,  -1,-111,-169,-227, -48,-158,-216,
++              -226, -76,-111,-153,  34, -24,-134,  97, -13,
++              -284,-134,-169,-250,  -8, 179,  69,  11, 242,
++              -342,-140,  10,-100,-118,  69, 323, 213, 155,
++              -400,-250,-100, 154,  44,  11, 213, 171,  74
++        },
++        std::vector
++        {
++        //    e,G  ,G  ,C  ,A  ,A  ,G  ,A  ,A  ,
++        /*e*/ N,L  ,l  ,l  ,l  ,l  ,l  ,l  ,l  ,
++        /*C*/ U,DUL,DUL,DUl,L  ,l  ,l  ,l  ,l  ,
++        /*G*/ u,DUL,DuL,L  ,l  ,l  ,DUl,L  ,l  ,
++        /*A*/ u,UL ,UL ,DuL,DUL,DUL,l  ,DUl,DUL,
++        /*A*/ u,uL ,uL ,uL ,DUl,DUL,L  ,DUl,DUl,
++        /*G*/ u,DuL,DuL,L  ,Ul ,Ul ,DUL,L  ,l  ,
++        /*C*/ u,uL ,UL ,DUL,L  ,ul ,Ul ,DUL,uL
++        }
++    };
++}();
++
+ // ----------------------------------------------------------------------------
+ // alignment fixtures using amino acid alphabet
+ // ----------------------------------------------------------------------------
+diff --git a/test/unit/alignment/pairwise/global_affine_unbanded_test.cpp b/test/unit/alignment/pairwise/global_affine_unbanded_test.cpp
+index 732015b39..88b4da96a 100644
+--- a/test/unit/alignment/pairwise/global_affine_unbanded_test.cpp
++++ b/test/unit/alignment/pairwise/global_affine_unbanded_test.cpp
+@@ -28,7 +28,8 @@ using pairwise_global_affine_unbanded_testing_types = ::testing::Types<
+     pairwise_alignment_fixture<
+         &seqan3::test::alignment::fixture::global::affine::unbanded::dna4_match_4_mismatch_5_gap_1_open_10_seq2_empty>,
+     pairwise_alignment_fixture<
+-        &seqan3::test::alignment::fixture::global::affine::unbanded::dna4_match_4_mismatch_5_gap_1_open_10_both_empty>>;
++        &seqan3::test::alignment::fixture::global::affine::unbanded::dna4_match_4_mismatch_5_gap_1_open_10_both_empty>,
++    pairwise_alignment_fixture<&seqan3::test::alignment::fixture::global::affine::unbanded::issue_3043>>;
+ 
+ INSTANTIATE_TYPED_TEST_SUITE_P(pairwise_global_affine_unbanded,
+                                pairwise_alignment_test,

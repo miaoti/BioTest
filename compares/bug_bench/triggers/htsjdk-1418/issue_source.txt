@@ -1,0 +1,6 @@
+Issue / PR: https://github.com/samtools/htsjdk/pull/1418
+
+Verification rule: htsjdk 2.21.0 release notes cite 'Make VCFHeader not throw exception if contig header lines lack length field (#1418)'
+
+Description (from manifest):
+  Pre-fix VCF header parser throws on any '##contig=<ID=X>' header line that omits the length= attribute, even though the spec treats length as optional. htslib accepts such files; pre-fix htsjdk rejects them.
