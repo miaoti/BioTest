@@ -20,26 +20,26 @@ use std::io::Cursor;
 use noodles_vcf as vcf;
 
 fuzz_target!(|data: &[u8]| {
-    let mut reader = vcf::io::reader::Builder::default()
+    let mut reader = match vcf::io::reader::Builder::default()
         .build_from_reader(Cursor::new(data))
-        .ok()
-        .map(|r| r);
+    {
+        Ok(r) => r,
+        Err(_) => return,
+    };
 
-    if let Some(mut reader) = reader.take() {
-        // Header: malformed bytes → Err, which is a legitimate rejection
-        // path and NOT a bug. Panic-class crashes are the findings we care
-        // about, and those propagate automatically.
-        let _ = reader.read_header();
+    // Header: malformed bytes → Err, which is a legitimate rejection
+    // path and NOT a bug. Panic-class crashes are the findings we care
+    // about, and those propagate automatically.
+    let _ = reader.read_header();
 
-        // Records: stream-parse until EOF or Err.
-        let mut buf = String::new();
-        loop {
-            buf.clear();
-            match reader.read_record(&mut buf) {
-                Ok(0) => break,              // EOF
-                Ok(_) => { /* consumed */ }
-                Err(_) => break,             // rejection = not a crash
-            }
+    // Records: stream-parse until EOF or Err. noodles-vcf 0.70 takes
+    // `&mut Record` rather than `&mut String`.
+    let mut record = vcf::Record::default();
+    loop {
+        match reader.read_record(&mut record) {
+            Ok(0) => break,              // EOF
+            Ok(_) => { /* consumed */ }
+            Err(_) => break,             // rejection = not a crash
         }
     }
 });

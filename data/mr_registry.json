@@ -604,11 +604,61 @@
         "getCigarString",
         "getReadString"
       ]
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line reordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Parsed SAM header must be semantically identical after reordering @CO comment lines",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p32",
+          "quote": "description\n[lexicographical] sort order is defined as a character-based dictionary sort with the character order as defined by the POSIX C locale.\n  For example ``abc'', ``abc17'', ``abc5'', ``abc59'' and ``abcd'' are in lexicographical order.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The header section::p89",
+          "quote": "description\n[lexicographical] sort order is defined as a character-based dictionary sort with the character order as defined by the POSIX C locale.\n  For example ``abc'', ``abc17'', ``abc5'', ``abc59'' and ``abcd'' are in lexicographical order.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "SAM writer round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(SAM) ≡ parse(write(parse(SAM)))",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The BAM Format Specification::p194",
+          "quote": "Optional alignment fields are stored immediately after each other immediately following the qual field, and are included in block_size. Each field is represented as a two-character tag followed by a single type character and then its value, whose length is determined by the field's type.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The BAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
     }
   ],
   "summary": {
     "enforced_count": 1,
-    "quarantine_count": 22,
-    "total": 23
+    "quarantine_count": 24,
+    "total": 25
   }
 }

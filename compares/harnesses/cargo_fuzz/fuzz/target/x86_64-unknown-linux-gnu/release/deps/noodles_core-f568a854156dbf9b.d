@@ -1,0 +1,11 @@
+/work/compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/deps/noodles_core-f568a854156dbf9b.d: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/work/compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/deps/libnoodles_core-f568a854156dbf9b.rlib: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/work/compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/deps/libnoodles_core-f568a854156dbf9b.rmeta: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs:

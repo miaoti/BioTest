@@ -1,0 +1,11 @@
+/work/harnesses/rust/noodles_harness/target/release/deps/noodles_core-0a0233b059c7fcc5.d: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/work/harnesses/rust/noodles_harness/target/release/deps/libnoodles_core-0a0233b059c7fcc5.rlib: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/work/harnesses/rust/noodles_harness/target/release/deps/libnoodles_core-0a0233b059c7fcc5.rmeta: /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs
+
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/lib.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/position/sequence_index.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region.rs:
+/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/noodles-core-0.15.0/src/region/interval.rs:

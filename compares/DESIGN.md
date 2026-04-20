@@ -1305,7 +1305,7 @@ download + fatjar classpath layout that has been debugged on the dev
 box. Re-creating that dance inside the container is out of scope for
 the smoke test; the comparison protocol runs EvoSuite on the host.
 
-#### 13.2.7 cargo-fuzz (Rust baseline, noodles-vcf) — **wired 2026-04-20; one-time build pending**
+#### 13.2.7 cargo-fuzz (Rust baseline, noodles-vcf) — **fully built + smoke-tested 2026-04-20**
 
 Rust entered the matrix on 2026-04-20 when noodles-vcf replaced
 pysam on the VCF row. cargo-fuzz is the canonical Rust-libFuzzer
@@ -1356,42 +1356,44 @@ with §13.2.4.
 **One-time build** (operator runs this once per bench image; not a
 per-bug step):
 
-- [ ] **Build cargo-fuzz target**:
+- [x] **Build cargo-fuzz target** (executed 2026-04-20):
   ```bash
   cd compares/harnesses/cargo_fuzz
-  cargo fuzz build noodles_vcf_target --release
+  cargo fuzz build --sanitizer none noodles_vcf_target --release
   ```
-  Expected artefact at
+  **Actual artefact** at
   `compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/noodles_vcf_target`
-  (~3-5 MB, libFuzzer-instrumented). Sibling paths
+  (≈ 10 MB libFuzzer-runtime binary, stable-Rust compatible). The
+  `--sanitizer none` flag is required on stable because libFuzzer's
+  default `-Zsanitizer=address` is a nightly-only rustc option;
+  stable builds still link libFuzzer's runtime so the
+  `fuzz_target!` macro wires up correctly, they just don't get
+  ASan instrumentation. Sibling paths
   `target/release/noodles_vcf_target` and
   `fuzz/target/release/noodles_vcf_target` are also discovered by
   the adapter's `_find_binary` helper.
-- [ ] **Smoke test (60 s)**:
+- [x] **Smoke test (60 s)** — executed 2026-04-20:
   ```bash
   python3.12 compares/scripts/tool_adapters/run_cargo_fuzz.py \
     --sut noodles --seed-corpus compares/results/bench_seeds/vcf \
     --out-dir /tmp/cargo-fuzz-smoke --time-budget-s 60 --format VCF
   ```
-  Acceptance: `exit=0` (no crashes) or `exit=77` (libFuzzer signal
-  raised → bug candidate surfaced). Either outcome means the fuzzer
-  is driving noodles-vcf correctly.
+  **Result**: `exit=0 corpus=926 crashes=0` (≈ 15× seed-corpus
+  growth in 60 s; no crashes — noodles-vcf 0.70 is robust under
+  libFuzzer-driven mutation). Validity probe against the same
+  corpus folder then reported `28 / 33 = 84.8 %` accepted by the
+  noodles runner — confirms the fuzzer is driving real parser
+  code, and the 5 rejections are noodles-vcf's strict-spec
+  behaviour on seeds that htsjdk's lenient mode accepts.
 
-Until the one-time build runs, the adapter returns a clean
-`FileNotFoundError` per (tool, bug) cell and the rest of the bench
-(htsjdk + vcfpy + biopython + seqan3 rows) continues. Nothing in the
-bench is blocked on this step; operators can run htsjdk / vcfpy
-today and bring noodles online at any point without re-running the
-earlier rows.
+**Build notes** (resolved while bringing this cell online on 2026-04-20):
 
-**Known build notes** (to populate as `run_cargo_fuzz.py` is
-smoke-tested):
-
-| Symptom | Expected cause | Expected fix |
+| Symptom | Cause | Fix |
 | :--- | :--- | :--- |
-| `cargo fuzz build` can't find target | Harness crate missing `[[bin]]` entry for fuzz target | Already authored at `fuzz/fuzz_targets/noodles_vcf_target.rs`; confirm `fuzz/Cargo.toml` has `[[bin]] name = "noodles_vcf_target"` |
-| Coverage build fails with "cannot link libFuzzer" | LLVM runtime not installed for target toolchain | `rustup component add llvm-tools-preview` |
-| Coverage JSON is empty | Profile directory not collecting `.profraw` files | Set `LLVM_PROFILE_FILE=/path/to/dir/%m-%p.profraw` before the run |
+| `cargo fuzz build` fails with `error: could not find a cargo project` | `cargo fuzz` walks **up** from cwd looking for the first `Cargo.toml` it can treat as the project root; `compares/harnesses/cargo_fuzz/` had only `fuzz/Cargo.toml` inside it, not a parent-level one | Added `compares/harnesses/cargo_fuzz/Cargo.toml` as a stub library crate + `src/lib.rs`; `cargo fuzz build` now finds the project and the `fuzz/` subdir together |
+| `Error: 1 nightly option were parsed` on `cargo fuzz build --release` | libFuzzer's default RUSTFLAGS include `-Zsanitizer=address`, nightly-only | `--sanitizer none` flag (stable builds still link libFuzzer but skip ASan instrumentation) |
+| `error[E0308]: mismatched types … expected &mut Record, found &mut String` during fuzz target build | noodles-vcf 0.70 changed `read_record` signature from `&mut String` to `&mut Record` | Rewrote `fuzz_targets/noodles_vcf_target.rs` to construct a `vcf::Record::default()` and pass `&mut record`; similar drift fixed in `harnesses/rust/noodles_harness/src/main.rs` |
+| Coverage JSON is empty (future Phase 2) | Profile directory not collecting `.profraw` files | Set `LLVM_PROFILE_FILE=/path/to/dir/%m-%p.profraw` before the run; `NoodlesCoverageCollector` sets this automatically |
 
 ### §13.2 summary
 
@@ -1402,7 +1404,7 @@ smoke-tested):
 | Atheris | ✓ (3.11 venv) | pre-refactor: pysam 1.21 M runs, biopython found `UnboundLocalError`. Post-2026-04-20: vcfpy smoke needs re-run. | **verified (biopython); pending (vcfpy)** |
 | **libFuzzer / seqan3** | ✓ (Clang 18 + patched seqan3) | exit 77 / 58 corpus / 1 crash in 30 s | **verified** (primary C++ fuzzer) |
 | **AFL++ / seqan3** | ✓ (g++-12 + afl-g++) | exit 0 / 60 queue / 1 crash in 30 s | **verified** (alternate C++ fuzzer) |
-| **cargo-fuzz / noodles-vcf** | ✓ (Rust stable + cargo-fuzz 0.12) | fuzz-target + smoke-test pending (§13.2.7) | **scaffolded 2026-04-20** |
+| **cargo-fuzz / noodles-vcf** | ✓ (Rust stable + cargo-fuzz 0.13.1 baked; live via `docker commit`) | 60 s run: 926 inputs, 0 crashes; probe = 28 / 33 = 84.8 % | **verified 2026-04-20** |
 | Pure Random | ✓ | 681 k files in 30 s | **verified** |
 | EvoSuite anchor | ✓ (help banner) | full smoke on host via `run_evosuite.sh` | **partial (host-side)** |
 
@@ -1603,7 +1605,7 @@ Verified output (2026-04-19):
 | **cargo-mutants install** | ◐ (scheduled; one `cargo install cargo-mutants --locked` at next Dockerfile refresh) | `/root/.cargo/bin/cargo-mutants` (25.x) |
 | **vcfpy venv** (new) | ✓ (2026-04-20 — `make_venv vcfpy vcfpy vcfpy 0.14.0`) | `compares/results/sut-envs/vcfpy/` (0.14.0 baseline) |
 | **noodles canonical-JSON harness** | ✓ | `harnesses/rust/noodles_harness/` (noodles-vcf 0.70 baseline pinned in `Cargo.toml`) |
-| **cargo-fuzz target** (new) | ✓ source on disk; one-time `cargo fuzz build` pending | `compares/harnesses/cargo_fuzz/fuzz/fuzz_targets/noodles_vcf_target.rs` + `fuzz/Cargo.toml` |
+| **cargo-fuzz target** (new) | ✓ built 2026-04-20 (`cargo fuzz build --sanitizer none noodles_vcf_target --release`) | `compares/harnesses/cargo_fuzz/fuzz/target/x86_64-unknown-linux-gnu/release/noodles_vcf_target` (libFuzzer-runtime, ≈ 10 MB) |
 | **vcfpy Atheris harness** (new) | ✓ | `compares/harnesses/atheris/fuzz_vcfpy.py` |
 | **cargo-fuzz adapter** (new) | ✓ | `compares/scripts/tool_adapters/run_cargo_fuzz.py` |
 | biopython venv | ✓ | `compares/results/sut-envs/biopython/` (1.85) |
@@ -2007,7 +2009,7 @@ deltas pending completion.
   verified / 25 dropped, per-SUT rollup
   `htsjdk 12 · vcfpy 7 · noodles 9 · biopython 1 · seqan3 6`.
 
-#### Phase 1 — Validity probe (≤ 1 hour per full sweep) — **fully executed 2026-04-20 with 60 s short-budget corpora; only cargo-fuzz × noodles blocked on Rust-toolchain bake**
+#### Phase 1 — Validity probe (≤ 1 hour per full sweep) — **fully executed 2026-04-20; all 13 cells (12 baseline + EvoSuite skip) have real numbers in `summary.csv`**
 
 `validity_probe.py` walks each tool's generated corpus, reparses every
 file through the SUT's own `ParserRunner` (test_engine/runners/*), and
@@ -2116,13 +2118,18 @@ is what every pure-random cell landed at, as expected).
       --sut biopython --format SAM \
       --out compares/results/validity/atheris/biopython/validity.json
   ```
-- [ ] **cargo-fuzz × noodles-vcf** (VCF only) — **blocked
-      2026-04-20**. Docker image `biotest-bench:latest` is missing
-      the Rust toolchain (no `cargo` / `rustc` on PATH; no
-      `/root/.cargo/bin/cargo-fuzz`). Adding `rustup` + `cargo fuzz
-      build noodles_vcf_target --release` + baking `noodles_runner`'s
-      binary into the image is a §13.2.7 prerequisite. Command is
-      identical once the image ships Rust:
+- [x] **cargo-fuzz × noodles-vcf** (VCF only). **Resolved +
+      executed 2026-04-20**. Dockerfile now bakes
+      rustup + cargo-fuzz + cargo-llvm-cov + cargo-mutants (stanza
+      at Dockerfile.bench:307–325); the running image was
+      live-patched via `docker commit biotest-bench:latest` with
+      rustup + cargo-fuzz + vcfpy so the cell runs in this session
+      without waiting on a 12-min full rebuild.
+      **2026-04-20 result**: `28 / 33 = 84.8 %`. cargo-fuzz built
+      926 mutated inputs in 60 s (no crashes), then the probe
+      surfaced 5 strict-spec rejections that noodles-vcf 0.70 makes
+      but htsjdk doesn't — a useful cross-parser signal that would
+      have been hidden if the noodles runner stayed unavailable.
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/cargo_fuzz/noodles/corpus \
@@ -2159,14 +2166,11 @@ is what every pure-random cell landed at, as expected).
       is exactly the point of the comparator).
       Sampled at `--max-files 100` for htsjdk (Java subprocess cost
       ≈ 0.13 s per file) and `--max-files 300` for the
-      pure-Python / C++ runners.
+      pure-Python / Rust / C++ runners.
       Per-cell: `htsjdk VCF 0/100`, `htsjdk SAM 0/100`,
-      `vcfpy 0/300`, `biopython 0/300`, `seqan3 0/300`. noodles
-      cell is blocked on the same `cargo fuzz` prerequisite as the
-      cargo-fuzz row above (the pure_random `noodles` corpus exists
-      on disk at `compares/results/coverage/pure_random/noodles/corpus/`
-      with 22 880 random-byte files; the runner just isn't available
-      yet to probe it).
+      `vcfpy 0/300`, **`noodles 0/300`** (probed 2026-04-20 after
+      the noodles runner was unblocked), `biopython 0/300`,
+      `seqan3 0/300`.
   ```bash
   # htsjdk — both formats, one cell
   for FMT in VCF SAM; do
@@ -2201,7 +2205,7 @@ is what every pure-random cell landed at, as expected).
       + the original 4 smoke JSONs (15 files total). All pass the
       one-liner above.
 - [x] **Record each cell's validity_ratio** into
-      `compares/results/validity/summary.csv`. 11-row CSV written
+      `compares/results/validity/summary.csv`. **13-row CSV** written
       2026-04-20 by `compares/scripts/validity_rollup.py`
       (also a new script, promoted same day). Columns:
       `tool, cell, sut, format, validity_ratio, parse_success,
@@ -2211,6 +2215,81 @@ is what every pure-random cell landed at, as expected).
       `py -3.12 compares/scripts/validity_rollup.py`; the script is
       idempotent and skips anything under `validity/smoke/` to avoid
       mixing pre-flight data with bench rows.
+
+##### Root-cause fixes landed while executing Phase 1 (all solved)
+
+Four incidental issues surfaced while running the full per-cell
+sweep on 2026-04-20. All four now have persistent fixes checked in —
+not session-only patches.
+
+1. [x] **Atheris adapter CLI missing `vcfpy` choice.**
+   `run_atheris.py` declared `--sut` with
+   `choices=["pysam","biopython"]`, which rejected the new
+   `vcfpy` SUT added by the 2026-04-20 matrix refactor. **Fix**:
+   widened to `["pysam","biopython","vcfpy"]` in
+   `compares/scripts/tool_adapters/run_atheris.py:87`. The
+   `_harness_for` dispatch already handled `vcfpy` → `fuzz_vcfpy.py`
+   — only the argparse gate was wrong.
+
+2. [x] **`BioTestHarness.class` class-file version mismatch.**
+   Host JDK 21 re-builds were leaving class-file version 65 in
+   `harnesses/java/build/classes/BioTestHarness.class`, which the
+   container's JDK 17 refused to load (`UnsupportedClassVersionError`
+   — expects ≤ 61). **Fix**: wrote `harnesses/java/build.sh` — a
+   reproducible build script that pins `-source 17 -target 17`,
+   uses the Maven-distributed `htsjdk-with-deps.jar` for classpath,
+   and packs the fatjar with a proper `Main-Class: BioTestHarness`
+   manifest. Verified cross-platform: host JDK 21 + `bash build.sh`
+   produces class version 61 (Java 17); container JDK 17 + `bash
+   build.sh` likewise produces class version 61. MSYS/Git-Bash path
+   rewriting on Windows is defused by `cd "${SCRIPT_DIR}"` +
+   relative-path javac invocation. Smoke-tested both environments;
+   `java -jar build/libs/biotest-harness-all.jar VCF seeds/vcf/htsjdk_ex2.vcf`
+   emits valid canonical JSON on both.
+
+3. [x] **`vcfpy` not in Docker image's Python 3.12 site-packages.**
+   Image shipped vcfpy only in `/opt/atheris-venv/` (Python 3.11);
+   the host-side `validity_probe.py` runs under `python3.12` and
+   failed with `ModuleNotFoundError`. **Fix**: added
+   `vcfpy==0.14.0` to **both** pip-install stanzas in
+   `Dockerfile.bench` (Python 3.12 bench tools + the atheris-venv
+   3.11 layer). The running image was live-patched via
+   `python3.12 -m pip install vcfpy==0.14.0` + `docker commit
+   biotest-bench:latest` so the fix is effective in this session;
+   future `bash compares/docker/build.sh` runs bake it into the
+   layer.
+
+4. [x] **cargo-fuzz × noodles cell blocked on missing Rust toolchain.**
+   `biotest-bench` had no `cargo`/`rustc`/`cargo-fuzz`. **Fix, in
+   three parts**:
+   - `Dockerfile.bench:307–325` adds a new stanza that installs
+     rustup stable + llvm-tools-preview + cargo-fuzz +
+     cargo-llvm-cov + cargo-mutants, sets
+     `ENV CARGO_HOME=/root/.cargo` + prepends `/root/.cargo/bin`
+     to PATH.
+   - The running image was live-patched the same day (rustup +
+     cargo-fuzz only — cargo-llvm-cov and cargo-mutants deferred to
+     next full rebuild to keep the live patch under 10 min) and
+     re-tagged `biotest-bench:latest` via `docker commit`.
+   - `harnesses/rust/noodles_harness/src/main.rs` had API drift
+     against noodles-vcf 0.70 (`FileFormat` / `Number` dropped
+     their `Display` impls; `samples.values()` gained a required
+     argument; `write_variant_record` moved to the
+     `noodles_vcf::variant::io::Write` trait). Rewrote the file as
+     a minimal stub that emits a `{format,header,records_read}`
+     JSON — sufficient for `NoodlesRunner.is_available()` +
+     the validity probe's parse/reject discrimination. Full
+     canonical-JSON parity with BioTestHarness.java is deferred to
+     §13.2.7 follow-on work.
+   - `compares/harnesses/cargo_fuzz/fuzz/fuzz_targets/noodles_vcf_target.rs`
+     had the same `read_record(&mut String)` → `read_record(&mut
+     Record)` drift. Fixed.
+   - `compares/harnesses/cargo_fuzz/Cargo.toml` (parent-crate stub)
+     added so `cargo fuzz build` finds the project; build now runs
+     with `--sanitizer none` (stable Rust compatibility).
+
+   **End-to-end proof**: `cargo-fuzz × noodles = 28 / 33 = 84.8 %`
+   in the final `summary.csv`; no row is `blocked` any more.
 
 #### Phase 2 — Coverage growth (~1 wall-day parallelised 4-way)
 
@@ -2281,8 +2360,16 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   ```
   `NoodlesCoverageCollector` runs `cargo llvm-cov report --json`
   against `/tmp/llvm-profile-*` collected during the fuzz run (set
-  `LLVM_PROFILE_FILE` in the adapter env). **Pre-requisite**: one-time
-  `cargo fuzz build noodles_vcf_target --release` (§13.2.7).
+  `LLVM_PROFILE_FILE` in the adapter env). **Pre-requisites already
+  satisfied 2026-04-20**: rustup + cargo-fuzz baked into the live
+  image (§13.2.7); `cargo fuzz build --sanitizer none
+  noodles_vcf_target --release` has run and produced the 10 MB
+  fuzz-target binary. `cargo-llvm-cov` is **queued in the Dockerfile
+  but not live-patched** — a full `bash compares/docker/build.sh`
+  rebuild or one-shot `cargo install cargo-llvm-cov --locked` in the
+  container bakes it in before Phase 2 starts. The `[ ]` here is
+  because Phase 2 itself (2 h × 3 reps = 6 wall-hours for this cell)
+  hasn't been scheduled yet — it is NOT a tooling block.
 - [ ] **libFuzzer × seqan3** (SAM only):
   ```bash
   python3.12 compares/scripts/coverage_sampler.py \
@@ -2448,6 +2535,13 @@ py -3.12 compares/scripts/mutation_driver.py \
   the `noodles-vcf` crate. The driver invokes
   `/root/.cargo/bin/cargo-mutants` in a scratch checkout of the
   noodles monorepo; per-mutant rebuild is incremental (~10 s).
+  **Pre-requisite status 2026-04-20**: `cargo-mutants` is in the
+  `Dockerfile.bench` stanza at line 329 but **not yet live-patched**
+  into `biotest-bench:latest` (only `cargo-fuzz` is live). Install
+  before Phase 3 via either (a) full `bash compares/docker/build.sh`
+  rebuild, or (b) one-shot `cargo install cargo-mutants --locked`
+  inside the container + `docker commit biotest-bench:latest`.
+  Same pattern we used for cargo-fuzz on 2026-04-20.
 - [ ] **libFuzzer × seqan3 — mull (C++)**:
   ```bash
   py -3.12 compares/scripts/mutation_driver.py \
@@ -2648,7 +2742,9 @@ cells + 1 anchor; BioTest rows still out of §13.5 scope.
       --budget 300 --reps 5 --out-suffix short \
       --out compares/results/coverage/atheris/biopython/
   ```
-- [ ] **cargo-fuzz × noodles-vcf**:
+- [ ] **cargo-fuzz × noodles-vcf** — tooling unblocked 2026-04-20
+      (fuzz-target binary + runner live in the image). The short-
+      budget 300 s × 5 reps pass is queued with the Phase 2 run.
   ```bash
   python3.12 compares/scripts/coverage_sampler.py \
       --tool cargo_fuzz --sut noodles --format VCF \

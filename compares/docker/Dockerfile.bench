@@ -292,17 +292,42 @@ RUN python3.11 -m venv /opt/atheris-venv && \
         atheris==2.3.0 \
         pysam==0.22.1 \
         biopython==1.85 \
+        vcfpy==0.14.0 \
         coverage==7.6.0
 
 # ---- Python 3.12 benchmark tools ----------------------------------------
+# vcfpy added 2026-04-20 so the host-side validity_probe and other
+# python3.12 scripts can import the VCF parser without the inline
+# `python3.12 -m pip install vcfpy` dance every container start.
 
 RUN python3.12 -m pip install --no-cache-dir \
         mutmut==3.0.0 \
         coverage==7.6.0 \
         pysam==0.22.1 \
         biopython==1.85 \
+        vcfpy==0.14.0 \
         pyyaml==6.0.2 \
         hypothesis==6.112.1
+
+# ---- Rust toolchain (2026-04-20) ----------------------------------------
+# Added when noodles-vcf became a primary SUT (DESIGN §2.1, §13.2.7).
+# rustup stable + cargo-fuzz (libFuzzer on Rust) + cargo-llvm-cov (source
+# coverage) + cargo-mutants (Phase-3 mutation testing). Installed under
+# /root/.cargo; the cargo bin dir is on PATH so every shell picks them up.
+#
+# First-time `cargo install` for all three takes ~10 min; cached in the
+# image so subsequent container starts are instant.
+
+ENV CARGO_HOME=/root/.cargo
+ENV RUSTUP_HOME=/root/.rustup
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path && \
+    rustup component add llvm-tools-preview && \
+    cargo install cargo-fuzz --locked && \
+    cargo install cargo-llvm-cov --locked && \
+    cargo install cargo-mutants --locked && \
+    rustc --version && cargo --version && cargo fuzz --version
 
 # ---- BioTest Python dependencies ----------------------------------------
 
