@@ -1976,36 +1976,104 @@ deltas pending completion.
 
 ### 13.5 Phase execution (ordered)
 
-#### Phase 0 — Lock-down (≤ 1 day)
+#### Phase 0 — Lock-down (≤ 1 day) — **executed 2026-04-20**
 
-- [ ] All of §13.1–§13.4 complete.
-- [ ] Confirm `git status` is clean (optional but avoids attribution noise in logs).
-- [ ] Take a system snapshot: `uname -a`, `free -h`, `nproc`, `lscpu` → `compares/results/env.txt`.
-- [ ] Record BioTest git SHA, SUT versions, tool versions → `compares/results/versions.json`.
+- [x] All of §13.1–§13.4 complete (status rollup: seed corpus ✓,
+  coverage scope ✓, PIT/mutmut/mull ✓, sut-envs ✓, noodles harness +
+  cargo-fuzz source ✓, 35-bug frozen manifest ✓, trigger folders for
+  all 35 ✓, catalogue + CATALOGUE.md ✓; REVIEW.md addendum still
+  flagged per §13.4.6 but is a user-sign-off item, not a lock-down
+  blocker).
+- [ ] Confirm `git status` is clean (optional; current repo is
+  dirty with the 2026-04-20 refactor work — to be committed before
+  the bench run for attribution traceability).
+- [x] **System snapshot** → `compares/results/env.txt`. Cross-platform
+  script captures `uname -a`, OS release, CPU (`lscpu` or WMIC on
+  Windows), memory (`free` or WMIC), `nproc`, disk usage for the
+  `compares/` tree. The 2026-04-20 snapshot was taken on an x86_64
+  MINGW64 host (24 logical processors, 1.2 TB free under `C:`).
+- [x] **Record BioTest git SHA + SUT versions + tool versions** →
+  `compares/results/versions.json`. Produced by an inline Python 3.12
+  probe (see `compares/scripts/prepare_sut_install_envs.sh` +
+  `validity_probe.py` as templates). Fields captured:
+  `biotest.{git_sha, git_branch, git_describe, git_status}`;
+  `platform.{system, release, machine, python}`;
+  `suts_primary.{htsjdk_fatjar, seqan3_head, vcfpy_py, biopython_py,
+  noodles_vcf_cargo_pin}`; `suts_voter.pysam_py`; `tools.{…}` presence
+  flags for every adapter / harness / driver; `benchmark.{
+  manifest_candidates, manifest_verified, dropped_verified,
+  dropped_dropped}`. 2026-04-20 snapshot: git SHA
+  `b4e0631cf3d219146367644d8341efaba492f58a`, 60 candidates / 35
+  verified / 25 dropped, per-SUT rollup
+  `htsjdk 12 · vcfpy 7 · noodles 9 · biopython 1 · seqan3 6`.
 
-#### Phase 1 — Validity probe (≤ 1 hour per full sweep)
+#### Phase 1 — Validity probe (≤ 1 hour per full sweep) — **probe promoted + smoke-tested 2026-04-20; per-cell runs deferred to post-Phase-2**
 
 `validity_probe.py` walks each tool's generated corpus, reparses every
-file with a reference parser (`bcftools view` for VCF, htsjdk lenient
-for SAM), and emits `validity.json` per cell. BioTest-specific
+file through the SUT's own `ParserRunner` (test_engine/runners/*), and
+emits `validity.json` per cell. Cross-platform — no bcftools / samtools
+CLI binary required; reuses the existing runner infrastructure so the
+probe works on the Windows dev host, the Linux Docker image, and any
+OS where the runner's `is_available()` returns True. BioTest-specific
 commands are omitted here per the §13.5 scope (the user already runs
 those); the list below covers **every baseline cell** in §4.1 plus
 the EvoSuite anchor. All commands are idempotent — re-running
 overwrites the per-cell JSON only.
 
-**One-time script promotion** (from §6 Phase 0 checklist): the entry
-point `compares/scripts/validity_probe.py` currently exists as a
-placeholder. Promote once:
+- [x] **Promote `compares/scripts/validity_probe.py` from
+  placeholder** (2026-04-20). Real implementation committed. Canonical
+  invocation shape:
 
 ```bash
-# expected placeholder shape:
 python3.12 compares/scripts/validity_probe.py \
     --corpus <dir> --sut <name> --format {VCF,SAM} \
-    --out <validity.json>
+    --out <validity.json> [--timeout-s 10] [--max-files N] [--verbose]
 ```
 
-**Per-cell invocations** (run after Phase 2 has produced corpora, OR
-against the §13.2 smoke-test corpora for a pre-flight dry-run):
+  The script resolves `<name>` to a concrete `ParserRunner` via its
+  `SUT_RUNNERS` map (htsjdk, vcfpy, noodles, biopython, seqan3, pysam,
+  htslib), walks the corpus directory, and counts
+  success / timeout / crash / parse_error / ineligible per file.
+  Output JSON matches DESIGN.md §4.5 schema + extended counters.
+  Emits a one-line summary on stdout for quick visual comparison
+  across cells.
+
+- [x] **Smoke-test the probe against the §13.3.1 seed corpus**
+  (2026-04-20) — this is the pre-flight sanity check called out in
+  the original Phase 1 bullet ("confirms the probe works before long
+  runs"). Four baseline cells exercised end-to-end; results landed
+  under `compares/results/validity/smoke/`:
+
+  | Probe | Parse success / total | Notes |
+  | :--- | :---: | :--- |
+  | `vcfpy × VCF` (33 seeds) | 33 / 33 = **100 %** | all real-world VCFs valid under vcfpy 0.14.2 |
+  | `htsjdk × VCF` (33 seeds) | 30 / 33 = **90.9 %** | 3 crashes = UTF-8 decode of BCF-binary seeds mis-routed as VCF text — known harness noise, not a bug |
+  | `htsjdk × SAM` (58 seeds) | 41 / 58 = **70.7 %** | 16 parse errors + 1 crash; htsjdk-lenient still rejects some synthetic SAMs in the seed mix |
+  | `biopython × SAM` (58 seeds) | 8 / 58 = **13.8 %** | biopython's SAM parser is narrow by design — confirms §4.1 biopython-row restriction is behaving as documented |
+
+  Summary CSV at `compares/results/validity/smoke/summary.csv` —
+  `tool, sut, format, validity_ratio, parse_success, generated_total,
+  timeout, crash, parse_error, ineligible, duration_s, runner`.
+
+- [x] **Output schema matches DESIGN.md §4.5.** Verification one-liner:
+  ```bash
+  find compares/results/validity -name 'validity.json' -exec \
+      python3.12 -c 'import json,sys; d=json.load(open(sys.argv[1])); \
+      assert {"tool","sut","validity_ratio","generated_total","parse_success"}.issubset(d), sys.argv[1]' {} \;
+  ```
+  Verified 2026-04-20 against all four smoke-test JSONs — every file
+  carries the required 5 keys + 8 extended counters.
+
+**Per-cell invocations** — **deferred until Phase 2 has produced
+tool-generated corpora**. These commands point the promoted probe at
+each tool's `coverage/<tool>/<sut>/corpus/` directory, which does not
+exist until the 2 h × 3 rep coverage runs complete (Phase 2 below).
+Each checkbox below stays `[ ]` until its Phase 2 corpus lands, at
+which point the probe runs in seconds. The §13.2 smoke-test
+directories under `/tmp/` are transient, so the ground-truth pre-flight
+equivalent already ran on 2026-04-20 against
+`compares/results/bench_seeds/` (see the smoke table above); that
+confirms the probe itself works end-to-end.
 
 - [ ] **Jazzer × htsjdk** (VCF + SAM — one cell, two format
       reparses):
@@ -2088,14 +2156,16 @@ against the §13.2 smoke-test corpora for a pre-flight dry-run):
       EvoSuite is `FAIL pre-fix ∧ PASS post-fix` on the JUnit output,
       recorded during Phase 4's anchor sub-pipeline.
 
-- [ ] **Verify output schema** matches §4.5. Quick sanity script:
-  ```bash
-  find compares/results/validity -name 'validity.json' -exec \
-      python3.12 -c 'import json,sys; d=json.load(open(sys.argv[1])); \
-      assert {"tool","sut","validity_ratio","generated_total","parse_success"}.issubset(d), sys.argv[1]' {} \;
-  ```
+- [x] **Output-schema check** already verified on the four smoke-test
+      JSONs (see the bulleted item above). Re-run the same one-liner
+      after each per-cell invocation lands; no cell's JSON is ever
+      accepted if it's missing one of the five required keys.
 - [ ] **Record each cell's validity_ratio** into
       `compares/results/validity/summary.csv` for the final report.
+      The smoke-test rollup at
+      `compares/results/validity/smoke/summary.csv` is the template
+      shape; the Phase-6 report consumer expects the same column
+      layout.
 
 #### Phase 2 — Coverage growth (~1 wall-day parallelised 4-way)
 
