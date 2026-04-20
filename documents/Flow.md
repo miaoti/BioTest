@@ -980,14 +980,18 @@ PysamRunner.is_available()
 
 与其他 SUT 的角色对比：
 
-| SUT         | 语言 | 底层库            | 投票角色              |
-| :---------- | :--- | :---------------- | :-------------------- |
-| htsjdk      | Java | (自持)            | 普通票                |
-| pysam       | Py   | libhts (C)        | 普通票                |
-| biopython   | Py   | (自持，SAM-only)  | 普通票（SAM 运行）    |
-| seqan3      | C++  | (自持，SAM-only)  | 普通票（SAM 运行）    |
-| **htslib**  | CLI  | **libhts (C)**    | **Tie-breaker**       |
-| reference   | Py   | (我们的正则解析器) | 普通票（独立实现）    |
+| SUT         | 语言 | 底层库            | 独立实现 | 投票角色              |
+| :---------- | :--- | :---------------- | :------: | :-------------------- |
+| htsjdk      | Java | (自持)            | ✓        | 普通票                |
+| pysam       | Py   | libhts (C, Cython)| ✗        | 普通票（见覆盖率警告） |
+| biopython   | Py   | (自持，SAM-only)  | ✓        | 普通票（SAM 运行）    |
+| seqan3      | C++  | (自持，SAM-only)  | ✓        | 普通票（SAM 运行）    |
+| **vcfpy**   | Py   | (自持，VCF-only)  | ✓        | 普通票（VCF 运行）    |
+| **noodles** | Rust | (自持，VCF-only)  | ✓        | 普通票（VCF 运行）    |
+| **htslib**  | CLI  | **libhts (C)**    | (参考)   | **Tie-breaker**       |
+| reference   | Py   | (我们的正则解析器) | ✓        | 普通票（独立实现）    |
+
+> **pysam 覆盖率警告**：pysam 的 VCF/SAM 解析逻辑完全由 Cython 编译的 `.so` 提供 (`libcbcf.*`, `libcsam*.*`)，coverage.py 无法追踪原生代码。pysam 保留为投票者，但**不应作为 `primary_target`** —— 覆盖率驱动的 Phase D 反馈会得到平信号。主目标请选 htsjdk / vcfpy / noodles 中的一个。
 
 **dispatch 逻辑**：
 - VCF → `bcftools view <file>`，重序列化后的文本再喂进 `normalize_vcf_text` 得到 canonical JSON。
@@ -1028,8 +1032,10 @@ SCC 回答的问题是："规范中哪些规则已经被测试触及？" 它从 
 | :--- | :--- | :--- | :--- | :--- |
 | **htsjdk** | JaCoCo | `-javaagent` 运行时注入；agent JAR 复制到 ASCII 临时目录规避 Unicode 路径 | `.exec` → 跨运行合并 → `jacococli report` → `.xml` → 解析 `<line>` 标签 | `target_filters.VCF: htsjdk/variant/vcf` |
 | **biopython** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=` 指向 site-packages 包目录 | `.coverage` SQLite → `analysis2()` → missing lines | `target_filters.SAM: Bio/Align/sam` |
-| **pysam** | coverage.py (容器内) | `--coverage /cov` 标志 → coverage 先于 pysam 导入启动 | `summary.*.json` → 宿主直接读取 | `target_filters.VCF/SAM: pysam` |
+| **pysam** | coverage.py (容器内) | `--coverage /cov` 标志 → coverage 先于 pysam 导入启动 | `summary.*.json` → 宿主直接读取（仅 .py 文件；Cython .so 不可见） | `target_filters.VCF: libcbcf, libcvcf, bcftools.py` |
 | **seqan3** | gcovr/gcov | 编译时 `--coverage` 标志 → `.gcda` 自动累积 | `gcovr --json` → 解析 JSON | `target_filters.SAM: seqan3/io/sam_file` |
+| **vcfpy** | coverage.py | `PythonCoverageContext` 包裹 Phase C 执行；`source=vcfpy` 指向 site-packages | 与 biopython 相同的 `.coverage` → `analysis2()` | `target_filters.VCF: vcfpy` |
+| **noodles** | cargo-llvm-cov | `RUSTFLAGS="-C instrument-coverage"` + `LLVM_PROFILE_FILE=<dir>/*.profraw` | `cargo llvm-cov report --json` → `NoodlesCoverageCollector` 读取 | `target_filters.VCF: noodles-vcf` |
 
 **行号区间聚合算法 (`_aggregate_ranges`)**：将零散未覆盖行 `[10, 11, 12, 13, 50, 52]` 压缩为 `["10-13", "50", "52"]`，防止 LLM 令牌溢出。参见 `coverage_collector.py:36-60`。
 
@@ -1358,9 +1364,11 @@ BioTest/
 | 解析器 | 语言 | VCF | SAM | 执行方式 |
 | :--- | :--- | :---: | :---: | :--- |
 | **htsjdk** | Java | Y | Y | Subprocess (fat JAR + JaCoCo agent) |
-| **pysam** | Python | Y | Y | Docker 容器 (`biotest-pysam:latest`) |
+| **pysam** | Python | Y | Y | Docker 容器 (`biotest-pysam:latest`)（仅投票，不做 coverage primary） |
 | **biopython** | Python | -- | Y | In-process (Bio.Align.sam) |
 | **seqan3** | C++ | -- | Y | Subprocess (编译二进制) |
+| **vcfpy** | Python | Y | -- | In-process (vcfpy.Reader) |
+| **noodles** | Rust | Y | -- | Subprocess (`noodles_harness` Cargo 二进制 + cargo-llvm-cov) |
 | **reference** | Python | Y | Y | 内建归一化器 (始终可用) |
 
 **迭代记录**：
@@ -1553,7 +1561,7 @@ the coverage-notes writeup stays honest when every SUT benefits within
 
 ---
 
-# Plateau-breaker update (2026-04-19) — Rank 6 ON, Tier 2a + 2b prompt enrichment
+# Plateau-breaker attempt (2026-04-19/20) — shipped, measured, reverted
 
 Ranks 1-5 + Rank 7 plus the filter correction landed BioTest at a
 **plateau near 47 % weighted VCF on htsjdk** (Run 6). An apples-to-
@@ -1565,15 +1573,24 @@ bucket, and the same shape of gap is expected on any parser SUT —
 `parse(x) → canonical_JSON` flows never exercise
 builder-chain / collection-mutation / type-resolution code paths.
 
-The plateau-breaker ships **three SUT-agnostic changes** that stay
+The plateau-breaker shipped **three SUT-agnostic changes** that stayed
 inside the zero-user-cost envelope. No new MR paradigm, no new oracle,
-no per-SUT equivalence rules.
+no per-SUT equivalence rules. **All three are measured below and all
+three are now opt-in (off by default) because the measured gain was
+inside LLM noise at disproportionate runtime cost.**
 
-## Rank 6 — LLM-synthesized MRs, now active
+> **TL;DR for anyone skimming this section**: Run 6 at 46.9 % in 170 min
+> is the current sweet spot on htsjdk/VCF. Turning on Rank 6 (MR
+> synthesis) + Tier 2 (prompt enrichment) in Runs 7 and 8 bought at
+> most +1.1 pp at ~2× wall time, a per-minute return roughly 40× worse
+> than the baseline rate. The code is shipped and soundness-preserving;
+> flip the flags per-run if you want to pay the cost. See
+> `coverage_notes/htsjdk/vcf/biotest.md` §"Runs 7 & 8" for the data.
 
-Previously documented as deferred, now **on by default**
-(`feedback_control.mr_synthesis.enabled: true` in
-`biotest_config.yaml`). `mr_engine/agent/mr_synthesizer.py`:
+## Rank 6 — LLM-synthesized MRs, shipped as opt-in
+
+`mr_engine/agent/mr_synthesizer.py` (flag:
+`feedback_control.mr_synthesis.enabled`, **default `false`**):
 
 - Consumes the same `BlindspotTicket.to_prompt_fragment()` text Rank 1
   seed synth uses.
@@ -1586,14 +1603,16 @@ Previously documented as deferred, now **on by default**
   Phase D iteration, ahead of the ReAct Phase B mining loop.
 
 Grounded in Fuzz4All (ICSE'24, arXiv:2308.04748), PromptFuzz (CCS'24,
-arXiv:2312.17677), and ChatAFL (NDSS'24). Expected +3–5 pp on any SUT
-with an existing MR registry; empirical measurement pending next
-run.
+arXiv:2312.17677), and ChatAFL (NDSS'24). **Originally projected +3–5 pp;
+measured +0.7–1.1 pp at 1.5–2× wall time** on htsjdk/VCF (Runs 7 & 8).
+Diminishing returns set in within 3 iterations. Leave disabled unless
+you have a specific hypothesis to test.
 
-## Tier 2a — per-class blindspot block (`ClassGap`)
+## Tier 2a — per-class blindspot block (`ClassGap`), opt-in
 
-`test_engine/feedback/blindspot_builder.py` adds `ClassGap` +
-`compute_class_level_gaps(coverage_report_path, filter_rules_text)`.
+Flag: `feedback_control.prompt_enrichment.per_class_blindspot`,
+**default `false`**. `test_engine/feedback/blindspot_builder.py` adds
+`ClassGap` + `compute_class_level_gaps(coverage_report_path, filter_rules_text)`.
 
 - Input: whichever **standard coverage report** the primary SUT emitted
   this iteration:
@@ -1635,9 +1654,10 @@ The dispatch in `biotest.py::_resolve_primary_coverage_report` is keyed
 only on `primary_target` name + config keys the user already writes —
 no SUT-specific class names or paths inside framework code.
 
-## Tier 2b — mutator-method catalog (`supports_mutator_methods`)
+## Tier 2b — mutator-method catalog (`supports_mutator_methods`), opt-in
 
-A sibling of the Rank 5 `supports_query_methods` opt-in:
+Flag: `feedback_control.prompt_enrichment.mutator_catalog`,
+**default `false`**. A sibling of the Rank 5 `supports_query_methods` opt-in:
 
 ```python
 # test_engine/runners/base.py
@@ -1698,27 +1718,46 @@ Published upper bound for automated MR+fuzz testing of parser
 libraries **without per-SUT harness code**: **~60 % line coverage**
 (Liyanage & Böhme ICSE'23; Nguyen et al. Fuzzing Workshop 2023).
 EvoSuite 1.2.0, a mature search-based generator, reaches 52.9 % on
-htsjdk/VCF under the same 3-path filter BioTest uses. Our Run-6
-baseline is 46.9 %; Tier 1 + Tier 2 project 52–55 %; above that,
-progress requires hand-written equivalence rules per class (the
-zero-user-cost exit).
+htsjdk/VCF under the same 3-path filter BioTest uses. **BioTest's
+empirical ceiling on its zero-per-SUT-code posture is ~47–48 %**
+(Run 6 = 46.9 %, Runs 7/8 = 47.6–48.0 %). Progress above that requires
+hand-written equivalence rules per class — the zero-user-cost exit.
 
 This ceiling pattern holds on any parser SUT in this framework — the
 gap shape (parser bucket high, data-model bucket low, writer bucket
 middling) is a symptom of the file-in/canonical-JSON-out paradigm,
 not of any particular library.
 
-### Config knobs raised alongside this patch
+### Empirical cost/benefit of Tier 1 + Tier 2 (grounded in Runs 7–8)
 
-| Key                                                     | Before | After  | Rationale                                                             |
-|:--------------------------------------------------------|:------:|:------:|:----------------------------------------------------------------------|
-| `feedback_control.mr_synthesis.enabled`                 | false  | true   | Rank 6 baseline landed in Run 6                                       |
-| `feedback_control.mr_synthesis.max_mrs_per_iteration`   | 5      | 8      | compound with Rank 5                                                  |
-| `feedback_control.max_iterations`                       | 5      | 8      | runs were guillotining mid-iteration                                  |
-| `feedback_control.timeout_minutes`                      | 120    | 240    | same                                                                  |
-| `feedback_control.plateau_patience`                     | 2      | 3      | SCC signal is sparse at the plateau; 2 false-halts                    |
-| `feedback_control.max_rules_per_iteration`              | 5      | 8      | stronger LLM can digest more rules per ticket                         |
-| `feedback_control.seed_synthesis.max_seeds_per_iteration` | 5    | 8      | symmetric with MR synthesis throughput                                |
+| Run | Config | Wall | Weighted VCF | Δ vs Run 6 | pp/min |
+|:-:|:--|:-:|:-:|:-:|:-:|
+| 6 | baseline (Rank 6 off, budgets 5/5/5) | 170 m | 46.9 % | — | 0.276 (cumulative) |
+| 7 | Rank 6 on, budgets 8/8/8, Tier 2 on | 330+ m (killed) | 48.0 % | +1.1 pp | **0.0069** marginal |
+| 8 | Rank 6 on, budgets 5/5/5, Tier 2 on | 267 m (timeout overshoot) | 47.6 % | +0.7 pp | **0.0072** marginal |
+
+**The marginal return of Tier 1+2 is ~40× less efficient than Run 6's
+own per-minute rate.** Run 7 → Run 8 delta (0.4 pp) is within LLM /
+corpus-ordering noise, so the "Tier 2 alone" attribution in Run 8 is
+not reliably positive. Conclusion: **the code is sound, the paradigm
+ceiling is real, and the default posture is "Tier 1+2 off" with
+per-run opt-in for anyone wanting to pay the cost.**
+
+### Current config defaults (as reverted 2026-04-20)
+
+| Key                                                     | Default | Notes                                                                  |
+|:--------------------------------------------------------|:-------:|:-----------------------------------------------------------------------|
+| `feedback_control.mr_synthesis.enabled`                 | `false` | Rank 6. Flip to true per-run to pay the +0.7-1.1 pp at ~1.5-2× cost    |
+| `feedback_control.mr_synthesis.max_mrs_per_iteration`   | 5       | kept — Run 8 showed 8 compounded quadratically                         |
+| `feedback_control.max_iterations`                       | 4       | Run 7/8 both saturated by iter 3                                       |
+| `feedback_control.timeout_minutes`                      | 180     | caveat: only checks between iterations; doesn't interrupt mid-Phase-C  |
+| `feedback_control.plateau_patience`                     | 3       | SCC-based plateau check                                                |
+| `feedback_control.min_coverage_delta_pp`                | 0.3     | coverage-based plateau check (Run 7 lesson — uses line coverage, not SCC) |
+| `feedback_control.coverage_plateau_patience`            | 2       | stop after N iters with coverage delta < `min_coverage_delta_pp`       |
+| `feedback_control.max_rules_per_iteration`              | 5       | kept — 8 added prompt tokens without MRs                               |
+| `feedback_control.seed_synthesis.max_seeds_per_iteration` | 5     | kept                                                                   |
+| `feedback_control.prompt_enrichment.per_class_blindspot` | `false` | Tier 2a, opt-in                                                        |
+| `feedback_control.prompt_enrichment.mutator_catalog`    | `false` | Tier 2b, opt-in                                                        |
 
 ### References added
 

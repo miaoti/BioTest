@@ -138,7 +138,7 @@ def _resolve_primary_coverage_report(
         if jdir:
             xml = PROJECT_ROOT / jdir / "jacoco.xml"
             return (xml if xml.exists() else None), filter_rules
-    elif primary_target in {"biopython", "pysam"}:
+    elif primary_target in {"biopython", "pysam", "vcfpy"}:
         # coverage.py writes a binary SQLite .coverage file; convert it
         # on the fly to JSON so the blindspot builder can read a
         # standard shape. Fail-soft: if the coverage CLI isn't
@@ -146,6 +146,8 @@ def _resolve_primary_coverage_report(
         import shutil
         import subprocess
         if primary_target == "biopython":
+            data = cov.get("coveragepy_data_file")
+        elif primary_target == "vcfpy":
             data = cov.get("coveragepy_data_file")
         else:  # pysam
             data = cov.get("pysam_coverage_combined_file") or cov.get("pysam_coverage_dir")
@@ -177,6 +179,11 @@ def _resolve_primary_coverage_report(
         if gpath:
             gj = PROJECT_ROOT / gpath
             return (gj if gj.exists() else None), filter_rules
+    elif primary_target == "noodles":
+        npath = cov.get("noodles_report_path")
+        if npath:
+            nj = PROJECT_ROOT / npath
+            return (nj if nj.exists() else None), filter_rules
     # Any other SUT — return empty (block will be skipped in the prompt).
     return None, filter_rules
 
@@ -205,6 +212,8 @@ def _compute_runtime_capabilities(
     from test_engine.runners.biopython_runner import BiopythonRunner
     from test_engine.runners.seqan3_runner import SeqAn3Runner
     from test_engine.runners.htslib_runner import HTSlibRunner
+    from test_engine.runners.vcfpy_runner import VcfpyRunner
+    from test_engine.runners.noodles_runner import NoodlesRunner
     from test_engine.runners.reference_runner import ReferenceRunner
 
     _SUT_CLASSES = {
@@ -213,6 +222,8 @@ def _compute_runtime_capabilities(
         "biopython": BiopythonRunner,
         "seqan3": SeqAn3Runner,
         "htslib": HTSlibRunner,
+        "vcfpy": VcfpyRunner,
+        "noodles": NoodlesRunner,
         "reference": ReferenceRunner,
     }
 
@@ -617,6 +628,8 @@ def _build_runners(cfg: dict[str, Any]) -> list:
     from test_engine.runners.seqan3_runner import SeqAn3Runner
     from test_engine.runners.pysam_runner import PysamRunner
     from test_engine.runners.htslib_runner import HTSlibRunner
+    from test_engine.runners.vcfpy_runner import VcfpyRunner
+    from test_engine.runners.noodles_runner import NoodlesRunner
     from test_engine.runners.reference_runner import ReferenceRunner
 
     sut_cfgs = cfg.get("phase_c", {}).get("suts", [])
@@ -634,6 +647,14 @@ def _build_runners(cfg: dict[str, Any]) -> list:
         ),
         "pysam": lambda c: PysamRunner(
             coverage_dir=Path(c["coverage_dir"]) if c.get("coverage_dir") else None,
+        ),
+        # vcfpy (bihealth) — pure-Python VCF parser, in-process.
+        "vcfpy": lambda c: VcfpyRunner(),
+        # noodles-vcf — pure-Rust VCF parser via compiled subprocess harness.
+        "noodles": lambda c: NoodlesRunner(
+            binary_path=Path(c["adapter"]) if c.get("adapter") else None,
+            coverage_binary_path=Path(c["coverage_binary"]) if c.get("coverage_binary") else None,
+            llvm_profile_dir=Path(c["llvm_profile_dir"]) if c.get("llvm_profile_dir") else None,
         ),
         # htslib is the CLI gold standard (samtools + bcftools). Acts as
         # the tie-breaker voter in the consensus oracle — see
@@ -964,12 +985,15 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                             rank5_query_methods = (
                                 rank5_primary.discover_query_methods(synth_fmt)
                             )
-                        # Tier 2b — mutator catalog is prompt-only info;
-                        # drives the LLM to reason about which post-parse
-                        # API surface to target. The synthesized MRs still
-                        # route through sut_write_roundtrip for soundness.
-                        if rank5_primary is not None and getattr(
-                            rank5_primary, "supports_mutator_methods", False,
+                        # Tier 2b — mutator catalog (opt-in after Runs 7/8
+                        # showed no measurable pp gain). Set
+                        # feedback_control.prompt_enrichment.mutator_catalog: true
+                        # per-run when you want the catalog surfaced to Rank 6.
+                        _pe_cfg_r6 = feedback_cfg.get("prompt_enrichment", {}) or {}
+                        if (
+                            _pe_cfg_r6.get("mutator_catalog", False)
+                            and rank5_primary is not None
+                            and getattr(rank5_primary, "supports_mutator_methods", False)
                         ):
                             mutator_catalog = (
                                 rank5_primary.discover_mutator_methods(synth_fmt)
@@ -1183,11 +1207,15 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
             if demoted:
                 console.print(f"    [yellow]Quarantined: {demoted} MR(s)[/]")
 
-            # Record iteration
+            # Record iteration. Passes the primary-SUT weighted line
+            # coverage so the controller's Run-7-lesson coverage-plateau
+            # early-stop can fire — prevents burning budget on flat
+            # iterations while SCC is still inching up.
             controller.record_iteration(
                 scc_percent=scc_report.scc_percent,
                 enforced_count=len(registry_data.get("enforced", [])),
                 demoted_count=demoted,
+                coverage_percent=iter_cov_pct,
             )
             controller.save_state(state_path)
 
@@ -1247,14 +1275,18 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                         if getattr(primary_cls, f"supports_{cap}", False):
                             supported_caps.add(cap)
 
-            # Tier 2a — resolve the primary SUT's raw coverage report so
-            # build_blindspot_ticket can compute per-class gaps for the
-            # prompt. SUT-agnostic: we dispatch on primary_target name
-            # using only the paths the user already set in
-            # biotest_config.yaml: coverage.*.
-            primary_cov_path, primary_cov_filter = _resolve_primary_coverage_report(
-                cfg, primary_target, format_context
-            )
+            # Tier 2a — per-class blindspot. Opt-in after Runs 7/8 showed
+            # the block added prompt tokens without measurable pp gain on
+            # the current plateau. Set
+            # feedback_control.prompt_enrichment.per_class_blindspot: true
+            # per-run when you want the richer blindspot.
+            _pe_cfg = feedback_cfg.get("prompt_enrichment", {}) or {}
+            if _pe_cfg.get("per_class_blindspot", False):
+                primary_cov_path, primary_cov_filter = _resolve_primary_coverage_report(
+                    cfg, primary_target, format_context
+                )
+            else:
+                primary_cov_path, primary_cov_filter = None, None
 
             ticket = build_blindspot_ticket(
                 scc_report=scc_report,

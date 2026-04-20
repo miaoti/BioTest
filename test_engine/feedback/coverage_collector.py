@@ -586,12 +586,17 @@ class PysamDockerCoverageCollector(CoverageCollector):
 
             if summaries:
                 # Use the summary JSON (accurate: computed inside container).
-                # Summary was already filtered to the target package inside the
-                # container, so all entries are relevant. Only apply active_filter
-                # if it contains path fragments that could match bare filenames.
+                # The container writes *all* measured pysam .py files; apply
+                # `active_filter` here so the per-format scope (e.g. VCF →
+                # libcbcf/libcvcf/bcftools.py) is honored. Bare filenames
+                # like "libcbcf.pyx" are matched by substring.
                 for summary_path in summaries:
                     data = json.loads(summary_path.read_text(encoding="utf-8"))
                     for filename, stats in data.items():
+                        if active_filter and not any(
+                            f in filename for f in active_filter
+                        ):
+                            continue
                         total_covered += stats.get("executed", 0)
                         total_missed += stats.get("total", 0) - stats.get("executed", 0)
                         missing = stats.get("missing", [])
@@ -752,6 +757,142 @@ class GcovrCollector(CoverageCollector):
 
 
 # ---------------------------------------------------------------------------
+# cargo-llvm-cov Collector (Rust / noodles-vcf)
+# ---------------------------------------------------------------------------
+
+class NoodlesCoverageCollector(CoverageCollector):
+    """
+    Collect cargo-llvm-cov JSON coverage for the noodles-vcf harness.
+
+    The harness is built with `cargo llvm-cov --no-report run ...` which
+    drops `.profraw` files under `profile_dir`. When no JSON report is
+    present yet, this collector shells out to
+    `cargo llvm-cov report --json` to produce one, then filters it to
+    files whose path contains any `filter_paths` entry (e.g. "noodles-vcf")
+    so only the crate's own source counts — not noodles-core, tokio, etc.
+    """
+
+    def __init__(
+        self,
+        report_path: Path,
+        manifest_path: Optional[Path] = None,
+        profile_dir: Optional[Path] = None,
+        filter_paths: Optional[list[str]] = None,
+    ):
+        self.report_path = report_path
+        self.manifest_path = manifest_path
+        self.profile_dir = profile_dir
+        self.filter_paths = filter_paths or ["noodles-vcf"]
+
+    def is_available(self) -> bool:
+        if self.report_path.exists():
+            return True
+        # Can we regenerate from .profraw files?
+        if self.profile_dir and self.profile_dir.exists():
+            import shutil
+            if shutil.which("cargo") and any(self.profile_dir.glob("*.profraw")):
+                return True
+        return False
+
+    def _ensure_report(self) -> bool:
+        if self.report_path.exists():
+            return True
+        if not self.manifest_path or not self.manifest_path.exists():
+            return False
+        import shutil
+        import subprocess as _sp
+        if not shutil.which("cargo"):
+            return False
+        try:
+            self.report_path.parent.mkdir(parents=True, exist_ok=True)
+            cmd = [
+                "cargo", "llvm-cov", "report", "--json",
+                "--manifest-path", str(self.manifest_path),
+            ]
+            out = _sp.run(cmd, capture_output=True, text=True, timeout=180)
+            if out.returncode != 0:
+                logger.warning("cargo llvm-cov report failed: %s", out.stderr)
+                return False
+            self.report_path.write_text(out.stdout, encoding="utf-8")
+            return self.report_path.exists()
+        except Exception as e:
+            logger.warning("cargo-llvm-cov report generation failed: %s", e)
+            return False
+
+    def collect(self, format_filter: Optional[list[str]] = None) -> CoverageResult:
+        if not self._ensure_report():
+            return CoverageResult(
+                parser_name="noodles",
+                language="Rust",
+                available=False,
+                error="cargo-llvm-cov JSON not available (build + run the harness first)",
+            )
+
+        active_filter = format_filter if format_filter else self.filter_paths
+
+        try:
+            with open(self.report_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            total_covered = 0
+            total_missed = 0
+            all_regions: list[str] = []
+
+            # cargo-llvm-cov JSON shape:
+            #   data: [ { files: [ { filename, summary, segments: [...] } ] } ]
+            # We iterate over files, keep those whose path matches the
+            # crate filter, and sum line counts from summary when
+            # available (falling back to per-segment counts).
+            for run_block in data.get("data", []):
+                for file_data in run_block.get("files", []):
+                    filename = file_data.get("filename", "")
+                    norm = filename.replace("\\", "/")
+                    if active_filter and not any(
+                        f.replace("\\", "/").replace(".", "/") in norm
+                        for f in active_filter
+                    ):
+                        continue
+
+                    summary = file_data.get("summary", {}).get("lines", {})
+                    lines_covered = int(summary.get("covered", 0))
+                    lines_count = int(summary.get("count", 0))
+                    total_covered += lines_covered
+                    total_missed += max(lines_count - lines_covered, 0)
+
+                    if lines_count > lines_covered:
+                        short_name = Path(filename).name
+                        missed_lines: list[int] = []
+                        for seg in file_data.get("segments", []):
+                            # segment: [line, col, count, has_count, is_region_entry, is_gap_region]
+                            if len(seg) >= 4 and seg[3] and seg[2] == 0:
+                                missed_lines.append(int(seg[0]))
+                        if missed_lines:
+                            regions = _format_uncovered_regions(
+                                short_name, sorted(set(missed_lines))
+                            )
+                            all_regions.extend(regions)
+
+            total = total_covered + total_missed
+            pct = (total_covered / total * 100) if total > 0 else 0.0
+
+            return CoverageResult(
+                parser_name="noodles",
+                language="Rust",
+                covered_lines=total_covered,
+                total_lines=total,
+                line_coverage_pct=round(pct, 1),
+                uncovered_regions=all_regions[:30],
+            )
+        except Exception as e:
+            return CoverageResult(
+                parser_name="noodles",
+                language="Rust",
+                available=False,
+                error=f"cargo-llvm-cov parse error: {e}",
+            )
+
+
+# ---------------------------------------------------------------------------
 # Python Coverage Context Manager
 # ---------------------------------------------------------------------------
 
@@ -845,6 +986,11 @@ class PythonCoverageContext:
             try:
                 import test_engine.runners.biopython_runner as _br
                 _br._biopython_available = None
+            except ImportError:
+                pass
+            try:
+                import test_engine.runners.vcfpy_runner as _vr
+                _vr._vcfpy_available = None
             except ImportError:
                 pass
 
@@ -953,12 +1099,23 @@ class MultiCoverageCollector:
                 classfiles_dir=Path(cfg["jacoco_classfiles_dir"]) if cfg.get("jacoco_classfiles_dir") else None,
             )))
 
-        # coverage.py for Python SUTs
+        # coverage.py for Python SUTs. The source-filter entry maps
+        # 1:1 to a SUT name — add a branch here whenever you onboard a
+        # new pure-Python SUT (pysam native is handled by its own
+        # Docker collector below, so it's NOT in this map).
         coveragepy_file = cfg.get("coveragepy_data_file", ".coverage")
         source_filter = cfg.get("coveragepy_source_filter", [])
+
+        def _py_sut_name(src: str) -> str:
+            if "Bio" in src:
+                return "biopython"
+            if "vcfpy" in src.lower():
+                return "vcfpy"
+            return "pysam"
+
         if source_filter:
             for src in source_filter:
-                name = "biopython" if "Bio" in src else "pysam"
+                name = _py_sut_name(src)
                 self.collectors.append((name, CoveragePyCollector(
                     parser_name=name,
                     coverage_file=Path(coveragepy_file),
@@ -981,6 +1138,16 @@ class MultiCoverageCollector:
                 filter_dirs=cfg.get("gcovr_filter_dirs", []),
                 build_dir=Path(cfg["gcovr_build_dir"]) if cfg.get("gcovr_build_dir") else None,
                 source_root=Path(cfg["gcovr_source_root"]) if cfg.get("gcovr_source_root") else None,
+            )))
+
+        # cargo-llvm-cov for noodles-vcf (Rust)
+        noodles_report = cfg.get("noodles_report_path")
+        if noodles_report:
+            self.collectors.append(("noodles", NoodlesCoverageCollector(
+                report_path=Path(noodles_report),
+                manifest_path=Path(cfg["noodles_manifest_path"]) if cfg.get("noodles_manifest_path") else None,
+                profile_dir=Path(cfg["noodles_profile_dir"]) if cfg.get("noodles_profile_dir") else None,
+                filter_paths=cfg.get("noodles_filter_paths", ["noodles-vcf"]),
             )))
 
     def _resolve_sut_filter(

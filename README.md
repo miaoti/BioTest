@@ -51,10 +51,15 @@ Phase D  Feedback Loop   coverage      →  Top-K blindspot tickets → next B r
 py -3.12 --version      # Python 3.12
 java -version           # Java 21
 docker --version        # Docker (needed for pysam on Windows)
+rustc --version         # Optional — only if building the noodles-vcf SUT
 
-# 2. Install
+# 2. Install Python deps (includes vcfpy 0.14+)
 py -3.12 -m pip install -r requirements.txt
 py -3.12 harnesses/pysam/build_docker.py      # Build pysam container
+
+# 2b. Build the noodles-vcf harness (optional — VCF voter in Rust).
+#     Skip if rustc isn't installed; the runner degrades gracefully.
+cargo build --release --manifest-path harnesses/rust/noodles_harness/Cargo.toml
 
 # 3. Configure LLM (one of: Groq, OpenAI, Anthropic, Google, DeepSeek, Ollama)
 #    Set LLM_MODEL=... and the corresponding *_API_KEY in .env
@@ -355,17 +360,22 @@ backed by published research:
 | **Malformed MRs** (Rank 3) | 5 spec-rule-targeted mutators + `error_consensus` oracle exercise parser rejection branches | Gmutator TOSEM'25 | `mr_engine/transforms/malformed.py`, `test_engine/oracles/error_consensus.py` |
 | **`hypothesis.target()`** (Rank 4) | `divergence` + `seed_size` scalar objectives steer Hypothesis toward examples that cause more consensus-disagreements | Hypothesis docs (MacIver, Hatfield-Dodds) | `test_engine/orchestrator.py::_run_mr_with_hypothesis` |
 | **API-query MRs** (Rank 5) | `P(parse(x)) == P(parse(T(x)))` — runtime reflection (Java + Python; `libclang` / `rustdoc` for C/C++/Rust templates) discovers the SUT's public scalar query methods; LLM mines MRs against them; `query_consensus` oracle compares scalar results across voters | MR-Scout TOSEM'24 (arXiv:2304.07548); MeMo JSS'21; Chen-Kuo-Liu-Tse 2018 §3.2 | `test_engine/runners/introspection.py`, `test_engine/oracles/query_consensus.py`, `mr_engine/transforms/query.py` |
-| **MR synthesis** (Rank 6) | Each Phase D iteration asks the LLM for NEW metamorphic relations (not new files) that target uncovered classes / modules; candidates go through the same compiler validators as spec-mined MRs | Fuzz4All ICSE'24; PromptFuzz CCS'24; ChatAFL NDSS'24 | `mr_engine/agent/mr_synthesizer.py` |
-| **Per-class blindspot + mutator catalog** (Tier 2) | Blindspot ticket surfaces the Top uncovered classes / modules from the primary SUT's coverage report + a reflection-discovered mutator catalog — both are **prompt-only signals** that steer seed + MR synthesis | (internal) | `test_engine/feedback/blindspot_builder.py`, `test_engine/runners/introspection.py::get_mutator_methods` |
+| **MR synthesis** (Rank 6) — **opt-in** | Each Phase D iteration asks the LLM for NEW metamorphic relations (not new files) that target uncovered classes / modules. Measured +0.7–1.1 pp at ~1.5–2× wall time on htsjdk/VCF (Runs 7/8); off by default. Flip `feedback_control.mr_synthesis.enabled: true` to enable. | Fuzz4All ICSE'24; PromptFuzz CCS'24; ChatAFL NDSS'24 | `mr_engine/agent/mr_synthesizer.py` |
+| **Per-class blindspot + mutator catalog** (Tier 2) — **opt-in** | Blindspot ticket surfaces the Top uncovered classes / modules + a reflection-discovered mutator catalog (prompt-only). Same measurement window as Rank 6; off by default. Flip `feedback_control.prompt_enrichment.per_class_blindspot` / `.mutator_catalog` to enable. | (internal) | `test_engine/feedback/blindspot_builder.py`, `test_engine/runners/introspection.py::get_mutator_methods` |
 
 Configured under `feedback_control.seed_synthesis`,
-`feedback_control.mr_synthesis`, and `phase_b.themes` in
-`biotest_config.yaml`. Realistic ceiling with all levers active:
-**~52–58% line coverage** on a typical parser SUT, at the edge of the
-~60% hard ceiling for automated MR/fuzz testing without per-SUT hand-
-written drivers (Liyanage & Böhme ICSE'23). See `documents/Flow.md`
-for the full pipeline writeup, `coverage_notes/` for per-SUT per-
-format measurement logs.
+`feedback_control.mr_synthesis`, `feedback_control.prompt_enrichment`,
+and `phase_b.themes` in `biotest_config.yaml`.
+
+Measured ceiling on htsjdk/VCF with Ranks 1-5 + Rank 7 active:
+**~47% line coverage** (Run 6 = 46.9% in 170 min). Turning on Rank 6 +
+Tier 2 has bought at most +1.1 pp at ~2× wall time (Runs 7/8),
+a per-minute return roughly 40× less efficient than the baseline rate —
+so the project's honest posture is "baseline is the sweet spot; the
+extra levers ship as opt-in." Above ~48% in this paradigm requires
+per-SUT harness code (Liyanage & Böhme ICSE'23 published ceiling ~60%).
+See `documents/Flow.md` for the full writeup and `coverage_notes/` for
+per-run measurements.
 
 ### SAM coverage plan (2026-04-19) — 6 additional levers
 
@@ -424,27 +434,46 @@ phase_c:
     - { name: htsjdk,    adapter: harnesses/java/build/libs/biotest-harness-all.jar }
     - { name: biopython }
     - { name: seqan3,    adapter: harnesses/cpp/build/biotest_harness.exe }
-    - { name: pysam,     coverage_dir: coverage_artifacts/pysam }
+    - { name: pysam,     coverage_dir: coverage_artifacts/pysam }    # voter only (see caveat below)
+    - { name: vcfpy }                                                  # pure-Python VCF voter
+    - { name: noodles,   adapter: harnesses/rust/noodles_harness/target/release/noodles_harness.exe }
     - { name: htslib }    # gold-standard tie-breaker
 
 feedback_control:
   enabled: true
-  max_iterations: 8
+  max_iterations: 4
+  timeout_minutes: 180
   target_scc_percent: 95.0
   primary_target: htsjdk
-  max_rules_per_iteration: 8      # Top-K blindspot window
+  max_rules_per_iteration: 5      # Top-K blindspot window
   seed_synthesis:
-    enabled: true                 # LLM-driven VCF/SAM seed synthesis
-    max_seeds_per_iteration: 8
+    enabled: true                 # LLM-driven VCF/SAM seed synthesis (Rank 1)
+    max_seeds_per_iteration: 5
   mr_synthesis:
-    enabled: true                 # LLM-driven NEW MRs targeting blindspot
-    max_mrs_per_iteration: 8
+    enabled: false                # LLM-driven NEW MRs (Rank 6). Off by default
+                                  # after Runs 7/8 showed +0.7-1.1 pp at 1.5-2x
+                                  # wall time - flip true per-run if willing to
+                                  # pay the cost.
+    max_mrs_per_iteration: 5
+  prompt_enrichment:              # Tier 2, both off by default (same reason)
+    per_class_blindspot: false
+    mutator_catalog: false
+  min_coverage_delta_pp: 0.3      # coverage-delta early-stop safety rail
+  coverage_plateau_patience: 2
 
 coverage:
   enabled: true
   target_filters:
-    VCF: [htsjdk/variant/vcf, htsjdk/variant/variantcontext/writer, pysam]
-    SAM: [htsjdk/samtools,    Bio/Align/sam, seqan3/io/sam_file, pysam]
+    VCF:
+      htsjdk:  [htsjdk/variant/vcf, htsjdk/variant/variantcontext/writer]
+      pysam:   [libcbcf, libcvcf, bcftools.py]   # narrow — see pysam caveat below
+      vcfpy:   [vcfpy]
+      noodles: [noodles-vcf]
+    SAM:
+      htsjdk:    [htsjdk/samtools]
+      biopython: [Bio/Align/sam]
+      seqan3:    [seqan3/io/sam_file]
+      pysam:     [libcsam, libcalignedsegment, libcalignmentfile, samtools.py, Pileup.py]
 ```
 
 ---
@@ -488,14 +517,25 @@ Exported to `data/det_report.json`, tracked per MR and per parser pair.
 
 ## SUT Matrix
 
-| SUT         | Language | VCF | SAM | Coverage          | Role                                   |
-|:------------|:---------|:---:|:---:|:------------------|:---------------------------------------|
-| **htsjdk**  | Java     | ✓   | ✓   | JaCoCo            | Regular voter                          |
-| **pysam**   | Python   | ✓   | ✓   | coverage.py       | Regular voter                          |
-| **biopython** | Python | —   | ✓   | coverage.py       | Regular voter (SAM)                    |
-| **seqan3**  | C++      | —   | ✓   | gcovr/gcov        | Regular voter (SAM)                    |
-| **htslib**  | CLI      | ✓   | ✓   | —                 | **Tie-breaker (gold standard)**        |
-| reference   | Python   | ✓   | ✓   | —                 | Independent canonical impl.            |
+| SUT           | Language | VCF | SAM | Coverage                | Independent impl? | Role                                   |
+|:--------------|:---------|:---:|:---:|:------------------------|:-----------------:|:---------------------------------------|
+| **htsjdk**    | Java     | ✓   | ✓   | JaCoCo                  | ✓                 | Regular voter                          |
+| **pysam**     | Python   | ✓   | ✓   | coverage.py *(limited)* | ✗ (wraps htslib)  | Regular voter                          |
+| **biopython** | Python   | —   | ✓   | coverage.py             | ✓                 | Regular voter (SAM)                    |
+| **seqan3**    | C++      | —   | ✓   | gcovr/gcov              | ✓                 | Regular voter (SAM)                    |
+| **vcfpy**     | Python   | ✓   | —   | coverage.py             | ✓                 | Regular voter (VCF)                    |
+| **noodles**   | Rust     | ✓   | —   | cargo-llvm-cov          | ✓                 | Regular voter (VCF)                    |
+| **htslib**    | CLI      | ✓   | ✓   | —                       | (reference)       | **Tie-breaker (gold standard)**        |
+| reference     | Python   | ✓   | ✓   | —                       | —                 | Independent canonical impl.            |
+
+> **pysam coverage caveat.** `pysam`'s VCF/SAM logic lives in Cython-
+> compiled `libcbcf.pyx` / `libcsam*.pyx` → native `.so`. `coverage.py`
+> only traces Python bytecode, so of pysam's shipped `.py` files only
+> the CLI wrappers (`bcftools.py`, `samtools.py`) are measurable — and
+> neither sits on the `pysam.VariantFile` / `pysam.AlignmentFile` parse
+> path. pysam is kept as a **voter** but is **not a valid
+> `primary_target`** for coverage-driven Phase D feedback. Use
+> **htsjdk**, **vcfpy**, or **noodles** as the coverage primary.
 
 Coordinate normalization (all handled inside harnesses):
 
@@ -505,6 +545,8 @@ Coordinate normalization (all handled inside harnesses):
 | pysam       | 0-based | 0-based | **+1** for both      |
 | Biopython   | 0-based | n/a     | **+1**               |
 | SeqAn3      | 0-based | n/a     | **+1**               |
+| vcfpy       | n/a     | 1-based | —                    |
+| noodles     | n/a     | 1-based | —                    |
 
 ---
 

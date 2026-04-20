@@ -32,7 +32,9 @@ Run-by-run snapshots are archived as
 | 3 | 2026-04-18 | 108 m | 4 | **45.2%** | — | sharpened synth prompt + writer-variant rotation; first SCC movement (3.8 → 4.4 %) |
 | 4 | 2026-04-18 | 96 m | 3 | 45.2% | — | Rank 5 (API-query) + Rank 7 (HypoFuzz) LIVE but JaCoCo not attached to query subprocess → flat |
 | 5 | 2026-04-18 | ~140 m | 5 | 45.2% | 1 701 / 3 760 | JaCoCo fix shipped; but LLM shipped `query_methods=[]` → silent no-op |
-| **6** | **2026-04-19** | **170 m** | **4** (timeout) | **46.9%** | **1 765 / 3 760** | both bugs fixed; first measurable Rank-5 movement (+1.7 pp, +64 lines) |
+| **6** | **2026-04-19** | **170 m** | **4** (timeout) | **46.9%** | **1 765 / 3 760** | both bugs fixed; first measurable Rank-5 movement (+1.7 pp, +64 lines) — **SWEET SPOT** (see empirical lesson below) |
+| 7 | 2026-04-19 | ~330 m (killed mid-iter-4) | 3+ | 48.0% | 1 806 / 3 760 | Tier 1 full: Rank 6 ON, budgets 5→8, clean corpus. +1.1 pp over Run 6, but ~2× wall time |
+| 8 | 2026-04-20 | 267 m (timeout) | 4 | 47.6% | 1 789 / 3 760 | Tier 2 prompt enrichment + tighter budgets (5/5/5). +0.7 pp over Run 6, ~1.6× wall time. Inside LLM noise vs Run 7 |
 
 ---
 
@@ -95,6 +97,156 @@ of 47 methods.
 
 Regression suite after Run 6: **433 passing, 3 skipped** (15 new
 Rank-6 tests green).
+
+---
+
+---
+
+## Runs 7 & 8 — the Tier-1/2 experiment and its honest finding (2026-04-19/20)
+
+After Run 6 landed at 46.9 %, we shipped two additional levers and tested
+them in Runs 7 and 8 on the same SUT/filter:
+
+- **Tier 1** — flip Rank 6 (LLM MR synthesis) on, raise per-iteration
+  budgets from 5 to 8, raise max_iterations from 5 to 8.
+- **Tier 2a** — per-class blindspot block in the Phase B / Rank 1 / Rank 6
+  prompts (Top-N under-covered classes/modules from the primary SUT's
+  coverage report).
+- **Tier 2b** — mutator-method catalog surfaced to Rank 6 via reflection
+  on the primary runner's parsed-object class.
+
+### Measured cost/benefit
+
+| Run | Config | Wall | Weighted VCF | Δ vs Run 6 | Extra min | **pp / extra min** |
+|:-:|:--|:-:|:-:|:-:|:-:|:-:|
+| 6 | baseline | 170 m | 46.9 % | — | — | — |
+| 7 | Tier 1 full, budgets 8/8/8 | ~330 m (killed) | 48.0 % | +1.1 pp | +160 m | **0.0069** |
+| 8 | Tier 2 on + tight budgets 5/5/5 | 267 m | 47.6 % | +0.7 pp | +97 m  | **0.0072** |
+| — | Run 6 internal rate | — | — | — | — | **0.276** |
+
+Bucket-level breakdown (weighted filter):
+
+| Bucket | Run 6 | Run 7 | Run 8 |
+|:--|:-:|:-:|:-:|
+| `htsjdk/variant/vcf` (parser) | 60.1 % | 60.4 % | 60.3 % |
+| `htsjdk/variant/variantcontext` (no JEXL) | 34.6 % | 36.5 % | 35.7 % |
+| `htsjdk/variant/variantcontext/writer` (VCF,Variant) | 55.6 % | 55.6 % | 55.6 % |
+
+### The honest lesson
+
+- **The per-minute coverage return of Tier 1+2 is ~40× worse than Run 6's
+  own baseline rate.** Every additional Tier-1/2 minute bought roughly
+  0.007 pp, vs Run 6's 0.28 pp/min starting from zero.
+- **Run 7 → Run 8 delta (0.4 pp) is inside LLM / corpus-ordering noise.**
+  The "+0.7 pp over Run 6" from Run 8 is likely not a real signal — or at
+  most a tiny one hidden in iteration-to-iteration variance.
+- **Only the `variantcontext` bucket moved at all** (+1.1–1.9 pp across
+  Runs 7–8). Parser and writer buckets are pinned at Run 6's values.
+  Rank 6's LLM synthesis did not produce MRs that unlocked new writer
+  branches; the mutator catalog did not measurably change the LLM's
+  choices.
+- **The paradigm ceiling for BioTest's zero-per-SUT-code posture on
+  htsjdk/VCF is ~47–48 %.** Run 6's 46.9 % at 170 min is the sweet spot.
+  Run 7's 48.0 % at 330+ min is the asymptote we can approach but not
+  cheaply beat.
+
+### What we kept and what we reverted
+
+**Reverted** (back to Run 6 defaults in `biotest_config.yaml`):
+
+| Key | Restored value | Was |
+|:--|:--|:--|
+| `feedback_control.mr_synthesis.enabled` | `false` | `true` |
+| `feedback_control.max_iterations` | 4 | 8 |
+| `feedback_control.timeout_minutes` | 180 | 240 |
+| `feedback_control.max_rules_per_iteration` | 5 | 8 |
+| `feedback_control.mr_synthesis.max_mrs_per_iteration` | 5 | 8 |
+| `feedback_control.seed_synthesis.max_seeds_per_iteration` | 5 | 8 |
+
+**Shipped but now off by default** (flip per-run if you want them):
+
+| New flag | Default | Effect when `true` |
+|:--|:-:|:--|
+| `feedback_control.mr_synthesis.enabled` | `false` | Rank 6 LLM MR synthesis fires each Phase D iteration |
+| `feedback_control.prompt_enrichment.per_class_blindspot` | `false` | Top-N uncovered classes block added to the blindspot ticket |
+| `feedback_control.prompt_enrichment.mutator_catalog` | `false` | Mutator catalog section added to the Rank 6 prompt |
+
+**Kept live** (no opt-in; code improvements regardless of paradigm):
+
+- Pydantic `_query_methods_required_when_query_transform` validator on
+  `RawMRFromAgent` — prevents the empty-`query_methods` no-op bug that
+  silently flatlined Run 5.
+- `LoopController` coverage-delta early-stop (`min_coverage_delta_pp`,
+  `coverage_plateau_patience`). Still useful as a safety rail against
+  future runaway runs; correctly calibrated threshold depends on the
+  SUT.
+- `IterationState.coverage_history` persisted across state saves.
+- Reflection-based mutator discovery (`get_mutator_methods` + per-runner
+  opt-in) — zero runtime cost when `mutator_catalog: false`, unlocks
+  future experiments if/when we find a writer-targeted seed-synth lever
+  that needs a richer prompt.
+
+### How to reproduce Run 7 or Run 8 in the future
+
+All code still ships and is unit-tested. Flipping config flags brings
+the behavior back — no code changes needed. Each flag's inline
+documentation in `biotest_config.yaml` describes what it does + when
+to flip.
+
+**To reproduce Run 7** (Rank 6 + Tier 2 ON, budgets 8/8/8):
+
+```yaml
+feedback_control:
+  max_iterations: 8
+  timeout_minutes: 240
+  max_rules_per_iteration: 8
+  seed_synthesis:
+    max_seeds_per_iteration: 8
+  mr_synthesis:
+    enabled: true
+    max_mrs_per_iteration: 8
+  prompt_enrichment:
+    per_class_blindspot: true
+    mutator_catalog: true
+```
+
+Then `rm -f seeds/vcf/synthetic_*.vcf data/{feedback_state,rule_attempts,mr_registry}.json`
+and `py -3.12 biotest.py --phase B,C,D --verbose`. Expect ~4–6 h and
+47.5–48.5 % weighted VCF on htsjdk.
+
+**To reproduce Run 8** (Rank 6 + Tier 2 ON, tight budgets 5/5/5):
+
+```yaml
+feedback_control:
+  max_iterations: 4
+  timeout_minutes: 180
+  max_rules_per_iteration: 5
+  seed_synthesis:
+    max_seeds_per_iteration: 5
+  mr_synthesis:
+    enabled: true
+    max_mrs_per_iteration: 5
+  prompt_enrichment:
+    per_class_blindspot: true
+    mutator_catalog: true
+```
+
+Same cleanup + command. Expect ~3–4.5 h and 47–48 % weighted VCF.
+
+**To reproduce Run 6** (default): leave `biotest_config.yaml` as shipped
+and run. Expect ~2.5–3 h and ~46.9 % weighted VCF.
+
+### Runtime-overshoot finding (for future tuning)
+
+Both Runs 7 and 8 **overshot** `timeout_minutes`: Run 7 ran past its
+240-min cap; Run 8 ran past its 180-min cap (finished at 267 min). Root
+cause: the controller's timeout check only fires *between* iterations,
+never inside Phase C. Once iter 4 started it ran to completion no
+matter what. The `coverage_plateau` early-stop now handles this for the
+flat-coverage case (Run 7's data would have stopped after iter 3); but
+wall-clock enforcement still needs an inner-loop hook if we ever let
+per-iteration test counts balloon again. Not worth fixing until a
+concrete run hits it.
 
 ---
 

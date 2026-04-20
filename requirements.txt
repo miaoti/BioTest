@@ -27,3 +27,13 @@ hypofuzz>=25.09
 # Catches undefined-name bugs that survive the unit suite because they
 # only fire inside rarely-entered feedback-loop code paths.
 pyflakes>=3.0
+
+# Phase C SUTs
+# ------------
+# vcfpy (bihealth): pure-Python VCF parser, independent reimplementation
+# (NOT a wrapper over htslib). Drop-in coverage via coverage.py. Pinned
+# loosely to the 0.14.x line — v0.14.2 (2025-10-02) is the baseline.
+vcfpy>=0.14.2,<0.15
+# Note: noodles-vcf is a Rust crate pulled by Cargo when you build the
+# harness in harnesses/rust/noodles_harness/. It is NOT a Python
+# dependency and does not appear here — see that directory's README.

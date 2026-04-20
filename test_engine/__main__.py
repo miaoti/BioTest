@@ -21,6 +21,8 @@ from .runners.htsjdk_runner import HTSJDKRunner
 from .runners.pysam_runner import PysamRunner
 from .runners.biopython_runner import BiopythonRunner
 from .runners.seqan3_runner import SeqAn3Runner
+from .runners.vcfpy_runner import VcfpyRunner
+from .runners.noodles_runner import NoodlesRunner
 from .runners.reference_runner import ReferenceRunner
 
 
@@ -31,6 +33,8 @@ def get_all_runners() -> list[ParserRunner]:
         PysamRunner(),
         BiopythonRunner(),
         SeqAn3Runner(),
+        VcfpyRunner(),
+        NoodlesRunner(),
         ReferenceRunner(),
     ]
 

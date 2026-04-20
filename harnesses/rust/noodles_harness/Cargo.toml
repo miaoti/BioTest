@@ -1,0 +1,29 @@
+[package]
+name = "noodles_harness"
+version = "0.1.0"
+edition = "2021"
+description = "BioTest canonical-JSON harness for the noodles-vcf Rust VCF parser"
+license = "MIT"
+
+[[bin]]
+name = "noodles_harness"
+path = "src/main.rs"
+
+[dependencies]
+# Pinned to a recent noodles release; bump together with the README
+# build instructions. noodles-vcf is an INDEPENDENT Rust implementation
+# (no htslib binding), which is precisely why it's valuable as an SUT.
+noodles-vcf = "0.70"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# Line-accurate panic location so a crash in the harness shows which
+# noodles-vcf line faulted.
+debug = 1
+lto = false
+opt-level = 3
+
+# cargo-llvm-cov instrumentation piggybacks on the release profile; no
+# separate profile needed. Build with:
+#   RUSTFLAGS="-C instrument-coverage" cargo llvm-cov ...

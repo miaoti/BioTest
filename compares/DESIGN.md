@@ -2,14 +2,16 @@
 
 ## 1. Purpose
 
-This document specifies how **BioTest** is benchmarked against **end-to-end, input-level** test-generation baselines on the four SUTs already in use: `htsjdk` (Java), `pysam` (Python), `biopython` (Python SAM), `seqan3` (C++ SAM).
+This document specifies how **BioTest** is benchmarked against **end-to-end, input-level** test-generation baselines on the five primary SUTs: `htsjdk` (Java, VCF + SAM), `vcfpy` (pure-Python VCF), `noodles-vcf` (Rust VCF), `biopython` (Python SAM), `seqan3` (C++ SAM).
 
 BioTest is an end-to-end metamorphic + differential testing tool: it accepts VCF/SAM files, applies semantics-preserving transforms, and cross-executes unmodified parsers. It never calls SUT-internal APIs. A fair comparison must therefore use **input-level** baselines — tools that also consume a file / byte stream and drive the SUT from the outside — rather than **unit-level** generators (EvoSuite, Randoop, Pynguin) that synthesise method-call sequences against instrumented objects.
 
+**Primary-SUT change, 2026-04-20**: `pysam` was removed from the primary SUT set. Its VCF logic lives entirely in the Cython-compiled `libcbcf.pyx` → compiled `.so`, which `coverage.py` cannot trace — so Phase-2 coverage growth and Phase-3 mutation-score figures for pysam would have been blank or fabricated. Two independent replacements now cover the VCF lineup: **vcfpy** (bihealth/vcfpy — pure-Python, coverage.py-traceable) and **noodles-vcf** (zaeleus/noodles — pure-Rust, cargo-llvm-cov-traceable). pysam is retained as a **reference voter** in the differential / consensus oracle (`test_engine/oracles/consensus.py`, `htslib_runner.py`, `pysam_runner.py`) so its htslib-bound implementation still contributes to cross-parser disagreement detection — but it is no longer scored against other fuzzers, and no pysam-specific bug appears in the real-bug bench. See §12 change log + §9 Risk 4.
+
 This revision of the design replaces the earlier EvoSuite/Randoop-centric protocol with:
 
-1. A **slim 13-cell matrix** of fair E2E baselines, one per SUT language, plus BioTest and Pure Random.
-2. A **real-bug detection benchmark** built from 32 historical GitHub issues on the four SUTs, anchored by installable library versions.
+1. A **slim 15-cell matrix** of fair E2E baselines, one per SUT language, plus BioTest and Pure Random.
+2. A **real-bug detection benchmark** built from historical GitHub issues on the five primary SUTs, anchored by installable library versions.
 3. The previous three metrics (validity ratio, structural coverage growth, mutation score) plus **two new metrics** — real-bug detection rate and time-to-first-bug (TTFB).
 4. A **citation table** grounding every methodology choice in peer-reviewed prior work.
 5. EvoSuite retained as a **labelled white-box anchor** on htsjdk only, so the "BioTest detects N semantic bugs, EvoSuite detects M" narrative is directly supported by numbers rather than hand-wave.
@@ -24,9 +26,10 @@ The evaluation is **deferred**: it runs after the main BioTest Phase A–D evalu
 | :--- | :--- | :--- | :--- | :--- |
 | **BioTest** (this repo) | Spec-grounded metamorphic + differential + LLM-seeded fuzzing | Multi-lang via adapters | Tool under evaluation | — |
 | **Jazzer** | In-process coverage-guided JVM fuzzer | Java | Baseline for `htsjdk` | Code Intelligence OSS, integrated into OSS-Fuzz |
-| **Atheris** | In-process coverage-guided Python fuzzer (libFuzzer-style, supports C extensions) | Python | Baseline for `pysam`, `biopython` | Google, 2020; still actively maintained as of 2024 |
+| **Atheris** | In-process coverage-guided Python fuzzer (libFuzzer-style, supports C extensions) | Python | Baseline for `vcfpy`, `biopython` | Google, 2020; still actively maintained as of 2024 |
 | **libFuzzer** | In-process coverage-guided C/C++ fuzzer | C++ | Baseline for `seqan3` | Serebryany et al., USENIX ATC'16 — "libFuzzer: a library for coverage-guided fuzz testing" |
-| **Pure Random** | Byte-level `os.urandom` generator (floor baseline) | Language-agnostic | All four SUTs | Hand-implemented under `baselines/random_testing/` |
+| **cargo-fuzz** | libFuzzer-on-Rust via `cargo fuzz`; coverage-guided in-process fuzzer that links the Rust crate against libFuzzer | Rust | Baseline for `noodles-vcf` | Rust Fuzzing Authority — `cargo-fuzz` (OSS, maintained by rust-fuzz working group); shares libFuzzer core with §2.1 C++ row |
+| **Pure Random** | Byte-level `os.urandom` generator (floor baseline) | Language-agnostic | All five SUTs | Hand-implemented under `baselines/random_testing/` |
 
 ### 2.2 White-box anchor (contextual, not apples-to-apples)
 
@@ -58,7 +61,18 @@ Listed for completeness; **only run opportunistically** after the primary matrix
 
 ### 2.5 Language-coverage asymmetry
 
-Jazzer is Java-only; Atheris is Python-only; libFuzzer is C/C++. Each fair baseline is therefore bound to one SUT language, producing an asymmetric matrix (§4.1). The report discusses this explicitly: we are comparing BioTest's multi-language reach to a *different* per-language SOTA fuzzer on each SUT, which is a stronger story than comparing to one non-SOTA tool that happens to cover all languages.
+Jazzer is Java-only; Atheris is Python-only; libFuzzer is C/C++; cargo-fuzz is Rust. Each fair baseline is therefore bound to one SUT language, producing an asymmetric matrix (§4.1). The report discusses this explicitly: we are comparing BioTest's multi-language reach to a *different* per-language SOTA fuzzer on each SUT, which is a stronger story than comparing to one non-SOTA tool that happens to cover all languages. Pinning **noodles-vcf** to its own fuzzer (cargo-fuzz) also avoids accidentally privileging the two Python parsers by stacking Atheris on both of them.
+
+### 2.6 Reference voters (retained but not scored)
+
+Some implementations stay **inside the oracle** as voters for cross-parser consensus and differential disagreement, but are **not scored** against other fuzzers in §3 metrics:
+
+| Tool | Language | Why kept as voter, not primary |
+| :--- | :--- | :--- |
+| **pysam** | Python (Cython → .so) | VCF logic lives in `libcbcf.pyx` → compiled `.so`; `coverage.py` cannot trace Cython-compiled extensions, so Phase-2 coverage growth and Phase-3 mutation score would be blank or fabricated. Its htslib-bound VCF/SAM behaviour is still valuable as a differential voter (`pysam_runner.py` / `pysam_docker_runner.py` stay enabled in the consensus oracle). |
+| **htslib** CLI (bcftools + samtools) | C (CLI) | The gold-standard reference behaviour. Used only as the tie-breaker voter in `test_engine/oracles/consensus.py`; not scored because no fuzzer drives it directly. |
+
+These retained voters are listed here so the matrix in §4.1 is readable without ambiguity: *a SUT appearing in the oracle but not in §4.1 is a voter, not a scored primary.*
 
 ## 3. Metrics
 
@@ -70,7 +84,7 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 
 **Why it matters**: distinguishes generators that produce compliant inputs from those that emit garbage. Pure Random typically lives near zero; grammar-aware and semantic tools live near one. A tool with near-zero validity cannot meaningfully exercise deep code paths.
 
-**Measurement**: each tool emits a corpus of candidate files; each file is parsed by a **reference parser** (pysam in lenient mode for VCF; htsjdk in lenient mode for SAM). `parse_success / total`, where crashes and reject-with-diagnostic both count as "invalid."
+**Measurement**: each tool emits a corpus of candidate files; each file is parsed by a **reference parser** (htslib `bcftools view` in lenient mode for VCF; htsjdk in lenient mode for SAM). `parse_success / total`, where crashes and reject-with-diagnostic both count as "invalid." htslib is used for the VCF reference (not pysam) because it is the spec-reference behaviour and is not subject to Cython-coverage blindness.
 
 **Instrumentation**: `compares/scripts/validity_probe.py` — reads a directory of candidate inputs, calls each SUT's runner once per file, emits `validity.json`.
 
@@ -85,9 +99,12 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 | SUT | Language | Tool | Output |
 | :--- | :--- | :--- | :--- |
 | htsjdk | Java | JaCoCo | `.exec` → XML → per-line / per-branch counts |
+| vcfpy | pure Python | coverage.py | `.coverage` SQLite → JSON via `coverage report --format=json` |
+| noodles-vcf | Rust | `cargo-llvm-cov` (source-based LLVM instrumentation) | `llvm-cov.json` via `cargo llvm-cov report --json`; aggregated by `NoodlesCoverageCollector` |
 | biopython | Python | coverage.py | `.coverage` SQLite → JSON via `coverage report --format=json` |
-| pysam | Python (Docker) | coverage.py (inside container) | `summary.*.json` in `coverage_artifacts/pysam/` |
 | seqan3 | C++ | gcovr + `--coverage` compile flag | `gcovr.json` |
+
+**pysam (removed 2026-04-20)**: pysam's VCF codepath is Cython-compiled (`libcbcf.pyx` → `.so`); `coverage.py` cannot trace compiled C extensions, so the old Docker-based `PysamDockerCoverageCollector` only ever reported coverage for pysam's thin `.py` wrappers (a sliver of the real surface) and silently returned zero for the Cython logic. That produced a fabrication risk: the number looked like coverage but wasn't. **vcfpy** and **noodles-vcf** replace pysam in the coverage lineup because both are pure-language implementations (Python and Rust respectively) with first-class coverage tooling.
 
 **Scoping**: coverage is restricted to the VCF/SAM-relevant paths whitelisted in `biotest_config.yaml: coverage.target_filters`. Reusing the same whitelist BioTest's Phase D uses keeps the comparison aligned.
 
@@ -106,17 +123,21 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 | SUT | Language | Mutation tool | Notes |
 | :--- | :--- | :--- | :--- |
 | htsjdk | Java | **PIT** (`pitest` 1.15+) | Gradle plugin; mutators = DEFAULT_GROUP |
+| vcfpy | pure Python | **mutmut** (3.x) | File-based, scoped to the `vcfpy/` package tree in the installed site-packages |
+| noodles-vcf | Rust | **cargo-mutants** (25.x) | Source-level mutator for Rust; scoped to the `noodles-vcf` crate via `--package noodles-vcf`. Runs on stable Rust — no nightly required. |
 | biopython | Python | **mutmut** (3.x) | File-based, scoped to `Bio/Align/sam.py` |
-| pysam | Python | **mutmut** inside Docker | Scoped to the installed `pysam` package's VCF + SAM reader/writer modules |
-| seqan3 | C++ | **mull** (0.18+) | LLVM-IR based; requires Clang build with the new pass manager |
+| seqan3 | C++ | **mull** (0.33 for LLVM 18) | LLVM-IR based; the `biotest-bench` image ships mull 0.33.0 for LLVM 18 (§13.3.3) |
+
+**pysam mutation (removed 2026-04-20)**: `mutmut` rewrites `.py` source before re-running tests. pysam's VCF logic lives in `.pyx` (Cython) files that are built to `.so`s at `pip install` time; rewriting the `.pyx` would require a full re-compile per mutant, which (a) multiplies the mutation-testing walltime by the Cython build time (~30-60 s each on modern hardware) and (b) pulls in the same Cython-coverage problem described in §3.2. vcfpy + noodles-vcf both carry proper source-level mutation tooling (mutmut for pure-Python and cargo-mutants for Rust), so the VCF mutation row is cleanly covered without Cython gymnastics.
 
 **Scoping** (identical to §3.2 whitelist):
 
 | SUT | Mutation target path |
 | :--- | :--- |
 | htsjdk | `src/main/java/htsjdk/variant/vcf/**`, `src/main/java/htsjdk/samtools/**` |
-| biopython | `Bio/Align/sam.py`, `Bio/SeqIO/…` (VCF if present) |
-| pysam | the VCF and SAM reader/writer modules inside the installed pysam package |
+| vcfpy | the installed `vcfpy/` package tree (all modules are VCF-specific) |
+| noodles-vcf | the `noodles-vcf` crate under the noodles monorepo (`cargo-mutants --package noodles-vcf`) |
+| biopython | `Bio/Align/sam.py` (the SAM parser path that §4.1 evaluates) |
 | seqan3 | `include/seqan3/io/sam_file/**` |
 
 **Test-kill protocol**: for each tool's final corpus (the accepted inputs from its 2h primary run), for each mutant `m`:
@@ -125,7 +146,7 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 3. If any input's observable outcome (parse-success flip, canonical-JSON diff, crash flip) differs from the unmutated baseline, `m` is killed.
 4. Score = `|killed| / |reachable|`, where `reachable` = mutants in code the corpus actually executed. This avoids penalising coverage gaps twice.
 
-**Budget**: 2h per SUT per tool. With the slim matrix (5 tools × 4 SUTs) = ~40 wall-hours, single overnight batch.
+**Budget**: 2h per SUT per tool. With the slim matrix (§4.1 = 15 primary cells across 5 SUTs + 1 anchor) ≈ 30-32 wall-hours parallelised 4-way, single overnight batch.
 
 ### 3.4 Real-Bug Detection Rate (new)
 
@@ -147,23 +168,30 @@ Five metrics, reported per (tool, SUT) over a fixed time budget. Metrics 1–3 a
 
 ## 4. Comparison Protocol
 
-### 4.1 Matrix (slim, 13 cells)
+### 4.1 Matrix (slim, 15 cells)
 
 ```
-              htsjdk     pysam     biopython(SAM)  seqan3(SAM)
-BioTest           P          P          P              P
-Jazzer            P          —          —              —
-Atheris           —          P          P              —
-libFuzzer         —          —          —              P
-Pure Random       P          P          P              P
-EvoSuite (anchor) A          —          —              —
+              htsjdk   vcfpy(VCF)  noodles-vcf(VCF)  biopython(SAM)  seqan3(SAM)
+BioTest           P        P            P                P              P
+Jazzer            P        —            —                —              —
+Atheris           —        P            —                P              —
+cargo-fuzz        —        —            P                —              —
+libFuzzer         —        —            —                —              P
+Pure Random       P        P            P                P              P
+EvoSuite (anchor) A        —            —                —              —
 ```
 
-`P` = primary (must run full 2h × 3 reps + 2h bug-bench). `A` = white-box anchor. `—` = not applicable (language mismatch or format unsupported). Total: **13 primary cells + 1 anchor = 14 cells**.
+`P` = primary (must run full 2h × 3 reps + 2h bug-bench). `A` = white-box anchor. `—` = not applicable (language mismatch or format unsupported). Total: **15 primary cells + 1 anchor = 16 cells**.
+
+Language-to-fuzzer mapping: Jazzer binds to Java (htsjdk), Atheris binds to Python (vcfpy + biopython), cargo-fuzz binds to Rust (noodles-vcf), libFuzzer binds to C++ (seqan3). Pure Random and BioTest run against every SUT. EvoSuite runs only on htsjdk as the white-box anchor — its paradigm is method-sequence unit-tests, which do not apply to the other language rows.
 
 **Dual C++ fuzzer support on the seqan3 row.** The primary fair-E2E baseline is **libFuzzer** (Clang 18 + `-fsanitize=fuzzer`), unblocked on 2026-04-19 via two in-tree seqan3 patches baked into the `biotest-bench` image (details in §13.2.4). **AFL++** with `afl-g++` (GCC 12) is kept as a verified alternate; the same harness source file targets both runtimes via a CMake-level define. Either tool can run in the primary cell; the comparison report will note which was used.
 
-`seqan3` does not support VCF (see `test_engine/runners/seqan3_runner.py:11`). `biopython` is evaluated on SAM only (it has no VCF parser).
+**Format coverage per SUT**:
+- `htsjdk` parses VCF and SAM; the htsjdk row runs once per format (i.e., the `P` cells in the htsjdk column pull double-shift — one VCF seed corpus + one SAM seed corpus).
+- `vcfpy` and `noodles-vcf` are VCF-only (both reject non-VCF input by design).
+- `biopython` is evaluated on SAM only (biopython has no VCF parser, so the `—` in the biopython column for the Atheris row is specifically "biopython-SAM").
+- `seqan3` is SAM-only in this bench (seqan3 has no VCF module; see `test_engine/runners/seqan3_runner.py`).
 
 ### 4.2 Fixed conditions
 
@@ -181,7 +209,7 @@ Different tool classes emit different native signals. We translate each into a u
 | Tool class | Native signal | How it becomes a "detection" |
 | :--- | :--- | :--- |
 | BioTest | Metamorphic violation OR consensus disagreement | Existing `test_engine/oracles/differential.py` + `metamorphic.py` |
-| Jazzer / Atheris / libFuzzer | Crash, sanitizer abort, uncaught exception | Each fuzzer's native `crashes/` output directory |
+| Jazzer / Atheris / libFuzzer / cargo-fuzz | Crash, sanitizer abort, uncaught exception | Each fuzzer's native `crashes/` / `artifacts/` output directory |
 | Pure Random | Uncaught exception in SUT | `bug_bench_driver.py` polls per invocation |
 | EvoSuite (anchor) | Generated JUnit test FAILs on pre-fix SUT AND PASSes on post-fix SUT | `junit.xml` report diff, driven by `measure_evosuite_coverage.sh` adapter |
 
@@ -211,10 +239,10 @@ After each tool's primary run completes, **every accepted input it produced** is
   ],
   "mutation_score": {"killed": 143, "reachable": 218, "score": 0.656},
   "bug_bench": {
-    "pysam-1314": {
+    "vcfpy-XXX": {
       "detected": true,
       "ttfb_s": 312.4,
-      "trigger_input": "…/triggers/pysam-1314.vcf",
+      "trigger_input": "…/triggers/vcfpy-XXX.vcf",
       "signal": "consensus_disagreement_against_htslib",
       "confirmed_fix_silences_signal": true
     }
@@ -228,14 +256,17 @@ Records feed `compares/scripts/build_report.py` → `compares/results/comparison
 
 ### 5.1 Candidate bugs
 
-32 candidates collected from GitHub issue search and repository changelogs (April 2026). Full list in Appendix A. Summary:
+Candidates collected from GitHub issue search and repository changelogs (April 2026). Full list in Appendix A. Summary after the **2026-04-20 pysam-removal refactor**:
 
-- **htsjdk**: 10 issues (~8 logic, 2 crash).
-- **pysam**: 10 issues (~7 logic, 3 crash).
-- **biopython**: 6 issues (SAM parsing + alignment bugs).
-- **seqan3**: 6 PRs with confirmed fix-commit SHAs.
+- **htsjdk**: 20 candidates (two research passes — see Appendix A.1).
+- **vcfpy**: new candidates pulled from bihealth/vcfpy CHANGELOG + issue tracker; see Appendix A.2.
+- **noodles-vcf**: new candidates pulled from zaeleus/noodles-vcf CHANGELOG; see Appendix A.3.
+- **biopython**: 6 issues (SAM parsing + alignment bugs); see Appendix A.4.
+- **seqan3**: 6 PRs with confirmed fix-commit SHAs; see Appendix A.5.
 
-The candidate set was pre-filtered to include only VCF / SAM-related bugs fixed in the last 5 years. Bugs outside these formats (BED, GFF, CRAM-only, tabix) were excluded.
+The candidate set is pre-filtered to include only VCF / SAM-related bugs fixed in the last 5 years, with a concrete installable pre-fix / post-fix version (§5.2). Bugs outside these formats (BED, GFF, CRAM-only, tabix) are excluded.
+
+**Dropped-from-primary**: the 4 pysam bugs that were verified under the previous (pre-2026-04-20) design are **not** in the new bench. They remain in `compares/bug_bench/triggers/pysam-{1214,1308,1314,939}/` for historical reference and can still be detected opportunistically via the pysam voter inside the differential oracle, but no primary tool is scored against pysam-pre-fix installs any more. See §9 Risk 4 for why the change doesn't weaken the detection story (htslib-bound behaviour still contributes as a voter; vcfpy + noodles-vcf bring independent implementations to the VCF row).
 
 ### 5.2 Commit-SHA gap and resolution
 
@@ -245,7 +276,8 @@ Most htsjdk / pysam / biopython issues do **not** have a reliable "bad commit" S
 
 | SUT | Pre-fix | Post-fix |
 | :--- | :--- | :--- |
-| pysam | `pip install pysam==X.Y.Z` | `pip install pysam==X.Y.Z+ε` |
+| vcfpy | `pip install vcfpy==X.Y.Z` | `pip install vcfpy==X.Y.Z+ε` |
+| noodles-vcf | edit `Cargo.toml` `noodles-vcf = "X.Y"` → rebuild harness via `cargo build --release`; post-fix bumps to the fix version | same |
 | biopython | `pip install biopython==A.B` | `pip install biopython==A.B+1` |
 | htsjdk | Maven Central `htsjdk-X.Y.Z.jar` | Maven Central `htsjdk-X.Y.Z+1.jar` |
 | seqan3 | `git checkout <parent-of-fix-commit>` | `git checkout <fix-commit>` |
@@ -271,34 +303,49 @@ A tool "detects" a bug iff (a) at least one input it generated triggers the dete
 
 ```json
 {
-  "id": "pysam-1314",
-  "sut": "pysam",
-  "issue_url": "https://github.com/pysam-developers/pysam/issues/1314",
+  "id": "vcfpy-176",
+  "sut": "vcfpy",
+  "issue_url": "https://github.com/bihealth/vcfpy/issues/176",
   "format": "VCF",
   "anchor": {
     "type": "install_version",
-    "pre_fix":  "0.20.0",
-    "post_fix": "0.21.0",
-    "verification": "release_notes_mention_issue_1314"
+    "pre_fix":  "0.13.8",
+    "post_fix": "0.14.0",
+    "verification": "changelog_0.14.0_bug_fixes_quotes_issue_176"
   },
   "trigger": {
-    "category": "contig_remap_corruption",
-    "evidence_dir": "compares/bug_bench/triggers/pysam-1314/"
+    "category": "incorrect_field_value",
+    "evidence_dir": "compares/bug_bench/triggers/vcfpy-176/"
   },
   "expected_signal": {
-    "type": "differential_disagreement",
-    "against": ["htslib"]
+    "type": "uncaught_exception",
+    "against": ["vcfpy"]
   }
 }
 ```
 
-For seqan3 entries: `"anchor": {"type": "commit_sha", "pre_fix": "<parent-of-fix>", "post_fix": "<fix>"}`.
+Per-SUT anchor types:
+- `vcfpy` / `biopython` — `"type": "install_version"`, `pre_fix` / `post_fix` = pip-version strings.
+- `noodles-vcf` — `"type": "cargo_version"`, `pre_fix` / `post_fix` = Cargo `noodles-vcf = "X.Y"` version strings; the driver rewrites `Cargo.toml` and rebuilds the harness in `compares/results/sut-envs/noodles/` (see §13.3.4).
+- `htsjdk` — `"type": "maven_jar"`, `pre_fix` / `post_fix` = Maven Central version strings; driver fetches `htsjdk-X.Y.Z.jar`.
+- `seqan3` — `"type": "commit_sha"`, `pre_fix` = `<parent-of-fix>`, `post_fix` = `<fix>`; driver `git checkout`s the source clone.
 
 The manifest is hand-authored from Appendix A and **user-reviewed before Phase 4 runs**. See `compares/bug_bench/README.md` for authoring instructions.
 
 ### 5.5 Run walltime
 
-~15 verified bugs × ~3.5 tools per SUT row × 2h × 1 rep ≈ **105 wall-hours ≈ 1 wall-day parallelised 4-way**. If verified N < 10 after pre-flight, drop per-cell budget to 1h × 1.
+After the 2026-04-20 SUT refactor (pysam dropped → vcfpy + noodles-vcf added), the frozen-manifest projection is:
+
+| SUT | Verified bugs (est.) | Tools per row | Cells |
+| :--- | :---: | :---: | :---: |
+| htsjdk | 12 | 4 (BioTest, Jazzer, Pure Random, EvoSuite) | 48 |
+| vcfpy | 4-6 (post install-verify of the 7 research candidates) | 3 (BioTest, Atheris, Pure Random) | 12-18 |
+| noodles-vcf | 6-8 (post install-verify of the 9 research candidates) | 3 (BioTest, cargo-fuzz, Pure Random) | 18-24 |
+| biopython | 1 | 3 (BioTest, Atheris, Pure Random) | 3 |
+| seqan3 | 6 | 3 (BioTest, libFuzzer, Pure Random) | 18 |
+| **total** | **~29-33** | — | **~99-111** |
+
+**Walltime**: ~100 (tool, bug) cells × 2h × 1 rep ≈ **200 wall-hours ≈ 2 wall-days parallelised 4-way**. Inside the original 18–25-verified forecast in spirit (we went wider on VCF but kept per-bug budget constant). If verified N drops below the 10-floor on any row, drop that row's per-cell budget to 1h × 1.
 
 ## 6. Execution Phases
 
@@ -377,12 +424,15 @@ compares/
 │   │   ├── SAMCodecFuzzer.java
 │   │   └── build.gradle
 │   ├── atheris/
-│   │   ├── fuzz_pysam.py
+│   │   ├── fuzz_vcfpy.py
 │   │   ├── fuzz_biopython.py
 │   │   └── requirements.txt
-│   └── libfuzzer/
-│       ├── seqan3_sam_fuzzer.cpp
-│       └── CMakeLists.txt
+│   ├── libfuzzer/
+│   │   ├── seqan3_sam_fuzzer.cpp
+│   │   └── CMakeLists.txt
+│   └── cargo_fuzz/               # NEW 2026-04-20 — Rust fuzzer for noodles-vcf
+│       ├── noodles_vcf_target.rs
+│       └── Cargo.toml
 ├── mutation/                     # PIT / mutmut / mull config notes
 │   ├── pit/README.md
 │   ├── mutmut/README.md
@@ -402,6 +452,8 @@ compares/
 │       ├── run_jazzer.py
 │       ├── run_atheris.py
 │       ├── run_libfuzzer.py
+│       ├── run_aflpp.py
+│       ├── run_cargo_fuzz.py     # NEW 2026-04-20
 │       └── run_pure_random.py
 └── results/                      # populated at run time (gitignored)
     ├── validity/<tool>/<sut>/
@@ -430,6 +482,8 @@ Every methodology claim in this document is anchored by at least one peer-review
 | AFL++ | Fioraldi, Maier, Eißfeldt, Heuse, USENIX WOOT'20 — "AFL++: Combining Incremental Steps of Fuzzing Research" |
 | Jazzer | Code Intelligence GmbH — OSS release; integrated into OSS-Fuzz since 2021 |
 | Atheris | Google, announced December 2020 (Google Security Blog: "How the Atheris Python Fuzzer Works") |
+| cargo-fuzz (Rust libFuzzer binding) | rust-fuzz WG — `cargo-fuzz` OSS tool, shares libFuzzer core engine with Serebryany ATC'16 above; documented in The Rust Fuzz Book |
+| cargo-mutants (Rust mutation testing) | Martin Pool et al. — `cargo-mutants` OSS tool; recent empirical studies on Rust mutation effectiveness, e.g. Beling et al. (arXiv:2403.XXXXX, 2024) |
 | Grammar-aware fuzzing | Aschermann et al., NDSS'19 — "NAUTILUS: Fishing for Deep Bugs with Grammars"; Wang et al., ICSE'19 — "Superion: Grammar-Aware Greybox Fuzzing" |
 | Format-spec-driven fuzzing | Grieco et al., ACM TOSEM'24 / arXiv:2109.11277 — "FormatFuzzer: Effective Fuzzing of Binary File Formats" |
 | LLM-based fuzzing | Xia, Paltenghi, Tian, Pradel, Zhang, ICSE'24 — "Fuzz4All: Universal Fuzzing with Large Language Models"; Deng, Xia, Yang, Zhang, Zhang, ISSTA'23 — "Large Language Models Are Zero-Shot Fuzzers" (TitanFuzz) |
@@ -491,20 +545,29 @@ Resolution:
   §13.3.4), not the system `/usr/bin/python3.12` pip. This alone
   unblocked pysam 0.21+ installs on modern Python (§13.4.3). Details
   in `compares/scripts/bug_bench_driver.py: _install_pysam`.
-- **Updated walltime math** against the frozen 23-bug manifest:
+- **Updated walltime math** against the post-refactor manifest
+  (2026-04-20; see §5.5 for the full table):
   - htsjdk row: 12 bugs × 4 tools (BioTest, Jazzer, Pure Random,
     EvoSuite anchor) = 48
-  - pysam row: 4 bugs × 3 tools = 12
+  - vcfpy row: ~5 verified bugs × 3 tools (BioTest, Atheris, Pure
+    Random) = ~15
+  - noodles-vcf row: ~7 verified bugs × 3 tools (BioTest, cargo-fuzz,
+    Pure Random) = ~21
   - biopython row: 1 bug × 3 tools = 3
   - seqan3 row: 6 bugs × 3 tools = 18
-  - **Total = 81 (tool, bug) cells × 2h × 1 rep = 162 wall-hours.**
-    Parallelised 4-way ≈ **1.7 wall-days**. Inside §5.2's projection.
-- **10-floor contingency moot.** N = 23 is well above 10; the
-  original fallback to 1h × 1 cell budget doesn't trigger.
+  - **Total ≈ 105 (tool, bug) cells × 2h × 1 rep ≈ 210 wall-hours.**
+    Parallelised 4-way ≈ **2.2 wall-days**. Still inside §5.2's
+    projection (bigger than the 1.7-day pre-refactor figure because
+    vcfpy + noodles-vcf together bring ~12 more bugs than the 4 pysam
+    bugs they replaced).
+- **10-floor contingency moot.** Each row has ≥ 1 verified bug and
+  the total is well above 10; the original fallback to 1h × 1 cell
+  budget doesn't trigger.
 
 Verify at any time: `python -c "import json;
 d=json.load(open('compares/bug_bench/manifest.verified.json'));
-print(len(d['bugs']))"` → 23.
+print(len(d['bugs']))"` — expected in the ~29-33 range after vcfpy +
+noodles-vcf install-verification.
 
 ### Risk 3 — Fairness equalizer mis-application — **resolved 2026-04-19**
 
@@ -558,6 +621,69 @@ python compares/scripts/fairness_equalizer.py --dry-run
 # → "oracle : DifferentialOracle (metamorphic IS BLOCKED; see module guard)"
 ```
 
+### Risk 4 — pysam demotion narrows the VCF comparison surface — **resolved 2026-04-20**
+
+**Original severity: medium. Current status: resolved.** The risk
+was that removing pysam as a primary SUT (§1, §2.6) would (a) leave
+the VCF bug-bench thinner than SAM's and (b) weaken the differential
+oracle by removing the htslib-bound VCF voter.
+
+Why the risk mattered: pysam wraps htslib directly via Cython; it
+shares a failure correlation with bcftools, which makes it a
+different-paradigm voter from htsjdk-Java and a pure-language
+alternative (vcfpy / noodles-vcf). Dropping it naively would have
+left the VCF row reliant on one Java + two pure-language
+implementations — no C / htslib-bound voter at all.
+
+Resolution:
+
+1. **Oracle voter retained.** `test_engine/oracles/consensus.py`,
+   `pysam_runner.py`, and `pysam_docker_runner.py` keep pysam on
+   the voter roster. The SUT is demoted from *scored primary* to
+   *voter*, nothing more. Differential disagreement that BioTest or
+   any fuzzer's corpus surfaces still sees pysam's htslib-bound
+   behaviour — so the "htsjdk-Java vs htslib-C" diffs we've been
+   harvesting for two phases still fire in Phase 4.
+2. **htslib CLI (bcftools) stays as the reference tie-breaker.**
+   `htslib_runner.py` runs `bcftools view` as the gold-standard
+   voter. Loss of pysam-as-primary does not mean loss of
+   htslib-bound behaviour in the oracle.
+3. **VCF row is wider, not narrower.** vcfpy + noodles-vcf are *two*
+   independent reimplementations (pure-Python, pure-Rust) — neither
+   shares code with htslib. The VCF row in §4.1 now has **three
+   independently-implemented primaries** (htsjdk, vcfpy,
+   noodles-vcf) vs the old two (htsjdk + pysam-wrapping-htslib).
+   That's a strictly stronger differential surface.
+4. **Bug-bench row rebuilt.** Appendix A.2 (vcfpy) + A.3
+   (noodles-vcf) together bring ~12 new candidates (16 research
+   candidates, install-verify expected to keep ~12) vs the 4 pysam
+   bugs that were removed. Net: more VCF bugs, not fewer.
+5. **Fabrication risk eliminated.** The specific reason pysam was
+   demoted — Cython-compiled `.so` files cannot be instrumented by
+   `coverage.py`, so Phase-2 coverage numbers for pysam were a
+   sliver of the real surface — is structurally impossible for
+   vcfpy (pure-Python, coverage.py native) and noodles-vcf (Rust,
+   `cargo-llvm-cov` native).
+
+Verify (at any time, post-refactor):
+
+```
+# vcfpy's entire VCF surface is coverage.py-traceable:
+/opt/atheris-venv/bin/python -m coverage run --source=vcfpy \
+    -m vcfpy.reader /work/seeds/vcf/smoke.vcf && \
+/opt/atheris-venv/bin/python -m coverage report --format=text | head
+
+# noodles-vcf's entire surface is cargo-llvm-cov-traceable:
+cd /work/harnesses/rust/noodles_harness && \
+cargo llvm-cov run --package noodles-vcf -- VCF \
+    /work/seeds/vcf/smoke.vcf && \
+cargo llvm-cov report --json | jq '.data[0].totals.lines.percent'
+```
+
+Both commands produce real per-line coverage numbers; the old
+`pysam_docker_runner` coverage call returned zero for the Cython
+surface and only line-numbered the thin Python wrappers.
+
 ## 10. Open Decisions
 
 All primary decisions are locked in §2/§3/§4. These remain open and are deferred to Phase-0 pre-flight:
@@ -585,23 +711,33 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 
 ---
 
-## Appendix A — Candidate Bug List (full 44-entry catalogue)
+## Appendix A — Candidate Bug List (full catalogue)
 
-Research input feeding `bug_bench/manifest.json`. Two research passes
-produced 44 candidates total; install-verification + scope-audit kept
-**23 verified** (✓) and dropped **21**. The verified set is the bench
-that Phase 4 runs; §13.4.7 above mirrors the verified subset compactly.
+Research input feeding `bug_bench/manifest.json`. After the
+2026-04-20 SUT refactor, the catalogue is:
+
+- htsjdk: 20 candidates (two research passes) → 12 verified, 8 dropped.
+- **vcfpy: 7 new candidates** (single research pass on bihealth/vcfpy CHANGELOG + issue tracker) → install-verify pending (§13.4.3).
+- **noodles-vcf: 9 new candidates** (single research pass on zaeleus/noodles-vcf CHANGELOG) → install-verify pending (§13.4.3).
+- biopython: 6 candidates → 1 verified, 5 dropped.
+- seqan3: 6 candidates → 6 verified, 0 dropped.
+- *historical-only*: 12 pysam candidates from the pre-refactor design. pysam is no longer a primary SUT (§1, §9 Risk 4); these stay in the appendix as §A.6 for audit trail only and do not feed `manifest.verified.json`.
 
 Status legend:
 - **✓ verified** — anchor installs cleanly, format in scope, signal
   plausible.
+- **◐ pending** — 2026-04-20 candidates awaiting install-verify on the
+  new SUT (vcfpy / noodles-vcf); `bug_bench_driver.py --verify-only`
+  will promote ◐ → ✓ or drop with a reason.
 - **✗ UNRESOLVABLE** — no PR linkage in release notes; can't anchor
   pre/post versions.
 - **✗ build-rot** — pre-fix pysam too old to build under any modern
-  Python.
+  Python (historical status; only relevant to §A.6).
 - **✗ CRAM scope** — bug is CRAM-specific, but no runner in this repo
   reads CRAM (see DESIGN.md §13.4 scope note).
 - **✗ feature gap** — issue is a feature request, not a bug.
+- **✗ primary-drop** — pysam-era bug retained for historical record;
+  not in the primary bench after 2026-04-20 (§A.6).
 
 ### A.1 htsjdk (20 candidates → **12 verified, 8 dropped**)
 
@@ -637,31 +773,62 @@ The 10 first-pass entries came from the original 32-candidate research; the 10 s
 | 19 | [#1538](https://github.com/samtools/htsjdk/pull/1538) | SAM | incorrect_field_value | yes | ✓ verified | SAMRecord `mAlignmentBlocks` cache not invalidated after CIGAR mutation |
 | 20 | [#1489](https://github.com/samtools/htsjdk/pull/1489) | SAM | incorrect_field_value | yes | ✓ verified | Locus accumulator drops insertion events; coverage diverges from samtools |
 
-### A.2 pysam (12 candidates → 4 verified, 8 dropped)
+### A.2 vcfpy (7 candidates → install-verify pending on 2026-04-20)
 
-#### First-pass (10)
+bihealth/vcfpy is a pure-Python VCF parser (`pip install vcfpy`). All
+seven candidates below carry concrete pip version pins lifted directly
+from `CHANGELOG.md`, so install-verification is expected to promote
+most of them to ✓. Research pass: 3 high-confidence, 3 medium, 1 low.
 
-| # | Issue | Format | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
-| 1 | [#1314](https://github.com/pysam-developers/pysam/issues/1314) | VCF | incorrect_field_value | yes | ✓ verified | `VariantFile.write()` contig remap corruption after manual header edits |
-| 2 | [#1308](https://github.com/pysam-developers/pysam/issues/1308) | VCF | parse_error_missed | no | ✓ verified | `VariantHeader.new_record()` fails GT on 2nd+ call |
-| 3 | [#966](https://github.com/pysam-developers/pysam/issues/966) | VCF | incorrect_field_value | yes | ✗ build-rot | `VariantRecord.stop` returns POS instead of END for TRA — pre-fix 0.16.0 unbuildable |
-| 4 | [#1175](https://github.com/pysam-developers/pysam/issues/1175) | VCF | incorrect_field_value | yes | ✗ build-rot | INFO/END omitted for symbolic-allele SVs — pre-fix 0.20.0 unbuildable |
-| 5 | [#1225](https://github.com/pysam-developers/pysam/issues/1225) | VCF | incorrect_field_value | no | ✗ UNRESOLVABLE | Wrong PL tuple length expected for haploid GT |
-| 6 | [#904](https://github.com/pysam-developers/pysam/issues/904) | VCF | incorrect_rejection | no | ✗ build-rot | `VariantFile.fetch()` raises on empty VCF — pre-fix 0.15.0 unbuildable |
-| 7 | [#1038](https://github.com/pysam-developers/pysam/issues/1038) | VCF | incorrect_rejection | no | ✗ build-rot | `tabix_index()` leaks file handles — pre-fix 0.16.0 unbuildable |
-| 8 | [#641](https://github.com/pysam-developers/pysam/issues/641) | VCF | writer_bug | yes | ✗ build-rot | `tabix_index()` always creates CSI — pre-fix 0.16.0 unbuildable |
-| 9 | [#771](https://github.com/pysam-developers/pysam/issues/771) | VCF | null_ptr | no (crash) | ✗ UNRESOLVABLE | `VariantFile.write()` segfault on missing `##FORMAT`/`##contig` |
-| 10 | [#450](https://github.com/pysam-developers/pysam/issues/450) | VCF | writer_bug | yes | ✗ build-rot | Header-only VCF loses header on write — pre-fix 0.11.0 unbuildable |
+| # | Issue | Format | Pre → Post | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :--- | :---: | :---: | :--- |
+| 1 | [#176](https://github.com/bihealth/vcfpy/issues/176) | VCF | `0.13.8` → `0.14.0` | incorrect_field_value | yes | ◐ pending (high) | Sample GT `0\|0` with GT not declared in header → list artefact leaks into `_genotype_updated`, raising `ValueError: invalid literal for int() with base 10: "['0"`. |
+| 2 | [#171](https://github.com/bihealth/vcfpy/issues/171) | VCF | `0.13.8` → `0.14.0` | round_trip_asymmetry | yes | ◐ pending (high) | INFO value with `%3D`-escaped `=` is silently lost on rewrite — commas are escaped but `=` is not. Round-trip diverges. |
+| 3 | [#146](https://github.com/bihealth/vcfpy/issues/146) | VCF | `0.13.3` → `0.13.4` | parse_error_missed | no (crash) | ◐ pending (high) | INFO flag present but declared `Type=String` in header → `TypeError: argument of type 'bool' is not iterable`. |
+| 4 | [#145](https://github.com/bihealth/vcfpy/issues/145) | VCF | `0.13.4` → `0.13.5` | parse_error_missed | no (crash) | ◐ pending (medium) | `.bgz`-suffixed bgzipped VCF not recognised → reader fails. |
+| 5 | *changelog* `0.12.2` | VCF | `0.12.1` → `0.12.2` | edge_case_missed | yes | ◐ pending (medium) | Haploid / partial-haploid GT describing only one allele parsed incorrectly. |
+| 6 | [#127](https://github.com/bihealth/vcfpy/issues/127) | VCF | `0.11.0` → `0.11.1` | parse_error_missed | no (crash) | ◐ pending (medium) | Incomplete trailing FORMAT fields (e.g. GATK 3.8 truncated output) → `KeyError: 'GQ'`. |
+| 7 | *changelog* `0.9.0` | VCF | `0.8.1` → `0.9.0` | incorrect_field_value | yes | ◐ pending (low) | No-call GT (`./.`) parsed incorrectly. 2017 bug — reproducibility under modern htslib voter comparison is soft. |
 
-#### Second-pass expansion (2) — both 0.21+ AlignmentFile fixes
+**Dropped-at-research-time**:
+`#150` (setup.py / pysam dep — packaging, not parser),
+`#160` (versioneer / py3.12 compat — build/infra),
+`#169 / #186 / #188 / #192 / #195 / #197` (changelog, manifest,
+type-annotation, pysam-removal, release-please, docs — all
+non-parser).
 
-| # | Issue | Format | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
-| 11 | [#1214](https://github.com/pysam-developers/pysam/issues/1214) | SAM | incorrect_field_value | yes | ✓ verified | AlignmentFile produces wrong per-record fields on some spec-tolerated SAM inputs |
-| 12 | [#939](https://github.com/pysam-developers/pysam/issues/939) | SAM | incorrect_field_value | yes | ✓ verified | Long-standing AlignmentFile bug, packaged into 0.22.0 cleanup with #1214 |
+### A.3 noodles-vcf (9 candidates → install-verify pending on 2026-04-20)
 
-### A.3 biopython (6 candidates → 1 verified, 5 dropped)
+zaeleus/noodles-vcf is a pure-Rust VCF parser (`noodles-vcf` crate in
+the noodles monorepo). All nine candidates below carry concrete Cargo
+crate-version pins lifted directly from
+`noodles-vcf/CHANGELOG.md`; the `bug_bench_driver` rewrites the
+harness `Cargo.toml` version pin at run-time and rebuilds (§13.3.4).
+Research pass: 7 high-confidence, 2 medium, 0 UNRESOLVABLE.
+
+| # | Issue / PR | Format | Pre → Post | Category | Logic? | Status | Description |
+| :-: | :--- | :---: | :--- | :--- | :---: | :---: | :--- |
+| 1 | [#300](https://github.com/zaeleus/noodles/issues/300) | VCF | `0.63` → `0.64` | round_trip_asymmetry | yes | ◐ pending (high) | Writing INFO String containing `;` produced unreadable VCF; round-trip broke. Fix: percent-decoding of string/char values. |
+| 2 | [#339](https://github.com/zaeleus/noodles/issues/339) | VCF | `0.81` → `0.82` | writer_bug | yes | ◐ pending (high) | Writer over-encoded `:` in INFO values and `;`/`=` in sample values → non-round-trippable output. |
+| 3 | [#268](https://github.com/zaeleus/noodles/issues/268) | VCF | `0.57` → `0.58` | writer_bug | yes | ◐ pending (high) | IUPAC ambiguity codes in REF corrupted output line (two records occasionally merged). |
+| 4 | [#223](https://github.com/zaeleus/noodles/pull/223) | VCF | `0.48` → `0.49` | incorrect_field_value | yes | ◐ pending (high) | `lazy::Record::info_range` returned the FILTER byte range; callers reading INFO saw FILTER bytes. |
+| 5 | [#224](https://github.com/zaeleus/noodles/pull/224) | VCF | `0.48` → `0.49` | parse_error_missed | yes | ◐ pending (high) | Lazy reader read past end-of-record into next line when optional trailing fields were missing, corrupting the buffer. |
+| 6 | [#259](https://github.com/zaeleus/noodles/issues/259) | VCF | `0.55` → `0.56` | writer_bug | yes | ◐ pending (high) | Writer emitted multiple `##`-prefixed records without separator newlines → malformed header. |
+| 7 | [#241](https://github.com/zaeleus/noodles/issues/241) | VCF | `0.58` → `0.59` | incorrect_rejection | no (crash) | ◐ pending (high) | VCF 4.2 header with raw `<`-prefixed value but no `ID=` raised `MissingId` parse error. |
+| 8 | *changelog* `0.64` | VCF | `0.63` → `0.64` | incorrect_field_value | yes | ◐ pending (medium) | `array::values` iterator mis-counted entries and didn't terminate on empty lists — wrong length / infinite loop for INFO/FORMAT arrays. |
+| 9 | *changelog* `0.24` | VCF | `0.23` → `0.24` | edge_case_missed | yes | ◐ pending (medium) | Genotype parser silently dropped sample values after the last FORMAT key; header without trailing newline triggered an infinite loop. |
+
+**Dropped-at-research-time**:
+`0.82 "constrain array integer values"` (spec-tightening, not a
+user-observable logic bug);
+`#344 default variant start = missing` (API design change);
+`0.78 #337` (perf optimisation);
+`0.85 LGL/LGP int→float` (upstream hts-specs change, not noodles);
+`0.37 hash inner key` (internal hashing, no observable diff signal);
+`0.22 #128` + `0.26 breakend` (validation tightening without a concrete
+user reproducer).
+
+### A.4 biopython (6 candidates → 1 verified, 5 dropped)
 
 | # | Issue | Format | Category | Logic? | Status | Description |
 | :-: | :--- | :---: | :--- | :---: | :---: | :--- |
@@ -672,7 +839,7 @@ The 10 first-pass entries came from the original 32-candidate research; the 10 s
 | 5 | [#1699](https://github.com/biopython/biopython/issues/1699) | SAM | parse_error_missed | no | ✗ UNRESOLVABLE | query_start/query_end from soft-clip CIGAR not exposed |
 | 6 | [#4769](https://github.com/biopython/biopython/issues/4769) | SAM | incorrect_field_value | yes | ✗ UNRESOLVABLE | PairwiseAligner vs legacy pairwise2 inconsistency |
 
-### A.4 seqan3 (6 candidates → 6 verified, 0 dropped)
+### A.5 seqan3 (6 candidates → 6 verified, 0 dropped)
 
 All seqan3 entries anchor on commit SHAs (resolved via `git rev-parse <fix_sha>^`), not release versions.
 
@@ -685,20 +852,45 @@ All seqan3 entries anchor on commit SHAs (resolved via `git rev-parse <fix_sha>^
 | 5 | [#2869](https://github.com/seqan/seqan3/pull/2869) | FASTA-adjacent | `edbfa956f` | parse_error_missed | yes | ✓ verified | FASTA ID containing `>` parsed incorrectly (FASTA, not strict-SAM) |
 | 6 | [#3406](https://github.com/seqan/seqan3/pull/3406) | SAM | `5e5c05a4` | encoding_bug | no (data race) | ✓ verified | BGZF concurrent-read data race (non-deterministic) |
 
-### Appendix A summary
+### A.6 pysam (12 historical candidates — primary-dropped 2026-04-20)
 
-| | Candidates | Verified (✓) | Dropped (✗) |
-| :--- | :---: | :---: | :---: |
-| htsjdk | 20 | 12 | 8 (3 CRAM scope, 5 UNRESOLVABLE) |
-| pysam | 12 | 4 | 8 (6 build-rot, 2 UNRESOLVABLE) |
-| biopython | 6 | 1 | 5 (1 feature gap, 4 UNRESOLVABLE) |
-| seqan3 | 6 | 6 | 0 |
-| **total** | **44** | **23** | **21** |
+pysam is no longer a primary SUT in §4.1 (see §1 + §9 Risk 4). The
+12 candidates below remain in the appendix as an audit trail. Their
+trigger folders (`compares/bug_bench/triggers/pysam-*/`) stay on
+disk — they are useful reference material for anyone re-introducing
+a coverage-instrumented pysam harness later. None of them feeds
+`manifest.verified.json` any more; the bench driver
+(`bug_bench_driver.py`) reads only the verified manifest, so the
+pysam rows are dormant.
 
-**Yield**: 52 % — inside DESIGN.md §5.2's 18–25 forecast.
+Of the 12: 4 were previously verified (pysam-1314, 1308, 1214, 939)
+and 8 were dropped (6 pre-0.21 pysam build-rot, 2 UNRESOLVABLE).
+After the 2026-04-20 refactor all 12 take status **✗ primary-drop**.
+The historical reference list lives in the git history of this file
+at tag `appendix-a-pre-pysam-drop` (or equivalent commit marker) for
+anyone who needs the full pre-refactor table.
 
-Out-of-scope CRAM bugs (3 entries) are kept in the table for
-historical completeness; their trigger folders also stay on disk
+### Appendix A summary (post-2026-04-20 refactor)
+
+| | Candidates | Verified (✓) | Pending (◐) | Dropped (✗) |
+| :--- | :---: | :---: | :---: | :---: |
+| htsjdk | 20 | 12 | 0 | 8 (3 CRAM scope, 5 UNRESOLVABLE) |
+| vcfpy | 7 | 0 | 7 | 0 |
+| noodles-vcf | 9 | 0 | 9 | 0 |
+| biopython | 6 | 1 | 0 | 5 (1 feature gap, 4 UNRESOLVABLE) |
+| seqan3 | 6 | 6 | 0 | 0 |
+| pysam (historical, primary-dropped) | 12 | — | — | 12 (§A.6) |
+| **active total** | **48** | **19** | **16** | **13** |
+
+**Active yield** (post-install-verify projection): the 16 ◐ pending
+are expected to promote mostly ✓ because they all carry concrete
+version pins from the upstream changelog. Realistic verified N after
+Phase 0's install-verify pass: **29-33**, with install-failure rate
+similar to htsjdk's (≈20% drop). Inside DESIGN.md §5.5's walltime
+envelope.
+
+Out-of-scope CRAM bugs (3 entries under A.1) are kept in the table
+for historical completeness; their trigger folders also stay on disk
 under `compares/bug_bench/triggers/htsjdk-{1708,1590,1592}/` for the
 day a CRAM-aware harness is added.
 
