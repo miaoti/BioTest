@@ -2007,7 +2007,7 @@ deltas pending completion.
   verified / 25 dropped, per-SUT rollup
   `htsjdk 12 · vcfpy 7 · noodles 9 · biopython 1 · seqan3 6`.
 
-#### Phase 1 — Validity probe (≤ 1 hour per full sweep) — **probe promoted + smoke-tested 2026-04-20; per-cell runs deferred to post-Phase-2**
+#### Phase 1 — Validity probe (≤ 1 hour per full sweep) — **fully executed 2026-04-20 with 60 s short-budget corpora; only cargo-fuzz × noodles blocked on Rust-toolchain bake**
 
 `validity_probe.py` walks each tool's generated corpus, reparses every
 file through the SUT's own `ParserRunner` (test_engine/runners/*), and
@@ -2061,22 +2061,30 @@ python3.12 compares/scripts/validity_probe.py \
       python3.12 -c 'import json,sys; d=json.load(open(sys.argv[1])); \
       assert {"tool","sut","validity_ratio","generated_total","parse_success"}.issubset(d), sys.argv[1]' {} \;
   ```
-  Verified 2026-04-20 against all four smoke-test JSONs — every file
-  carries the required 5 keys + 8 extended counters.
+  Verified 2026-04-20 against all 4 smoke JSONs + all 11 per-cell
+  JSONs — every file carries the required 5 keys + 8 extended counters.
 
-**Per-cell invocations** — **deferred until Phase 2 has produced
-tool-generated corpora**. These commands point the promoted probe at
-each tool's `coverage/<tool>/<sut>/corpus/` directory, which does not
-exist until the 2 h × 3 rep coverage runs complete (Phase 2 below).
-Each checkbox below stays `[ ]` until its Phase 2 corpus lands, at
-which point the probe runs in seconds. The §13.2 smoke-test
-directories under `/tmp/` are transient, so the ground-truth pre-flight
-equivalent already ran on 2026-04-20 against
-`compares/results/bench_seeds/` (see the smoke table above); that
-confirms the probe itself works end-to-end.
+**Per-cell invocations** — **executed 2026-04-20 with 60 s
+short-budget corpora** (pre-Phase-2 stand-in). The Phase 2 full
+2 h × 3 rep corpora will overwrite these with richer data; the 60 s
+runs serve two purposes: (a) prove every adapter → probe → rollup
+path works end-to-end before the long-run commits; (b) give every
+cell a real validity number in `summary.csv` so the Phase-6 report
+scaffolding can consume a non-empty input. Ratios below come from
+`compares/results/validity/summary.csv`.
 
-- [ ] **Jazzer × htsjdk** (VCF + SAM — one cell, two format
-      reparses):
+Pure-random cells are sampled to 100–300 files via `--max-files`
+because the generator writes ~20 k files / 60 s and a full probe
+sweep against 100 k random files would dominate the Phase-1 budget;
+the sample is statistically sufficient for a 0 % floor ratio (which
+is what every pure-random cell landed at, as expected).
+
+- [x] **Jazzer × htsjdk** (VCF + SAM — one cell, two format
+      reparses). **2026-04-20 result**: VCF `31 / 33 = 93.9 %`;
+      SAM `41 / 58 = 70.7 %`. The 2 VCF crashes are BCF-binary seeds
+      mis-routed as VCF text (known harness noise). The 16 SAM
+      parse-errors are htsjdk-lenient rejecting synthetic entries in
+      the seed mix — same signature as the seed-corpus smoke.
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/jazzer/htsjdk_vcf/corpus \
@@ -2087,45 +2095,78 @@ confirms the probe itself works end-to-end.
       --sut htsjdk --format SAM \
       --out compares/results/validity/jazzer/htsjdk_sam/validity.json
   ```
-- [ ] **Atheris × vcfpy** (VCF only — vcfpy has no SAM parser):
+- [x] **Atheris × vcfpy** (VCF only — vcfpy has no SAM parser).
+      **2026-04-20 result**: `33 / 33 = 100 %`. Atheris SIGABORTed on
+      the second input (exit 77, one crash artefact) — so the corpus
+      on disk is the 33 seeds unchanged; every one parses cleanly
+      under vcfpy 0.14.0.
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/atheris/vcfpy/corpus \
       --sut vcfpy --format VCF \
       --out compares/results/validity/atheris/vcfpy/validity.json
   ```
-- [ ] **Atheris × biopython** (SAM only):
+- [x] **Atheris × biopython** (SAM only). **2026-04-20 result**:
+      `8 / 58 = 13.8 %`. Matches the seed-corpus smoke value to the
+      decimal — biopython's SAM parser is narrow by design
+      (§4.1 biopython-row restriction).
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/atheris/biopython/corpus \
       --sut biopython --format SAM \
       --out compares/results/validity/atheris/biopython/validity.json
   ```
-- [ ] **cargo-fuzz × noodles-vcf** (VCF only):
+- [ ] **cargo-fuzz × noodles-vcf** (VCF only) — **blocked
+      2026-04-20**. Docker image `biotest-bench:latest` is missing
+      the Rust toolchain (no `cargo` / `rustc` on PATH; no
+      `/root/.cargo/bin/cargo-fuzz`). Adding `rustup` + `cargo fuzz
+      build noodles_vcf_target --release` + baking `noodles_runner`'s
+      binary into the image is a §13.2.7 prerequisite. Command is
+      identical once the image ships Rust:
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/cargo_fuzz/noodles/corpus \
       --sut noodles --format VCF \
       --out compares/results/validity/cargo_fuzz/noodles/validity.json
   ```
-- [ ] **libFuzzer × seqan3** (SAM only — seqan3 has no VCF parser):
+- [x] **libFuzzer × seqan3** (SAM only — seqan3 has no VCF parser).
+      **2026-04-20 result**: `0 / 58 = 0 %`. libFuzzer's corpus
+      after 60 s is the 58 seed SAMs unchanged (the fuzzer found a
+      crash in < 1 s and exit-77'd); the 0 % here is `SeqAn3Runner`
+      rejecting every one of them at parse time — a known
+      strict-mode rejection of htsjdk-style synthetic SAM variants
+      our seed mix contains. Not a probe failure.
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/libfuzzer/seqan3/corpus \
       --sut seqan3 --format SAM \
       --out compares/results/validity/libfuzzer/seqan3/validity.json
   ```
-- [ ] **AFL++ × seqan3** (verified alternate on same harness; run
-      only if libFuzzer regresses or a cross-fuzzer sanity check is
-      wanted):
+- [x] **AFL++ × seqan3** (verified alternate on same harness).
+      **2026-04-20 result**: `0 / 58 = 0 %`. Same story as the
+      libFuzzer cell: 60 s produced 65-file queue (minimal mutation
+      beyond seeds), and seqan3's strict parse rejects every seed in
+      the mix.
   ```bash
   python3.12 compares/scripts/validity_probe.py \
       --corpus compares/results/coverage/aflpp/seqan3/corpus \
       --sut seqan3 --format SAM \
       --out compares/results/validity/aflpp/seqan3/validity.json
   ```
-- [ ] **Pure Random × every SUT** (6 probes; the floor baseline
-      must land on the same grid as every real tool):
+- [x] **Pure Random × every SUT** — **2026-04-20 result**: every
+      cell lands at the expected `0 %` floor (confirms the floor
+      baseline is genuinely useless at generating valid files, which
+      is exactly the point of the comparator).
+      Sampled at `--max-files 100` for htsjdk (Java subprocess cost
+      ≈ 0.13 s per file) and `--max-files 300` for the
+      pure-Python / C++ runners.
+      Per-cell: `htsjdk VCF 0/100`, `htsjdk SAM 0/100`,
+      `vcfpy 0/300`, `biopython 0/300`, `seqan3 0/300`. noodles
+      cell is blocked on the same `cargo fuzz` prerequisite as the
+      cargo-fuzz row above (the pure_random `noodles` corpus exists
+      on disk at `compares/results/coverage/pure_random/noodles/corpus/`
+      with 22 880 random-byte files; the runner just isn't available
+      yet to probe it).
   ```bash
   # htsjdk — both formats, one cell
   for FMT in VCF SAM; do
@@ -2156,16 +2197,20 @@ confirms the probe itself works end-to-end.
       EvoSuite is `FAIL pre-fix ∧ PASS post-fix` on the JUnit output,
       recorded during Phase 4's anchor sub-pipeline.
 
-- [x] **Output-schema check** already verified on the four smoke-test
-      JSONs (see the bulleted item above). Re-run the same one-liner
-      after each per-cell invocation lands; no cell's JSON is ever
-      accepted if it's missing one of the five required keys.
-- [ ] **Record each cell's validity_ratio** into
-      `compares/results/validity/summary.csv` for the final report.
-      The smoke-test rollup at
-      `compares/results/validity/smoke/summary.csv` is the template
-      shape; the Phase-6 report consumer expects the same column
-      layout.
+- [x] **Output-schema check** re-verified on all 11 per-cell JSONs
+      + the original 4 smoke JSONs (15 files total). All pass the
+      one-liner above.
+- [x] **Record each cell's validity_ratio** into
+      `compares/results/validity/summary.csv`. 11-row CSV written
+      2026-04-20 by `compares/scripts/validity_rollup.py`
+      (also a new script, promoted same day). Columns:
+      `tool, cell, sut, format, validity_ratio, parse_success,
+      generated_total, timeout_count, crash_count, parse_error_count,
+      ineligible_count, duration_s, runner, corpus_dir`. Phase-6
+      `build_report.py` reads exactly this layout. Re-run with
+      `py -3.12 compares/scripts/validity_rollup.py`; the script is
+      idempotent and skips anything under `validity/smoke/` to avoid
+      mixing pre-flight data with bench rows.
 
 #### Phase 2 — Coverage growth (~1 wall-day parallelised 4-way)
 

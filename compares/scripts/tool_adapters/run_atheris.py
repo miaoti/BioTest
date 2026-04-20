@@ -83,7 +83,8 @@ def run(
 
 def _cli() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--sut", required=True, choices=["pysam", "biopython"])
+    p.add_argument("--sut", required=True,
+                   choices=["pysam", "biopython", "vcfpy"])
     p.add_argument("--seed-corpus", type=Path, required=True)
     p.add_argument("--out-dir", type=Path, required=True)
     p.add_argument("--time-budget-s", type=int, default=7200)
