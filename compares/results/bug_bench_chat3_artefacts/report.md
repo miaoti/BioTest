@@ -39,3 +39,17 @@
 - crash? (0): (none)
 - miss (5): vcfpy-145, vcfpy-146, vcfpy-171, vcfpy-176, vcfpy-gtone-0.13
 - skip (2): vcfpy-127, vcfpy-nocall-0.8
+
+## Skip reasons
+
+Each skip below is a cell the tool could not exercise. The reason
+is recorded verbatim from the driver's `error` field (install or
+build failure) or, when the driver had no explicit error, the
+cell's `notes`.
+
+| tool | bug | reason |
+| :-- | :-- | :-- |
+| atheris | vcfpy-127 | install pre_fix 0.11.0 failed (sdist build: no pip in build env) |
+| atheris | vcfpy-nocall-0.8 | install pre_fix 0.8.1 failed (version not on PyPI) |
+| pure_random | vcfpy-127 | install pre_fix 0.11.0 failed (sdist build: no pip in build env) |
+| pure_random | vcfpy-nocall-0.8 | install pre_fix 0.8.1 failed (version not on PyPI) |

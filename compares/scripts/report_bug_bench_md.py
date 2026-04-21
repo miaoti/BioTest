@@ -54,6 +54,7 @@ def main() -> None:
     records = load_records(args.bench_root)
 
     by_tool: dict[str, dict[str, str]] = defaultdict(dict)
+    skip_reasons: dict[tuple[str, str], str] = {}
     tools: list[str] = []
     bugs: list[str] = []
     for r in records:
@@ -63,7 +64,16 @@ def main() -> None:
             tools.append(t)
         if b not in bugs:
             bugs.append(b)
-        by_tool[t][b] = classify(r)
+        cls = classify(r)
+        by_tool[t][b] = cls
+        if cls == "skip":
+            reason = (
+                r.get("error")
+                or r.get("install_error")
+                or r.get("notes")
+                or "(no error recorded)"
+            )
+            skip_reasons[(t, b)] = str(reason)
     tools.sort()
     bugs.sort()
 
@@ -113,6 +123,21 @@ def main() -> None:
             lines.append(f"- false+ ({len(falsep)}): {', '.join(falsep)}")
         if skipped:
             lines.append(f"- skip ({len(skipped)}): {', '.join(skipped)}")
+        lines.append("")
+
+    if skip_reasons:
+        lines.append("## Skip reasons")
+        lines.append("")
+        lines.append("Each skip below is a cell the tool could not exercise. The reason")
+        lines.append("is recorded verbatim from the driver's `error` field (install or")
+        lines.append("build failure) or, when the driver had no explicit error, the")
+        lines.append("cell's `notes`.")
+        lines.append("")
+        lines.append("| tool | bug | reason |")
+        lines.append("| :-- | :-- | :-- |")
+        for (t, b) in sorted(skip_reasons.keys()):
+            reason = skip_reasons[(t, b)].replace("|", "\\|").replace("\n", " ")
+            lines.append(f"| {t} | {b} | {reason} |")
         lines.append("")
 
     args.out.write_text("\n".join(lines), encoding="utf-8")
