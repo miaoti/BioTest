@@ -204,14 +204,14 @@ Language-to-fuzzer mapping: Jazzer binds to Java (htsjdk), Atheris binds to Pyth
 
 ### 4.3 Detection criteria per tool class
 
-Different tool classes emit different native signals. We translate each into a uniform "bug detected" predicate so scores are comparable.
+Different tool classes emit different native signals. We translate each into a uniform "bug detected" predicate so scores are comparable. The uniform predicate is formalised in §5.3.1 and anchored in the Magma / FuzzBench ground-truth benchmarking protocol.
 
-| Tool class | Native signal | How it becomes a "detection" |
-| :--- | :--- | :--- |
-| BioTest | Metamorphic violation OR consensus disagreement | Existing `test_engine/oracles/differential.py` + `metamorphic.py` |
-| Jazzer / Atheris / libFuzzer / cargo-fuzz | Crash, sanitizer abort, uncaught exception | Each fuzzer's native `crashes/` / `artifacts/` output directory |
-| Pure Random | Uncaught exception in SUT | `bug_bench_driver.py` polls per invocation |
-| EvoSuite (anchor) | Generated JUnit test FAILs on pre-fix SUT AND PASSes on post-fix SUT | `junit.xml` report diff, driven by `measure_evosuite_coverage.sh` adapter |
+| Tool class | Native signal | How it becomes a "detection" | Citation for the signal convention |
+| :--- | :--- | :--- | :--- |
+| BioTest | Metamorphic violation OR differential/consensus disagreement | `test_engine/oracles/{metamorphic,differential}.py` | Chen et al. CSUR'18 (metamorphic); McKeeman 1998 (differential); Yang et al. PLDI'11 *Csmith* (differential-testing-for-parsers canonical form) |
+| Jazzer / Atheris / libFuzzer / cargo-fuzz | Crash / sanitizer abort / uncaught exception written to `crashes/` as `crash-*`, `timeout-*`, `slow-unit-*`, `leak-*` | Each fuzzer's native `crashes/` / `artifacts/` output directory — one file = one unique input that tripped the signal | Serebryany et al. ATC'16 (libFuzzer artifact convention; inherited by Atheris/Jazzer/cargo-fuzz verbatim); Fioraldi et al. WOOT'20 (AFL++ `crashes/` sync dir) |
+| Pure Random | Uncaught exception in the SUT on post-hoc replay of the corpus | Chat 6 runs `pure_random/<bug>/corpus/*.vcf` through the SUT's `ParserRunner`; any exception counts as a crash (Miller et al. CACM'90 canonical "random inputs + observe crash" schema) | Miller, Fredriksen, So CACM'90 — the original `fuzz` paper |
+| EvoSuite (anchor) | Generated JUnit test FAILs on pre-fix SUT AND PASSes on post-fix SUT | `junit.xml` report diff, driven by `measure_evosuite_coverage.sh` adapter | Fraser & Arcuri FSE'11 — EvoSuite's assertion-generation oracle |
 
 ### 4.4 Fairness equalizer pass
 
@@ -295,7 +295,76 @@ For each verified bug:
 3. Record first-detection timestamp per tool.
 4. Install the **post-fix** version; replay the detecting input; confirm the signal **disappears**. Controls for spec-ambiguity false positives.
 
-A tool "detects" a bug iff (a) at least one input it generated triggers the detection criterion on the pre-fix SUT AND (b) the same input does not trigger on the post-fix SUT. Condition (b) is essential — without it, any non-deterministic disagreement would score as a detection.
+### 5.3.1 Formal detection predicate
+
+We do **not** score "fuzzer found a crash" as a bug detection. Raw
+crash counts are known to over-count (Klees et al. CCS'18 §3.1–§3.2)
+because (i) one real bug often produces many distinct crash inputs
+via stack-differing hash-bucketing, (ii) crashes may reflect
+spec-ambiguous input that every implementation rejects and is not a
+"bug" in the target SUT specifically, and (iii) coverage-driven
+fuzzers find pre-existing crashes in dependencies that have nothing
+to do with the target bug. The ground-truth benchmarking community
+(Magma SIGMETRICS'20; FuzzBench OOPSLA'21; LAVA S&P'16) resolves this
+by anchoring each bug to a specific **pre-fix** buggy version and a
+specific **post-fix** fixed version, then requiring detection to
+satisfy a differential predicate across the two.
+
+For tool `T`, bug `B` with pre-fix version `V_pre` and post-fix
+`V_post`, we define:
+
+> `detects(T, B) := ∃ input I produced by T during its
+>                  `--time-budget-s`-bounded run on `V_pre` such that
+>                  `signal_T(I, V_pre) = true` AND
+>                  `signal_T(I, V_post) = false`.`
+
+Where `signal_T(I, V)` is the uniform per-tool predicate from §4.3:
+
+- For libFuzzer-family tools (Jazzer, Atheris, libFuzzer, cargo-fuzz,
+  AFL++), `signal_T(I, V)` is "the fuzzer binary built against version
+  `V` wrote `I` into `crashes/`" — the artifact convention of
+  Serebryany et al. ATC'16. Detection requires replaying `I` against
+  `V_post`'s fuzzer binary and observing no new artifact.
+- For Pure Random (post-hoc), `signal_T(I, V)` is "`V`'s
+  `ParserRunner.run(I)` raised an exception" — the Miller et al.
+  CACM'90 "random inputs and observe crashes" schema.
+- For EvoSuite, `signal_T(I, V)` is "the EvoSuite-generated JUnit case
+  `T_I` exercising input `I` failed against `V`" — Fraser & Arcuri
+  FSE'11 assertion-generation oracle.
+- For BioTest, `signal_T(I, V)` is "`V`'s canonical-JSON output
+  disagrees with ≥ 1 of the other voters' canonical-JSON outputs" for
+  the differential path (McKeeman 1998 / Yang et al. PLDI'11 Csmith
+  form) OR "at least one metamorphic relation in
+  `data/mr_registry.json` violated on `I`" for the metamorphic path
+  (Chen et al. CSUR'18).
+
+Condition `signal_T(I, V_post) = false` is the **silence-on-fix**
+confirmation. Without it, any spec-ambiguous input, any
+non-deterministic oracle disagreement, or any dependency-level crash
+would falsely score as a detection against a bug it had no causal
+relationship with (Böhme et al. ICSE'22 §5 — "Ground-Truth Bug
+Inoculation" section argues this is the only reliable way to
+attribute detection to a specific target bug).
+
+**Operational shape inside `bug_bench_driver.py`**: the driver records
+this as a per-cell `BugResult` with three orthogonal booleans:
+
+| field                              | type            | meaning |
+| :--------------------------------- | :-------------- | :------ |
+| `detected`                         | `bool`          | `signal_T(I, V_pre) = true` for at least one input in the pre-fix run's `crashes/` (libFuzzer-family), `bug_reports/` (BioTest), or post-hoc replay (Pure Random). |
+| `trigger_input`                    | `str | null`    | path to a canonical representative `I` (first file in the relevant artifacts dir). |
+| `confirmed_fix_silences_signal`    | `bool | null`   | `signal_T(I, V_post) = false` — the driver installs `V_post`, replays `I` through the language-specific `ParserRunner`, and records the result. `null` means replay was impossible (missing trigger file, `V_post` install failed, or no runner for this SUT — the latter is a driver gap, not a detection claim). |
+
+A cell is scored as `tool T found bug B` iff:
+`detected == true AND trigger_input != null AND
+confirmed_fix_silences_signal == true`.
+
+A cell with `detected == true AND
+confirmed_fix_silences_signal != true` is **not** counted as a
+detection. It is listed under `null_silences` in the Chat 6 post-run
+review for manual triage — in prior Magma / FuzzBench runs this
+residual category typically accounts for 5-15 % of raw crash cells
+and represents a real limitation of automated attribution.
 
 ### 5.4 Manifest schema
 
@@ -477,6 +546,11 @@ Every methodology claim in this document is anchored by at least one peer-review
 | 24h minimum fuzzer runtime (we deviate to 2h and document why) | Klees, Ruef, Cooper, Wei, Hicks, CCS'18 — "Evaluating Fuzz Testing" |
 | Mutation score as oracle quality | arXiv:2201.11303 — "Mutation Analysis: Answering the Fuzzing Challenge"; Vikram et al., ISSTA'23 — "Guiding Greybox Fuzzing with Mutation Testing" |
 | Real-bug benchmark framework | Hazimeh, Herrera, Payer, SIGMETRICS'20 — "Magma: A Ground-Truth Fuzzing Benchmark" |
+| Open fuzzer benchmarking platform (industry-standard comparator to Magma; same pre-fix / post-fix detection protocol) | Metzman, Szekeres, Simon, Sprabery, Arya, OOPSLA'21 / arXiv:2009.01120 — "FuzzBench: An Open Fuzzer Benchmarking Platform and Service" |
+| Ground-truth bug inoculation (motivates the silence-on-fix confirmation in §5.3.1) | Dolan-Gavitt, Hulin, Kirda, Leek, Mambretti, Robertson, Ulrich, Whelan, IEEE S&P'16 — "LAVA: Large-scale Automated Vulnerability Addition" |
+| Differential-testing foundations (used in BioTest's cross-implementation voter path) | McKeeman, 1998 — "Differential Testing for Software"; Yang, Chen, Eide, Regehr, PLDI'11 — "Finding and Understanding Bugs in C Compilers" (Csmith) |
+| Original fuzz testing / random-input crash observation (anchors the Pure Random baseline's detection semantics) | Miller, Fredriksen, So, CACM'90 — "An Empirical Study of the Reliability of UNIX Utilities" |
+| Raw crash counts over-count unique bugs (motivates the three-condition predicate in §5.3.1) | Klees, Ruef, Cooper, Wei, Hicks, CCS'18 §3.1–§3.2 — "Evaluating Fuzz Testing" (same reference as the 24 h claim; re-cited here for the crash-deduplication argument) |
 | Semantic fuzzing (JQF/Zest) | Padhye, Lemieux, Sen, Papadakis, Le Traon, ISSTA'19 / arXiv:1812.00078 — "Semantic Fuzzing with Zest" |
 | libFuzzer | Serebryany et al., USENIX ATC'16 — "libFuzzer: a library for coverage-guided fuzz testing" |
 | AFL++ | Fioraldi, Maier, Eißfeldt, Heuse, USENIX WOOT'20 — "AFL++: Combining Incremental Steps of Fuzzing Research" |

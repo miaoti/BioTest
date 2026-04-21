@@ -77,24 +77,57 @@ refactor): htsjdk 12, vcfpy 7, noodles 9, biopython 1, seqan3 6.
 
 ### Global detection semantics
 
-A (tool, bug) cell is scored **"tool found the bug in SUT"** iff **all
-three** conditions hold:
+See `compares/DESIGN.md §5.3.1 "Formal detection predicate"` for the
+full formalisation and citations. Short version:
 
-1. `result.json.detected == true` — the tool's adapter reported at
-   least one artifact in `crashes/`. (Driver rule: `crash_count > 0`.)
-2. `result.json.trigger_input != null` — the driver picked a canonical
-   triggering file (first entry in `crashes/`).
-3. `result.json.confirmed_fix_silences_signal == true` — the post-fix
-   SUT parses/handles the trigger cleanly via the repo's `ParserRunner`.
+> `detects(T, B) := ∃ input I produced by T during its budget-bounded
+>                  run on V_pre such that
+>                  signal_T(I, V_pre) = true AND
+>                  signal_T(I, V_post) = false.`
 
-`confirmed_fix_silences_signal == null` → detected a crash but could
-not replay against post-fix (missing trigger file, post-fix install
-failed, no runner for this SUT, or harness-version-skew on Rust).
-These go to the `null_silences` list for manual spot-check.
+`signal_T` varies per tool class; see `DESIGN.md §4.3` for the
+per-tool row. The predicate is grounded in:
 
-`confirmed_fix_silences_signal == false` → post-fix STILL crashes on
-the trigger — either the fix didn't land where we expect, or the
-crash is unrelated to the target bug. Manual triage.
+- **Magma** (Hazimeh, Herrera, Payer — SIGMETRICS'20) — canonical
+  ground-truth fuzzing benchmark; source of the pre-fix / post-fix
+  anchor + silence-on-fix protocol.
+- **FuzzBench** (Metzman et al. — OOPSLA'21) — industry-standard
+  comparator benchmark; uses the same predicate.
+- **LAVA** (Dolan-Gavitt et al. — S&P'16) — motivates the silence-on-
+  fix confirmation via ground-truth bug inoculation.
+- **Klees et al.** (CCS'18 §3.1-§3.2) — "raw crash counts over-count
+  unique bugs" — motivates requiring both clauses of the predicate
+  rather than `crash_count > 0` alone.
+- **Böhme et al.** (ICSE'22 §5) — attribution to a specific target
+  bug requires differential pre/post-fix confirmation.
+
+Operationally, the driver records three orthogonal booleans per cell:
+
+1. `result.json.detected == true` — `signal_T(I, V_pre) = true` for
+   at least one artifact in the pre-fix run (libFuzzer-family: files
+   under `crashes/`; BioTest: new entries under `bug_reports/`;
+   Pure Random: Chat 6 post-hoc `ParserRunner` replay).
+2. `result.json.trigger_input != null` — the driver picked a
+   canonical representative `I` (first file in the relevant artifact
+   dir).
+3. `result.json.confirmed_fix_silences_signal == true` —
+   `signal_T(I, V_post) = false`. The driver installs `V_post` and
+   replays `I` through the language-specific `ParserRunner`.
+
+A cell is scored as `tool T found bug B` iff **all three** booleans
+are true.
+
+`confirmed_fix_silences_signal == null` → replay was impossible
+(missing trigger file, post-fix install failed, no runner for this
+SUT, harness-version-skew on Rust). Listed under `null_silences` in
+the Chat 6 post-run review for manual triage. Prior Magma / FuzzBench
+runs report 5-15 % of raw-crash cells falling into this residual
+category.
+
+`confirmed_fix_silences_signal == false` → post-fix SUT *still*
+crashes on the trigger. Either the fix didn't land where we expect,
+or the crash is attributable to a different bug. Not counted as a
+detection for the target bug.
 
 ### Per-tool detection implementations
 
