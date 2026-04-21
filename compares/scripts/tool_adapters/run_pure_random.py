@@ -32,13 +32,15 @@ def run(
     n = 0
     rng = random.Random(0xB10)
     deadline = started + time_budget_s
+    max_on_disk = int(os.environ.get("PURE_RANDOM_MAX_WRITES", "10000"))
     while time.time() < deadline:
         size = rng.randint(16, 4096)
         blob = os.urandom(size)
-        (corpus_dir / f"rand_{n:08d}{suffix}").write_bytes(blob)
+        if n < max_on_disk:
+            (corpus_dir / f"rand_{n:08d}{suffix}").write_bytes(blob)
         n += 1
         if n % 1000 == 0:
-            log_file.open("a", encoding="utf-8").write(f"[rand] {n} files\n")
+            log_file.open("a", encoding="utf-8").write(f"[rand] {n} generated\n")
 
     ended = time.time()
     return AdapterResult(

@@ -11,8 +11,12 @@ from pathlib import Path
 
 
 def classify(record: dict) -> str:
-    detected = bool(record.get("detected"))
+    if record.get("error"):
+        return "skip"
+    detected = record.get("detected")
     confirmed = record.get("confirmed_fix_silences_signal")
+    if detected is None:
+        return "skip"
     if not detected:
         return "miss"
     if confirmed is True:
@@ -99,7 +103,7 @@ def main() -> None:
         crashed = [b for b in bugs if cells.get(b) == "crash?"]
         falsep = [b for b in bugs if cells.get(b) == "false+"]
         missed = [b for b in bugs if cells.get(b) == "miss"]
-        skipped = [b for b in bugs if b not in cells]
+        skipped = [b for b in bugs if cells.get(b) == "skip" or b not in cells]
         lines.append(f"### {t}")
         lines.append("")
         lines.append(f"- FOUND ({len(found)}): {', '.join(found) or '(none)'}")
@@ -108,7 +112,7 @@ def main() -> None:
         if falsep:
             lines.append(f"- false+ ({len(falsep)}): {', '.join(falsep)}")
         if skipped:
-            lines.append(f"- skip/absent ({len(skipped)}): {', '.join(skipped)}")
+            lines.append(f"- skip ({len(skipped)}): {', '.join(skipped)}")
         lines.append("")
 
     args.out.write_text("\n".join(lines), encoding="utf-8")
