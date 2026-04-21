@@ -538,12 +538,32 @@ def _replay_trigger_silenced(sut: str, trig_path: Path, fmt: str) -> bool:
         elif sut == "biopython":
             from test_engine.runners.biopython_runner import BiopythonRunner  # type: ignore
             r = BiopythonRunner().run(trig_path, fmt)
+        elif sut == "vcfpy":
+            import vcfpy  # type: ignore
+            try:
+                with vcfpy.Reader.from_path(str(trig_path)) as reader:
+                    for _ in reader:
+                        pass
+                return True
+            except Exception:
+                return False
         elif sut == "htsjdk":
             from test_engine.runners.htsjdk_runner import HTSJDKRunner  # type: ignore
             r = HTSJDKRunner().run(trig_path, fmt)
         elif sut == "seqan3":
             from test_engine.runners.seqan3_runner import SeqAn3Runner  # type: ignore
             r = SeqAn3Runner().run(trig_path, fmt)
+        elif sut == "noodles":
+            import subprocess
+            binary = (REPO_ROOT / "harnesses" / "rust" / "noodles_harness"
+                      / "target" / "release" / "noodles_harness")
+            if not binary.exists():
+                return None  # type: ignore[return-value]
+            proc = subprocess.run(
+                [str(binary), str(trig_path)],
+                capture_output=True, timeout=30,
+            )
+            return proc.returncode == 0
         else:
             return False
         # Silenced means: post-fix SUT handles the trigger cleanly.
