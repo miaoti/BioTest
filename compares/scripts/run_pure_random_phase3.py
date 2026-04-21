@@ -79,6 +79,35 @@ RUNNER_DIR = REPO_ROOT / "compares" / "scripts" / "mutation"
 VCFPY_RUNNER = RUNNER_DIR / "vcfpy_corpus_runner.py"
 BIOPYTHON_RUNNER = RUNNER_DIR / "biopython_corpus_runner.py"
 
+# ---------------------------------------------------------------------------
+# Scope — mutation MUST match biotest_config.yaml:coverage.target_filters
+# so the mutation score isn't diluted by code BioTest never exercises.
+# DESIGN.md §3.3 "Scoping" + Flow.md §SUT Matrix both pin this.
+# ---------------------------------------------------------------------------
+#
+# vcfpy (VCF): parser / reader / writer / header / record only.
+#   EXCLUDED on purpose (Flow.md: "排除 bgzf/tabix —— BioTest 不走这些路径"):
+#     * bgzf.py     — BGZF compression (BioTest tests plain .vcf, not .vcf.gz)
+#     * tabix.py    — tabix indexing (no random-access tests)
+#     * exceptions.py, compat.py — pure data classes / compat shims
+#     * __init__.py is kept so `import vcfpy` still resolves the mutable copy
+VCFPY_IN_SCOPE_FILES: tuple[str, ...] = (
+    "__init__.py",  # required for package import
+    "reader.py",
+    "parser.py",
+    "header.py",
+    "record.py",
+    "writer.py",
+)
+
+# biopython (SAM): Bio/Align/sam.py — a single module, inherently scoped.
+# No allowlist needed; _find_biopython_sam_src() returns the single file.
+
+# htsjdk / seqan3 / noodles — their engines (PIT / mull / cargo-mutants)
+# accept scope flags directly and are blocked on the Windows host anyway;
+# the promotion commands in _run_blocked_cell already carry the scope
+# arguments per DESIGN.md §13.5 Phase 3 + compares/mutation/*/README.md.
+
 
 # ---------------------------------------------------------------------------
 # Corpus assembly
@@ -120,14 +149,23 @@ def _union_corpus(cell_name: str, out: Path) -> Path:
 # mutmut dispatch (vcfpy + biopython)
 # ---------------------------------------------------------------------------
 
-def _copy_source_tree(module_init_or_file: Path, dst: Path) -> Path:
+def _copy_source_tree(
+    module_init_or_file: Path, dst: Path,
+    include_files: tuple[str, ...] | None = None,
+) -> Path:
     """Copy an installed Python package/module into a mutable tree.
 
     * If `module_init_or_file` is a directory (package __init__.py's
-      parent), copy the whole package.
+      parent), copy the whole package — but if `include_files` is
+      given, copy ONLY those filenames (plus the `__pycache__/` is
+      never copied). This is how we enforce
+      biotest_config.target_filters scope: vcfpy's mutation surface
+      excludes `bgzf.py` + `tabix.py` + other off-path helpers so
+      the Pure-Random mutation-score denominator reflects only what
+      BioTest actually tests (DESIGN.md §3.3 Scoping; Flow.md SUT
+      Matrix vcfpy row "排除 bgzf/tabix — BioTest 不走这些路径").
     * If it's a single module file (Bio/Align/sam.py), copy the file
-      alone under dst.
-    Returns the path mutmut should treat as `paths_to_mutate`.
+      alone under dst — single file is inherently scoped.
     """
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
@@ -136,7 +174,26 @@ def _copy_source_tree(module_init_or_file: Path, dst: Path) -> Path:
         else:
             dst.unlink()
     if module_init_or_file.is_dir():
-        shutil.copytree(module_init_or_file, dst)
+        dst.mkdir(parents=True)
+        if include_files is None:
+            # No allowlist — copy the whole package (shouldn't normally
+            # happen for SUTs with a defined target_filter scope).
+            for p in module_init_or_file.iterdir():
+                if p.is_file():
+                    shutil.copy2(p, dst / p.name)
+                elif p.is_dir() and p.name != "__pycache__":
+                    shutil.copytree(p, dst / p.name)
+        else:
+            # Scope-aware copy: only the files BioTest actually exercises.
+            for name in include_files:
+                src_file = module_init_or_file / name
+                if src_file.exists():
+                    shutil.copy2(src_file, dst / name)
+                else:
+                    logger.warning(
+                        "scope file %s missing in %s — skipped",
+                        name, module_init_or_file,
+                    )
         return dst
     # single file — create the wrapping dir
     dst.mkdir(parents=True)
@@ -249,7 +306,17 @@ def _fingerprint_for_file(path: Path, timeout_s: float) -> str:
                         h.update(type(exc).__name__.encode())
                 h.update(f"|n={count}".encode())
         except BaseException as exc:
-            h.update(f"open-or-parse-fail:{type(exc).__name__}".encode())
+            # Include a short exception-message fragment so header-reject
+            # mutations that change the error text (same exception class,
+            # different message) still flip the fingerprint. Without
+            # this, pure-random's single-bucket corpus can't distinguish
+            # most deep-parser mutations.
+            msg = str(exc).replace("\n", " ")[:96]
+            h.update(
+                f"open-or-parse-fail:{type(exc).__name__}:{msg}".encode(
+                    errors="replace",
+                )
+            )
     except _TimeoutError:
         return hashlib.sha1(b"timeout").hexdigest()
     finally:
@@ -321,8 +388,14 @@ def _run_mutmut_cell(
     runner_script: Path,
     src_env_var: str,
     mutate_dir_name: str,
+    include_files: tuple[str, ...] | None = None,
 ) -> dict:
-    """Shared mutmut cell for vcfpy / biopython."""
+    """Shared mutmut cell for vcfpy / biopython.
+
+    `include_files` enforces the biotest_config.target_filters scope
+    at copy time — only files BioTest actually exercises get mutated,
+    so the score denominator isn't padded with unreachable mutants in
+    off-path helpers (bgzf, tabix, etc.)."""
     out_dir.mkdir(parents=True, exist_ok=True)
     baseline_file = out_dir / "baseline.json"
     runner_log = out_dir / "runner.log"
@@ -330,12 +403,17 @@ def _run_mutmut_cell(
     results_txt = out_dir / "mutmut_results.txt"
     summary_path = out_dir / "summary.json"
 
-    # Materialise a mutable copy of the SUT source under `src/` — mutmut
-    # 3.0.0's guess_paths_to_mutate() falls back to `src/` or
-    # `<cwd_basename>/` when setup.cfg lacks `paths_to_mutate`. Using
-    # `src/` is the cleanest cross-cell convention.
+    # Materialise a mutable copy of the SUT source under `src/`. We
+    # copy the WHOLE package so the import graph stays intact (vcfpy's
+    # __init__.py pulls from vcfpy.exceptions / vcfpy.bgzf), but we
+    # will restrict `--paths-to-mutate` to the in-scope files below so
+    # mutmut only injects mutations into what BioTest exercises
+    # (DESIGN §3.3 Scoping; Flow.md vcfpy row "排除 bgzf/tabix").
     src_src = src_path_finder()
-    src_dst = _copy_source_tree(src_src, out_dir / "src" / mutate_dir_name)
+    src_dst = _copy_source_tree(
+        src_src, out_dir / "src" / mutate_dir_name,
+        include_files=None,
+    )
 
     # 1. Capture baseline fingerprints from the unmutated SUT.
     logger.info("[%s] capturing baseline → %s", sut, baseline_file)
@@ -376,9 +454,19 @@ def _run_mutmut_cell(
     (out_dir / "tests" / ".keep").touch()
 
     # 3. Invoke `mutmut run` with CLI flags (mutmut 2.5.1 syntax).
-    #    `--paths-to-mutate` points at our mutable source; `--runner`
-    #    is the per-mutant test suite (our fingerprint-compare driver).
-    target_rel = f"src/{mutate_dir_name}"
+    #    `--paths-to-mutate` is the BioTest-exercised scope — a
+    #    comma-separated list of files if `include_files` is set, or
+    #    the whole package directory otherwise. `--runner` is the
+    #    per-mutant test suite (our fingerprint-compare driver).
+    if include_files:
+        # Scope to individual files: mutmut mutates only these.
+        target_rel = ",".join(
+            f"src/{mutate_dir_name}/{name}"
+            for name in include_files
+            if name != "__init__.py"  # don't mutate the package marker
+        )
+    else:
+        target_rel = f"src/{mutate_dir_name}"
     # mutmut forwards `--runner` to shell execution, so it must be a
     # single string; use forward-slashes for Windows friendliness.
     runner_cmd = (
@@ -391,10 +479,21 @@ def _run_mutmut_cell(
     env["PYTHONIOENCODING"] = "utf-8"
     # Clean any prior .mutmut-cache so runs are deterministic (mutmut
     # 2.5.1 keeps cache in cwd; would otherwise resume partially-run
-    # cells across script invocations).
-    cache_dir = out_dir / ".mutmut-cache"
-    if cache_dir.exists():
-        shutil.rmtree(cache_dir, ignore_errors=True)
+    # cells across script invocations). mutmut 2.5's cache is a single
+    # SQLite file (not a directory) so use unlink().
+    cache_file = out_dir / ".mutmut-cache"
+    if cache_file.exists():
+        try:
+            if cache_file.is_file():
+                cache_file.unlink()
+            else:
+                shutil.rmtree(cache_file, ignore_errors=True)
+        except (OSError, PermissionError) as e:
+            logger.warning(
+                "[%s] could not clear .mutmut-cache (%s) — if this is a "
+                "zombie lock, rename --out to a fresh dir for this run",
+                sut, e,
+            )
     start = time.time()
     with mutmut_log.open("wb") as fh:
         try:
@@ -424,20 +523,28 @@ def _run_mutmut_cell(
             check=False, timeout=120,
         )
 
-    # 5. Extract counts directly from mutmut 2.5's cache if present
-    #    (more reliable than scraping stdout on cp1252-hobbled Windows).
+    # 5. mutmut 2.5's `.mutmut-cache` is a SQLite file (not a directory).
+    #    Back it up with copy2 for audit; leave original in place so
+    #    `mutmut results` can still read it on a re-run. The cache is
+    #    the authoritative source for killed/survived/suspicious counts
+    #    (mutmut 2.5.1's text-mode `results` output hides the "killed"
+    #    section — see _sqlite_status_counts below for the fix).
     cache_db = out_dir / ".mutmut-cache"
-    if cache_db.exists():
-        # Copy for audit; leave in place for `mutmut results`.
-        shutil.copytree(
-            cache_db, out_dir / "mutmut_cache_backup", dirs_exist_ok=True,
-        )
+    cache_backup = out_dir / "mutmut_cache_backup.sqlite"
+    if cache_db.exists() and cache_db.is_file():
+        shutil.copy2(cache_db, cache_backup)
 
-    stats = _summarise_mutmut_output(results_txt, mutmut_log)
+    # Prefer the SQLite cache (authoritative) over `mutmut results`
+    # text (2.5.1 hides the "killed" section). Fall through to the
+    # text parser if cache is missing.
+    stats = _sqlite_status_counts(cache_backup)
+    if stats is None:
+        stats = _summarise_mutmut_output(results_txt, mutmut_log)
     stats.update({
         "tool": "pure_random",
         "sut": sut,
         "phase": "mutation",
+        "engine": "mutmut 2.5",
         "time_budget_s": budget_s,
         "mutmut_exit_code": rc,
         "mutmut_duration_s": round(dur, 2),
@@ -446,23 +553,107 @@ def _run_mutmut_cell(
         "corpus_dir": str(corpus_dir),
     })
     summary_path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
-    logger.info("[%s] wrote %s", sut, summary_path)
+    logger.info("[%s] wrote %s  killed=%d survived=%d score=%s",
+                sut, summary_path, stats.get("killed", 0),
+                stats.get("survived", 0), stats.get("score_display"))
     return stats
 
 
-def _summarise_mutmut_output(results_txt: Path, log_file: Path) -> dict:
-    """Parse mutmut 3.x's `mutmut results` printout into numbers.
+def _sqlite_status_counts(cache_sqlite: Path) -> dict | None:
+    """Read mutant statuses directly from mutmut 2.5's SQLite cache.
 
-    mutmut prints lines like ``killed: 42 🎉`` / ``survived: 13 🙁`` /
-    ``timeout: 1 ⏰`` etc. Extract the counts and compute the
-    DESIGN §3.3 score = killed / reachable (reachable = killed +
-    survived + timeout + suspicious)."""
+    mutmut 2.5.1's `mutmut results` text output only lists non-killed
+    mutants (survived / suspicious / timeout / skipped). The full
+    killed count is only readable from the SQLite `.mutmut-cache`
+    file's `Mutant.status` column. Values we see:
+
+      * `ok_killed`       → killed
+      * `bad_survived`    → survived
+      * `ok_suspicious`   → suspicious (took 2x baseline time)
+      * `bad_timeout`     → timeout (took 10x, counted as killed-ish
+                             under "timeout" in standard tooling but
+                             we keep as a distinct bucket)
+      * `skipped`         → skipped (runner rc=3; don't count)
+      * `unknown`         → untested (incomplete run)
+
+    Returns a DESIGN §3.3-shaped dict or None if the file is missing."""
+    if not cache_sqlite.exists():
+        return None
+    try:
+        import sqlite3
+        con = sqlite3.connect(str(cache_sqlite))
+        rows = con.execute(
+            "SELECT status, COUNT(*) FROM Mutant GROUP BY status"
+        ).fetchall()
+        con.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("sqlite read %s failed: %s", cache_sqlite, e)
+        return None
+    raw: dict[str, int] = {status: int(n) for status, n in rows}
+    killed = raw.get("ok_killed", 0)
+    survived = raw.get("bad_survived", 0)
+    timeout = raw.get("bad_timeout", 0)
+    suspicious = raw.get("ok_suspicious", 0)
+    skipped = raw.get("skipped", 0)
+    not_checked = (
+        raw.get("unknown", 0) + raw.get("not_checked", 0)
+    )
+    reachable = killed + survived + timeout + suspicious
+    total = reachable + skipped + not_checked
+    score = (killed / reachable) if reachable else 0.0
+    return {
+        "killed": killed,
+        "survived": survived,
+        "timeout": timeout,
+        "suspicious": suspicious,
+        "skipped": skipped,
+        "no_tests": 0,
+        "not_checked": not_checked,
+        "reachable": reachable,
+        "mutant_count": total,
+        "score": round(score, 4),
+        "score_display": (
+            f"{score * 100:.2f}%" if reachable else "n/a (reachable=0)"
+        ),
+        "raw_status_counts": raw,
+    }
+
+
+def _summarise_mutmut_output(results_txt: Path, log_file: Path) -> dict:
+    """Parse the ``mutmut results`` printout into numbers.
+
+    mutmut 2.5 prints category headers like:
+        Killed 🎉 (42)
+        Survived 🙁 (1255)
+        Timeout ⏰ (1)
+        Suspicious 🤔 (0)
+        Skipped 🔇 (0)
+        Untested/skipped (984)
+    We extract the bracketed counts and compute DESIGN §3.3:
+        reachable = killed + survived + timeout + suspicious
+        score     = killed / reachable
+    'Untested/skipped' mutants are treated as unreachable (mutmut's
+    equivalent of 'mutant function never executed by the runner')."""
     status_counts: dict[str, int] = {}
     text = ""
     if results_txt.exists():
         text = results_txt.read_text(encoding="utf-8", errors="replace")
     if not text and log_file.exists():
         text = log_file.read_text(encoding="utf-8", errors="replace")
+    # mutmut 2.x "Category (N)" header, possibly with emoji in between.
+    import re
+    header_re = re.compile(
+        r"^(Killed|Survived|Timeout|Suspicious|Skipped|Untested[/ ]skipped)"
+        r"[^\(]*\((\d+)\)",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    for m in header_re.finditer(text):
+        key = m.group(1).lower().replace("/skipped", "").replace(" ", "_")
+        # "Untested" alone maps to our `not_checked` bucket.
+        if key == "untested":
+            key = "not_checked"
+        status_counts[key] = int(m.group(2))
+    # Also support the mutmut 3.x `killed: 42` form for forward-compat.
     known = {
         "killed", "survived", "timeout", "suspicious",
         "skipped", "no tests", "not checked",
@@ -475,7 +666,7 @@ def _summarise_mutmut_output(results_txt: Path, log_file: Path) -> dict:
         key = key.strip().lower()
         val = val.strip().split()[0] if val.strip() else ""
         if key in known and val.isdigit():
-            status_counts[key.replace(" ", "_")] = int(val)
+            status_counts.setdefault(key.replace(" ", "_"), int(val))
     killed = status_counts.get("killed", 0)
     survived = status_counts.get("survived", 0)
     timeout = status_counts.get("timeout", 0)
@@ -586,6 +777,8 @@ def run_cell(sut: str, budget_s: int, out_root: Path) -> dict:
             # corpus-runner's `import vcfpy` resolves to the mutable
             # copy rather than the venv site-packages.
             mutate_dir_name="vcfpy",
+            # biotest_config target_filter: only what BioTest drives.
+            include_files=VCFPY_IN_SCOPE_FILES,
         )
     if sut == "biopython":
         _ensure_biopython_runner()
@@ -688,6 +881,9 @@ def _cli() -> int:
                    help="override cell output dir (single-cell only)")
     p.add_argument("--run-all", action="store_true",
                    help="iterate all 6 DESIGN §13.5 Phase-3 Pure Random cells")
+    p.add_argument("--out-root", type=Path, default=None,
+                   help="override the matrix output root "
+                        "(default: compares/results/mutation/pure_random/)")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
@@ -702,8 +898,10 @@ def _cli() -> int:
 
     cells = list(MATRIX) if args.run_all else [args.sut]
     rows: list[dict] = []
+    matrix_out_root = args.out_root or MUTATION_ROOT
     for sut in cells:
-        out_root = MUTATION_ROOT if args.out is None else args.out.parent
+        out_root = (args.out.parent if args.out is not None
+                    else matrix_out_root)
         try:
             stats = run_cell(sut, args.budget, out_root)
         except Exception as e:  # noqa: BLE001
@@ -715,15 +913,16 @@ def _cli() -> int:
             }
         rows.append(stats)
 
-    _write_summary_csv(rows, MUTATION_ROOT / "summary.csv")
+    _write_summary_csv(rows, matrix_out_root / "summary.csv")
     print()
     print(f"{'sut':<14}{'engine':<22}{'killed':>8}{'reachable':>12}"
           f"{'score':>10}  {'status':<30}")
     print("-" * 100)
     for r in rows:
-        eng = r.get("engine", "mutmut 3.x") if not r.get("blocked_reason") else r.get("engine", "blocked")
-        status = r.get("blocked_reason", "ok")[:30]
-        print(f"{r['sut']:<14}{eng:<22}"
+        eng = r.get("engine") or ("blocked" if r.get("blocked_reason") else "mutmut 2.5")
+        status = (r.get("blocked_reason") or "ok")[:30]
+        sut_label = r.get("sut", "?")
+        print(f"{sut_label:<14}{eng:<22}"
               f"{r.get('killed',0):>8}{r.get('reachable',0):>12}"
               f"{(r.get('score_display','') or 'n/a'):>10}  {status:<30}")
     return 0

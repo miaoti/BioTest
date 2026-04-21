@@ -63,15 +63,26 @@ def run(
         cmd.append("--dry-run")
     else:
         cmd.extend(["--phase", "C"])
+
+    # Snapshot bug_reports/ BEFORE the subprocess so we can diff
+    # afterwards and harvest only the reports this run produced. Without
+    # this snapshot the harvest would copy every historical bug-report
+    # directory (50k+ entries from months of prior BioTest runs) into
+    # every Phase 4 cell — fixed 2026-04-20 after the unguarded harvest
+    # stalled the first full-bench run on 9p-mounted paths.
+    bug_src = REPO_ROOT / "bug_reports"
+    pre_run_entries: set[str] = (
+        {p.name for p in bug_src.iterdir()} if bug_src.exists() else set()
+    )
+
     exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)
     ended = time.time()
 
-    # BioTest writes outputs to repo-relative paths. Harvest them into
-    # the adapter's out_dir so downstream phases (validity probe,
-    # coverage sampler) see a uniform layout.
-    bug_src = REPO_ROOT / "bug_reports"
+    # Harvest only entries that appeared during this run.
     if bug_src.exists():
         for entry in bug_src.iterdir():
+            if entry.name in pre_run_entries:
+                continue
             dest = crashes_dir / entry.name
             if not dest.exists():
                 if entry.is_dir():
@@ -82,11 +93,17 @@ def run(
     # BioTest's "corpus" is effectively the seed set it fed into MRs +
     # any synthetic seeds produced during Phase D feedback. For the
     # comparison framework we treat the seed directory as the
-    # generated corpus.
+    # generated corpus. Symlink rather than copy to avoid 9p-mount
+    # thrash when the driver is invoked with --out on a bind-mounted
+    # volume.
     for seed in seed_corpus.rglob("*"):
         if seed.is_file():
             dest = corpus_dir / seed.name
-            if not dest.exists():
+            if dest.exists():
+                continue
+            try:
+                os.symlink(seed, dest)
+            except OSError:
                 shutil.copy2(seed, dest)
 
     return AdapterResult(

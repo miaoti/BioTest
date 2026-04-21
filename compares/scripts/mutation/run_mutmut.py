@@ -43,37 +43,50 @@ from mutmut.__main__ import (  # noqa: F401
 )
 
 
-# --- Patch 1: give CatchOutput.redirect fileno/isatty -----------------------
+# --- Patch 1: disable CatchOutput entirely ----------------------------------
+#
+# mutmut's CatchOutput replaces sys.stdout/stderr with a TextIOBase
+# subclass that lacks fileno()/isatty()/flush(). pytest's capture
+# machinery calls those methods at startup — either directly or by
+# trying to `dup2` the underlying file descriptor — and either raises
+# (→ pytest exit 4 → mutmut's BadTestExecutionCommandsException) or
+# deadlocks waiting for a non-existent fd. Handing pytest a real
+# fileno that mutmut's capture then ALSO tries to dup just moves the
+# deadlock into fd-level capture.
+#
+# Simplest robust fix: let pytest see the real stdout/stderr. We lose
+# mutmut's per-spinner progress rendering but keep its summary +
+# per-mutant status output, which are plain prints to sys.__stdout__
+# that CatchOutput wasn't buffering anyway.
 
-_orig_catch_init = _mm.CatchOutput.__init__
+class _NoopCatcher:
+    strings: list[str] = []  # never populated; preserved for API compat.
 
+    def __init__(self, callback=lambda s: None, show_spinner=False,
+                 spinner_title=None):
+        # Keep the same attribute surface mutmut references elsewhere.
+        self.strings = []
+        self.show_spinner = show_spinner
+        self.spinner_title = spinner_title
 
-def _patched_catch_init(self, callback=lambda s: None, show_spinner=False,
-                        spinner_title=None):
-    _orig_catch_init(
-        self, callback=callback, show_spinner=show_spinner,
-        spinner_title=spinner_title,
-    )
-    # Give pytest what it expects from a stream wrapper.  A real file
-    # descriptor is required by pytest's capture machinery; fall back
-    # to the original stdout's fd so pytest's dup2 chain works.
-    real_stdout_fd = sys.__stdout__.fileno()
+    def stop(self):
+        pass
 
-    def fileno(_self=self.redirect):
-        return real_stdout_fd
+    def start(self):
+        pass
 
-    def isatty(_self=self.redirect):
-        return False
+    def dump_output(self):
+        for l in self.strings:
+            print(l, end="")
 
-    def flush(_self=self.redirect):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
         return None
 
-    self.redirect.fileno = fileno
-    self.redirect.isatty = isatty
-    self.redirect.flush = flush
 
-
-_mm.CatchOutput.__init__ = _patched_catch_init
+_mm.CatchOutput = _NoopCatcher
 
 
 # --- Patch 2: keep execute_pytest in-process ---------------------------------

@@ -94,19 +94,34 @@ def _sample_corpus_files(corpus_dir: Path, max_n: int) -> list[Path]:
 
 
 def _fingerprint_for_file(path: Path, timeout_s: float) -> str:
-    """Canonical fingerprint: `hash(ok?|records[POS|REF|ALT|INFO keys]...)`.
+    """Coarse, counting-only fingerprint matching
+    ``test_vcfpy_corpus.py::_fingerprint_for_file`` byte-for-byte.
 
-    Why not hash the full canonical JSON? Two reasons:
-      1. vcfpy's exception paths and field defaults are noisy — we
-         only care about signal flips, not exact byte equality.
-      2. Hashing a trimmed record stream is cheaper and still flips
-         reliably on any semantically-meaningful mutation
-         (wrong POS, wrong ALT count, wrong INFO keyset, raised
-         exception class).
+    Earlier revisions hashed ``repr(record)`` which made the
+    fingerprint sensitive to insertion-order / method-binding drift
+    from mutmut's trampoline rewrite even when MUTANT_UNDER_TEST was
+    empty. We instead count integer aggregates across the parsed
+    stream — each is invariant under mutmut's always-call-orig path
+    (so the baseline matches stats-phase exactly) but flips on any
+    mutation that changes record count / INFO-keyset cardinality /
+    POS math / exception class — which is the signal we want.
     """
     import vcfpy  # noqa: E402 — imports after _ensure_vcfpy_on_path
 
-    h = hashlib.sha1()
+    open_tag = "ok"
+    n_header_lines = 0
+    header_key_total = 0
+    n_records = 0
+    n_iter_fail = ""
+    n_alt_total = 0
+    n_info_key_total = 0
+    n_format_key_total = 0
+    n_call_total = 0
+    n_filter_total = 0
+    pos_sum = 0
+    ref_len_sum = 0
+    chrom_charsum = 0
+
     if os.name == "posix":
         signal.signal(signal.SIGALRM, _alarm_handler)
         signal.setitimer(signal.ITIMER_REAL, timeout_s)
@@ -114,40 +129,50 @@ def _fingerprint_for_file(path: Path, timeout_s: float) -> str:
         try:
             reader = vcfpy.Reader.from_path(str(path))
         except BaseException as exc:  # parser refused the file
-            h.update(f"open-fail:{type(exc).__name__}".encode())
-            return h.hexdigest()
+            return "open-fail:" + type(exc).__name__
         try:
             try:
-                header_hash = str(sorted(
-                    (ln.key, str(getattr(ln, "mapping", "")))
-                    for ln in reader.header.lines
-                ))
-                h.update(b"hdr|")
-                h.update(header_hash.encode())
+                lines = list(reader.header.lines)
+                n_header_lines = len(lines)
+                for ln in lines:
+                    header_key_total += len(str(getattr(ln, "key", "")))
             except BaseException as exc:
-                h.update(f"hdr-fail:{type(exc).__name__}".encode())
+                n_header_lines = -1
+                header_key_total = -1 * len(type(exc).__name__)
 
-            for i, rec in enumerate(reader):
+            while True:
                 try:
-                    alt_tag = tuple(
-                        type(a).__name__ + ":" + str(getattr(a, "value", a))
-                        for a in (rec.ALT or [])
-                    )
-                    info_keys = tuple(sorted((rec.INFO or {}).keys()))
-                    fmt_keys = tuple(rec.FORMAT or [])
-                    sample_hash = len(rec.calls)
-                    rec_fp = (
-                        rec.CHROM, rec.POS, rec.ID, rec.REF,
-                        alt_tag, rec.QUAL, tuple(rec.FILTER or []),
-                        info_keys, fmt_keys, sample_hash,
-                    )
-                    h.update(b"|r")
-                    h.update(repr(rec_fp).encode())
+                    rec = next(reader)
+                except StopIteration:
+                    break
                 except BaseException as exc:
-                    h.update(b"|r-fail:")
-                    h.update(f"{type(exc).__name__}".encode())
-                if i >= 200:  # cap per-file work
-                    h.update(b"|cap")
+                    # Atheris corpora commonly slip past .from_path
+                    # but trip vcfpy asserts mid-iteration (malformed
+                    # GT, overflow in POS, bogus types). The exception
+                    # class itself is the signal — a mutation that
+                    # changes rejection semantics (e.g. AssertionError
+                    # → ValueError) flips the fingerprint here.
+                    n_iter_fail = type(exc).__name__
+                    break
+                try:
+                    n_records += 1
+                    n_alt_total += len(rec.ALT or [])
+                    n_info_key_total += len(rec.INFO or {})
+                    n_format_key_total += len(rec.FORMAT or [])
+                    n_call_total += len(rec.calls)
+                    n_filter_total += len(rec.FILTER or [])
+                    try:
+                        pos_sum += int(rec.POS or 0)
+                    except Exception:
+                        pass
+                    ref_len_sum += len(str(rec.REF or ""))
+                    chrom_charsum += sum(
+                        ord(c) for c in str(rec.CHROM or "")
+                    )
+                except BaseException as exc:
+                    n_iter_fail = "rec-fail:" + type(exc).__name__
+                    break
+                if n_records >= 200:
                     break
         finally:
             try:
@@ -155,11 +180,27 @@ def _fingerprint_for_file(path: Path, timeout_s: float) -> str:
             except Exception:
                 pass
     except _TimeoutError:
-        return hashlib.sha1(b"timeout").hexdigest()
+        return "timeout"
     finally:
         if os.name == "posix":
             signal.setitimer(signal.ITIMER_REAL, 0)
-    return h.hexdigest()
+
+    parts = [
+        open_tag,
+        f"hdr={n_header_lines}",
+        f"hkt={header_key_total}",
+        f"rec={n_records}",
+        f"ifail={n_iter_fail}",
+        f"alt={n_alt_total}",
+        f"info={n_info_key_total}",
+        f"fmt={n_format_key_total}",
+        f"calls={n_call_total}",
+        f"filt={n_filter_total}",
+        f"pos={pos_sum}",
+        f"ref={ref_len_sum}",
+        f"chr={chrom_charsum}",
+    ]
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()
 
 
 def _run_baseline(corpus_dir: Path, baseline_file: Path, sample_n: int,

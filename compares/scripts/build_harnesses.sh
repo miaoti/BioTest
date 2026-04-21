@@ -71,6 +71,29 @@ build_libfuzzer_cov() {
   cd - >/dev/null
 }
 
+build_libfuzzer_mut() {
+  # Mutation-test driver. Same seqan3 source as the libFuzzer and
+  # --coverage targets, but with BIOTEST_HARNESS_MUT_DIGEST=1 so the
+  # harness writes a deterministic digest line to stdout per input.
+  # -O0 -g preserves every source line as a distinct code point so
+  # source-level mutations map cleanly; -O2 would collapse neighboring
+  # branches. The Phase 3 mutation driver diff-compares digests across
+  # baseline vs mutated runs to decide kill vs survive.
+  local dir="$ROOT/compares/harnesses/libfuzzer"
+  echo "[harness] libFuzzer mutation-test driver (Clang 18 + digest) @ $dir"
+  mkdir -p "$dir/build-mut"
+  cd "$dir/build-mut"
+  local cxx="${CXX:-$(command -v clang++-18 || command -v clang++)}"
+  if [[ -z "$cxx" ]]; then
+    echo "[harness] ERROR: clang++ not found; install Clang 18+" >&2
+    return 1
+  fi
+  cmake -DCMAKE_CXX_COMPILER="$cxx" \
+        -DCMAKE_CXX_FLAGS="-DSEQAN3_DISABLE_COMPILER_CHECK" ..
+  make seqan3_sam_fuzzer_mut
+  cd - >/dev/null
+}
+
 build_aflpp() {
   # AFL++ + GCC 12. Works today; this is the production C++ fuzzer
   # target for the comparison.
@@ -113,14 +136,16 @@ for tgt in $TARGETS; do
       build_aflpp || echo "[harness] AFL++ skipped (missing GCC 12 / AFL++)"
       build_libfuzzer || echo "[harness] libFuzzer skipped (missing Clang 18 / patched seqan3)"
       build_libfuzzer_cov || echo "[harness] libFuzzer coverage replay skipped (missing Clang 18 / patched seqan3)"
+      build_libfuzzer_mut || echo "[harness] libFuzzer mutation-test driver skipped (missing Clang 18 / patched seqan3)"
       build_atheris_env
       ;;
     jazzer)         build_jazzer ;;
     aflpp)          build_aflpp ;;
     libfuzzer)      build_libfuzzer ;;
     libfuzzer_cov)  build_libfuzzer_cov ;;
+    libfuzzer_mut)  build_libfuzzer_mut ;;
     atheris)        build_atheris_env ;;
-    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'libfuzzer_cov', 'atheris'"; exit 1 ;;
+    *) echo "[harness] unknown target $tgt; try 'all', 'jazzer', 'aflpp', 'libfuzzer', 'libfuzzer_cov', 'libfuzzer_mut', 'atheris'"; exit 1 ;;
   esac
 done
 

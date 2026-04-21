@@ -100,6 +100,26 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     message(STATUS "Building coverage replay target (Clang + --coverage)")
 endif()
 
+# -------- Target 4: Mutation-test driver (Clang 18 + digest emitter) --------
+# Phase 3 mutation-test target (DESIGN §3.3 + §13.5 Phase 3).
+# Same source as the other targets but compiled with
+# BIOTEST_HARNESS_MUT_DIGEST=1 so the harness emits a compact digest
+# line per input (records count, id-hash, seq-length-sum, or a
+# collapsed exception fingerprint). The mutation driver uses that
+# digest as the observable: baseline vs mutated digests that differ
+# on any corpus file count as a kill. -O0 -g preserves every line so
+# source-level mutations map onto distinct code points — -O2 would
+# collapse neighboring branches and mask otherwise-killable mutations.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(MUT_FLAGS -g -O0)
+    add_executable(seqan3_sam_fuzzer_mut seqan3_sam_fuzzer.cpp)
+    target_compile_definitions(seqan3_sam_fuzzer_mut PRIVATE
+        BIOTEST_HARNESS_MUT_DIGEST=1)
+    target_compile_options(seqan3_sam_fuzzer_mut PRIVATE ${MUT_FLAGS})
+    target_link_options(seqan3_sam_fuzzer_mut PRIVATE ${MUT_FLAGS})
+    message(STATUS "Building mutation-test target (Clang + digest emitter)")
+endif()
+
 # If no compatible target was enabled above, error out. Otherwise a
 # bare `make` silently produces nothing and confuses the adapter.
 if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND NOT (AFL_GXX AND GXX_12))

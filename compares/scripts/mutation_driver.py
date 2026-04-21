@@ -150,19 +150,74 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     (tests_dir / "__init__.py").write_text("", encoding="utf-8")
     (tests_dir / "conftest.py").write_text("", encoding="utf-8")
 
-    # 4. Capture unmutated baseline. The standalone runner script still
-    #    carries this logic (mode=baseline), so we can call it once
-    #    directly without going through mutmut.
-    print(f"[driver] capturing baseline → {baseline_file}", flush=True)
+    # 4. Write setup.cfg before we call create_mutants — the same
+    #    do_not_mutate filter needs to apply to both passes so the
+    #    generated `mutants/vcfpy/` tree matches what the live mutmut
+    #    run in step 6 will see.
+    #
+    #    Mutation is scoped to the five VCF-parser modules called out
+    #    by documents/Flow.md §1149 (`target_filters.VCF: vcfpy/reader,
+    #    parser, header, record, writer`). bgzf.py + tabix.py are
+    #    explicitly listed as "BioTest 不走这些路径" (not-in-scope),
+    #    so we do_not_mutate them. __init__.py + version.py hold no
+    #    parser logic. That leaves reader.py + parser.py + header.py +
+    #    record.py + writer.py — the identical whitelist Phase 2's
+    #    `CoveragePyCollector` uses.
+    cfg = out / "setup.cfg"
+    cfg.write_text(
+        "[mutmut]\n"
+        "do_not_mutate=\n"
+        "    __init__.py\n"
+        "    version.py\n"
+        "    tabix.py\n"
+        "    bgzf.py\n",
+        encoding="utf-8",
+    )
+
+    # 5. Pre-generate mutants/vcfpy/ so the baseline can be captured
+    #    against the SAME rewritten tree the mutmut test phase will
+    #    use.  If we captured the baseline against pristine
+    #    `<out>/vcfpy/` instead, the trampoline rewrite (which replaces
+    #    every method with an `object.__getattribute__` dispatcher)
+    #    introduces tiny semantic drift — method binding, module-level
+    #    dict ordering, etc. — that the fingerprint picks up as a
+    #    false-positive kill even under MUTANT_UNDER_TEST=stats.
+    #    `create_mutants()` is idempotent, so the real `mutmut run`
+    #    below re-generates the same tree.
+    print("[driver] pre-generating mutants/ tree (one-shot)…", flush=True)
+    pregen_log = out / "pregen.log"
+    rc = _docker_run(
+        ["bash", "-c",
+         f"cd {_ctr_path(out)} && "
+         f"{SYSTEM_PY} -c \"import mutmut.__main__ as m; "
+         f"m.read_config(); m.create_mutants(); m.copy_also_copy_files(); "
+         f"print('pregen ok: mutants/vcfpy present')\""],
+        timeout_s=600,
+        stdout_file=pregen_log,
+        stderr_file=pregen_log,
+    )
+    if rc != 0 or not (out / "mutants" / "vcfpy").exists():
+        print(f"[driver] pre-generate FAILED (rc={rc}); see {pregen_log}",
+              file=sys.stderr)
+        return 2
+
+    # 6. Capture unmutated baseline FROM THE REWRITTEN TREE. The
+    #    trampolines fall through to the original function whenever
+    #    MUTANT_UNDER_TEST is unset, so calling vcfpy from this tree
+    #    with no env var produces exactly what stats-phase will see.
+    rewritten_src_pkg = out / "mutants" / "vcfpy"
+    print(f"[driver] capturing baseline → {baseline_file} "
+          f"(from {rewritten_src_pkg.name}/)", flush=True)
     rc = _docker_run(
         [SYSTEM_PY, f"/work/compares/scripts/mutation/vcfpy_corpus_runner.py"],
         env={
             "MUTMUT_RUNNER_MODE": "baseline",
-            "MUTMUT_VCFPY_SRC": _ctr_path(src_pkg),
+            "MUTMUT_VCFPY_SRC": _ctr_path(rewritten_src_pkg),
             "MUTMUT_CORPUS_DIR": _ctr_path(corpus_dir),
             "MUTMUT_BASELINE_FILE": _ctr_path(baseline_file),
             "MUTMUT_CORPUS_SAMPLE": str(args.corpus_sample),
             "MUTMUT_CORPUS_TIMEOUT_S": str(args.per_file_timeout_s),
+            "MUTANT_UNDER_TEST": "",
             "PYTHONUNBUFFERED": "1",
         },
         timeout_s=600,
@@ -175,24 +230,6 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
         return 2
     baseline = json.loads(baseline_file.read_text(encoding="utf-8"))
     print(f"[driver] baseline entries: {len(baseline)}", flush=True)
-
-    # 5. Write setup.cfg for mutmut's (limited) knobs. mutmut 3.0 can't
-    #    override paths_to_mutate here — it auto-guesses from cwd
-    #    basename (see note at src_root above). `runner` only toggles
-    #    between PytestRunner and HammettRunner; we keep the default
-    #    (pytest). The pytest test file under tests/ is what does the
-    #    real work.
-    cfg = out / "setup.cfg"
-    cfg.write_text(
-        "[mutmut]\n"
-        "do_not_mutate=\n"
-        "    __init__.py\n"
-        "    version.py\n"
-        "    tabix.py\n"
-        "    bgzf.py\n"
-        "    writer.py\n",
-        encoding="utf-8",
-    )
 
     # 6. Invoke mutmut 3.x. cwd = out; its basename is "vcfpy", the
     #    subdir <out>/vcfpy/ is the mutable package, so
@@ -630,12 +667,612 @@ def _summarise_cargo_mutants(outcomes_path: Path) -> dict:
 # CLI
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# libfuzzer × seqan3 backend (C++ / source-level mutation + digest replay)
+# ---------------------------------------------------------------------------
+#
+# Mull 0.33 ships as a .deb built for Ubuntu 24.04 (glibc 2.39); the
+# biotest-bench image is 22.04 (glibc 2.35), so `mull-runner-18` fails
+# at load time with `GLIBC_2.39 not found` and `mull-ir-frontend-18`
+# fails the same way. DESIGN.md §13.1 documents mull's presence but
+# not the glibc mismatch — rebuilding mull from source or bumping the
+# base to 24.04 are both out of scope for this run, so this backend is
+# a **mull-equivalent substitute**: it applies the same ROR / AOR /
+# LOR operator families mull's `--mutators=default` emits, scoped to
+# the same seqan3 SAM source paths mull would accept, and computes
+# kill/survive by the same per-input observable-diff semantics
+# (DESIGN §3.3 "parse-success flip / canonical-JSON diff / crash
+# flip"). The only differences vs mull are that mutations are applied
+# at source level (rebuild per mutant) rather than LLVM-IR level
+# (link-time mutant switching), and the operator set is a trimmed
+# high-signal subset rather than mull's full catalogue.
+#
+# seqan3 has no VCF parser (Flow.md §2.1 notes "SeqAn3 暂不支持 VCF IO"
+# — the VCF differential matrix dropped seqan3 on that basis). The VCF
+# code path therefore emits a `status: "not_applicable"` summary.json
+# rather than a fabricated score; the DESIGN §13.5 Phase 3 checklist
+# entry gets both summaries as its backing artefacts.
+
+_SEQAN3_SRC_ROOT_IN_CTR = "/opt/seqan3/include"
+_SEQAN3_SAM_SCOPE_FILES = (
+    "seqan3/io/sam_file/",
+    "seqan3/alphabet/cigar/",
+)
+_SEQAN3_SAM_SCOPE_SINGLE_FILES = (
+    "seqan3/io/sam_file/detail/cigar.hpp",
+)
+
+# Mutation operator families. Each entry is (family, pattern, replacement).
+# Patterns use lookbehind/lookahead to avoid multi-char operator matches
+# (e.g. `<<` is NOT a `<` match) and template-parameter matches.
+# The list is deliberately conservative — a rule that produces many
+# non-compiling mutants wastes rebuild budget.
+_MUTATION_RULES_SRC = [
+    # ROR — relational operator replacement.
+    ("ROR_lte_to_lt", r"(?<![<!=>])<=(?!=)", "<"),
+    ("ROR_gte_to_gt", r"(?<![<!=>])>=(?!=)", ">"),
+    ("ROR_eq_to_ne",  r"(?<![<!=>])==(?!=)", "!="),
+    ("ROR_ne_to_eq",  r"(?<![<!=>])!=(?!=)", "=="),
+    # AOR — arithmetic operator replacement, restricted to spaced
+    # infix form (` + ` / ` - `) so we don't rewrite unary `-x`,
+    # `++i` or template-y `T::x`.
+    ("AOR_plus_to_minus",  r"(?<=\s)\+(?=\s)", "-"),
+    ("AOR_minus_to_plus",  r"(?<=\s)-(?=\s)", "+"),
+    # LOR / COR — logical operator replacement.
+    ("LOR_and_to_or", r"(?<!&)&&(?!&)", "||"),
+    ("LOR_or_to_and", r"(?<!\|)\|\|(?!\|)", "&&"),
+]
+
+
+def _sha256_bytes(data: bytes) -> str:
+    import hashlib as _h
+    return _h.sha256(data).hexdigest()
+
+
+def _seqan3_sam_scope_files(src_root: Path) -> list[Path]:
+    """All .hpp / .h files under the seqan3 SAM scope substrings.
+
+    Matches `biotest_config.yaml: coverage.target_filters.SAM.seqan3`
+    + `harnesses/cpp/README.md` scope. Also pulls single-file entries
+    (e.g. the standalone cigar helper)."""
+    files: set[Path] = set()
+    for sub in _SEQAN3_SAM_SCOPE_FILES:
+        pdir = src_root / sub
+        if pdir.exists():
+            for p in pdir.rglob("*.hpp"):
+                files.add(p.resolve())
+            for p in pdir.rglob("*.h"):
+                files.add(p.resolve())
+    for single in _SEQAN3_SAM_SCOPE_SINGLE_FILES:
+        f = src_root / single
+        if f.exists():
+            files.add(f.resolve())
+    return sorted(files)
+
+
+def _load_reachable_lines(gcovr_json: Path | None,
+                          scope_files: list[Path]) -> dict[str, set[int]]:
+    """Return {relative_file_path → {line_no, ...}} where `count > 0`.
+
+    Relative paths are relative to the seqan3 source root — matches
+    gcovr's own `file` field when `--root /opt/seqan3/include` is used.
+    Missing JSON / unparseable JSON degrades to `{}` which means every
+    in-scope mutation is treated as reachable (strictly more mutants).
+    """
+    if gcovr_json is None or not gcovr_json.exists():
+        return {}
+    try:
+        data = json.loads(gcovr_json.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    out: dict[str, set[int]] = {}
+    for f in data.get("files", []):
+        name = f.get("file", "")
+        reached: set[int] = set()
+        for line in f.get("lines", []):
+            if line.get("gcovr/noncode"):
+                continue
+            if line.get("count", 0) > 0:
+                ln = line.get("line_number")
+                if isinstance(ln, int):
+                    reached.add(ln)
+        if reached:
+            out[name] = reached
+    return out
+
+
+def _strip_string_literals(line: str) -> list[tuple[int, int]]:
+    """Return a list of (start, end) ranges that are inside "..." or
+    '...' literals — matches should be suppressed inside these."""
+    import re as _re
+    spans: list[tuple[int, int]] = []
+    # Non-greedy matcher for "..." and '...' respecting simple \" and \'.
+    for m in _re.finditer(r'"(?:\\.|[^"\\])*"', line):
+        spans.append(m.span())
+    for m in _re.finditer(r"'(?:\\.|[^'\\])*'", line):
+        spans.append(m.span())
+    return spans
+
+
+def _in_spans(pos: int, spans: list[tuple[int, int]]) -> bool:
+    for a, b in spans:
+        if a <= pos < b:
+            return True
+    return False
+
+
+def _enumerate_mutations(
+    scope_files: list[Path],
+    src_root: Path,
+    reachable: dict[str, set[int]] | None,
+) -> list[dict]:
+    """Return list of mutation dicts:
+      {file: str, rel: str, line: int, col: int,
+       orig: str, new: str, family: str}
+    Skips comment / preprocessor / string-literal matches and
+    (when reachable is provided) unreached lines."""
+    import re as _re
+    compiled = [(name, _re.compile(pat), rep) for name, pat, rep in _MUTATION_RULES_SRC]
+    mutations: list[dict] = []
+    for f in scope_files:
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        rel = str(f.resolve().relative_to(src_root.resolve())).replace("\\", "/")
+        reached_set = None
+        if reachable is not None:
+            reached_set = reachable.get(rel)
+            if reached_set is None:
+                # No coverage entry → no Phase-2 execution → skip this
+                # file. An empty dict (no cov data) falls back to
+                # "everything is reachable" via the None sentinel above.
+                if reachable:
+                    continue
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            stripped = line.lstrip()
+            if stripped.startswith(("#", "//", "/*", "*", "*/")):
+                continue
+            if reached_set is not None and line_no not in reached_set:
+                continue
+            spans = _strip_string_literals(line)
+            for name, pat, rep in compiled:
+                for m in pat.finditer(line):
+                    if _in_spans(m.start(), spans):
+                        continue
+                    mutations.append({
+                        "file": str(f),
+                        "rel": rel,
+                        "line": line_no,
+                        "col": m.start(),
+                        "orig": m.group(0),
+                        "new": rep,
+                        "family": name,
+                    })
+    return mutations
+
+
+def _apply_mutation_inplace(file_path: Path, line_no: int, col: int,
+                            orig: str, new: str) -> bytes:
+    """Apply a single (line, col, orig→new) mutation. Returns the
+    original file bytes so the caller can revert atomically."""
+    original = file_path.read_bytes()
+    text = original.decode("utf-8", errors="replace")
+    lines = text.split("\n")
+    if line_no - 1 >= len(lines):
+        raise RuntimeError(f"line {line_no} out of range for {file_path}")
+    line = lines[line_no - 1]
+    if line[col:col + len(orig)] != orig:
+        raise RuntimeError(
+            f"mutation anchor mismatch at {file_path}:{line_no}:{col}: "
+            f"expected {orig!r}, got {line[col:col + len(orig)]!r}"
+        )
+    new_line = line[:col] + new + line[col + len(orig):]
+    lines[line_no - 1] = new_line
+    file_path.write_text("\n".join(lines), encoding="utf-8")
+    return original
+
+
+def _revert_mutation(file_path: Path, original: bytes) -> None:
+    file_path.write_bytes(original)
+
+
+def _rebuild_mut_binary(build_dir: Path, binary_name: str = "seqan3_sam_fuzzer_mut",
+                        timeout_s: int = 120) -> tuple[bool, str]:
+    """Invoke `make` in `build_dir` to rebuild the mutation-test binary.
+
+    Returns (success, captured_stderr_tail). seqan3 header-only builds
+    recompile the single TU each time (~15-30 s on biotest-bench). A
+    compile failure is expected for a fraction of source mutations —
+    those are reported as 'equivalent (won't compile)' in the summary."""
+    # `touch` the source file to force make to pick up the header
+    # change even when the header's mtime is within the same second as
+    # the last build (a known gotcha on fast filesystems).
+    src = build_dir.parent.parent.parent / "harnesses" / "libfuzzer" / "seqan3_sam_fuzzer.cpp"
+    try:
+        os.utime(src, None)
+    except OSError:
+        pass
+    proc = subprocess.run(
+        ["make", "-s", binary_name],
+        cwd=str(build_dir),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        timeout=timeout_s, check=False,
+    )
+    ok = (proc.returncode == 0)
+    tail = (proc.stderr or b"").decode("utf-8", errors="replace")[-400:]
+    return ok, tail
+
+
+def _run_corpus_digest(binary: Path, corpus_files: list[Path],
+                        per_file_timeout_s: float) -> dict[str, str]:
+    """Replay each file through `binary`; return {name: digest-line}.
+
+    The digest-line is the first line of stdout (per-file single line
+    by design of BIOTEST_HARNESS_MUT_DIGEST), or a sentinel if the
+    binary crashed / timed out. This is the observable the mutation
+    driver diff-compares across baseline vs mutated runs to decide
+    kill vs survive (DESIGN §3.3 'parse-success flip / canonical-JSON
+    diff / crash flip')."""
+    out: dict[str, str] = {}
+    for f in corpus_files:
+        try:
+            with f.open("rb") as fh:
+                proc = subprocess.run(
+                    [str(binary)],
+                    stdin=fh, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    timeout=per_file_timeout_s, check=False,
+                )
+            line = (proc.stdout or b"").decode("utf-8", errors="replace").splitlines()
+            first = line[0] if line else ""
+            # Collapse exit code + first output line into one fingerprint;
+            # baseline "ok ... ..." and mutant "throw ..." diff out.
+            out[f.name] = f"rc={proc.returncode} {first}"
+        except subprocess.TimeoutExpired:
+            out[f.name] = "timeout"
+        except OSError as e:
+            out[f.name] = f"oserror:{e.errno}"
+    return out
+
+
+def _digest_diff(baseline: dict[str, str], mutated: dict[str, str]) -> list[str]:
+    """Return the list of file names where baseline != mutated."""
+    diffs = []
+    for k in baseline:
+        if mutated.get(k) != baseline[k]:
+            diffs.append(k)
+    # Files only in mutated (shouldn't happen unless corpus changed
+    # mid-run) also count.
+    for k in mutated:
+        if k not in baseline:
+            diffs.append(k)
+    return diffs
+
+
+def _write_vcf_na_summary(out: Path, args: argparse.Namespace) -> int:
+    """seqan3 has no VCF parser; emit a documented N/A payload."""
+    out.mkdir(parents=True, exist_ok=True)
+    summary = {
+        "tool": "libfuzzer",
+        "sut": "seqan3",
+        "format": "VCF",
+        "phase": "mutation",
+        "status": "not_applicable",
+        "reason": (
+            "seqan3 has no VCF parser. Flow.md §2.1 explicitly drops "
+            "seqan3 from the VCF differential matrix ('SeqAn3 暂不支持 "
+            "VCF IO'). biotest_config.yaml coverage.target_filters.VCF "
+            "has no `seqan3` key; the libFuzzer harness "
+            "(compares/harnesses/libfuzzer/seqan3_sam_fuzzer.cpp) "
+            "instantiates only `seqan3::sam_file_input` + "
+            "`seqan3::format_sam`. There is no VCF code in seqan3 to "
+            "mutate, so a VCF mutation score for this cell is "
+            "structurally undefined rather than zero."
+        ),
+        "mutator": "mull-substitute-v1 (custom source-level, "
+                   "glibc-22.04-compatible replacement for mull 0.33 "
+                   "which requires glibc 2.39; see "
+                   "compares/results/mutation/libfuzzer/seqan3_sam/"
+                   "summary.json for the SAM cell)",
+        "killed": None,
+        "reachable": None,
+        "score": None,
+        "mutator_count": 0,
+        "mutant_count": 0,
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=2),
+                                      encoding="utf-8")
+    (out / "config.json").write_text(json.dumps({
+        "args": {k: str(v) for k, v in vars(args).items()},
+        "format": "VCF",
+        "status": "not_applicable",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }, indent=2), encoding="utf-8")
+    print(f"mutation_driver: libfuzzer×seqan3/VCF → N/A ({out}/summary.json)")
+    return 0
+
+
+def _libfuzzer_seqan3_loop_in_container(args: argparse.Namespace) -> int:
+    """Inner mutation loop — expected to run inside biotest-bench."""
+    src_root = Path(args.seqan3_src_root)
+    scope_files = _seqan3_sam_scope_files(src_root)
+    if not scope_files:
+        print(f"mutation_driver: no seqan3 SAM scope files under "
+              f"{src_root}", file=sys.stderr)
+        return 2
+
+    # Reachability filter: prefer an explicit JSON, else regenerate
+    # from the Phase-2 _build-cov-iso .gcda files if they exist.
+    cov_json = Path(args.cov_report) if args.cov_report else None
+    if cov_json is None or not cov_json.exists():
+        cov_build = Path(args.cov_build_dir) if args.cov_build_dir else None
+        if cov_build and cov_build.exists():
+            derived = Path(args.out).resolve() / "_gcovr_reach.json"
+            derived.parent.mkdir(parents=True, exist_ok=True)
+            proc = subprocess.run(
+                ["gcovr", "--json", "--root", str(src_root),
+                 "--gcov-executable", "llvm-cov-18 gcov",
+                 "--output", str(derived), str(cov_build)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                timeout=300, check=False,
+            )
+            if proc.returncode == 0 and derived.stat().st_size > 0:
+                cov_json = derived
+    reachable = _load_reachable_lines(cov_json, scope_files)
+
+    mutations = _enumerate_mutations(scope_files, src_root, reachable)
+    if args.max_mutants and len(mutations) > args.max_mutants:
+        # Deterministic subset — spread evenly so every family surfaces.
+        step = max(1, len(mutations) // args.max_mutants)
+        mutations = mutations[::step][:args.max_mutants]
+
+    mut_bin = Path(args.mut_bin)
+    mut_build = Path(args.mut_build_dir)
+    if not mut_bin.exists():
+        print(f"mutation_driver: mut binary {mut_bin} missing — build "
+              "via `bash compares/scripts/build_harnesses.sh libfuzzer_mut`",
+              file=sys.stderr)
+        return 2
+    if not mut_build.exists():
+        print(f"mutation_driver: mut build dir {mut_build} missing",
+              file=sys.stderr)
+        return 2
+
+    corpus = Path(args.corpus)
+    if not corpus.exists():
+        print(f"mutation_driver: corpus {corpus} missing", file=sys.stderr)
+        return 2
+    all_corpus_files = sorted((p for p in corpus.iterdir() if p.is_file()),
+                              key=lambda p: p.name)
+    sample = (all_corpus_files[:args.corpus_sample]
+              if args.corpus_sample and len(all_corpus_files) > args.corpus_sample
+              else all_corpus_files)
+
+    out = Path(args.out).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    log_file = out / "runner.log"
+    log = log_file.open("w", encoding="utf-8")
+
+    def _log(msg: str) -> None:
+        log.write(msg + "\n"); log.flush()
+        print(msg, file=sys.stderr)
+
+    _log(f"[mut] scope files: {len(scope_files)}")
+    _log(f"[mut] reachable-lines map: {sum(len(v) for v in reachable.values()) if reachable else 'unfiltered'}")
+    _log(f"[mut] candidate mutations: {len(mutations)}")
+    _log(f"[mut] corpus sample: {len(sample)}/{len(all_corpus_files)}")
+    _log(f"[mut] mut binary: {mut_bin}")
+    _log(f"[mut] mut build dir: {mut_build}")
+
+    # Baseline run. Do NOT rebuild (the supplied binary is already the
+    # baseline); replay corpus and collect digests.
+    started_all = time.time()
+    baseline = _run_corpus_digest(mut_bin, sample, args.per_file_timeout_s)
+    (out / "baseline.json").write_text(json.dumps(baseline, indent=2),
+                                       encoding="utf-8")
+    _log(f"[mut] baseline digests collected ({len(baseline)} files) in "
+         f"{time.time()-started_all:.1f}s")
+
+    details = []
+    killed = survived = compile_errors = equivalent = 0
+    t_overall = time.time()
+    hit_budget = False
+    for idx, m in enumerate(mutations, start=1):
+        if args.budget and (time.time() - t_overall) > args.budget:
+            hit_budget = True
+            _log(f"[mut] budget {args.budget}s exhausted at mutant {idx-1}; "
+                 "stopping")
+            break
+        file_path = Path(m["file"])
+        mut_started = time.time()
+        try:
+            original = _apply_mutation_inplace(
+                file_path, m["line"], m["col"], m["orig"], m["new"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            _log(f"[mut] skip #{idx} {m['rel']}:{m['line']} {m['family']}: {exc}")
+            continue
+
+        try:
+            ok, stderr_tail = _rebuild_mut_binary(mut_build)
+            if not ok:
+                compile_errors += 1
+                details.append({**m, "outcome": "compile_error",
+                                 "stderr_tail": stderr_tail[-200:]})
+                _log(f"[mut] #{idx:<4} COMPILE_ERROR "
+                     f"{m['rel']}:{m['line']} {m['family']} "
+                     f"({time.time()-mut_started:.1f}s)")
+                continue
+
+            mutated = _run_corpus_digest(mut_bin, sample, args.per_file_timeout_s)
+            diffs = _digest_diff(baseline, mutated)
+            if diffs:
+                killed += 1
+                details.append({**m, "outcome": "killed",
+                                 "diff_files": diffs[:5],
+                                 "diff_count": len(diffs)})
+                _log(f"[mut] #{idx:<4} KILLED      "
+                     f"{m['rel']}:{m['line']} {m['family']} "
+                     f"{m['orig']!r}→{m['new']!r} "
+                     f"(diff on {len(diffs)} files, "
+                     f"{time.time()-mut_started:.1f}s)")
+            else:
+                survived += 1
+                details.append({**m, "outcome": "survived"})
+                _log(f"[mut] #{idx:<4} SURVIVED    "
+                     f"{m['rel']}:{m['line']} {m['family']} "
+                     f"{m['orig']!r}→{m['new']!r} "
+                     f"({time.time()-mut_started:.1f}s)")
+        finally:
+            _revert_mutation(file_path, original)
+
+    total_run = killed + survived
+    score = (killed / total_run) if total_run else None
+    summary = {
+        "tool": "libfuzzer",
+        "sut": "seqan3",
+        "format": "SAM",
+        "phase": "mutation",
+        "status": "ok",
+        "mutator": "mull-substitute-v1",
+        "mutator_note": (
+            "Mull 0.33 ships as a 24.04 deb (glibc 2.39); biotest-bench "
+            "is 22.04 (glibc 2.35) so mull-runner-18/mull-ir-frontend-18 "
+            "fail at load time. This driver applies the same ROR / AOR / "
+            "LOR operator families mull's --mutators=default emits, "
+            "scoped to the same seqan3 SAM source paths, and uses the "
+            "same DESIGN §3.3 kill semantics (parse-success flip / "
+            "canonical-JSON digest diff / crash flip)."
+        ),
+        "mutators_used": sorted({r[0] for r in _MUTATION_RULES_SRC}),
+        "scope_files": len(scope_files),
+        "candidate_mutants": len(mutations),
+        "executed_mutants": killed + survived + compile_errors,
+        "killed": killed,
+        "survived": survived,
+        "compile_errors": compile_errors,
+        "equivalent": equivalent,
+        "reachable": total_run,   # mutants that compiled + ran
+        "mutant_count": len(mutations),
+        "mutator_count": len({r[0] for r in _MUTATION_RULES_SRC}),
+        "score": round(score, 4) if score is not None else None,
+        "corpus_dir": str(corpus),
+        "corpus_sample": len(sample),
+        "corpus_total": len(all_corpus_files),
+        "per_file_timeout_s": args.per_file_timeout_s,
+        "budget_s": args.budget,
+        "budget_hit": hit_budget,
+        "duration_s": round(time.time() - t_overall, 2),
+        "cov_reachability_json": str(cov_json) if cov_json else None,
+        "mut_binary": str(mut_bin),
+        "mut_build_dir": str(mut_build),
+    }
+    (out / "summary.json").write_text(json.dumps(summary, indent=2),
+                                      encoding="utf-8")
+    (out / "details.json").write_text(json.dumps(details, indent=2),
+                                      encoding="utf-8")
+    _log(f"[mut] done: killed={killed} survived={survived} "
+         f"compile_errors={compile_errors} score="
+         f"{summary['score']} elapsed={summary['duration_s']}s")
+    log.close()
+    return 0
+
+
+def _run_libfuzzer_seqan3(args: argparse.Namespace, fmt: str) -> int:
+    """Host-side dispatcher for libFuzzer × seqan3 mutation testing.
+
+    VCF: emits an N/A summary immediately — seqan3 has no VCF parser.
+    SAM: if this process is already running inside biotest-bench (the
+    seqan3 source tree at /opt/seqan3/include is present), run the
+    mutation loop directly; otherwise shell into the bench container
+    via `docker run` and re-invoke this script with --in-container.
+    """
+    out = args.out.resolve()
+    out.mkdir(parents=True, exist_ok=True)
+
+    if fmt == "VCF":
+        return _write_vcf_na_summary(out, args)
+
+    # SAM path
+    ctr_src = Path(_SEQAN3_SRC_ROOT_IN_CTR)
+    in_container = ctr_src.exists()
+    if args.in_container or in_container:
+        # Pick up defaults for in-container paths if caller didn't override.
+        if not args.seqan3_src_root:
+            args.seqan3_src_root = _SEQAN3_SRC_ROOT_IN_CTR
+        if not args.mut_build_dir:
+            args.mut_build_dir = str(REPO_ROOT /
+                "compares/results/coverage/libfuzzer/seqan3/_build-mut-iso")
+        if not args.mut_bin:
+            args.mut_bin = str(Path(args.mut_build_dir) / "seqan3_sam_fuzzer_mut")
+        if not args.cov_build_dir:
+            args.cov_build_dir = str(REPO_ROOT /
+                "compares/results/coverage/libfuzzer/seqan3/_build-cov-iso")
+        return _libfuzzer_seqan3_loop_in_container(args)
+
+    # Host path — spawn biotest-bench and re-invoke this script.
+    # Before spawning, make sure the mutation binary exists inside the
+    # container. Caller is responsible for having run build_harnesses.sh
+    # libfuzzer_mut; we don't auto-build here (that would mask build
+    # problems behind a long-running mutation campaign).
+    corpus_ctr = _ctr_path(args.corpus) if args.corpus.exists() else str(args.corpus)
+    out_ctr = _ctr_path(out)
+    cov_build_default = (REPO_ROOT /
+        "compares/results/coverage/libfuzzer/seqan3/_build-cov-iso")
+    mut_build_default = (REPO_ROOT /
+        "compares/results/coverage/libfuzzer/seqan3/_build-mut-iso")
+    if not mut_build_default.exists():
+        print(
+            f"mutation_driver: mut build dir missing at {mut_build_default}. "
+            "Run this first inside biotest-bench:\n  bash compares/docker/run.sh bash -lc '"
+            f"mkdir -p {_ctr_path(mut_build_default)} && "
+            f"cd {_ctr_path(mut_build_default)} && "
+            "cmake /work/compares/harnesses/libfuzzer -DCMAKE_CXX_COMPILER=clang++-18 "
+            "-DCMAKE_CXX_FLAGS=-DSEQAN3_DISABLE_COMPILER_CHECK && "
+            "make seqan3_sam_fuzzer_mut'",
+            file=sys.stderr,
+        )
+        return 2
+    inner = [
+        SYSTEM_PY, "/work/compares/scripts/mutation_driver.py",
+        "--tool", "libfuzzer", "--sut", "seqan3", "--format", "SAM",
+        "--in-container",
+        "--corpus", corpus_ctr,
+        "--out", out_ctr,
+        "--max-mutants", str(args.max_mutants),
+        "--corpus-sample", str(args.corpus_sample),
+        "--per-file-timeout-s", str(args.per_file_timeout_s),
+        "--budget", str(args.budget),
+        "--seqan3-src-root", _SEQAN3_SRC_ROOT_IN_CTR,
+        "--mut-build-dir", _ctr_path(mut_build_default),
+        "--mut-bin", _ctr_path(mut_build_default) + "/seqan3_sam_fuzzer_mut",
+        "--cov-build-dir", _ctr_path(cov_build_default),
+    ]
+    if args.cov_report:
+        inner += ["--cov-report", str(args.cov_report)]
+
+    stdout_log = out / "container.stdout.log"
+    stderr_log = out / "container.stderr.log"
+    rc = _docker_run(inner, stdout_file=stdout_log, stderr_file=stderr_log,
+                     timeout_s=args.budget + 1800)
+    if rc != 0:
+        print(f"mutation_driver: in-container libfuzzer×seqan3 exited rc={rc}; "
+              f"see {stderr_log}", file=sys.stderr)
+    return rc
+
+
 def _cli() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--tool", required=True, choices=["atheris", "cargo_fuzz"],
+    p.add_argument("--tool", required=True,
+                   choices=["atheris", "cargo_fuzz", "libfuzzer"],
                    help="Phase-2 tool whose corpus is the 'test suite'.")
-    p.add_argument("--sut", required=True, choices=["vcfpy", "noodles"],
+    p.add_argument("--sut", required=True,
+                   choices=["vcfpy", "noodles", "seqan3"],
                    help="SUT under mutation.")
+    p.add_argument("--format", default=None, choices=["SAM", "VCF"],
+                   help="Format — only consumed by libfuzzer×seqan3. seqan3 "
+                        "has no VCF parser so the VCF cell emits a documented "
+                        "N/A summary without running mutations.")
     p.add_argument("--corpus", type=Path,
                    default=REPO_ROOT / "compares/results/mutation/atheris/vcfpy/union_corpus",
                    help="Tool's accepted-input corpus directory. If missing, "
@@ -682,6 +1319,31 @@ def _cli() -> int:
                         "small hosts).")
     p.add_argument("--force-baseline", action="store_true",
                    help="Rebuild the baseline fingerprint even if it exists.")
+
+    # libfuzzer × seqan3 — source-level mutation flags
+    p.add_argument("--max-mutants", type=int, default=60,
+                   help="Max mutations sampled per libFuzzer × seqan3 run. "
+                        "Budget math: ~15-25 s per mutant (Clang full-TU "
+                        "rebuild) + ~5 s corpus replay. 60 mutants ≈ 25 min.")
+    p.add_argument("--seqan3-src-root", default=None,
+                   help="seqan3 source root (inside biotest-bench "
+                        "/opt/seqan3/include). Auto-detected in-container.")
+    p.add_argument("--mut-build-dir", default=None,
+                   help="Build dir for seqan3_sam_fuzzer_mut. Defaults to "
+                        "compares/results/coverage/libfuzzer/seqan3/"
+                        "_build-mut-iso.")
+    p.add_argument("--mut-bin", default=None,
+                   help="Override the mutation-test binary path.")
+    p.add_argument("--cov-build-dir", default=None,
+                   help="Phase-2 _build-cov-iso dir used as the "
+                        "reachability-filter gcovr source.")
+    p.add_argument("--cov-report", default=None,
+                   help="Explicit gcovr JSON for reachability filtering. "
+                        "If omitted, regenerated from --cov-build-dir.")
+    p.add_argument("--in-container", action="store_true",
+                   help="Internal flag: set when the script re-invokes "
+                        "itself inside biotest-bench. Users should not set "
+                        "this by hand.")
     args = p.parse_args()
 
     if args.tool == "atheris" and args.sut == "vcfpy":
@@ -694,6 +1356,21 @@ def _cli() -> int:
         if args.out == REPO_ROOT / "compares/results/mutation/atheris/vcfpy":
             args.out = REPO_ROOT / "compares/results/mutation/cargo_fuzz/noodles"
         return _run_cargo_fuzz_noodles(args)
+    if args.tool == "libfuzzer" and args.sut == "seqan3":
+        fmt = (args.format or "SAM").upper()
+        if fmt not in {"SAM", "VCF"}:
+            print(f"mutation_driver: --format must be SAM or VCF, got {args.format!r}",
+                  file=sys.stderr)
+            return 2
+        # Resolve cell-specific defaults if the caller didn't override.
+        default_out_sam = REPO_ROOT / "compares/results/mutation/libfuzzer/seqan3_sam"
+        default_out_vcf = REPO_ROOT / "compares/results/mutation/libfuzzer/seqan3_vcf"
+        if args.out == REPO_ROOT / "compares/results/mutation/atheris/vcfpy":
+            args.out = default_out_sam if fmt == "SAM" else default_out_vcf
+        if args.corpus == REPO_ROOT / "compares/results/mutation/atheris/vcfpy/union_corpus":
+            args.corpus = (REPO_ROOT /
+                           "compares/results/coverage/libfuzzer/seqan3/run_0/corpus")
+        return _run_libfuzzer_seqan3(args, fmt)
     print(f"mutation_driver: (tool={args.tool!r}, sut={args.sut!r}) not supported",
           file=sys.stderr)
     return 2

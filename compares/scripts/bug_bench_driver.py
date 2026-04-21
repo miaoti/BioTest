@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -139,7 +140,14 @@ def _install_vcfpy(version: str) -> None:
 
 
 def _rewrite_noodles_pin(cargo_toml: Path, version: str) -> None:
-    """Rewrite the `noodles-vcf = ...` version pin in a Cargo.toml file."""
+    """Rewrite the `noodles-vcf = ...` version pin in a Cargo.toml file.
+
+    Idempotent: if the pin is already the target version, this is a no-op
+    and the function returns successfully. A prior bug (fixed 2026-04-20)
+    treated "text unchanged after re.sub" as "regex didn't match", which
+    produced spurious "could not find version pin" errors whenever the
+    anchor group's target version happened to equal the current pin.
+    """
     import re
     text = cargo_toml.read_text(encoding="utf-8")
     patterns = [
@@ -149,12 +157,15 @@ def _rewrite_noodles_pin(cargo_toml: Path, version: str) -> None:
          rf'\g<1>{version}\g<2>'),
     ]
     new_text = text
+    total_subs = 0
     for pat, repl in patterns:
-        new_text = re.sub(pat, repl, new_text)
-    if new_text == text:
+        new_text, n = re.subn(pat, repl, new_text)
+        total_subs += n
+    if total_subs == 0:
         raise RuntimeError(
             f"could not find noodles-vcf version pin in {cargo_toml}")
-    cargo_toml.write_text(new_text, encoding="utf-8")
+    if new_text != text:
+        cargo_toml.write_text(new_text, encoding="utf-8")
 
 
 def _install_noodles(version: str) -> None:
@@ -177,10 +188,15 @@ def _install_noodles(version: str) -> None:
 
     # Primary harness (canonical-JSON). Always rewrite + rebuild.
     _rewrite_noodles_pin(NOODLES_CARGO_TOML, version)
+    # cargo ships under /root/.cargo/bin inside biotest-bench:latest;
+    # docker exec doesn't inherit login-shell PATH, so subprocess lookup
+    # fails without this prepend (fixed 2026-04-20).
+    env = os.environ.copy()
+    env["PATH"] = f"/root/.cargo/bin:{env.get('PATH', '')}"
     subprocess.run(
         ["cargo", "build", "--release",
          "--manifest-path", str(NOODLES_CARGO_TOML)],
-        check=True, capture_output=True,
+        check=True, capture_output=True, env=env,
     )
 
     # cargo-fuzz target. Best-effort: if the fuzz Cargo.toml exists,
@@ -242,10 +258,16 @@ def install_sut(sut: str, anchor: dict[str, Any], which: str) -> None:
 
 # ---------- Verification ----------------------------------------------
 
-def verify_bug(bug: dict[str, Any]) -> tuple[bool, str]:
-    """Confirm pre-fix and post-fix are both installable.
+def verify_bug(bug: dict[str, Any], *, install: bool = False) -> tuple[bool, str]:
+    """Check bug is runnable. If `install=True`, also exercise both
+    pre-fix and post-fix installs (slow — only used in --verify-only).
 
-    Does NOT run the fuzzer; just exercises the install step.
+    Default behaviour (install=False) is a metadata-only check: we
+    confirm the anchor is present and not marked PENDING/feature_gap.
+    The main anchor-grouped loop (run_bench) handles real install
+    failures by wrapping install_sut in a try/except and recording a
+    cell-level error record — so preflight-installing every bug here
+    would just double the install-swap count for no gain.
     """
     anchor = bug["anchor"]
     if anchor.get("type") == "feature_gap":
@@ -258,12 +280,14 @@ def verify_bug(bug: dict[str, Any]) -> tuple[bool, str]:
             f"rule: {anchor.get('verification_rule')}"
         )
 
-    try:
-        install_sut(bug["sut"], anchor, "pre_fix")
-        install_sut(bug["sut"], anchor, "post_fix")
-    except Exception as e:
-        return False, f"install failed: {e}"
-    return True, "installable"
+    if install:
+        try:
+            install_sut(bug["sut"], anchor, "pre_fix")
+            install_sut(bug["sut"], anchor, "post_fix")
+        except Exception as e:
+            return False, f"install failed: {e}"
+        return True, "installable"
+    return True, "anchor ok"
 
 
 # ---------- Adapter dispatch ------------------------------------------
@@ -533,7 +557,8 @@ def _verify_only(manifest_path: Path, out_path: Path | None) -> None:
     verified: list[str] = []
     dropped: list[dict[str, str]] = []
     for bug in manifest.get("bugs", []):
-        ok, reason = verify_bug(bug)
+        # --verify-only explicitly wants to exercise both installs.
+        ok, reason = verify_bug(bug, install=True)
         if ok:
             verified.append(bug["id"])
             print(f"[ok]   {bug['id']}")

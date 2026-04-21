@@ -709,9 +709,11 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 | 2026-04-16 | Initial design drafted with EvoSuite + Randoop as primary baselines. | Automated assistant session |
 | 2026-04-19 | **Full rewrite.** EvoSuite + Randoop demoted to white-box anchor. Added Jazzer / Atheris / libFuzzer as fair E2E baselines per language. Added real-bug detection rate + TTFB metrics. Added 32-bug candidate manifest (Appendix A). Locked slim 13-cell matrix with 2h × 3 reps primary and 2h × 1 bug-bench. Added citation table. Documented WSL2 seqan3 prerequisite. | Automated assistant session |
 | 2026-04-20 | **pysam primary-SUT removed; replaced with vcfpy + noodles-vcf.** Reason: pysam's VCF logic is Cython-compiled (`libcbcf.pyx` → `.so`), which `coverage.py` cannot trace — Phase-2 coverage growth and Phase-3 mutation score for pysam were a sliver of the real surface, a fabrication risk. Added **vcfpy** (bihealth/vcfpy — pure-Python VCF parser) and **noodles-vcf** (zaeleus/noodles — pure-Rust VCF parser), both coverage-instrumentable by their native tooling. Matrix widened from 13 → 15 primary cells; VCF row now has three independently-implemented parsers (htsjdk, vcfpy, noodles-vcf) vs the old two (htsjdk, pysam-wrapping-htslib). pysam retained as a voter in the differential/consensus oracle (`pysam_runner.py` + `htslib_runner.py` stay enabled) so its htslib-bound behaviour still contributes to cross-parser disagreement, but it is not scored. Added cargo-fuzz (Rust fuzzer) + cargo-mutants (Rust mutation) to the toolchain. Appendix A re-scoped: A.2 now vcfpy (7 candidates), A.3 noodles-vcf (9 candidates), A.4 biopython, A.5 seqan3; 12 historical pysam candidates preserved under A.6. Risk 4 added to §9 to document the rationale. | Automated assistant session |
-| 2026-04-20 | **Phase 3 — Atheris × biopython (mutmut-style, Python) tooling complete + representative run landed.** `compares/harnesses/atheris/phase3_mutation_loop.py` implements an in-container AST-mutation + corpus-replay driver over `Bio/Align/sam.py` using mutmut-style operators (arithmetic swap, comparison flip, boolean swap, `not` removal, constant mutation). A mutant is killed iff any corpus file's `(ok, aln_count, err_type)` tuple diverges from the unmutated baseline. `compares/scripts/phase3_atheris_biopython.sh` wraps the loop for fire-and-forget invocation. Results flow to `compares/results/mutation/atheris/biopython/{summary.json, mutants.jsonl, MUTATION_RESULTS.md}` (DESIGN §4.5 schema). The 523-mutant scope was generated from the `sam.py` AST; the representative run tests these against the 390-file rep-0 Phase-2 corpus (baseline 61 / 390 parseable). Mutation score written to MUTATION_RESULTS.md after the loop completes. | Automated assistant session |
+| 2026-04-20 | **Phase 3 — Atheris × biopython (mutmut-style, Python) complete.** `compares/harnesses/atheris/phase3_mutation_loop.py` implements an in-container AST-mutation + corpus-replay driver over `Bio/Align/sam.py` using mutmut-style operators (arithmetic swap, comparison flip, boolean swap, `not` removal, constant mutation). A mutant is killed iff any corpus file's `(ok, aln_count, err_type)` tuple diverges from the unmutated baseline. `compares/scripts/phase3_atheris_biopython.sh` wraps the loop; `compares/scripts/rescope_mutation_to_reached.py` post-processes the output to the DESIGN §3.3 canonical scope (mutants on corpus-reached lines only). **Run result (1500 s budget, rep-0 Phase-2 corpus, SAM-only scope per Flow.md §coverage_target_filters.SAM)**: 523 AST mutants generated; after reached-lines filter (327 / 598 statements) the canonical score is **0.5849 (155 killed / 265 reachable)**; unfiltered score on the full file is 0.2951 (152 / 515). Loop completed in 1 049.8 s. Full write-up, per-operator breakdown, and top-killed mutants at `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`. Checkbox flipped `[ ] → [x]` on the `Atheris × biopython — mutmut (Python)` row in §13.5 Phase 3. | Automated assistant session |
 | 2026-04-20 | **Phase 2 — Atheris × biopython (SAM only) tooling complete + secondary-regime run landed.** `compares/harnesses/atheris/fuzz_biopython.py` upgraded to the DESIGN §13.5 coverage-growth contract (`--cov-data-file`, `--cov-growth-out`, `--cov-sample-ticks`) matching the `fuzz_vcfpy.py` template; scoped to `coverage.Coverage(source=['Bio.Align.sam'], branch=True)`. `compares/scripts/coverage_sampler.py` `_run_atheris_rep` extended with a `(sut, format) → harness` dispatch (`_ATHERIS_CELLS`), the libFuzzer argv now carries `-ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1` so the fuzz loop keeps running past every known biopython defect, and `_compute_pct` no longer calls the broken `Coverage.json_report(outfile=StringIO)` — reads `CoverageData` + `analysis2` directly. Three Phase-2 ordering fixes baked in (all traced to smoke failures): numpy+Bio.Align pre-import before `coverage.start()`, broadened `except Exception` in the fuzz target, and numpy double-load guard. **Secondary regime** (300 s × 3 reps, ticks `{1, 10, 60, 300}`) executed; produces `compares/results/coverage/atheris/biopython/growth_{0,1,2}.json` that validate clean against DESIGN §4.5. **Primary regime** (7200 s × 3 reps, full tick set) queued for overnight — same invocation with `--budget 7200 --reps 3`. | Automated assistant session |
 | 2026-04-20 | **Phase 2 — Atheris × vcfpy (VCF only) complete: 7200 s × 3 reps, full DESIGN §3.2 tick set.** `compares/harnesses/atheris/fuzz_vcfpy.py` rebuilt to the coverage-growth contract matching `fuzz_biopython.py`: `coverage.Coverage(source=['vcfpy'], branch=True)` started before `atheris.instrument_imports()`, daemon snapshot thread calls `cov.save()` at each tick and writes `<rep>/harness_growth.json`. `compares/scripts/coverage_sampler.py: _run_atheris_rep` dispatches `(vcfpy, VCF) → fuzz_vcfpy.py` through a docker-based invocation + post-hoc tick-7200 capture via `_compute_final_pct_from_cov` (libFuzzer's `_exit()` bypasses Python atexit/finally, so the terminal `.coverage` DB is re-read in a side container). New flag `--start-rep-idx` lets three concurrent sampler processes share one cell dir without overwriting. Added companion scripts `compares/scripts/coverage_rollup.py` (writes `growth_aggregate.json` per cell + a 33-row `summary.csv`) and `compares/scripts/validate_growth_schema.py` (enforces DESIGN §4.5 keys + monotonic line-pct). Five defects fixed along the way: (1) Windows-host docker mount path rewrite `C:/…` → `/c/…` so `docker run -v <src>:/work` doesn't misparse the drive-letter colon as mount mode; (2) broadened `except BaseException` in the vcfpy fuzz target so coverage campaigns don't short-circuit on the vcfpy-146 class of `TypeError`; (3) `biotest-bench:latest` live-patched (via `docker commit`) to install `vcfpy==0.14.0` into the `/opt/atheris-venv/` 3.11 layer (image shipped vcfpy only in 3.12 site-packages pre-patch); (4) `Coverage.json_report(outfile=…)` fixed to use a tempfile path (coverage 7.6 rejects `StringIO` with `TypeError: expected str, bytes or os.PathLike`); (5) SIGHUP on parent-shell-exit crashed reps 1/2 at 169 s — re-launched with `nohup … &; disown` so the samplers survive the outer Bash's lifecycle. **Measured (3-rep mean ± 95 % CI)**: `line_pct 52.47 → 53.60 → 54.44 → 54.79 → 55.01 → 55.01` at ticks `{1, 10, 60, 300, 1800, 7200}`; `branch_pct 40.46 → 42.50 → 43.76 → 44.53 → 44.85 → 44.85`. Schema validator (`validate_growth_schema.py`) prints `ALL PASS` for all 3 `growth_{0,1,2}.json` against the DESIGN §13.5 one-liner. Coverage plateaus at the 1800 s tick because vcfpy's reachable surface (1 622 tracked statements, 524 branches) is small and atheris saturates it within 30 min — no new exercise in the last 90 min of each rep. | Automated assistant session |
+| 2026-04-20 | **Phase 3 — Atheris × vcfpy (mutmut, Python) complete: 89.59 % mutation score in 1 022 s.** `compares/scripts/mutation_driver.py` extended with a `(atheris, vcfpy)` backend that drives mutmut 3.0 through `compares/scripts/mutation/run_mutmut.py` (monkey-patches `CatchOutput` → no-op so pytest's capture doesn't deadlock, re-exports `record_trampoline_hit` + `MutmutProgrammaticFailException` so the trampoline's `from __main__ import …` works via wrapper). Per-cell flow: copy pristine vcfpy into `<out>/vcfpy/`, union the three Phase-2 rep-corpora into `<out>/union_corpus/` (1 025 files), pre-generate mutants via direct `mutmut.__main__.create_mutants()` call, capture baseline against the rewritten tree with `MUTANT_UNDER_TEST=''`, then invoke `mutmut run` which auto-copies `<out>/tests/test_vcfpy_corpus.py` into `<out>/mutants/tests/` and runs it per-mutant. Fingerprint rewritten to count-based integer aggregates (`{open_ok, n_header_lines, n_records, Σ POS, Σ len(REF), Σ ord(CHROM), INFO/FORMAT/ALT/calls/FILTER cardinality sums, mid-iteration exception class}`) — an earlier `repr(record)` hash caught trampoline-induced micro-differences as false kills. VCF scope honoured per Flow.md §1149 (`target_filters.VCF.vcfpy: reader, parser, header, record, writer`): `setup.cfg do_not_mutate` strips `__init__ / version / tabix / bgzf` (though mutmut 3.0's fnmatch path-match quirk still generates those mutants — they land cleanly in `no_tests` because the read-only atheris harness never reaches bgzf/tabix code, so they're excluded from the score denominator anyway). **Run result** (3 600 s budget, 40-file per-mutant corpus sample, 1 025-file union corpus, Phase-2 atheris seeds): **852 killed / 951 reachable → 89.59 %**, 99 survived, 1 387 no-tests, 2 338 mutants total, mutmut exit 0 in 1 021.87 s. Per-file: `header.py` 100 % (300/300), `record.py` 100 % (63/63), `reader.py` 90.48 % (19/21), `parser.py` 82.89 % (470/567); `writer.py` + `bgzf.py` + `tabix.py` all 0 reachable (read-only harness never exercises them). Full methodology + per-file breakdown + top-surviving mutants at `compares/results/mutation/atheris/vcfpy/MUTATION_REPORT.md`. Checkbox flipped `[ ] → [x]` on the `Atheris × vcfpy — mutmut (Python)` row in §13.5 Phase 3. | Automated assistant session |
+| 2026-04-20 | **Phase 3 — cargo-fuzz × noodles-vcf cargo-mutants run landed.** Extended `compares/scripts/mutation_driver.py` with a `cargo_fuzz × noodles` backend: materialises `compares/baselines/noodles-vcf-0.70-src/` from the cargo registry cache (no external clone), drops `tests/biotest_corpus_oracle.rs` into the crate (reads Phase-2 corpus, parses with noodles-vcf, fingerprints `{accepted, record_count, sample_count, first_error}` per file, panics on mismatch vs baseline), then runs `cargo mutants --file "src/io/reader/**" --file "src/record.rs" --file "src/record/**" --file "src/header.rs" --cargo-test-arg "--test" --cargo-test-arg "biotest_corpus_oracle"` scoped to the VCF-read paths the fuzz target exercises (writer / async / indexer / variant abstract traits excluded per DESIGN §3.3 reachability rule + Flow.md line 1150 target_filters). Installed `cargo-mutants 27.0.0` into `biotest-bench:latest` via `cargo install --locked` + `docker commit`; re-installed `rustup llvm-tools-preview` in the same session. Full run: 483 mutants in 33 min, 21 caught + 7 timeout = 28 killed / 299 reachable (184 unviable excluded per cargo-mutants convention) → **9.36 % mutation score**. All 21 caught mutants are in parser core (`src/header.rs`, `src/io/reader/{header,record}.rs`); the 271 survived are almost all in field-accessor methods the read-only fuzz target never calls — a richer oracle would kill more, exactly the "coverage vs defect-detection" gap DESIGN §3.3 rationale flags (Phase-2 line coverage 22.72 % vs Phase-3 mutation score 9.36 % = 13 pp oracle-quality gap). Results at `compares/results/mutation/cargo_fuzz/noodles/` with sibling `RESULTS.md`. `mutation_driver.py` CLI widened: `--tool` now accepts `cargo_fuzz`, `--sut` accepts `noodles`; new flags `--mutation-files`, `--per-mutant-timeout-s`, `--jobs`, `--force-baseline`. | Automated assistant session |
 | 2026-04-20 | **Phase 2 — cargo-fuzz × noodles-vcf (VCF only) sampler built + primary-regime production run launched.** `compares/scripts/coverage_sampler.py` grew a new `_run_cargo_fuzz_rep` backend: spawns `run_cargo_fuzz.run()` in a background thread for the wall-clock budget, and at each DESIGN §3.2 log tick `{1,10,60,300,1800,7200}` snapshots the live `<out_rep>/corpus/` directory and replays it through a **separately built** source-coverage-instrumented copy of `harnesses/rust/noodles_harness/` (RUSTFLAGS=-C instrument-coverage applied via a plain `cargo build --release`, not `cargo llvm-cov` — the wrapper only instruments workspace members and hides noodles-vcf's 0% coverage). Per-tick profile dirs `<out_rep>/profile/tick_<t>/cov-*.profraw` are merged with `llvm-profdata merge -sparse`, exported via `llvm-cov export -format=text <binary>`, and filtered to files whose path contains `noodles-vcf` — the same filter `NoodlesCoverageCollector` uses at Phase D. `llvm-profdata` + `llvm-cov` come from rustup's `llvm-tools-preview` component; `cargo-llvm-cov 0.8.5` was installed via `cargo install --locked` and committed into `biotest-bench:latest` alongside. New wrapper `compares/scripts/phase2_cargo_fuzz_noodles.sh` mirrors `phase2_jazzer_htsjdk.sh` (env-configurable `BUDGET_S`, `REPS`, `TICKS`; default = DESIGN primary). 60-s validation pass on the 33-file Tier-1+2 VCF seed corpus produced monotonic growth `line_pct 14.89 → 17.08 → 18.96 %` with corpus growing 37 → 441 → 801 files — schema matches DESIGN §4.5 exactly. **Primary regime (1800 s × 3 reps, ticks `{1,10,60,300,1800}`) executed** under `biotest-bench:latest` kept alive with `sleep infinity`; mean line coverage at t=1800 s = **22.72 %** across the 3 reps (max-min spread 0.51 pp, 95 % CI ≈ ±0.59 pp), three clean `growth_{0,1,2}.json` files written to `compares/results/coverage/cargo_fuzz/noodles/`, every file validating clean against §4.5. 7200 s final tick deferred to a separate long-running session (≈ 6 wall-hours; re-invoke `phase2_cargo_fuzz_noodles.sh` with `BUDGET_S=7200`). | Automated assistant session |
 | 2026-04-20 | **Wire-up complete: vcfpy + noodles-vcf bugs are now fully operator-hands-off.** `manifest.json` grew from 44 → 60 candidates; `manifest.verified.json` frozen at **35 bugs** (htsjdk 12, vcfpy 7, noodles 9, biopython 1, seqan3 6) via three idempotent scripts (`append_vcfpy_noodles.py` + `add_new_to_dropped.py` + `freeze_verified.py`). Added to `bug_bench_driver.py`: `_install_vcfpy` helper (pip via new 3.11 venv) + `_install_noodles` helper (rewrites both `Cargo.toml` files — canonical-JSON harness + cargo-fuzz target — then `cargo build --release`) + `install_sut` dispatch branches + MATRIX rows for vcfpy and noodles. Added adapters: `run_cargo_fuzz.py` (wired into `invoke_adapter`) and Atheris routing for `sut == "vcfpy"`. Added harnesses: `compares/harnesses/atheris/fuzz_vcfpy.py` (VCF-only vcfpy driver) and `compares/harnesses/cargo_fuzz/fuzz/fuzz_targets/noodles_vcf_target.rs` + its `fuzz/Cargo.toml` (libFuzzer-runtime Rust target). Extended `prepare_sut_install_envs.sh` with `make_venv vcfpy ... 0.14.0` + noodles Cargo.toml probes. Extended `write_triggers.py` with 11 minimal text-format `original.vcf` reproducers for the new bugs. Walltime updated to 117 cells × 2 h = 234 wall-hours ≈ 2.5 wall-days parallelised 4-way (was ~1.7 days pre-refactor; delta is the +36 net VCF cells). **Operator flow during Phase 4 is zero-manual-step**: one-time `prepare_sut_install_envs.sh` + `cargo fuzz build noodles_vcf_target --release`, then `python3.12 compares/scripts/bug_bench_driver.py --manifest compares/bug_bench/manifest.verified.json` runs the full 35-bug bench with automated pre_fix / post_fix swaps for every anchor type (`install_version`, `cargo_version`, `maven_jar`, `commit_sha`). | Automated assistant session |
 
@@ -1516,19 +1518,19 @@ primary-SUT language family.
   on the image. Binaries at `/usr/bin/mull-runner-18` +
   `/usr/lib/mull-ir-frontend-18`. Probe:
   `mull-runner-18 --version` reports `0.33.0`.
-- [ ] **cargo-mutants (Rust, noodles-vcf)** — scheduled 2026-04-20.
-  Install via `cargo install cargo-mutants --locked`; runs as
-  `cargo mutants --package noodles-vcf` against the harness crate
-  (which pulls noodles-vcf transitively) or directly against a
-  checkout of the noodles monorepo. Probe:
-  ```bash
-  /root/.cargo/bin/cargo mutants --version  # expect 25.x
-  ```
-  Scope: `cargo mutants --in-place --package noodles-vcf` restricts
-  mutants to the `noodles-vcf` crate source (not the harness or
-  other noodles subcrates). Expected runtime per-mutant is similar
-  to mull (Rust builds a full crate per mutant but incremental
-  caching keeps this ≤ 10s/mutant on modern hardware).
+- [x] **cargo-mutants (Rust, noodles-vcf)** — installed + Phase 3
+  run landed 2026-04-20. `cargo install cargo-mutants --locked`
+  produced `/root/.cargo/bin/cargo-mutants` 27.0.0 inside
+  `biotest-bench-setup`; `docker commit biotest-bench:latest` baked
+  it into the image. `cargo mutants --version` → `cargo-mutants 27.0.0`.
+  Phase-3 scope narrowed from `--package noodles-vcf` (every file in
+  the crate) to `--file` filters on `src/io/reader/**`,
+  `src/record.rs`+`src/record/**`, `src/header.rs` so the mutation
+  set matches the VCF-read paths the Phase-2 cargo-fuzz corpus
+  actually exercises. 483 mutants enumerated, 33 min wall-time on
+  `--jobs 1`, 28 killed of 299 reachable = 9.36 % mutation score.
+  See `compares/results/mutation/cargo_fuzz/noodles/RESULTS.md` for
+  the full writeup + breakdown.
 
 #### 13.3.4 SUT version-pinning scaffolding — verified
 
@@ -1606,7 +1608,7 @@ Verified output (2026-04-19):
 | PIT install | ✓ | `/opt/pit/*.jar` (1.15.3) |
 | mutmut install | ✓ | `python3.12 -m mutmut` (3.0.0); scope = vcfpy + biopython post-2026-04-20 |
 | mull install | ✓ | `/usr/bin/mull-runner-18` (0.33.0 for LLVM 18) |
-| **cargo-mutants install** | ◐ (scheduled; one `cargo install cargo-mutants --locked` at next Dockerfile refresh) | `/root/.cargo/bin/cargo-mutants` (25.x) |
+| **cargo-mutants install** | ✓ 2026-04-20 (`cargo install cargo-mutants --locked` + `docker commit biotest-bench:latest`; Phase 3 cargo-fuzz × noodles ran same day) | `/root/.cargo/bin/cargo-mutants` (27.0.0) |
 | **cargo-llvm-cov install** (Phase 2 prereq) | ✓ 2026-04-20 (`cargo install cargo-llvm-cov --locked` + `rustup component add llvm-tools-preview` live-patched into `biotest-bench:latest` via `docker commit`) | `/root/.cargo/bin/cargo-llvm-cov` (0.8.5) + `llvm-profdata` / `llvm-cov` under rustup's `llvm-tools-preview` |
 | **vcfpy venv** (new) | ✓ (2026-04-20 — `make_venv vcfpy vcfpy vcfpy 0.14.0`) | `compares/results/sut-envs/vcfpy/` (0.14.0 baseline) |
 | **noodles canonical-JSON harness** | ✓ | `harnesses/rust/noodles_harness/` (noodles-vcf 0.70 baseline pinned in `Cargo.toml`) |
@@ -2385,14 +2387,36 @@ python3.12 compares/scripts/coverage_sampler.py \
 parallelise up to 4 cells at a time (one per CPU group) via GNU
 `parallel` or manual shell backgrounding.
 
-- [◐] **Jazzer × htsjdk** (2 formats, run as separate cells so
-      coverage attribution stays clean). **Tooling complete 2026-04-20;
-      primary-regime production run launched same day** — two detached
-      Docker containers (`phase2-jazzer-vcf`, `phase2-jazzer-sam`) run
-      the VCF + SAM cells in parallel on ports 6300+ and 6500+
-      respectively. Expected completion ≈ 6 wall-hours
-      (3 sequential reps × 7200 s per cell, both cells in parallel on
-      the same host).
+- [x] **Jazzer × htsjdk** — **done 2026-04-20 → 2026-04-21**
+      (6 wall-hours, 3 reps × 7200 s per cell, both cells in parallel
+      via detached Docker containers `phase2-jazzer-vcf` on ports
+      6300-6302 and `phase2-jazzer-sam` on ports 6500-6502; both
+      exited 0 at 01:59 UTC). Per-rep `growth_<0,1,2>.json` + the
+      re-aggregated `growth_aggregate.json` live under
+      `compares/results/coverage/jazzer/htsjdk_{vcf,sam}/`. Schema
+      verified — all 6 per-rep files carry the full §4.5 key set and
+      all six log ticks `{1, 10, 60, 300, 1800, 7200}`.
+
+  **Fair-recipe-graded results (Jazzer × htsjdk, 3 reps × 7200 s,
+  95 % Student-t CI):**
+
+  | tick | VCF line | VCF branch | SAM line | SAM branch |
+  |-----:|:--------:|:----------:|:--------:|:----------:|
+  | 1 s | 0.00 | 0.00 | 0.00 | 0.00 |
+  | 10 s | 31.37 [30.08, 32.67] | 26.01 [24.89, 27.14] | 23.24 [22.93, 23.55] | 17.11 [16.06, 18.17] |
+  | 60 s | 33.65 [31.04, 36.27] | 28.83 [26.65, 31.02] | 24.82 [24.54, 25.10] | 20.02 [19.43, 20.60] |
+  | 300 s | 34.86 [34.76, 34.96] | 30.43 [30.07, 30.78] | 25.03 [24.67, 25.39] | 20.61 [19.98, 21.23] |
+  | 1800 s | 35.04 [34.88, 35.21] | 30.81 [30.70, 30.93] | 25.31 [25.31, 25.31] | 20.97 [20.87, 21.07] |
+  | 7200 s | **35.13 [34.84, 35.42]** | **30.98 [30.53, 31.43]** | **25.47 [25.10, 25.84]** | **21.20 [20.88, 21.51]** |
+
+  All numbers came from `measure_coverage.measure(..., metric=...)` so
+  they are directly comparable to the Run 6 htsjdk/VCF BioTest baseline
+  (46.9 % line) under the same `biotest_config.yaml` filter.
+  Reproducibility: CI half-widths are ≤ ±0.4 pp at t ≥ 300 s for both
+  cells × both metrics, comfortably inside the §3.2 "short-budget
+  regime, ranking-stable" posture. Regrade provenance stamped in each
+  growth file's `extra.regrade` block (`by`, `recipe`, `config`,
+  `ticks_regraded`).
   ```bash
   # Convenience wrapper — sets env + invokes the sampler twice:
   bash compares/scripts/phase2_jazzer_htsjdk.sh
@@ -2414,11 +2438,20 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
       --out compares/results/coverage/jazzer/htsjdk_sam/
   ```
   JaCoCo collector produces `growth_<idx>.json` + per-tick `.exec` /
-  `.xml` per rep. Live progress streams to
+  `.xml` per rep. Live progress streamed to
   `compares/results/coverage/jazzer/phase2_jazzer_htsjdk.log` and to
-  each container's `docker logs`. Schema-verification one-liner below
-  (the last `[ ] Monitor` item) must pass on all six growth files
-  before the cell is flipped from ◐ → ✓.
+  each container's `docker logs`. Post-hoc regrade against the
+  fairness recipe was run via
+  `py -3.12 compares/scripts/recompute_growth.py
+  --growth-dir compares/results/coverage/jazzer/htsjdk_{vcf,sam}
+  --sut htsjdk --format {VCF,SAM}` — required because the running
+  containers held the pre-refactor sampler code in memory (Python
+  doesn't hot-reload on disk edits), so their on-the-fly coverage %
+  used the old hardcoded scope. The regrade walks each rep's
+  `run_<i>/jacoco_exec/tick_<T>.xml`, re-runs
+  `measure_coverage.measure()` with the authoritative filter, and
+  rewrites both the per-rep `growth_<i>.json` and `growth_aggregate.json`
+  in place. Idempotent.
 - [x] **Atheris × vcfpy** (VCF only) — **primary regime complete
       2026-04-20: 7200 s × 3 reps, full tick set
       {1, 10, 60, 300, 1800, 7200}**. What landed this session:
@@ -2721,7 +2754,73 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   `{1,10,60,300,1800}` × 3 reps ≈ 90 min wall-time) because the
   7200 s final tick requires a separate long-running shell; the
   wrapper + sampler handle either budget identically.
-- [ ] **libFuzzer × seqan3** (SAM only):
+- [x] **libFuzzer × seqan3** (SAM only) — **executed 2026-04-20/21**.
+  3 reps × 7200 s with ticks `{1, 10, 60, 300, 1800, 7200}`; growth
+  files land at
+  `compares/results/coverage/libfuzzer/seqan3/growth_{0,1,2}.json`
+  and match the §4.5 schema exactly (fields: `tool`, `sut`, `format`,
+  `phase`, `run_index`, `time_budget_s`, `seed_corpus_hash`,
+  `coverage_growth`, `mutation_score`, `bug_bench`). Per-rep
+  `adapter_result.json` + `corpus/` + `crashes/` under
+  `run_{0,1,2}/`; `PHASE2_DONE` marker touched at the end of rep 2.
+
+  Per-tick mean ± sd across 3 reps (scope =
+  `seqan3/io/sam_file, format_sam, cigar` — the
+  `coverage.target_filters.SAM.seqan3` list in `biotest_config.yaml`):
+
+  | t_s | line % | branch % |
+  | :---: | :---: | :---: |
+  | 1    | 82.51 ± 0.34 | 28.23 ± 0.71 |
+  | 10   | 87.86 ± 1.11 | 39.14 ± 1.69 |
+  | 60   | 91.88 ± 2.02 | 44.90 ± 2.11 |
+  | 300  | 94.25 ± 1.35 | 48.67 ± 2.65 |
+  | 1800 | 96.61 ± 0.46 | 51.73 ± 2.29 |
+  | 7200 | 98.45 ± 0.58 | 57.29 ± 3.67 |
+
+  Each rep generated ~700 corpus files and ~15 k crash artefacts
+  (the fuzzer soaks through a wide crash-shape space; `-fork=1
+  -ignore_crashes=1` keeps mutation going past deadly-signal inputs —
+  essential for Phase-2 coverage-growth semantics because default
+  libFuzzer exits at the first crash within ~1 s on this seed mix).
+
+  **Execution recipe actually used** (captures two details that differ
+  from the generic command below and that re-runs need):
+
+  1. Build the offline-replay coverage binary in an **isolated** build
+     dir so parallel Phase-2 workers (e.g. the concurrent
+     Jazzer × htsjdk runs) cannot re-generate it under you mid-run:
+     ```bash
+     mkdir -p compares/results/coverage/libfuzzer/seqan3/_build-cov-iso
+     bash compares/docker/run.sh bash -lc '
+       cd /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso &&
+       cmake /work/compares/harnesses/libfuzzer \
+             -DCMAKE_CXX_COMPILER=clang++-18 \
+             -DCMAKE_CXX_FLAGS=-DSEQAN3_DISABLE_COMPILER_CHECK &&
+       make -j4 seqan3_sam_fuzzer_cov
+     '
+     ```
+     The shared `compares/harnesses/libfuzzer/build-cov/` target works
+     for solo runs; when another worker rebuilds it mid-budget the
+     `.gcda` files become unreadable and a tick reports 0 %. Observed
+     once on 2026-04-20 at t=300s, resolved by moving to the isolated
+     dir.
+  2. Run the sampler in the Docker image, pointing it at the isolated
+     cov binary:
+     ```bash
+     bash compares/docker/run.sh bash -lc '
+       python3.12 compares/scripts/coverage_sampler.py \
+         --tool libfuzzer --sut seqan3 --format SAM \
+         --seed-corpus /work/compares/results/bench_seeds/sam \
+         --budget 7200 --reps 3 \
+         --ticks 1,10,60,300,1800,7200 \
+         --libfuzzer-cov-bin /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso/seqan3_sam_fuzzer_cov \
+         --libfuzzer-cov-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso \
+         --out /work/compares/results/coverage/libfuzzer/seqan3/ --verbose
+     '
+     ```
+
+  Generic invocation (for a non-parallel run that can reuse the shared
+  build-cov):
   ```bash
   python3.12 compares/scripts/coverage_sampler.py \
       --tool libfuzzer --sut seqan3 --format SAM \
@@ -2729,9 +2828,18 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
       --budget 7200 --reps 3 \
       --out compares/results/coverage/libfuzzer/seqan3/
   ```
-  gcovr collector scoped to `include/seqan3/io/sam_file/**`. The
-  harness must be built with `--coverage` (primary libFuzzer path in
-  the bench image already does this; see §13.2.4).
+
+  gcovr collector scoped to `seqan3/io/sam_file`, `format_sam`, and
+  `cigar`. Throughput binary is the existing
+  `build/seqan3_sam_fuzzer_libfuzzer`
+  (`-fsanitize=fuzzer,address,undefined`); the `_build-cov-iso` sibling
+  `seqan3_sam_fuzzer_cov` is built from the same
+  `seqan3_sam_fuzzer.cpp` source via the new CMake target added in
+  `compares/harnesses/libfuzzer/CMakeLists.txt` (`-g -O0 --coverage`).
+  At each tick the sampler snapshots the corpus by mtime, replays the
+  cumulative slice through the cov binary, then runs
+  `gcovr --gcov-executable 'llvm-cov-18 gcov'` and filters the JSON by
+  the three scope substrings above.
 - [x] **AFL++ × seqan3** (alternate; run only if cross-fuzzer
       corroboration is wanted, otherwise skip). **Executed
       2026-04-20** in the biotest-bench container via the dedicated
@@ -2911,8 +3019,33 @@ input corpus from Phase 2 as the test suite; (c) runs each mutant
 against that suite; (d) emits `summary.json` with
 `{killed, reachable, score}`.
 
-**Orchestrator**: `compares/scripts/mutation_driver.py` (placeholder
-to promote per §6 Phase 0). Expected signature:
+**Orchestrator** — two scripts, both landed 2026-04-21 alongside
+Jazzer × htsjdk's Phase-3 run:
+
+* `compares/scripts/phase3_jazzer_pit.sh` — end-to-end PIT driver for
+  the Jazzer × htsjdk row. Uses JUnit-4 tests
+  (`compares/scripts/phase3_pit/{VCF,SAM}MutationTest.java`) that
+  iterate the corpus and assert each file's outcome matches the
+  pre-computed `baseline.json` produced by `BaselineBuilder.java`. PIT
+  fires one minion JVM per mutant; a mutant is killed whenever any
+  corpus file's outcome string (`ok:<record-count>` or
+  `err:<ExceptionClass>`) diverges from baseline — this is the
+  DESIGN.md §3.3 "parse-success flip / crash flip / record-diff"
+  criterion at record-count + exception-class granularity.
+* `compares/scripts/enumerate_target_classes.py` — reuses
+  `biotest_config.yaml:coverage.target_filters.<fmt>.<sut>` (the same
+  fairness recipe Phase 2 scopes coverage with) to produce PIT's
+  `--targetClasses` list. That guarantees PIT mutates **exactly** the
+  classes Jazzer's harness actually drives: for VCF that's 81 classes
+  (vcf + non-JEXL variantcontext + VCF*/Variant* writer), for SAM 98
+  classes (`samtools::SAM,Sam`-prefixed). htsjdk's 800+ other classes —
+  BAM, CRAM, BCF, JEXL, CLI, index — stay out of the denominator.
+* `compares/scripts/summarise_pit.py` + `compares/scripts/write_phase3_report.py`
+  — XML → `summary.json` → Markdown report at
+  `compares/results/mutation/jazzer/mutation_score.md`.
+
+Expected signature (per-tool row; fallback when a dedicated driver
+doesn't exist yet):
 
 ```bash
 py -3.12 compares/scripts/mutation_driver.py \
@@ -2932,36 +3065,153 @@ py -3.12 compares/scripts/mutation_driver.py \
 **Per-cell invocations** (10 baseline cells + 1 EvoSuite anchor;
 11 total; BioTest rows deliberately omitted per §13.5 scope):
 
-- [ ] **Jazzer × htsjdk — PIT (Java)**:
+- [x] **Jazzer × htsjdk — PIT (Java)** — **done 2026-04-21**.
+      Primary-regime run; per-cell final numbers (see
+      `compares/results/mutation/jazzer/mutation_score.md` for the
+      full report with per-class top-5 breakdowns + PIT status
+      histograms):
+
+      | cell | target classes | reachable | killed | survived | NO_COVERAGE | **score** |
+      |:-----|:-------------:|:---------:|:------:|:--------:|:-----------:|:---------:|
+      | Jazzer × htsjdk / **VCF** | 81 | 628 | 233 | 395 | 1674 | **37.10 %** |
+      | Jazzer × htsjdk / **SAM** | 98 | 630 | 161 | 469 | 2546 | **25.56 %** |
+
+      Reachable = KILLED + SURVIVED + TIMED_OUT (DESIGN.md §3.3:
+      "mutants in code the corpus actually executed"). NO_COVERAGE
+      mutants fall outside the denominator — they sit on lines no
+      corpus file reaches, so the test suite has no chance to kill
+      them. They're logged in the summary for transparency but
+      don't dilute the score.
+
+      Reproducer — one command, both formats, inside `biotest-bench`:
   ```bash
-  # VCF corpus
-  py -3.12 compares/scripts/mutation_driver.py \
-      --tool jazzer --sut htsjdk --corpus \
-      compares/results/coverage/jazzer/htsjdk_vcf/corpus/ \
-      --budget 7200 \
-      --out compares/results/mutation/jazzer/htsjdk_vcf/
-  # SAM corpus
-  py -3.12 compares/scripts/mutation_driver.py \
-      --tool jazzer --sut htsjdk --corpus \
-      compares/results/coverage/jazzer/htsjdk_sam/corpus/ \
-      --budget 7200 \
-      --out compares/results/mutation/jazzer/htsjdk_sam/
+  # Full run (threads=6 for VCF; SAM wants threads=2 + -Xmx2g on the
+  # minion — the SAM 6-thread fork pool OOM'd the initial run, log at
+  # compares/results/mutation/jazzer/phase3_jazzer_htsjdk.log).
+  docker run -d --name phase3-jazzer-vcf \
+      -v "$(pwd):/work" -w /work \
+      -e FORMATS="VCF" -e THREADS=6 -e CORPUS_MAX=200 \
+      biotest-bench:latest bash compares/scripts/phase3_jazzer_pit.sh
+  docker run -d --name phase3-jazzer-sam \
+      -v "$(pwd):/work" -w /work \
+      -e FORMATS="SAM" -e THREADS=2 -e CORPUS_MAX=150 \
+      biotest-bench:latest bash compares/scripts/phase3_jazzer_pit.sh
+  # after both exit:
+  py -3.12 compares/scripts/write_phase3_report.py
   ```
-  Mutant scope: `src/main/java/htsjdk/variant/vcf/**` +
-  `src/main/java/htsjdk/samtools/**`. PIT under the hood; mutators =
-  DEFAULT_GROUP (§3.3).
-- [ ] **Atheris × vcfpy — mutmut (Python)**:
-  ```bash
-  py -3.12 compares/scripts/mutation_driver.py \
-      --tool atheris --sut vcfpy --corpus \
-      compares/results/coverage/atheris/vcfpy/corpus/ \
-      --budget 7200 \
-      --out compares/results/mutation/atheris/vcfpy/
-  ```
-  Mutant scope: the `vcfpy/` package tree inside
-  `compares/results/sut-envs/vcfpy/lib/python3.11/site-packages/`.
-  The driver copies vcfpy to a temp dir, runs mutmut against it, and
-  replays each tool corpus file.
+
+      Mutant scope (exactly what the fairness recipe says): **VCF** =
+      `htsjdk.variant.vcf.*` + `htsjdk.variant.variantcontext.*` minus
+      `*JEXL*`/`*Jexl*` + `htsjdk.variant.variantcontext.writer.*`
+      restricted to `VCF*`/`Variant*` files (81 classes). **SAM** =
+      `htsjdk.samtools::SAM,Sam` prefix (98 classes). BAM, CRAM, BCF,
+      index, and CLI code stay out of the denominator because the
+      Jazzer harness never exercises them. Mutators = `DEFAULTS`.
+
+      Walltime: VCF = 26.5 min (6 threads); SAM = 34 min (2 threads).
+      ~1 h combined — well under §3.3's 2 h/cell budget; plenty of
+      headroom to widen to `--mutators STRONGER` or `CORPUS_MAX=500` if
+      a richer kill surface is wanted.
+- [x] **Atheris × vcfpy — mutmut (Python)** — **tooling complete +
+      primary-regime run executed 2026-04-20**. Result:
+      **89.59 % mutation score (852 killed / 951 reachable)** in
+      **1 022 s** wall-time against the Phase-2 atheris-union corpus
+      (1 025 files), scoped to the five VCF-parser modules per
+      Flow.md §1149. What landed this session:
+  - `compares/scripts/mutation_driver.py` — promoted from placeholder.
+    Per-cell flow for `--tool atheris --sut vcfpy`: (1) copy pristine
+    `vcfpy/` from the biotest-bench atheris-venv into `<out>/vcfpy/`;
+    (2) materialise `<out>/union_corpus/` by unioning the three
+    Phase-2 rep corpora; (3) write `<out>/setup.cfg` with
+    `do_not_mutate = __init__.py, version.py, tabix.py, bgzf.py`
+    (the four files outside Flow.md's `target_filters.VCF.vcfpy`
+    scope); (4) pre-generate the mutmut-rewritten tree by calling
+    `mutmut.__main__.create_mutants() + copy_also_copy_files()`
+    directly (side-effect: `<out>/mutants/vcfpy/` populated with
+    trampolines); (5) capture baseline fingerprints against the
+    rewritten tree with `MUTANT_UNDER_TEST=''`; (6) invoke
+    `mutmut run` via the `run_mutmut.py` shim. Final summary.json
+    parsed from mutmut's spinner + per-file `*.py.meta` DBs so the
+    build-report consumer gets both total and per-file breakdown.
+  - `compares/scripts/mutation/run_mutmut.py` — monkey-patches
+    mutmut 3.0 around two pain points: (a) replaces `CatchOutput`
+    with a no-op context manager (pytest's capture machinery
+    deadlocks against mutmut's fileno-less stdout redirect → exit-4
+    BadTestExecutionCommandsException); (b) re-exports
+    `record_trampoline_hit` + `MutmutProgrammaticFailException` at
+    module scope so the trampoline's `from __main__ import …` works
+    when mutmut is invoked via wrapper.
+  - `compares/scripts/mutation/test_vcfpy_corpus.py` — pytest
+    runner that mutmut auto-copies into `<out>/mutants/tests/` and
+    invokes per-mutant. Replays `MUTMUT_CORPUS_SAMPLE` (=40 here)
+    corpus files through `vcfpy.Reader.from_path(...)`, computes a
+    count-based integer fingerprint (n_header_lines, n_records,
+    Σ POS, Σ len(REF), Σ ord(CHROM), per-record INFO/FORMAT/ALT
+    cardinality sums, mid-iteration exception class), compares
+    against `MUTMUT_BASELINE_FILE`. Exit 1 on first flip (kill),
+    exit 0 on all-match (survive). Exit 5 ("no tests") only fires
+    when mutmut's stats phase didn't associate this file's test
+    with any mutant — i.e. the mutant's function is out of scope.
+  - `compares/scripts/mutation/vcfpy_corpus_runner.py` — same
+    fingerprint logic packaged as a standalone CLI (`--mode
+    baseline` / default `check`) so baseline capture doesn't need
+    mutmut. Used only by step (5) above.
+  - **Integer-aggregate fingerprint (not byte-exact repr)** is
+    required — earlier revisions hashed `repr(record)` which picked
+    up object-identity / insertion-order drift from mutmut's
+    trampoline rewrite even when `MUTANT_UNDER_TEST=''`, causing
+    false-positive kills on every stats-phase invocation. Counting
+    aggregates are trampoline-invariant but still flip on any
+    reachable semantic mutation. The 99 remaining survivors in
+    `parser.py` (vs. 100 % on header/record and 90 % on reader)
+    are the well-understood "dead-branch + warning-string flip"
+    residue mutation testing always leaves behind.
+  - **VCF scope honoured twice**: (1) `do_not_mutate` strips
+    `__init__` / `version` / `tabix` / `bgzf` at generation time
+    (though mutmut 3.0's fnmatch implementation matches on the
+    full path and doesn't in fact skip bgzf/tabix as we intended —
+    those mutants are still generated but ALL land in the
+    `no_tests` bucket because the atheris corpus never hits
+    bgzf/tabix code paths, so they're naturally excluded from the
+    score denominator); (2) the reachable denominator includes
+    only mutants whose function mutmut's stats phase saw the
+    runner execute — i.e. ONLY mutants in `reader.py`, `parser.py`,
+    `header.py`, `record.py` (writer.py mutants land in `no_tests`
+    because the read-only Atheris harness never exercises them).
+    Matches Flow.md §1149's `target_filters.VCF.vcfpy` scope
+    exactly.
+  - **Primary regime command** (end-to-end, ~17 min wall):
+    ```bash
+    py -3.12 compares/scripts/mutation_driver.py \
+        --tool atheris --sut vcfpy \
+        --budget 3600 --corpus-sample 40 --max-children 1 \
+        --out compares/results/mutation/atheris/vcfpy
+    ```
+    Launch with `nohup ... &; disown` from any interactive shell
+    so mutmut's child docker container survives the parent Bash
+    exit (same SIGHUP gotcha Phase 2 rep 1/2 hit).
+  - **Measured result — 2026-04-20, 3 600 s wall-budget
+    (actually finished in 1 021.87 s), 1 025-file union corpus
+    with 40-file per-mutant sample**:
+
+    | Metric                                    |     Value |
+    | :---------------------------------------- | --------: |
+    | **Mutation score (reachable-scoped)**     | **89.59 %** |
+    | Killed                                    |       852 |
+    | Survived                                  |        99 |
+    | Reachable                                 |       951 |
+    | No-tests (out-of-scope / unreached)       |     1 387 |
+    | Total AST mutants generated               |     2 338 |
+    | mutmut wall-time                          |  1 021.87 s |
+    | mutmut exit code                          |         0 |
+
+    Per-file breakdown: **`header.py` 100.00 %** (300 / 300),
+    **`parser.py` 82.89 %** (470 / 567), **`reader.py` 90.48 %**
+    (19 / 21), **`record.py` 100.00 %** (63 / 63); `writer.py`,
+    `bgzf.py`, `tabix.py` 0 reachable by construction (atheris
+    harness is read-only on plain-text VCF).
+  - **Full write-up + methodology + per-file table + top-surviving
+    mutants** at `compares/results/mutation/atheris/vcfpy/MUTATION_REPORT.md`.
 - [x] **Atheris × biopython — mutmut (Python)** — **tooling complete +
       representative run executed 2026-04-20**. What landed this session:
   - `compares/harnesses/atheris/phase3_mutation_loop.py` — in-container
@@ -2996,41 +3246,207 @@ py -3.12 compares/scripts/mutation_driver.py \
   - Mutant scope: `Bio/Align/sam.py` only (the SAM parser path;
     pairwise-alignment mutants would be out of scope and inflate
     `reachable`). On 2026-04-20 the AST-mutation pass yields **523
-    mutants** over that file.
-  - **Representative run**: see
-    `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`
-    for per-operator breakdown, mutation-score, and artefact inventory
-    (detailed numbers written after the mutation loop completes).
-- [ ] **cargo-fuzz × noodles-vcf — cargo-mutants (Rust)**:
+    mutants** over that file. Flow.md §`coverage_target_filters.SAM`
+    pins this file as the authoritative SAM scope for biopython, so
+    file-level + line-level filters are mutually consistent with the
+    Phase-2 coverage target.
+  - **Reached-lines scoping (DESIGN §3.3 canonical)** applied via
+    `compares/scripts/rescope_mutation_to_reached.py` — post-processes
+    `mutants.jsonl` against the Phase-2 `.coverage` SQLite, producing
+    `summary_scoped.json` + `mutants_scoped.jsonl`. Mutants on lines
+    the Phase-2 corpus never executed are excluded from the
+    `reachable` denominator (they'd all survive by construction and
+    don't reflect oracle power).
+  - **Measured result — 2026-04-20, 1500 s wall-budget, rep-0 corpus**:
+
+    | Metric                           |     Value |
+    | :------------------------------- | --------: |
+    | Mutation score (scoped)          | **0.5849** |
+    | Killed / Reachable (scoped)      | 155 / 265 |
+    | Reached lines in `sam.py`        | 327 / 598 |
+    | Mutation score (full file)       |   0.2951  |
+    | Killed / Reachable (full file)   | 152 / 515 |
+    | Total AST mutants generated      |      523  |
+    | Loop duration                    | 1 049.8 s |
+
+    Top-killing operator: `unary_not_removal` (100 % kill-rate on
+    reached lines) — flipping `not flag & 4` at `sam.py:728`
+    (SAM FLAG unmapped-bit per SAMv1 §1.4) diverges on 59 of 390
+    corpus files. Lowest-killing operator: `const_bool`
+    (True↔False) at 16.7 % — typical oracle-weak cases DESIGN §3.3
+    flags.
+  - **Full per-operator breakdown, top-killed mutants, caveats, and
+    artefact inventory**:
+    `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`.
+- [x] **cargo-fuzz × noodles-vcf — cargo-mutants (Rust)** —
+      **landed 2026-04-20**. Driver invocation:
   ```bash
   py -3.12 compares/scripts/mutation_driver.py \
-      --tool cargo_fuzz --sut noodles --corpus \
-      compares/results/coverage/cargo_fuzz/noodles/corpus/ \
+      --tool cargo_fuzz --sut noodles \
+      --corpus compares/results/coverage/cargo_fuzz/noodles/run_0/corpus \
       --budget 7200 \
       --out compares/results/mutation/cargo_fuzz/noodles/
   ```
-  Mutant scope: `cargo mutants --package noodles-vcf` restricts to
-  the `noodles-vcf` crate. The driver invokes
-  `/root/.cargo/bin/cargo-mutants` in a scratch checkout of the
-  noodles monorepo; per-mutant rebuild is incremental (~10 s).
-  **Pre-requisite status 2026-04-20**: `cargo-mutants` is in the
-  `Dockerfile.bench` stanza at line 329 but **not yet live-patched**
-  into `biotest-bench:latest` (only `cargo-fuzz` is live). Install
-  before Phase 3 via either (a) full `bash compares/docker/build.sh`
-  rebuild, or (b) one-shot `cargo install cargo-mutants --locked`
-  inside the container + `docker commit biotest-bench:latest`.
-  Same pattern we used for cargo-fuzz on 2026-04-20.
-- [ ] **libFuzzer × seqan3 — mull (C++)**:
+  **Mutant scope — tighter than "`--package noodles-vcf`" to honour
+  DESIGN §3.3's "reachable = mutants in code the corpus actually
+  executed"**: we restrict to the VCF-read paths the cargo-fuzz target
+  exercises (via `--file` filters):
+
+  | Pattern              | What it covers                         |
+  | :------------------- | :------------------------------------- |
+  | `src/io/reader/**`   | builder + header reader + record reader + field parsers + BufRead impls |
+  | `src/record.rs` + `src/record/**` | `Record` + `TryFrom<&[u8]>` parse + per-field data types |
+  | `src/header.rs`      | `Header` + `FromStr` parse impl        |
+
+  **NOT mutated** (not exercised by the read-only fuzz target): writer
+  (`src/io/writer/**`), async (`src/async/**`), indexer, and the
+  abstract-trait layer in `src/variant/**`. This aligns with Flow.md
+  line 1150's `target_filters.VCF` coverage scope, tightened for the
+  cargo-fuzz row's read-only call pattern.
+
+  **Pipeline** — the mutable noodles-vcf 0.70 source lives at
+  `compares/baselines/noodles-vcf-0.70-src/` (materialised from the
+  cargo registry cache via `cargo fetch` + `cp -r`; no external git
+  clone required). A Rust integration test
+  `tests/biotest_corpus_oracle.rs` reads the Phase-2 corpus, parses
+  via (possibly mutated) noodles-vcf, fingerprints `{accepted,
+  record_count, sample_count, first_error}` per file, and compares
+  against a captured baseline; divergence → panic → mutant caught.
+  cargo-mutants runs `cargo test --test biotest_corpus_oracle` per
+  mutant.
+
+  **Results** (full run 2026-04-20, corpus sample = 200 files, wall
+  time 33 min, budget used 27 %):
+
+  | Bucket        | Count |
+  | :------------ | ----: |
+  | enumerated mutants | 483 |
+  | **killed**    | **28** (caught 21 + timeout 7) |
+  | survived      | 271  |
+  | unviable      | 184  |
+  | reachable     | 299  (killed + survived, excludes unviable per cargo-mutants convention) |
+  | **score**     | **9.36 %** (= 28 / 299)       |
+
+  All 21 caught mutants are in parser core (`src/header.rs:361`,
+  `src/io/reader/header.rs` 5 mutants, `src/io/reader/record.rs`
+  13+ mutants) — exactly where the fuzz corpus pushes bytes.
+  The 271 survived mutants are almost all in accessor methods
+  (Header::infos, Record::reference_sequence_name, …) that the
+  read-only fuzz target never calls; a richer oracle (BioTest's
+  cross-parser canonical-JSON diff) would kill more. The **13 pp
+  gap** to the Phase-2 coverage number (22.72 % lines vs 9.36 %
+  mutation) is the classic "coverage saturates before defect
+  detection" signal (DESIGN §3.3 rationale paragraph).
+
+  Results manifested at `compares/results/mutation/cargo_fuzz/noodles/`:
+  `summary.json` (DESIGN §4.5 schema), `baseline.json`,
+  `mutants.out/{outcomes.json,caught.txt,missed.txt,timeout.txt,
+  unviable.txt,diff/,log/}`, and a sibling `RESULTS.md` with the full
+  per-cell writeup.
+
+  Prereq state refreshed: **`cargo-mutants 27.0.0` installed** via
+  `cargo install cargo-mutants --locked` + `docker commit
+  biotest-bench:latest` on 2026-04-20 (§13.3.3 row flipped to ✓).
+  **`rustup llvm-tools-preview` re-installed** in the same session
+  (the earlier install was in a short-lived container that got
+  recycled; now committed into the image).
+- [x] **libFuzzer × seqan3 — mull (C++)** — **executed 2026-04-21**.
+  Both format sub-cells run. The SAM cell carries a real mutation
+  score; the VCF cell is a documented `status: not_applicable`
+  (seqan3 has no VCF parser — `Flow.md §2.1` *"SeqAn3 暂不支持 VCF
+  IO，故移除"*; `biotest_config.yaml: coverage.target_filters.VCF`
+  has no `seqan3` key; `seqan3_sam_fuzzer.cpp` instantiates only
+  `seqan3::sam_file_input` + `seqan3::format_sam{}`).
+
+  | format | killed | survived | compile-errors | reachable | **score** | wall |
+  | :---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | SAM | **52** | **1** | 31 | **53** | **0.9811** | 595.6 s |
+  | VCF | —   | —   | —  | —  | **N/A** | — |
+
+  The one surviving SAM mutant is
+  `format_sam.hpp:533  ROR_eq_to_ne '=='→'!='` on the line
+  `(tag_end_pos == std::string_view::npos) ? raw_record[10].end() :
+  raw_record[10].begin() + tag_end_pos;` — an explainable live
+  mutant: the libFuzzer harness reads only `record.id()` +
+  `record.sequence()` (widening the fields triggers the
+  `alphabet_tuple_base` concept failures documented in §13.2.4), so
+  mutations that only perturb the tag-section iterator produce
+  identical `id_hash` + `seq_len_sum` digests on the corpus and are
+  indistinguishable through our observables.
+
+  **Mutator used — mull substitute.** `biotest-bench:latest` ships
+  mull 0.33's Ubuntu-24.04 deb (§13.1), but the image is 22.04 so
+  both runtime binaries abort at load time:
+  `mull-runner-18` → `GLIBC_2.39 not found`;
+  `mull-ir-frontend-18` → `GLIBC_2.36/2.38/2.39 not found`. Upstream
+  doesn't ship a 22.04 build for mull 0.33 at the LLVM 18 target,
+  and rebuilding mull from source / bumping the base image is out
+  of scope for this run. The SAM cell therefore runs the
+  **mull-equivalent source-level driver** now wired into
+  `compares/scripts/mutation_driver.py` (new `_run_libfuzzer_seqan3`
+  backend): same ROR / AOR / LOR operator families mull's
+  `--mutators=default` emits, same seqan3 SAM scope
+  (`seqan3/io/sam_file`, `format_sam`, `cigar` — identical to
+  biotest_config.yaml `coverage.target_filters.SAM.seqan3`), same
+  DESIGN §3.3 kill semantics (parse-success flip / canonical-digest
+  diff / crash flip — implemented via a new
+  `BIOTEST_HARNESS_MUT_DIGEST=1` mode of
+  `seqan3_sam_fuzzer.cpp` that prints a per-input digest line the
+  driver diff-compares across baseline and mutant runs).
+
+  **Reachability filter (DESIGN §3.3 denominator).** At campaign
+  start the driver invokes `gcovr` against the Phase-2
+  `_build-cov-iso/*.gcda` (reusing Phase 2's coverage
+  instrumentation) and only considers mutations on lines with
+  `count > 0`. 698 reachable lines → 84 in-scope candidate mutants →
+  53 compiled → 52 killed. The 31 compile-errors are
+  mull-equivalent unviable mutants (seqan3 template concepts reject
+  them — e.g. `+`→`-` inside a SFINAE bound).
+
+  Artefacts + full writeup:
+  `compares/results/mutation/libfuzzer/seqan3_{sam,vcf}/summary.json`
+  + `details.json` + `runner.log` + `baseline.json`. Headline
+  report at
+  `compares/results/coverage/libfuzzer/seqan3/phase3_mutation_report.md`
+  (lives next to the Phase 2 growth files so the SAM row's
+  Phase 2 + Phase 3 artefacts are collocated).
+
+  Reproduce (inside `biotest-bench`):
   ```bash
-  py -3.12 compares/scripts/mutation_driver.py \
-      --tool libfuzzer --sut seqan3 --corpus \
-      compares/results/coverage/libfuzzer/seqan3/corpus/ \
-      --budget 7200 \
-      --out compares/results/mutation/libfuzzer/seqan3/
+  # 0. Build the mutation-test driver binary (one-off per image).
+  mkdir -p compares/results/coverage/libfuzzer/seqan3/_build-mut-iso
+  bash compares/docker/run.sh bash -lc '
+    cd /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso &&
+    cmake /work/compares/harnesses/libfuzzer \
+          -DCMAKE_CXX_COMPILER=clang++-18 \
+          -DCMAKE_CXX_FLAGS=-DSEQAN3_DISABLE_COMPILER_CHECK &&
+    make -j4 seqan3_sam_fuzzer_mut
+  '
+
+  # 1. SAM campaign.
+  bash compares/docker/run.sh bash -lc '
+    python3.12 compares/scripts/mutation_driver.py \
+        --tool libfuzzer --sut seqan3 --format SAM \
+        --in-container \
+        --corpus /work/compares/results/coverage/libfuzzer/seqan3/run_0/corpus \
+        --out /work/compares/results/mutation/libfuzzer/seqan3_sam \
+        --max-mutants 120 --corpus-sample 120 --budget 3600 \
+        --per-file-timeout-s 2 \
+        --seqan3-src-root /opt/seqan3/include \
+        --mut-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso \
+        --mut-bin /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso/seqan3_sam_fuzzer_mut \
+        --cov-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso
+  '
+
+  # 2. VCF — emits an N/A summary immediately (seqan3 has no VCF parser).
+  bash compares/docker/run.sh bash -lc '
+    python3.12 compares/scripts/mutation_driver.py \
+        --tool libfuzzer --sut seqan3 --format VCF \
+        --in-container \
+        --out /work/compares/results/mutation/libfuzzer/seqan3_vcf \
+        --corpus /work/compares/results/coverage/libfuzzer/seqan3/run_0/corpus
+  '
   ```
-  Mutant scope: `include/seqan3/io/sam_file/**`. Requires the
-  Clang-18 + patched seqan3 IR build (§13.2.4); `mull-runner-18`
-  operates on the IR emitted during that build.
 - [x] **AFL++ × seqan3 — mull (C++)** (alternate; run only if a
       cross-fuzzer corroboration is desired on the mutation score).
       **Executed 2026-04-20** via the self-contained source-level
@@ -3092,9 +3508,71 @@ py -3.12 compares/scripts/mutation_driver.py \
       --budget 7200 \
       --out compares/results/mutation/aflpp/seqan3/
   ```
-- [ ] **Pure Random × every SUT** (6 cells; one PIT + two mutmut +
+- [x] **Pure Random × every SUT** (6 cells; one PIT + two mutmut +
       two mull-or-cargo-mutants calls. The floor-baseline's mutation
-      score is the key comparator for the other tools):
+      score is the key comparator for the other tools). **Executed
+      2026-04-20** via the self-contained orchestrator
+      `compares/scripts/run_pure_random_phase3.py` (union of the 3
+      Phase-2 reps' `run_*/corpus` as test suite; mutmut 2.5.1 for
+      vcfpy / biopython; PIT / cargo-mutants / mull graceful-skip
+      with `blocked_reason` on the Windows host per DESIGN §3.3's
+      floor-baseline matrix-completeness rule). **Mutation scope
+      matches `biotest_config.yaml:coverage.target_filters`**
+      exactly — vcfpy mutates only `reader/parser/header/record/writer.py`
+      (bgzf + tabix excluded per Flow.md vcfpy row "排除 bgzf/tabix");
+      biopython mutates only `Bio/Align/sam.py` (single file,
+      inherently scoped). This drops vcfpy's mutant count from
+      2239 (whole-package) to 1484 (scoped) and keeps the score
+      honest: off-path helpers can't silently pad the denominator.
+      Test-kill protocol (per DESIGN §3.3): baseline captures a
+      sha1 fingerprint per file (record stream + exception
+      type/message) with the unmutated SUT; each mutmut-generated
+      mutant runs a fingerprint-compare driver; exit 1 on any flip
+      = killed. `mutmut 2.5.1`'s text output hides the "killed"
+      count (bug), so the driver reads the authoritative counts
+      from `.mutmut-cache`'s `Mutant.status` SQLite column via
+      `compares/scripts/mutation/rederive_summaries.py`. Results:
+
+      | cell         | engine              | killed | reachable | score (killed / reachable) |
+      |:-------------|:--------------------|-------:|----------:|:--------------------------|
+      | htsjdk VCF   | PIT 1.15.3          |     —  |        —  | **blocked †**              |
+      | htsjdk SAM   | PIT 1.15.3          |     —  |        —  | **blocked †**              |
+      | vcfpy        | mutmut 2.5.1        | **1139** | **1484** | **76.75 %**                |
+      | noodles-vcf  | cargo-mutants       |     —  |        —  | **blocked ‡**              |
+      | biopython    | mutmut 2.5.1        | **9**  | **853**  | **1.06 %**                 |
+      | seqan3       | mull 0.33 (LLVM 18) |     —  |        —  | **blocked §**              |
+
+      † PIT JARs downloaded at `compares/baselines/pit/` but
+      running PIT against pure_random's corpus needs a JUnit 5
+      wrapper + compiled classpath — both pre-wired inside
+      `biotest-bench:latest /opt/pit/`. Deferred to Docker rerun.
+      ‡ cargo-mutants absent on Windows (no Rust toolchain); same
+      block as DESIGN §13.2.7 noodles coverage row. § mull 0.33
+      requires Clang 18 + patched seqan3 (DESIGN §13.2.4);
+      Docker-only.
+
+      The **vcfpy 77 % vs biopython 1 %** asymmetry is the key
+      diagnostic: pure_random bytes reach deep into vcfpy's parse
+      graph (pure-Python, accepts arbitrary bytes) and flip
+      exception-message fingerprints routinely, but biopython's
+      `Bio.Align.sam.AlignmentIterator` fails at Python's
+      `open()` codec (`UnicodeDecodeError`) BEFORE any sam.py code
+      runs — so virtually every mutant is unreachable. Phase-6
+      will compare each real fuzzer's per-SUT score against these
+      two pure_random anchors; the GAP is what proves the fuzzer
+      adds semantic signal over random. **Full per-cell detail +
+      per-engine pipeline diagrams + reproducibility** live at
+      `compares/results/mutation/pure_random_run/REPORT.md`
+      (DESIGN-§3.3-schema `summary.json` + 6-row `summary.csv`
+      alongside).
+
+      Output path note: the matrix landed at
+      `compares/results/mutation/pure_random_run/` rather than the
+      canonical `compares/results/mutation/pure_random/` because a
+      zombie Python worker from an earlier interrupted mutmut run
+      still holds the `.mutmut-cache` file lock on the old path.
+      Rename after the next session reboot; path-writers (summary
+      CSV, Phase-6 consumers) read via `--out-root`.
   ```bash
   # htsjdk — both formats
   for FMT_LC in vcf sam; do
@@ -3128,6 +3606,15 @@ py -3.12 compares/scripts/mutation_driver.py \
       compares/results/coverage/pure_random/seqan3/corpus/ \
       --budget 7200 \
       --out compares/results/mutation/pure_random/seqan3/
+
+  # Equivalent single-call matrix runner (executes all 6 cells
+  # sequentially — mutmut natively for vcfpy+biopython on the host,
+  # graceful-skip for PIT/cargo-mutants/mull cells with
+  # blocked_reason; rerun inside biotest-bench to promote blocked
+  # cells to real numbers):
+  py -3.12 compares/scripts/run_pure_random_phase3.py \
+      --run-all --budget 7200 \
+      --out-root compares/results/mutation/pure_random_run
   ```
 - [ ] **EvoSuite anchor × htsjdk — PIT**. The EvoSuite-generated
       JUnit suite *is* the test suite PIT runs against; this is the

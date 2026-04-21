@@ -112,6 +112,50 @@
       ],
       "ambiguity_flags": [],
       "query_methods": []
+    },
+    {
+      "mr_id": "7e2d423f84b6",
+      "mr_name": "SAM file must not begin with byte order mark (BOM)",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "A compliant parser MUST reject (raise validation error, crash, or refuse to emit) SAM files that begin with a byte order mark (BOM). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p3",
+          "quote": "Hence in particular SAM files must not begin with a byte order mark~(BOM) and lines of text are delimited by ASCII line terminator characters only.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7dd41025b0f7",
+      "mr_name": "Reference sequence must be in 7-bit US-ASCII character set",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "A compliant parser MUST reject (raise validation error, crash, or refuse to emit) reference sequence names containing non-ASCII characters. Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p36",
+          "quote": "The reference sequence must be in the 7-bit US-ASCII character set. All valid reference bases can be represented in this set, and it avoids the problem of determining exactly which 8-bit representation may have been used.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
     }
   ],
   "quarantine": [
@@ -567,11 +611,188 @@
       ],
       "ambiguity_flags": [],
       "query_methods": []
+    },
+    {
+      "mr_id": "96ca029635de",
+      "mr_name": "SAM header intra-line field ordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line",
+        "has_sq_line",
+        "has_rg_line",
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Parsed SAM header metadata must be semantically equivalent after shuffling TAG:VALUE pairs within each header line",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "db1f4df6b38f",
+      "mr_name": "Hard/soft clipping equivalence normalization",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "toggle_cigar_hard_soft_clipping"
+      ],
+      "oracle": "Converting between hard (H) and soft (S) clipping in CIGAR while synchronizing SEQ/QUAL should produce equivalent alignments with identical biological meaning",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Padded SAM::p167",
+          "quote": "There may be more than one way to describe the padded representation.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Padded SAM"
+        },
+        {
+          "chunk_id": "SAMv1.tex::Guide for Describing Assembly Sequences in SAM::p159",
+          "quote": "A padded SAM is a valid SAM, but with the difference that the reference and positions in use are padded. There may be more than one way to describe the padded representation.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Guide for Describing Assembly Sequences in SAM"
+        }
+      ],
+      "ambiguity_flags": [
+        "Hard clipping removes bases from SEQ while soft clipping keeps them, but both represent the same alignment to reference"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7bbdedead457",
+      "mr_name": "Header field ordering invariance for query methods",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method where P is the query method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReferenceName",
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getReadLength",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "c6fa4b634f8f",
+      "mr_name": "SAM header field ordering invariance under writer round-trip",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c9a73331e977",
+      "mr_name": "SAM BAM binary codec round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization, accounting for BAM encoding/decoding",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p1",
+          "quote": "SAM stands for Sequence Alignment/Map format. It is a TAB-delimited text format consisting of a header section, which is optional, and an alignment section.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "BAM is the binary equivalent of SAM; identical information content should be preserved through the binary hop"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9c878249218",
+      "mr_name": "Read group query invariance under @RG field shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method when @RG line field order changes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getPairedReadName",
+        "getReadPairedFlag",
+        "getFirstOfPairFlag",
+        "getSecondOfPairFlag"
+      ]
     }
   ],
   "summary": {
-    "enforced_count": 4,
-    "quarantine_count": 17,
-    "total": 21
+    "enforced_count": 6,
+    "quarantine_count": 23,
+    "total": 29
   }
 }

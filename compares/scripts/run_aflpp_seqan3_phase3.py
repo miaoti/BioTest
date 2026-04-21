@@ -69,10 +69,32 @@ HARNESS_CPP = (REPO_ROOT / "compares" / "harnesses" / "libfuzzer"
 COV_BUILD_DIR = (REPO_ROOT / "compares" / "harnesses" / "libfuzzer"
                  / "build-cov")
 
-# Scope — mirrors DESIGN §3.3 mutant target
-# (`include/seqan3/io/sam_file/**`) + keeps the 3 substrings from
-# biotest_config.yaml:coverage.target_filters.SAM.seqan3.
+# Scope — exactly the three substrings from
+# `biotest_config.yaml::coverage.target_filters.SAM.seqan3`
+# (biotest_config.yaml:547–550), which Flow.md §"coverage.target_filters"
+# (documents/Flow.md:1549–1552) declares as the framework-wide
+# seqan3-SAM scope. Mirrors DESIGN §3.3 mutant target
+# (`include/seqan3/io/sam_file/**`). No VCF path is admitted because
+# seqan3 has no VCF parser; no general-purpose seqan3 tree matches
+# these substrings — the `cigar` substring admits the SAM-specific
+# CIGAR alphabet under `seqan3/alphabet/cigar/` because CIGAR is a
+# SAM/BAM-specific hts-specs primitive, not a general bioinformatics
+# alphabet like DNA/RNA/AA (Flow.md §"coverage.target_filters").
 SCOPE_SUBSTRINGS = ("seqan3/io/sam_file", "format_sam", "cigar")
+
+# Tripwire — any mutation outside these paths would be a scope bug.
+# We deliberately hard-exclude these families as a sanity trap in case
+# future scope edits accidentally widen the filter:
+SCOPE_REJECT_SUBSTRINGS = (
+    "/variant/vcf",            # htsjdk's VCF tree
+    "/variant/variantcontext", # htsjdk's VCF data-model tree
+    "noodles-vcf",             # noodles Rust VCF
+    "vcfpy",                   # Python vcfpy
+    "libcbcf", "libcvcf",      # pysam BCF/VCF Cython
+    "/alphabet/dna",           # general-purpose alphabet
+    "/alphabet/rna",           # general-purpose alphabet
+    "/alphabet/aminoacid",     # general-purpose alphabet
+)
 
 # Regex operator swaps. Each rule is (label, pattern, replacement).
 # Compiled once, applied with re.sub(count=1) on the chosen line so
@@ -136,9 +158,21 @@ def _pick_mutants(
 
     Each mutant dict carries: `{id, file_rel, abs_path, line, operator,
     original_line, mutated_line}`. Picks deterministic (file order,
-    line order, operator order) so a rerun produces the same set."""
+    line order, operator order) so a rerun produces the same set.
+
+    Scope guard — triple-enforced: (a) `covered` has already been
+    filtered by `SCOPE_SUBSTRINGS` in `_covered_lines`; (b) every
+    candidate `file_rel` must match one of SCOPE_SUBSTRINGS here
+    (defense-in-depth); (c) no `file_rel` may match any
+    SCOPE_REJECT_SUBSTRINGS (tripwire for future scope edits)."""
     mutants: list[dict[str, Any]] = []
     for file_rel in sorted(covered):
+        # Scope-guard (b): belt-and-braces re-check.
+        if not any(s in file_rel for s in SCOPE_SUBSTRINGS):
+            continue
+        # Scope-guard (c): tripwire on VCF / general-purpose trees.
+        if any(s in file_rel for s in SCOPE_REJECT_SUBSTRINGS):
+            continue
         abs_path = SEQAN3_INCLUDE / file_rel
         if not abs_path.exists():
             continue
