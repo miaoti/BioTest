@@ -65,9 +65,18 @@ def run(
     # repeat the flag for each glob we need.
     for glob in instrument_globs:
         cmd.append(f"--instrumentation_includes={glob}")
+    # --keep_going=1000 (Jazzer ≥0.17) keeps the fuzzer running until
+    # 1000 distinct findings; -fork=1 + -ignore_crashes=1 passthrough to
+    # the libFuzzer runtime do the same at the runtime level. Belt-and-
+    # braces so one crash doesn't burn the rest of the budget (Klees
+    # CCS'18 §3.1; PHASE4_BASELINE_FIXES.md §0.2).
     cmd.extend([
+        "--keep_going=1000",
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
+        "-fork=1",
+        "-ignore_crashes=1",
+        "-print_final_stats=1",
         str(corpus_dir),
     ])
     # Jazzer auto-parses every JAZZER_* env var as a CLI option. Scrub

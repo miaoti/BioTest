@@ -56,10 +56,17 @@ def run(
     seed_copy(seed_corpus, corpus_dir)
 
     started = time.time()
+    # -fork=1 + -ignore_crashes=1: keep fuzzing after the first crash so
+    # one unrelated crash-on-boot doesn't burn the entire budget; each
+    # crash is still saved to artifact_prefix. See Klees CCS'18 §3.1
+    # and PHASE4_BASELINE_FIXES.md §0.2.
     cmd = [
         str(bin_path),
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
+        "-fork=1",
+        "-ignore_crashes=1",
+        "-print_final_stats=1",
         str(corpus_dir),
     ]
     exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)

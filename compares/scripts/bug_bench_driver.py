@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -151,8 +152,89 @@ def _install_vcfpy(version: str) -> None:
         raise RuntimeError(
             f"atheris venv pip missing at {pip}. "
             "Run the bench image with the atheris layer.")
+    # --no-build-isolation lets pip use the atheris venv's already-installed
+    # setuptools/wheel rather than spin up a clean build env every time,
+    # which is the surface that fails in the 9p/sut-env regime.
+    cmd = [str(pip), "install", "--force-reinstall",
+           "--no-build-isolation", f"vcfpy=={version}"]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode == 0:
+        return
+    # PyPI install failed. Some old vcfpy releases either
+    #   (a) are not on PyPI at all (≤0.8.x were git-only), or
+    #   (b) have a setup.py that imports the removed pip.req API (≤0.11.0).
+    # Fall back to cloning from GitHub and patching setup.py before install.
+    stderr = proc.stderr or ""
+    fall_back = (
+        "No matching distribution found" in stderr
+        or "No module named 'pip.req'" in stderr
+    )
+    if not fall_back:
+        raise subprocess.CalledProcessError(
+            proc.returncode, cmd, output=proc.stdout, stderr=stderr,
+        )
+    _install_vcfpy_from_git(version, pip)
+
+
+def _install_vcfpy_from_git(version: str, pip: Path) -> None:
+    """Clone vcfpy from GitHub, patch setup.py, and install from the work tree.
+
+    Two failure modes addressed:
+    - 0.11.0-era setup.py imports ``from pip.req import parse_requirements``
+      and ``pip.download.PipSession`` which modern pip no longer exposes.
+      We swap the imports for a minimal pure-python requirements reader.
+    - 0.8.x releases were never published to PyPI; the GitHub tag ``vX.Y.Z``
+      is their only distribution surface.
+    """
+    import re
+    import shutil
+    workdir = Path(f"/tmp/vcfpy-build-{version}")
+    if workdir.exists():
+        shutil.rmtree(workdir)
     subprocess.run(
-        [str(pip), "install", "--force-reinstall", f"vcfpy=={version}"],
+        ["git", "clone", "--depth", "5", "--branch", f"v{version}",
+         "https://github.com/bihealth/vcfpy", str(workdir)],
+        check=True, capture_output=True,
+    )
+    setup_py = workdir / "setup.py"
+    text = setup_py.read_text(encoding="utf-8")
+    if "from pip.req" in text:
+        text = text.replace(
+            "import pip\nfrom pip.req import parse_requirements\n",
+            "",
+        )
+        text = text.replace(
+            "import versioneer",
+            "def _parse_reqs(path):\n"
+            "    import os\n"
+            "    if not os.path.exists(path):\n"
+            "        return []\n"
+            "    out = []\n"
+            "    with open(path) as f:\n"
+            "        for line in f:\n"
+            "            line = line.split(\"#\", 1)[0].strip()\n"
+            "            if line and not line.startswith(\"-\"):\n"
+            "                out.append(line)\n"
+            "    return out\n\n"
+            "import versioneer",
+        )
+        text = re.sub(
+            r"parse_requirements\(\s*([^,]+?),"
+            r"\s*session=pip\.download\.PipSession\(\)\s*\)",
+            r"_parse_reqs(\1)",
+            text,
+        )
+        text = re.sub(
+            r"\[\s*str\(ir\.req\)\s+for\s+ir\s+in\s+(.+?)\s*\]",
+            r"list(\1)",
+            text,
+            flags=re.DOTALL,
+        )
+        text = text.replace("\nimport pip\n", "\n")
+        setup_py.write_text(text, encoding="utf-8")
+    subprocess.run(
+        [str(pip), "install", "--force-reinstall",
+         "--no-build-isolation", str(workdir)],
         check=True, capture_output=True,
     )
 
@@ -316,6 +398,56 @@ def verify_bug(bug: dict[str, Any], *, install: bool = False) -> tuple[bool, str
 
 # ---------- Adapter dispatch ------------------------------------------
 
+def _build_merged_seed_corpus(
+    general_seeds: Path, bug: dict[str, Any], out_dir: Path,
+) -> Path:
+    """Materialize a per-cell seed corpus = general seeds ∪ bug PoV.
+
+    PoV-seed injection is standard Magma / FuzzBench practice when the
+    benchmark's purpose is detection attribution rather than discovery
+    from scratch. Rationale + citation in PHASE4_BASELINE_FIXES.md §0.4.
+    The merged dir lives at `<out_dir>/seeds_merged/` so it's auditable
+    per cell. Uses symlinks where possible (fast, zero-copy) and falls
+    back to shutil.copy2 on file systems that disallow symlinks.
+    """
+    merged = out_dir / "seeds_merged"
+    merged.mkdir(parents=True, exist_ok=True)
+
+    if general_seeds.is_dir():
+        for src in general_seeds.iterdir():
+            if src.is_file():
+                dst = merged / src.name
+                if dst.exists():
+                    continue
+                try:
+                    os.symlink(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
+
+    pov_dir = REPO_ROOT / "compares" / "bug_bench" / "triggers" / bug["id"]
+    fmt = bug.get("format", "VCF").lower()
+    pov_added = 0
+    if pov_dir.is_dir():
+        # Accept original.vcf / original.sam / original.bam for SAM-row
+        # bugs that prefer binary PoVs.
+        candidates = list(pov_dir.glob(f"original.{fmt}"))
+        if fmt == "sam":
+            candidates.extend(pov_dir.glob("original.bam"))
+        for pov in candidates:
+            if not pov.is_file():
+                continue
+            dst = merged / f"pov_{bug['id']}_{pov.name}"
+            if dst.exists():
+                continue
+            try:
+                os.symlink(pov, dst)
+            except OSError:
+                shutil.copy2(pov, dst)
+            pov_added += 1
+    print(f"[pov] {bug['id']}: seeds_merged={merged} pov_added={pov_added}")
+    return merged
+
+
 def invoke_adapter(
     tool: str, bug: dict[str, Any], out_dir: Path, time_budget_s: int,
     seed_corpus: Path,
@@ -337,13 +469,16 @@ def invoke_adapter(
         from run_pure_random import run as _run  # type: ignore
     elif tool == "evosuite_anchor":
         # Delegate to the existing shell-based EvoSuite pipeline.
+        # EvoSuite generates JUnit cases, not bytes — seed corpus is
+        # unused, PoV injection is a no-op for this adapter.
         return _invoke_evosuite_anchor(bug, out_dir, time_budget_s)
     else:
         raise RuntimeError(f"unknown tool {tool!r}")
 
+    merged_seeds = _build_merged_seed_corpus(seed_corpus, bug, out_dir)
     result = _run(
         sut=bug["sut"],
-        seed_corpus=seed_corpus,
+        seed_corpus=merged_seeds,
         out_dir=out_dir,
         time_budget_s=time_budget_s,
         format_hint=bug.get("format", "VCF"),

@@ -20,7 +20,23 @@ These are orthogonal to any specific chat — land them once, then
 every re-run inherits the fix. Skip to §1 if you want to go chat-by-
 chat first.
 
-### 0.1 Seed sanitization (removes the Chat-2 "chr1,chr3" class of budget waste)
+**Landed status table (2026-04-21)**:
+
+| §    | description                                            | state  |
+| :--- | :----------------------------------------------------- | :----- |
+| 0.1  | Global seed sanitization (all-SUT rejects)             | **landed** — 10 SAM seeds dropped |
+| 0.2  | libFuzzer keep-going flags (+ atheris `-timeout=30`)  | **landed** — 4 adapters patched |
+| 0.3  | Budget 300 → 7200 s (`BUDGET_S` env var)               | config only — set at invocation |
+| 0.4  | PoV seed injection via `_build_merged_seed_corpus`     | **landed** — smoke-tested on vcfpy-146 |
+| 0.5  | vcfpy install fallbacks (`--no-build-isolation` + git) | **landed** via Chat 5 retry pass |
+| 0.6  | Noodles per-version harness (Option A — accept skips)  | config only — documented skips |
+| 0.7  | EvoSuite minimum 3600 s budget                         | config only — set at invocation |
+| 0.8  | seqan3 per-anchor harness rebuild                      | **pending** — blocker for Chat 5 re-run |
+| 0.9  | Linux `biotest_harness` (no `.exe`) for seqan3 replay  | **pending** |
+| 0.10 | Per-SUT poison seed filter                             | **pending** — complements §0.1 |
+| 0.11 | 9p tmpfs driver workaround (Windows Docker Desktop)    | operational note — adopt per chat |
+
+### 0.1 Seed sanitization (removes the Chat-2 "chr1,chr3" class of budget waste) — **LANDED 2026-04-21**
 
 Current problem: `seeds/sam/real_world_htslib_colons.bam` crashes
 htsjdk SAM parser on the first read with `MS: 0 ; base unit: 0000…`
@@ -81,7 +97,7 @@ if __name__ == "__main__":
 Run once: `python compares/scripts/sanitize_seeds.py`. Commit the
 resulting `seeds/dropped_during_sanitization.json` as evidence.
 
-### 0.2 libFuzzer "keep-going" mode (turns 1 crash into N)
+### 0.2 libFuzzer "keep-going" mode (turns 1 crash into N) — **LANDED 2026-04-21**
 
 Current problem: libFuzzer / jazzer / atheris / cargo_fuzz default
 behaviour is **halt on first crash** (exit 77). Once they find the
@@ -127,7 +143,7 @@ Budget your machine-time accordingly. If 30 h is infeasible, 3600 s
 is an acceptable half-way compromise (Klees CCS'18 argues 24 h is
 minimum but shorter is OK if you document it).
 
-### 0.4 PoV seed injection per cell (Magma-standard practice)
+### 0.4 PoV seed injection per cell (Magma-standard practice) — **LANDED 2026-04-21**
 
 Each bug in `compares/bug_bench/triggers/<bug_id>/original.{vcf,sam}`
 is a **Proof-of-Vulnerability** — a known-good input that triggers
@@ -156,28 +172,29 @@ if pov_dir.exists():
 Alternative (cleaner): have the driver pass a per-bug seed-corpus
 override to the adapter when a PoV exists. Either works.
 
-### 0.5 vcfpy install-failure fixes (Chat 3)
+### 0.5 vcfpy install-failure fixes (Chat 3) — **LANDED 2026-04-21 (via Chat 5)**
 
-Chat 3's `skip_reasons.json` records two non-trivial install errors:
+Chat 3 originally skipped two cells on install failures:
+- `vcfpy-127` pre_fix **0.11.0** — sdist build bombs on modern pip's
+  build-isolation + 0.11.0-era `setup.py` that imports the removed
+  `pip.req` API.
+- `vcfpy-nocall-0.8` pre_fix **0.8.1** — never published to PyPI.
 
-- `vcfpy-127` pre_fix **0.11.0** — `install pre_fix failed (sdist
-  build: no pip in build env)`. Root cause: 0.11.0 is an sdist-only
-  release; pip's isolated build env in the dedicated vcfpy sut-env
-  venv is missing setuptools/wheel.
-  **Action**: `pip install --no-build-isolation vcfpy==0.11.0` into
-  the vcfpy sut-env (`compares/results/sut-envs/vcfpy/bin/pip`).
-  Better: add `--no-build-isolation` to the `_install_vcfpy` helper
-  in `bug_bench_driver.py` for every vcfpy install so all
-  sdist-only versions work.
+**Resolution** (now in `bug_bench_driver.py::_install_vcfpy` +
+`_install_vcfpy_from_git`):
+1. First try `pip install --no-build-isolation vcfpy==<version>` into
+   `/opt/atheris-venv` (overlay FS — sidesteps the 9p ENOMEM storm
+   that hits `/work`-resident sut-envs).
+2. On "No matching distribution found" OR "No module named 'pip.req'",
+   fall back to `git clone --branch v<version>
+   https://github.com/bihealth/vcfpy`, patch `setup.py` to remove the
+   dead `pip.req`/`pip.download` imports, then `pip install` from the
+   work tree.
 
-- `vcfpy-nocall-0.8` pre_fix **0.8.1** — `install pre_fix failed
-  (version not on PyPI)`. 0.8.1 is a git-only release never
-  published to PyPI.
-  **Action**: patch `_install_vcfpy` to fall back to GitHub tarball
-  when PyPI install errors with "No matching distribution found":
-  `pip install "git+https://github.com/bihealth/vcfpy@v0.8.1"`.
-  If GitHub tag `v0.8.1` doesn't exist, use commit SHA from the
-  CHANGELOG.
+Chat 3 re-run is no longer blocked by install failures. The path also
+re-routes all vcfpy installs to `/opt/atheris-venv` (the interpreter
+the atheris adapter actually fuzzes with), keeping pre-fix pin
+coherent with the running interpreter.
 
 ### 0.6 Noodles harness per-version compile (Chat 4)
 
@@ -197,6 +214,166 @@ alongside the Cargo.toml pin. Moderate engineering; medium lift on
 the 3 skipped cells.
 
 Pick A unless the paper draft needs those 3 cells specifically.
+
+### 0.8 seqan3 libFuzzer harness is **not** rebuilt per anchor (surfaced by Chat 5 — blocker)
+
+Chat 5's `report.md` deep-dive identified an architectural bug in the
+seqan3 path: the libFuzzer harness
+(`compares/harnesses/libfuzzer/build/seqan3_sam_fuzzer_libfuzzer`)
+is built **once** against the image-baked `/opt/seqan3` (pinned at
+3.3.0 per `/opt/seqan3/include/seqan3/version.hpp`) and **reused
+across every anchor**. The driver's `_checkout_seqan3` does the
+`git checkout -f <sha>` under
+`/work/compares/baselines/seqan3/source/`, but nothing in the build
+pipeline actually reads from there — so the binary the fuzzer
+executes is byte-identical for pre-fix and post-fix in every cell.
+Every seqan3 cell is therefore **architecturally false+**, regardless
+of budget or PoV seeding.
+
+Proof: all 6 libfuzzer × seqan3 cells in Chat 5 produced the same
+751-byte trigger (SHA-1 `4ef99381…07c8`) in < 0.25 s, which is a
+byte-match for the seed
+`compares/results/bench_seeds/sam/real_world_htslib_auxf_values.sam`.
+The crash is an assertion failure in `format_sam.hpp:895`
+(`tag_str.size() > 5`) inside seqan3 **3.3.0** — not any of the seven
+target bugs.
+
+**Action** (must land before Chat 5 re-runs are meaningful):
+
+1. **Rewire `CMakeLists.txt` at `compares/harnesses/libfuzzer/` to
+   source seqan3 headers from the per-anchor checkout**:
+   ```cmake
+   # Instead of target_include_directories(... PRIVATE /opt/seqan3/include)
+   set(SEQAN3_HEADERS "${CMAKE_SOURCE_DIR}/../../baselines/seqan3/source/include"
+       CACHE PATH "Path to seqan3 headers, per-anchor checkout")
+   target_include_directories(seqan3_sam_fuzzer PRIVATE ${SEQAN3_HEADERS})
+   ```
+2. **Invoke the harness rebuild from the driver after each
+   `_checkout_seqan3`**. Mirror `_install_noodles`:
+   ```python
+   def _install_seqan3(anchor_version: str) -> None:
+       _checkout_seqan3(anchor_version, SEQAN3_SRC)
+       subprocess.run(
+           ["bash", str(REPO_ROOT/"compares"/"scripts"/"build_harnesses.sh"),
+            "--only-seqan3"],
+           check=True, capture_output=True, env=env_with_path,
+       )
+   ```
+   Wire this into `install_sut`'s `sut == "seqan3"` branch (currently
+   just calls `_checkout_seqan3`).
+3. **Keep `/opt/seqan3` as the library for the canonical-JSON
+   `SeqAn3Runner`** — that runner is the voter for the differential
+   oracle, and pinning it at a known-good 3.3.0 separates "SUT under
+   fuzz" from "reference parser". Only the fuzzer harness needs the
+   per-anchor rebuild.
+
+**Until this lands, drop libfuzzer × seqan3 from Chat 5 re-runs** —
+they cannot produce informative data.
+
+### 0.9 seqan3 replay harness ships only as Windows `.exe` (surfaced by Chat 5)
+
+`_replay_trigger_silenced`'s seqan3 branch calls `SeqAn3Runner`,
+which shells out to
+`harnesses/cpp/build/biotest_harness.exe` — a Windows PE32+
+binary. In the Linux container `exec` fails with `ENOEXEC`, the
+runner sets `success=False`, and the driver converts that to
+`confirmed_fix_silences_signal=false`. Even if the §0.8 harness
+rebuild lands and the crash IS a real seqan3 bug, the replay path
+can't confirm silence on Linux.
+
+**Action**:
+
+1. **Build `harnesses/cpp/build/biotest_harness` (no `.exe`) for
+   Linux** inside the bench image. `compares/scripts/build_harnesses.sh`
+   already handles this if run inside the container — invoke it once
+   and verify the binary appears.
+2. **Patch `SeqAn3Runner._harness_path`** to prefer the no-extension
+   file on Linux and fall back to `.exe` on Windows:
+   ```python
+   import platform
+   base = REPO_ROOT / "harnesses" / "cpp" / "build" / "biotest_harness"
+   self._harness = base.with_suffix(".exe") if platform.system() == "Windows" else base
+   ```
+3. **Driver behaviour on ENOEXEC / missing binary**: prefer
+   `_replay_trigger_silenced` to return `None` (renders as
+   `crash?` in the report) rather than `False` (renders as `false+`
+   and looks like a genuine negative). One-line fix in the seqan3
+   branch — catch `OSError` and return `None`.
+
+### 0.10 per-SUT seed filtering (complement to §0.1 global sanitization)
+
+§0.1 drops seeds rejected by *every* SUT. Chat 2 and Chat 5 both
+surfaced the residual case: seeds that are valid for some SUTs but
+poisonous for others. §0.1 can't drop these without losing coverage
+for the SUTs that accept them; they just get reshaped into "poison
+for the specific SUT the current cell is fuzzing."
+
+**Examples from Chats 2 + 5**:
+- `real_world_htslib_colons.bam` — `@SQ chr1,chr3` header.
+  htsjdk (strict regex) rejects → Chat 2 jazzer cells halted on it.
+  pysam (htslib) accepts → kept by §0.1.
+- `real_world_htslib_auxf_values.sam` — empty-value aux tags
+  (`Zn:Z:`, `Hn:H:`). seqan3 3.3.0 asserts → Chat 5 libfuzzer cells
+  halted on it. htsjdk accepts → kept by §0.1.
+
+**Action** — add a per-cell filter step inside
+`_build_merged_seed_corpus` (the function landed in §0.4):
+
+```python
+def _seed_probes_target_sut(seed: Path, sut: str, fmt: str) -> bool:
+    """True iff the target SUT's ParserRunner does NOT throw on this seed.
+    Non-throwing = seed is bug-relevant; throwing = seed is a known
+    validation-poison for this specific SUT and should be excluded from
+    THIS cell's corpus (may still be in other cells' corpora)."""
+    r = _load_runner(sut)  # same loader as sanitize_seeds.py
+    if r is None or not r.is_available():
+        return True  # can't probe; be permissive
+    try:
+        res = r.run(seed, fmt, timeout_s=10.0)
+        return res.success or res.error_type == "ineligible"
+    except Exception:
+        return False
+```
+
+Apply the filter in `_build_merged_seed_corpus`: only link a general
+seed into `seeds_merged/` if it passes the per-SUT probe. PoVs are
+always merged regardless — they're supposed to trigger.
+
+This filter costs ~10 s per cell the first time (one probe × ~30
+seeds × a few hundred ms each), but the result can be cached under
+`compares/results/bench_seeds/per_sut_accepted/<sut>/<fmt>/`
+(symlinks to originals for cells where the SUT accepted) and reused
+across cells with the same (SUT, format).
+
+### 0.11 9p `/work` ENOMEM storm — operational workaround (from Chat 5)
+
+Chat 5 reported repeated `[Errno 12] Cannot allocate memory` at
+Python import time when running `bug_bench_driver.py` from
+`/work/compares/scripts/` under multi-chat I/O pressure. Root cause
+is Windows Docker Desktop's 9p `readdir` cache filling during
+`sys.path` resolution + `import`-time file scanning.
+
+Chat 5's successful workaround — mirror the driver onto tmpfs before
+invoking it — is worth promoting to a standard practice for every
+future chat:
+
+```bash
+docker exec biotest-bench-setup bash -c '
+  mkdir -p /tmp/chat_scripts /tmp/chat_adapters
+  cp /work/compares/scripts/*.py /tmp/chat_scripts/
+  cp /work/compares/scripts/tool_adapters/*.py /tmp/chat_adapters/
+  # Patch hardcoded ADAPTERS_DIR in the tmpfs copy to point at tmpfs too:
+  sed -i "s|/work/compares/scripts/tool_adapters|/tmp/chat_adapters|g" \
+      /tmp/chat_scripts/bug_bench_driver.py
+  # Now drive from tmpfs:
+  BUDGET_S=${BUDGET_S:-7200} \
+    python3.12 /tmp/chat_scripts/bug_bench_driver.py <flags>
+'
+```
+
+Results still land at `/tmp/bug_bench_chatN/` on overlay FS (not
+`/work`). Copy back at end of chat. This is cosmetic cost (~10 MB
+copy) for ~0 ENOMEM failures, well worth it on Windows.
 
 ### 0.7 EvoSuite minimum-viable budget
 
@@ -409,19 +586,62 @@ pure_random mirrors.
 
 ---
 
-## 5. Chat 5 — biopython + seqan3 SAM (NOT YET RUN)
+## 5. Chat 5 — biopython + seqan3 SAM (RAN 2026-04-21 at `BUDGET_S=300`)
 
-**Not yet executed.** When you run it, this chat covers 21 cells:
-1 biopython bug × 3 tools + 6 seqan3 bugs × 3 tools.
+**Ran at `BUDGET_S=300`.** Artefacts:
+`compares/results/bug_bench_result/bug_bench_chat5_draft/`. 14 cells:
+atheris × biopython (1), libfuzzer × seqan3 (6), pure_random × both
+(7). **biotest excluded by operator.** Findings:
 
-Plan says {biotest, atheris/libfuzzer, pure_random}. **Drop
-biotest**. Run {atheris (biopython), libfuzzer (seqan3),
-pure_random (both)}. That's 14 cells:
+| tool        | cells | FOUND | false+ | miss | skip |
+| :---------- | ----: | ----: | -----: | ---: | ---: |
+| atheris     |    1  |    0  |     0  |   1  |   0  |
+| libfuzzer   |    6  |    0  |  **6** |   0  |   0  |
+| pure_random |    7  |    0  |     0  |   7  |   0  |
 
-- biopython × atheris: 1 cell
-- biopython × pure_random: 1 cell
-- seqan3 × libfuzzer: 6 cells
-- seqan3 × pure_random: 6 cells
+**Chat 5 findings** (details in
+`compares/results/bug_bench_result/bug_bench_chat5_draft/report.md`):
+
+1. **All 6 libfuzzer × seqan3 cells are byte-identical-same-crash
+   false+**. Single 751-byte trigger (SHA-1 `4ef99381…07c8`),
+   ttfb < 0.25 s, traced to the image-baked `/opt/seqan3` 3.3.0
+   assertion `format_sam.hpp:895: tag_str.size() > 5` on the seed
+   `real_world_htslib_auxf_values.sam` (empty-value aux tags).
+   Not any of the 7 target bugs. Root cause: **the libfuzzer harness
+   is not rebuilt per anchor** — see §0.8 for the fix (blocker for
+   Chat 5 re-run).
+2. **seqan3 replay is broken on Linux** — `biotest_harness.exe` is
+   Windows PE32+; Linux exec fails with `ENOEXEC`; `SeqAn3Runner`
+   reports `success=False` → `_replay_trigger_silenced` returns
+   `false` instead of `None`. See §0.9.
+3. **atheris × biopython-4825 `miss`** at 300 s. Expected per
+   §3/§5 scaling argument; budget bump (§0.3) to 7200 s should
+   surface the timeout signal the bug emits.
+4. **pure_random × 7 all `miss`** — intrinsic; Chat 6's post-hoc
+   replay scores them.
+
+**Chat 5 also landed three general driver fixes** (all committed
+in `bug_bench_driver.py` on 2026-04-21):
+- `_checkout_seqan3` resolves rev-specs (`edbfa956f^`) via
+  `git rev-parse` before `git checkout -f`.
+- `_install_biopython` short-circuits via `python -c "import Bio; print(Bio.__version__)"`
+  probe before `pip install --force-reinstall`, sidestepping 9p
+  ENOMEM cascades.
+- `_install_vcfpy` routed to `/opt/atheris-venv` (overlay FS) with
+  `--no-build-isolation` + GitHub-fallback for 0.8.x / 0.11.0 —
+  **closes the §0.5 todo**.
+
+**What's needed before Chat 5 is re-run at `BUDGET_S=7200`**:
+- §0.8 seqan3 per-anchor harness rebuild (**blocker** — without it,
+  all seqan3 cells are architecturally false+).
+- §0.9 Linux `biotest_harness` (so post-fix replay can observe
+  silencing).
+- §0.10 per-SUT seed filter (will pre-empty the Chat-2 /
+  Chat-5-style poison-seed halts).
+- §0.11 tmpfs driver workaround (cosmetic robustness against 9p
+  ENOMEM).
+
+**Original planned cell distribution** (for completeness):
 
 ### 5.1 `atheris` (biopython, 1 cell)
 
@@ -615,24 +835,37 @@ the Phase 4 header:
 
 ---
 
-## 7. Priority order if time is limited
+## 7. Priority order if time is limited (revised 2026-04-21 post-Chat-5)
 
-If you can only do 2-3 things, do these in order:
+§§0.1-0.5 have landed. The four remaining items, ranked by paper-
+draft impact:
 
-1. **§0.1 seed sanitization** (20 min) — eliminates the Chat-2 class
-   of poison-seed budget waste for every chat.
-2. **§0.4 PoV seed injection** (1 h engineering) — largest leverage
-   on crash-finder detection rate; transforms Chat 1/2/3/4/5 from
-   "rediscover bug from scratch" to "mutate around a known
-   trigger".
-3. **§0.3 budget bump to 7200 s + rerun Chat 5** — completes the
-   baseline coverage; gives you real numbers for the paper draft.
+1. **§0.8 seqan3 per-anchor harness rebuild** (1-2 h engineering) —
+   **absolute blocker** for Chat 5 seqan3 re-runs. Without it, every
+   seqan3 cell is architecturally false+ because the fuzzer binary
+   is identical pre-fix / post-fix.
+2. **§0.9 Linux `biotest_harness`** (~30 min) — must pair with §0.8
+   so post-fix replay can actually observe silencing. Skipping this
+   converts genuine seqan3 hits into `crash?` (acceptable but noisy)
+   or `false+` (current state, wrong).
+3. **§0.10 per-SUT seed filter** (1 h engineering) — cleans up the
+   residual Chat 2 (`@SQ chr1,chr3`) and Chat 5
+   (`real_world_htslib_auxf_values.sam`) poison-seed halts. §0.1
+   global sanitization can't catch these; §0.2 `-fork=1` partially
+   compensates but still wastes some budget at cell startup.
+4. **§0.3 budget bump + re-run Chats 1-5** (~30 h @ 4-way parallel) —
+   the budget bump is config-only, but the actual re-runs take real
+   wall-clock time. Chats 1, 3, 4 should improve meaningfully; Chat
+   2 needs §0.10; Chat 5 needs §0.8 + §0.9 first.
 
-Everything else (§0.2 keep-going, §0.5 vcfpy install, §0.6 noodles
-per-version, §0.7 EvoSuite budget) is secondary polish.
+**Side outputs worth capturing** (no code cost):
+- The `oneAllele:582` IOOBE in htsjdk (Chat 1) — undisclosed latent
+  bug. Upstream PR is free paper-draft material.
+- The `format_sam.hpp:895: tag_str.size() > 5` assertion in
+  seqan3 3.3.0 (Chat 5) — also an undisclosed genuine bug (empty
+  aux-tag value triggers an `assert` instead of a proper throw).
+  Upstream PR is similarly free paper-draft material.
 
-**Non-priority but valuable side outputs**:
-- The `oneAllele:582` IOOBE in htsjdk is an undisclosed latent bug
-  surfaced by jazzer during Chat 1. Filing an upstream PR is free
-  lifting for the paper draft ("our benchmark methodology found an
-  unrelated real bug").
+**Chat 6 is a strict barrier** on Chats 1-5 being re-run with the
+above fixes. No point running Chat 6's rollup + post-hoc replay +
+fairness equalizer before the per-chat artefacts are trustworthy.

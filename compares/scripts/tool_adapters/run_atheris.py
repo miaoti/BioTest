@@ -53,6 +53,12 @@ def run(
     harness = _harness_for(sut)
 
     started = time.time()
+    # Atheris wraps libFuzzer identically — same flags apply.
+    # -fork=1 + -ignore_crashes=1 keep the fuzzer exploring past the
+    # first crash (Klees CCS'18 §3.1; PHASE4_BASELINE_FIXES.md §0.2).
+    # -timeout=30 converts per-input hangs into crashes (needed for
+    # bugs whose signal type is `timeout_or_differential_disagreement`
+    # e.g. biopython-4825).
     cmd = [
         python_bin,
         str(harness),
@@ -60,6 +66,10 @@ def run(
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
         "-atheris_runs=0",
+        "-fork=1",
+        "-ignore_crashes=1",
+        "-timeout=30",
+        "-print_final_stats=1",
         str(corpus_dir),
     ]
     exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)

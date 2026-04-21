@@ -83,10 +83,15 @@ def run(
     started = time.time()
     # cargo-fuzz binaries accept libFuzzer's standard CLI because they
     # link libFuzzer's runtime. Same flags as run_libfuzzer.py.
+    # -fork=1 + -ignore_crashes=1 per PHASE4_BASELINE_FIXES.md §0.2 so
+    # one crash doesn't halt the trial.
     cmd = [
         str(bin_path),
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
+        "-fork=1",
+        "-ignore_crashes=1",
+        "-print_final_stats=1",
         str(corpus_dir),
     ]
     exit_code = run_subprocess_with_timeout(cmd, log_file, time_budget_s)
