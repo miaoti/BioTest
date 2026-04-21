@@ -123,18 +123,24 @@ def _install_biopython(version: str) -> None:
 
 
 def _install_vcfpy(version: str) -> None:
-    """Pip --force-reinstall vcfpy into its dedicated 3.11 venv.
+    """Pip --force-reinstall vcfpy into /opt/atheris-venv.
 
-    Added 2026-04-20 as part of the pysam → vcfpy/noodles refactor
-    (DESIGN §12 change log, §13.3.4).
+    Targets the atheris venv on the container's overlay FS rather than
+    the /work-mounted sut-env. The atheris adapter invokes its fuzzer
+    with /opt/atheris-venv/bin/python (see compares/scripts/tool_adapters/
+    run_atheris.py), so installing there keeps the pre-fix pin coherent
+    with the interpreter actually doing the fuzzing. The /work-mounted
+    venv additionally hits `[Errno 12] Cannot allocate memory` under
+    concurrent multi-chat I/O pressure on Windows Docker Desktop's 9p
+    share, which the overlay FS sidesteps entirely.
     """
-    if not SUT_VENV_VCFPY_PIP.exists():
+    pip = Path("/opt/atheris-venv/bin/pip")
+    if not pip.exists():
         raise RuntimeError(
-            f"vcfpy sut-env venv missing at {SUT_VENV_VCFPY_PIP.parent.parent}. "
-            "Run: bash compares/scripts/prepare_sut_install_envs.sh")
+            f"atheris venv pip missing at {pip}. "
+            "Run the bench image with the atheris layer.")
     subprocess.run(
-        [str(SUT_VENV_VCFPY_PIP), "install", "--force-reinstall",
-         f"vcfpy=={version}"],
+        [str(pip), "install", "--force-reinstall", f"vcfpy=={version}"],
         check=True, capture_output=True,
     )
 
@@ -539,14 +545,19 @@ def _replay_trigger_silenced(sut: str, trig_path: Path, fmt: str) -> bool:
             from test_engine.runners.biopython_runner import BiopythonRunner  # type: ignore
             r = BiopythonRunner().run(trig_path, fmt)
         elif sut == "vcfpy":
-            import vcfpy  # type: ignore
-            try:
-                with vcfpy.Reader.from_path(str(trig_path)) as reader:
-                    for _ in reader:
-                        pass
-                return True
-            except Exception:
-                return False
+            py = "/opt/atheris-venv/bin/python"
+            proc = subprocess.run(
+                [py, "-c",
+                 "import sys, vcfpy\n"
+                 "try:\n"
+                 "    with vcfpy.Reader.from_path(sys.argv[1]) as r:\n"
+                 "        [_ for _ in r]\n"
+                 "except Exception:\n"
+                 "    sys.exit(1)\n",
+                 str(trig_path)],
+                capture_output=True, timeout=30,
+            )
+            return proc.returncode == 0
         elif sut == "htsjdk":
             from test_engine.runners.htsjdk_runner import HTSJDKRunner  # type: ignore
             r = HTSJDKRunner().run(trig_path, fmt)
