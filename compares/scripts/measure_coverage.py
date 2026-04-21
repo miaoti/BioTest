@@ -428,6 +428,12 @@ def main() -> int:
         help="Path to the config file that owns the filter rules "
              "(default: biotest_config.yaml).",
     )
+    ap.add_argument(
+        "--metric", default="LINE", choices=["LINE", "BRANCH"],
+        help="Which JaCoCo counter to sum (LINE preserves the historical "
+             "Run-N numbers; BRANCH grades branch coverage when both sides "
+             "report it). Only honoured for JaCoCo XML reports.",
+    )
     args = ap.parse_args()
 
     # Zip reports with labels, padding labels with "" if shorter.
@@ -440,6 +446,7 @@ def main() -> int:
             format_=args.format_.upper(),
             config_path=args.config,
             label=lbl,
+            metric=args.metric,
         )
         results.append(r)
 

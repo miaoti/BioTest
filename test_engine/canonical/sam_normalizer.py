@@ -3,6 +3,35 @@ SAM normalizer: parse raw SAM text into CanonicalSam.
 
 This is the Python-native parser used as a reference normalizer.
 It reads raw SAM text lines and produces a CanonicalSam object.
+
+Tolerance design (Fix #1, 2026-04-20)
+-------------------------------------
+SAM v1.6 admits multiple equivalent serializations for the same logical
+record (RNEXT="=" alias for RNAME, optional-tag ordering, float-tag
+precision, biopython-consumed tags like MD/AS that other parsers leave
+in place). When the consensus oracle compared canonical JSON across 6
+voters in Run 9, these spec-allowed variations triggered 26/27 MR
+quarantines — false positives, not real bugs.
+
+The fixes here resolve those variations at the canonical-JSON level so
+all voters emit byte-identical JSON for the same logical record:
+
+1. **RNEXT="=" → RNAME**: spec allows "=" as alias for "same as RNAME";
+   different parsers may resolve or preserve it. We resolve it here so
+   the canonical form is always the explicit reference name.
+2. **Float-tag precision**: tag type "f" can be serialized as
+   `0.85`, `8.5e-1`, `0.850000` etc. We round to ``FLOAT_TAG_SIGFIGS``
+   significant digits before storing.
+3. **Biopython-consumed tags dropped**: Bio.Align consumes MD/AS tags
+   while parsing and never emits them in its canonical output. Other
+   parsers preserve them. We drop them globally so the comparison
+   stays apples-to-apples.
+4. **Header-tag sort**: ``_parse_tag_fields`` already sorts; left
+   here as a documented invariant so future header-emitting code stays
+   consistent.
+
+These fixes are SUT-agnostic — they live in the framework's canonical
+normalizer, not in any per-runner code path.
 """
 
 from __future__ import annotations
@@ -17,6 +46,24 @@ from .schema import (
     CigarOp,
     TagValue,
 )
+
+
+# Number of significant digits to round float-typed (`f`) SAM tag values
+# to before they enter canonical JSON. 6 sig digits matches the spec's
+# IEEE 754 single-precision implication and is enough to keep semantic
+# fidelity while suppressing per-parser printf-format drift.
+FLOAT_TAG_SIGFIGS: int = 6
+
+
+# SAM optional tags that Bio.Align.parse() consumes and never re-emits
+# (used internally to reconstruct MD-implied alignments). Other parsers
+# preserve them. We drop them from the canonical record before compare
+# so consensus does not flag a false positive.
+#
+# Sources:
+#   - Bio/Align/sam.py — `MD` and `AS` consumed by `_parse_md` / scoring
+#   - SAM v1.6 §1.5 — these tags are SUMMARY/derived, not authoritative
+BIOPYTHON_CONSUMED_TAGS: frozenset[str] = frozenset({"MD", "AS"})
 
 
 def normalize_sam_text(
@@ -108,7 +155,17 @@ def _parse_alignment(
     pos = None if raw_pos == 0 else raw_pos  # Already 1-based in SAM text
     mapq = int(cols[4])
     cigar = _parse_cigar(cols[5])
-    rnext = None if cols[6] == "*" else ("=" if cols[6] == "=" else cols[6])
+    # Tolerance #1 (Run 9 lesson): RNEXT="=" is a SAM v1.6-allowed alias
+    # for "same as RNAME". Some parsers preserve the literal "=", others
+    # resolve it to the reference name. Resolving here makes both styles
+    # produce byte-identical canonical JSON.
+    raw_rnext = cols[6]
+    if raw_rnext == "*":
+        rnext = None
+    elif raw_rnext == "=":
+        rnext = rname  # may itself be None for unmapped reads — that's fine
+    else:
+        rnext = raw_rnext
     raw_pnext = int(cols[7])
     pnext = None if raw_pnext == 0 else raw_pnext
     tlen = int(cols[8])
@@ -127,17 +184,25 @@ def _parse_alignment(
                 f"{qname!r}"
             )
 
-    # Optional tags (columns 12+)
+    # Optional tags (columns 12+).
+    # Tolerance #3 (Run 9 lesson): Bio.Align consumes MD/AS during parse
+    # and never re-emits them; other parsers preserve them. Drop the set
+    # globally so the consensus oracle does not mark the resulting MD/AS
+    # absence as a cross-voter disagreement.
     tags: dict[str, TagValue] = {}
     for col in cols[11:]:
         m = re.match(r"^([A-Za-z][A-Za-z0-9]):([AifZHB]):(.+)$", col)
         if m:
             tag_name = m.group(1)
+            if tag_name in BIOPYTHON_CONSUMED_TAGS:
+                continue
             tag_type = m.group(2)
             tag_val = _parse_tag_value(m.group(3), tag_type)
             tags[tag_name] = TagValue(type=tag_type, value=tag_val)
 
-    # Sort tags by key for deterministic output
+    # Sort tags by key for deterministic output (header-tag sort already
+    # handled by `_parse_tag_fields`; this enforces the same invariant
+    # for record-level tags so MR-induced reorderings normalise away).
     sorted_tags = dict(sorted(tags.items()))
 
     return CanonicalSamRecord(
@@ -166,12 +231,31 @@ def _parse_cigar(cigar_str: str) -> Optional[list[CigarOp]]:
     return ops if ops else None
 
 
+def _round_float_sigfig(value: float, sig: int = FLOAT_TAG_SIGFIGS) -> float:
+    """Round ``value`` to ``sig`` significant figures.
+
+    Used to suppress per-parser printf-format drift on `f`-typed SAM
+    tags (Tolerance #2). 0.0 is preserved as-is so we don't divide by
+    zero in log10. Returns a Python float that JSON-serialises stably.
+    """
+    if value == 0.0 or value != value:  # zero or NaN
+        return value
+    import math
+    digits = sig - int(math.floor(math.log10(abs(value)))) - 1
+    return round(value, digits)
+
+
 def _parse_tag_value(val_str: str, tag_type: str) -> Any:
-    """Parse a SAM tag value according to its type."""
+    """Parse a SAM tag value according to its type.
+
+    Float-typed (`f`) values are rounded to ``FLOAT_TAG_SIGFIGS`` sig
+    digits — a Run-9 tolerance fix that suppresses ``0.85`` vs
+    ``0.8500000`` vs ``8.5e-1`` per-parser printf-format drift.
+    """
     if tag_type == "i":
         return int(val_str)
     if tag_type == "f":
-        return float(val_str)
+        return _round_float_sigfig(float(val_str))
     if tag_type == "B":
         # Array type: B:type,val1,val2,...
         parts = val_str.split(",")
@@ -180,7 +264,7 @@ def _parse_tag_value(val_str: str, tag_type: str) -> Any:
         if subtype in ("c", "C", "s", "S", "i", "I"):
             return [int(v) for v in values]
         if subtype == "f":
-            return [float(v) for v in values]
+            return [_round_float_sigfig(float(v)) for v in values]
         return values
     # A (char), Z (string), H (hex)
     return val_str

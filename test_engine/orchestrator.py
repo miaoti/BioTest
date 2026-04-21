@@ -118,6 +118,8 @@ def _run_single_test(
     output_dir: Path,
     fmt: str,
     primary_target: str = "",
+    consensus_quorum_fraction: float = 0.501,
+    consensus_field_tolerance: bool = False,
 ) -> None:
     """
     Execute metamorphic + differential oracles for one (seed, rng_seed) pair.
@@ -245,9 +247,13 @@ def _run_single_test(
         eligibility = build_eligibility_map(applicable)
         consensus_x = get_consensus_output(
             results_x, format_context=fmt, eligibility_map=eligibility,
+            quorum_fraction=consensus_quorum_fraction,
+            field_tolerance=consensus_field_tolerance,
         )
         consensus_tx = get_consensus_output(
             results_tx, format_context=fmt, eligibility_map=eligibility,
+            quorum_fraction=consensus_quorum_fraction,
+            field_tolerance=consensus_field_tolerance,
         )
         if consensus_x.ineligible_parsers or consensus_tx.ineligible_parsers:
             logger.debug(
@@ -782,6 +788,8 @@ def _run_mr_with_hypothesis(
     fmt: str,
     max_examples: int = 50,
     primary_target: str = "",
+    consensus_quorum_fraction: float = 0.501,
+    consensus_field_tolerance: bool = False,
 ) -> None:
     """
     Run a single MR through Hypothesis with random seed exploration.
@@ -800,7 +808,12 @@ def _run_mr_with_hypothesis(
             "  No Hypothesis strategy for '%s' — falling back to static seeds",
             primary_transform,
         )
-        _run_mr_static(mr_dict, corpus, applicable, result, output_dir, fmt)
+        _run_mr_static(
+            mr_dict, corpus, applicable, result, output_dir, fmt,
+            primary_target=primary_target,
+            consensus_quorum_fraction=consensus_quorum_fraction,
+            consensus_field_tolerance=consensus_field_tolerance,
+        )
         return
 
     # Build the strategy, passing our corpus
@@ -849,6 +862,8 @@ def _run_mr_with_hypothesis(
                 output_dir=output_dir,
                 fmt=fmt,
                 primary_target=primary_target,
+                consensus_quorum_fraction=consensus_quorum_fraction,
+                consensus_field_tolerance=consensus_field_tolerance,
             )
         finally:
             try:
@@ -900,6 +915,8 @@ def _run_mr_static(
     output_dir: Path,
     fmt: str,
     primary_target: str = "",
+    consensus_quorum_fraction: float = 0.501,
+    consensus_field_tolerance: bool = False,
 ) -> None:
     """
     Run a single MR against all seeds with a fixed rng_seed per seed.
@@ -932,6 +949,8 @@ def _run_mr_static(
                 output_dir=output_dir,
                 fmt=fmt,
                 primary_target=primary_target,
+                consensus_quorum_fraction=consensus_quorum_fraction,
+                consensus_field_tolerance=consensus_field_tolerance,
             )
         except _OracleFailure:
             # In static mode, failures are already recorded inside
@@ -952,6 +971,8 @@ def run_test_suite(
     use_hypothesis: bool = False,
     max_examples: int = 50,
     primary_target: str = "",
+    consensus_quorum_fraction: float = 0.501,
+    consensus_field_tolerance: bool = False,
 ) -> TestSuiteResult:
     """
     Run the full metamorphic + differential test suite.
@@ -1027,6 +1048,8 @@ def run_test_suite(
                 fmt=fmt,
                 max_examples=max_examples,
                 primary_target=primary_target,
+                consensus_quorum_fraction=consensus_quorum_fraction,
+                consensus_field_tolerance=consensus_field_tolerance,
             )
         else:
             _run_mr_static(
@@ -1037,6 +1060,8 @@ def run_test_suite(
                 output_dir=output_dir,
                 fmt=fmt,
                 primary_target=primary_target,
+                consensus_quorum_fraction=consensus_quorum_fraction,
+                consensus_field_tolerance=consensus_field_tolerance,
             )
 
     logger.info(

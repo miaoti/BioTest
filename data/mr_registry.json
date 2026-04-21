@@ -2,7 +2,7 @@
   "enforced": [
     {
       "mr_id": "319f95e31472",
-      "mr_name": "CIGAR-SEQ length consistency violation must cause rejection",
+      "mr_name": "CIGAR-SEQ length mismatch rejection",
       "scope": "SAM.record",
       "preconditions": [
         "has_cigar",
@@ -11,13 +11,103 @@
       "transform_steps": [
         "violate_cigar_seq_length"
       ],
-      "oracle": "A compliant parser MUST reject (raise error, crash, or refuse to emit) a SAM record where sum of query-consuming CIGAR operators (M, I, S, =, X) does not equal SEQ length when SEQ != '*'. Silent acceptance or silent record-drop is a conformance bug.",
+      "oracle": "A compliant parser MUST reject (raise error, crash, or refuse to emit) a SAM record where sum of lengths of M/I/S/=/X CIGAR operations does not equal SEQ length",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p53",
-          "quote": "SEQ: segment SEQuence. This field can be a `*' when the sequence is not stored. If not a `*', the length of the sequence must equal the sum of lengths of MIS=X operations in CIGAR.",
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
           "rule_severity": "CRITICAL",
           "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p115",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "FLAG bit 0x4 inconsistency rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "A compliant parser MUST reject a SAM record where FLAG bit 0x4 (segment unmapped) is set but RNAME != '*' and POS > 0, violating the mapped/unmapped contradiction rule",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p115",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "A compliant parser MUST reject paired reads where both ends have same-signed TLEN values, violating the opposite-signed pairing rule for template ends",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost, and the sign for any middle segment is undefined. If segments cover the same coordinates then the choice of which is leftmost and rightmost is arbitrary, but the two ends must still have differing signs.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost, and the sign for any middle segment is undefined. If segments cover the same coordinates then the choice of which is leftmost and rightmost is arbitrary, but the two ends must still have differing signs.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag type character violation rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "A compliant parser MUST reject a SAM record with an optional tag using an illegal type character outside AifZHB",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p27",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields. Tags containing lowercase letters are reserved for local use and will not be formally defined in any future version of this specification.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields. Tags containing lowercase letters are reserved for local use and will not be formally defined in any future version of this specification.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The header section"
         }
       ],
       "ambiguity_flags": [],
@@ -26,34 +116,22 @@
   ],
   "quarantine": [
     {
-      "mr_id": "96ca029635de",
+      "mr_id": "04b5bce80e00",
       "mr_name": "SAM header TAG:VALUE pair ordering invariance",
       "scope": "SAM.header",
       "preconditions": [
-        "has_hd_line",
-        "has_sq_line",
-        "has_rg_line",
-        "has_pg_line"
+        "has_hd_line"
       ],
       "transform_steps": [
-        "shuffle_hd_subtags",
-        "shuffle_sq_record_subtags",
-        "shuffle_rg_record_subtags",
-        "shuffle_pg_record_subtags"
+        "shuffle_hd_subtags"
       ],
-      "oracle": "Parsed SAM header metadata must be semantically equivalent regardless of intra-line TAG:VALUE pair ordering",
+      "oracle": "The parsed SAM header should be semantically equivalent after shuffling TAG:VALUE pairs within @HD line",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
           "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
           "rule_severity": "ADVISORY",
           "section_id": "The SAM Format Specification"
-        },
-        {
-          "chunk_id": "SAMv1.tex::The header section::p83",
-          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The header section"
         }
       ],
       "ambiguity_flags": [],
@@ -69,19 +147,13 @@
       "transform_steps": [
         "permute_optional_tag_fields"
       ],
-      "oracle": "Parsed SAM alignment records must be semantically equivalent regardless of optional TAG:TYPE:VALUE field ordering",
+      "oracle": "The parsed SAM alignment records should be semantically equivalent after shuffling optional TAG:TYPE:VALUE fields",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The alignment section: optional fields::p123",
           "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
           "rule_severity": "ADVISORY",
           "section_id": "The alignment section: optional fields"
-        },
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
-          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
         }
       ],
       "ambiguity_flags": [],
@@ -89,7 +161,7 @@
     },
     {
       "mr_id": "44dda30be8fa",
-      "mr_name": "SAM header TAG:VALUE pair permutation invariance",
+      "mr_name": "SAM @SQ record TAG:VALUE pair ordering invariance",
       "scope": "SAM.header",
       "preconditions": [
         "has_sq_line"
@@ -97,301 +169,7 @@
       "transform_steps": [
         "shuffle_sq_record_subtags"
       ],
-      "oracle": "The parsed header must be semantically equivalent after shuffling TAG:VALUE pairs within @SQ lines",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p133",
-          "quote": "* When a PG tag appears anywhere in the alignment section, there should be a single corresponding @PG line with matching ID tag in the header.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [
-        "The evidence is ADVISORY severity; the normative rule about TAG:VALUE ordering being insignificant is in chunk SAMv1.tex::The SAM Format Specification::p26 but above threshold"
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "7690cdb23c3e",
-      "mr_name": "SAM CIGAR operation split/merge invariance",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_cigar"
-      ],
-      "transform_steps": [
-        "split_or_merge_adjacent_cigar_ops"
-      ],
-      "oracle": "The parsed alignment must be semantically equivalent after splitting or merging adjacent identical CIGAR operations",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
-          "quote": "* Adjacent CIGAR operations should be different.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [
-        "The spec uses 'should' (ADVISORY) not 'must', so parsers MAY treat adjacent identical operations differently but SHOULD normalize them"
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "99d69275e18a",
-      "mr_name": "Flag-bit exclusivity violation must cause rejection",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_mapped_read"
-      ],
-      "transform_steps": [
-        "violate_flag_bit_exclusivity"
-      ],
-      "oracle": "A compliant parser MUST reject (raise error, crash, or refuse to emit) a SAM record where flag 0x4 (segment unmapped) is set while RNAME != '*' and POS > 0. The spec states that when 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800, implying these fields should be ignored or set to placeholders.",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
-          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
-          "rule_severity": "CRITICAL",
-          "section_id": "The SAM Format Specification"
-        },
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p137",
-          "quote": "If all segments in a template are unmapped, their RNAME should be set as `*' and POS as 0.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [
-        "The 'should' in the second quote indicates advisory practice, but the first quote establishes that when 0x4 is set, RNAME and POS cannot be trusted for mapping information."
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "fb51ee08fb7d",
-      "mr_name": "Optional tag type character violation must cause rejection",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_optional_tag"
-      ],
-      "transform_steps": [
-        "violate_optional_tag_type_character"
-      ],
-      "oracle": "A compliant parser MUST reject (raise error, crash, or refuse to emit) a SAM record where an optional tag's TYPE character is not one of the permitted set (A, i, f, Z, H, B). The spec defines TYPE as a single case-sensitive letter that defines the format of VALUE.",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
-          "quote": "All optional fields follow the TAG:TYPE:VALUE format where TAG is a two-character string that matches /[A-Za-z][A-Za-z0-9]/. Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant. A TAG containing lowercase letters is reserved for end users. In an optional field, TYPE is a single case-sensitive letter which defines the format of VALUE:",
-          "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [
-        "The spec doesn't explicitly list all valid TYPE characters in this chunk, but the SAMtags specification (referenced) defines A, i, f, Z, H, B as the valid types."
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "0f61b7b3a065",
-      "mr_name": "Coordinate system invariance under SAM-BAM roundtrip",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_mapped_read"
-      ],
-      "transform_steps": [
-        "sam_bam_round_trip"
-      ],
-      "oracle": "POS field values must remain identical after SAM→BAM→SAM conversion, preserving 1-based coordinate semantics",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p16",
-          "quote": "[SAM v1 — The SAM Format Specification] [1-based coordinate system] A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is $[3,7]$. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
-          "rule_severity": "INFORMATIONAL",
-          "section_id": "The SAM Format Specification"
-        },
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p137",
-          "quote": "[SAM v1 — Recommended Practice for the SAM Format] * If all segments in a template are unmapped, their RNAME should be set as `*' and POS as 0.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
-      "mr_id": "a363cd50c3d1",
-      "mr_name": "SAM header intra-line field order invariance under round-trip",
-      "scope": "SAM.header",
-      "preconditions": [
-        "has_hd_line",
-        "has_sq_line",
-        "has_rg_line",
-        "has_pg_line"
-      ],
-      "transform_steps": [
-        "shuffle_hd_subtags",
-        "shuffle_sq_record_subtags",
-        "shuffle_rg_record_subtags",
-        "shuffle_pg_record_subtags",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) deep-equals parse(x) after canonical normalization",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
-          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
-      "mr_id": "3536067649f8",
-      "mr_name": "SAM optional tag field order invariance under round-trip",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_optional_tag"
-      ],
-      "transform_steps": [
-        "permute_optional_tag_fields",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) deep-equals parse(x) after canonical normalization",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
-          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
-      "mr_id": "c9a73331e977",
-      "mr_name": "SAM BAM binary codec round-trip invariance",
-      "scope": "SAM.record",
-      "preconditions": [
-        "samtools_available"
-      ],
-      "transform_steps": [
-        "sam_bam_round_trip",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) deep-equals parse(x) after canonical normalization",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The BAM Format Specification::p186",
-          "quote": "[SAM v1 — The BAM Format Specification] The BAM format BAM is compressed in the BGZF format. All multi-byte numbers in BAM are little-endian, regardless of the machine endianness. The format is formally described in the following table where values in brackets are the default when the corresponding information is not available; an underlined word in uppercase denotes a field in the SAM format.",
-          "rule_severity": "INFORMATIONAL",
-          "section_id": "The BAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
-      "mr_id": "ce4ded5e9811",
-      "mr_name": "Optional tag field ordering invariance under query methods",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_optional_tag"
-      ],
-      "transform_steps": [
-        "permute_optional_tag_fields",
-        "query_method_roundtrip"
-      ],
-      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles optional tag order",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The alignment section: optional fields::p127",
-          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The alignment section: optional fields"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": [
-        "getReadName",
-        "getReferenceName",
-        "getAlignmentStart",
-        "getMappingQuality",
-        "getFlags"
-      ]
-    },
-    {
-      "mr_id": "7bbdedead457",
-      "mr_name": "Header @HD subtag ordering invariance under query methods",
-      "scope": "SAM.header",
-      "preconditions": [
-        "has_hd_line"
-      ],
-      "transform_steps": [
-        "shuffle_hd_subtags",
-        "query_method_roundtrip"
-      ],
-      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles @HD TAG:VALUE pairs",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
-          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": [
-        "getReadName",
-        "getReferenceName",
-        "getAlignmentStart",
-        "getMappingQuality",
-        "getFlags"
-      ]
-    },
-    {
-      "mr_id": "d32bc566b4b5",
-      "mr_name": "CIGAR operation splitting/merging invariance under query methods",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_cigar"
-      ],
-      "transform_steps": [
-        "split_or_merge_adjacent_cigar_ops",
-        "query_method_roundtrip"
-      ],
-      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T splits or merges adjacent identical CIGAR ops",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
-          "quote": "* Adjacent CIGAR operations should be different.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [
-        "The spec says 'should' not 'must', so this is advisory not normative"
-      ],
-      "query_methods": [
-        "getAlignmentStart",
-        "getAlignmentEnd",
-        "getLengthOnReference",
-        "getCigarLength",
-        "getCigarString"
-      ]
-    },
-    {
-      "mr_id": "04b5bce80e00",
-      "mr_name": "SAM header TAG:VALUE pair ordering invariance",
-      "scope": "SAM.header",
-      "preconditions": [
-        "has_hd_line"
-      ],
-      "transform_steps": [
-        "shuffle_hd_subtags"
-      ],
-      "oracle": "Parsed SAM files x and T(x) must be semantically equivalent despite reordering of TAG:VALUE pairs within @HD line",
+      "oracle": "The parsed SAM header should be semantically equivalent after shuffling TAG:VALUE pairs within each @SQ line",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
@@ -413,7 +191,7 @@
       "transform_steps": [
         "shuffle_rg_record_subtags"
       ],
-      "oracle": "Parsed SAM files x and T(x) must be semantically equivalent despite reordering of TAG:VALUE pairs within @RG lines",
+      "oracle": "The parsed SAM header should be semantically equivalent after shuffling TAG:VALUE pairs within each @RG line",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
@@ -435,7 +213,7 @@
       "transform_steps": [
         "shuffle_pg_record_subtags"
       ],
-      "oracle": "Parsed SAM files x and T(x) must be semantically equivalent despite reordering of TAG:VALUE pairs within @PG lines",
+      "oracle": "The parsed SAM header should be semantically equivalent after shuffling TAG:VALUE pairs within each @PG line",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
@@ -448,78 +226,76 @@
       "query_methods": []
     },
     {
-      "mr_id": "db1f4df6b38f",
-      "mr_name": "Hard/soft clipping equivalence",
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "CIGAR operator splitting/merging invariance",
       "scope": "SAM.record",
       "preconditions": [
-        "has_cigar",
-        "has_seq"
+        "has_cigar"
       ],
       "transform_steps": [
-        "toggle_cigar_hard_soft_clipping"
+        "split_or_merge_adjacent_cigar_ops"
       ],
-      "oracle": "Alignment with hard clipping (H) converted to soft clipping (S) with appropriate SEQ/QUAL padding must represent the same biological alignment",
+      "oracle": "The parsed alignment's reference coordinates, query-consumed length, and alignment semantics must be identical after splitting or merging adjacent identical CIGAR operators (e.g., 10M ↔ 4M6M).",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The BAM format::p226",
-          "quote": "S and N are the soft-clipping and reference-clip CIGAR operators, respectively",
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "[SAM v1 — Recommended Practice for the SAM Format] * Adjacent CIGAR operations should be different.",
           "rule_severity": "ADVISORY",
-          "section_id": "The BAM format"
+          "section_id": "Recommended Practice for the SAM Format"
         }
       ],
       "ambiguity_flags": [
-        "The spec doesn't explicitly state equivalence between H and S clipping representations, though both represent unaligned segments"
+        "The spec uses 'should' (ADVISORY) rather than 'must', indicating that while adjacent identical operators are discouraged, they are not prohibited and parsers should treat them equivalently."
       ],
       "query_methods": []
     },
     {
-      "mr_id": "705c9755b48c",
-      "mr_name": "TLEN sign consistency violation rejection",
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "Coordinate boundary invariance under SAM-BAM roundtrip",
       "scope": "SAM.record",
       "preconditions": [
-        "has_nonzero_tlen"
+        "has_mapped_read"
       ],
       "transform_steps": [
-        "violate_tlen_sign_consistency"
+        "sam_bam_round_trip"
       ],
-      "oracle": "All SUTs must REJECT (error/crash) or at minimum agree on REJECT vs ACCEPT; silent acceptance or silent record-drop is a conformance bug",
+      "oracle": "POS coordinate values (1-based) must remain identical after SAM→BAM→SAM conversion; getAlignmentStart() and getAlignmentEnd() must return same values",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
-          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
-          "rule_severity": "CRITICAL",
-          "section_id": "The SAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [
-        "The TLEN sign consistency rule is implied by paired-read semantics but not explicitly stated as MUST in the retrieved chunks"
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "79d81ed64ecf",
-      "mr_name": "Coordinate boundary invariance under header reordering",
-      "scope": "SAM.header",
-      "preconditions": [
-        "has_sq_line"
-      ],
-      "transform_steps": [
-        "reorder_header_records",
-        "query_method_roundtrip"
-      ],
-      "oracle": "Coordinate-related API methods must return identical values after reordering @SQ header lines, as coordinate positions are independent of header line order",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p16",
-          "quote": "[1-based coordinate system] A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is $[3,7]$. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
-          "rule_severity": "INFORMATIONAL",
-          "section_id": "The SAM Format Specification"
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p138",
+          "quote": "* If POS plus the sum of lengths of M=XDN operations in CIGAR exceeds the length specified in the LN field of the @SQ header line (if exists) with an SN equal to RNAME, the alignment should be unmapped, unless the reference sequence is circular (see below).",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
         },
         {
-          "chunk_id": "SAMv1.tex::Indexing BAM::p247",
-          "quote": "[SAM v1 — Indexing BAM] Indexing aims to achieve fast retrieval of alignments overlapping a specified region without going through the whole alignments. BAM must be sorted by the reference ID and then the leftmost coordinate before indexing.",
-          "rule_severity": "CRITICAL",
-          "section_id": "Indexing BAM"
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p137",
+          "quote": "* If all segments in a template are unmapped, their RNAME should be set as `*' and POS as 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ce4ded5e9811",
+      "mr_name": "1-based coordinate query invariance under optional tag permutation",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read",
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Coordinate query methods must return identical 1-based values after shuffling optional tag fields",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p145",
+          "quote": "As usual POS should be between 1 and the @SQ header's LN value, but POS plus the sum of the lengths of M=XDN CIGAR operations may exceed LN. Coordinates greater than LN are interpreted by subtracting LN so that bases at +1, +2, +3, … are considered to be mapped at positions 1,2,3,…; thus each (1-based) position p is interpreted as ((p-1))+1.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
         }
       ],
       "ambiguity_flags": [],
@@ -527,35 +303,14 @@
         "getAlignmentStart",
         "getAlignmentEnd",
         "getStart",
-        "getEnd"
+        "getEnd",
+        "getUnclippedStart",
+        "getUnclippedEnd"
       ]
     },
     {
-      "mr_id": "623c0b1e277b",
-      "mr_name": "SAM BAM binary round-trip invariance",
-      "scope": "SAM.header",
-      "preconditions": [
-        "samtools_available"
-      ],
-      "transform_steps": [
-        "sam_bam_round_trip",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The BAM Format Specification::p186",
-          "quote": "[SAM v1 — The BAM Format Specification] The BAM format\nBAM is compressed in the BGZF format. All multi-byte numbers in BAM are\nlittle-endian, regardless of the machine endianness. The format is\nformally described in the following table where values in brackets are\nthe default when the corresponding information is not available; an\nunderlined word in uppercase denotes a field in the SAM format.",
-          "rule_severity": "INFORMATIONAL",
-          "section_id": "The BAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
       "mr_id": "b21cab2c909c",
-      "mr_name": "SAM header tag-value pair ordering invariance",
+      "mr_name": "Coordinate boundary preservation under header subtag shuffling",
       "scope": "SAM.header",
       "preconditions": [
         "has_sq_line"
@@ -564,21 +319,109 @@
         "shuffle_sq_record_subtags",
         "sut_write_roundtrip"
       ],
-      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization",
+      "oracle": "LN (reference length) values in @SQ headers must remain identical after shuffling subtags and roundtrip; coordinate boundaries defined by LN must be preserved",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
-          "quote": "Within each (non- @CO) header line, no field tag may appear more than\nonce and the order in which the fields appear is not significant.",
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p138",
+          "quote": "* If POS plus the sum of lengths of M=XDN operations in CIGAR exceeds the length specified in the LN field of the @SQ header line (if exists) with an SN equal to RNAME, the alignment should be unmapped, unless the reference sequence is circular (see below).",
           "rule_severity": "ADVISORY",
-          "section_id": "The SAM Format Specification"
+          "section_id": "Recommended Practice for the SAM Format"
         }
       ],
       "ambiguity_flags": [],
       "query_methods": []
     },
     {
+      "mr_id": "a363cd50c3d1",
+      "mr_name": "Header intra-line field ordering invariance under writer round-trip",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) must deep-equal parse(T(x)) after shuffling header field order and writer round-trip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3536067649f8",
+      "mr_name": "Optional tag field ordering invariance under writer round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "primary_sut_has_writer",
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) must deep-equal parse(T(x)) after shuffling optional tag order and writer round-trip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: optional fields::p123",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The alignment section: optional fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2dc0ee17b8ae",
+      "mr_name": "CIGAR operator splitting/merging invariance under writer round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "primary_sut_has_writer",
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) must deep-equal parse(T(x)) after splitting/merging adjacent identical CIGAR operators and writer round-trip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' not 'must', making this advisory rather than normative"
+      ],
+      "query_methods": []
+    },
+    {
       "mr_id": "a4eeeffccfb1",
-      "mr_name": "SAM header @SQ subtag shuffling invariance under query methods",
+      "mr_name": "Header field order invariance for API queries",
       "scope": "SAM.header",
       "preconditions": [
         "has_sq_line"
@@ -587,11 +430,11 @@
         "shuffle_sq_record_subtags",
         "query_method_roundtrip"
       ],
-      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles TAG:VALUE pairs inside @SQ lines",
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
-          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
           "rule_severity": "ADVISORY",
           "section_id": "The SAM Format Specification"
         }
@@ -600,38 +443,102 @@
       "query_methods": [
         "getReferenceName",
         "getAlignmentStart",
-        "getReadName",
-        "getCigarString",
+        "getReadLength",
+        "getCigarLength",
         "getReadString"
       ]
     },
     {
-      "mr_id": "2967d6eb3016",
-      "mr_name": "SAM @CO comment line reordering invariance",
-      "scope": "SAM.header",
+      "mr_id": "d32bc566b4b5",
+      "mr_name": "CIGAR operation splitting/merging invariance for API queries",
+      "scope": "SAM.record",
       "preconditions": [
-        "has_co_lines"
+        "has_cigar"
       ],
       "transform_steps": [
-        "shuffle_co_comments"
+        "split_or_merge_adjacent_cigar_ops",
+        "query_method_roundtrip"
       ],
-      "oracle": "Parsed SAM header must be semantically identical after reordering @CO comment lines",
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
       "evidence": [
         {
-          "chunk_id": "SAMv1.tex::The SAM Format Specification::p32",
-          "quote": "description\n[lexicographical] sort order is defined as a character-based dictionary sort with the character order as defined by the POSIX C locale.\n  For example ``abc'', ``abc17'', ``abc5'', ``abc59'' and ``abcd'' are in lexicographical order.",
-          "rule_severity": "INFORMATIONAL",
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "* Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' not 'must', but splitting/merging identical adjacent operations preserves semantics"
+      ],
+      "query_methods": [
+        "getCigarString",
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getLengthOnReference",
+        "getReadLength"
+      ]
+    },
+    {
+      "mr_id": "b050e827524f",
+      "mr_name": "SAM header field tags permutation invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line",
+        "has_rg_line",
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Parsed header must be semantically equivalent after shuffling TAG:VALUE pairs within each @SQ, @RG, and @PG line",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
           "section_id": "The SAM Format Specification"
         },
         {
-          "chunk_id": "SAMv1.tex::The header section::p89",
-          "quote": "description\n[lexicographical] sort order is defined as a character-based dictionary sort with the character order as defined by the POSIX C locale.\n  For example ``abc'', ``abc17'', ``abc5'', ``abc59'' and ``abcd'' are in lexicographical order.",
-          "rule_severity": "INFORMATIONAL",
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
           "section_id": "The header section"
         }
       ],
       "ambiguity_flags": [],
       "query_methods": []
+    },
+    {
+      "mr_id": "fb2241bf6655",
+      "mr_name": "Coordinate query invariance under header reordering",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Coordinate-related query method results must remain identical when @SQ header records are reordered",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p16",
+          "quote": "A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is $[3,7]$. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getStart",
+        "getEnd",
+        "getUnclippedStart"
+      ]
     },
     {
       "mr_id": "14be4e2cd78b",
@@ -643,74 +550,28 @@
       "transform_steps": [
         "sut_write_roundtrip"
       ],
-      "oracle": "parse(SAM) ≡ parse(write(parse(SAM)))",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::The BAM Format Specification::p194",
-          "quote": "Optional alignment fields are stored immediately after each other immediately following the qual field, and are included in block_size. Each field is represented as a two-character tag followed by a single type character and then its value, whose length is determined by the field's type.",
-          "rule_severity": "ADVISORY",
-          "section_id": "The BAM Format Specification"
-        }
-      ],
-      "ambiguity_flags": [],
-      "query_methods": []
-    },
-    {
-      "mr_id": "2dc0ee17b8ae",
-      "mr_name": "SAM CIGAR operation splitting/merging invariance under writer round-trip",
-      "scope": "SAM.record",
-      "preconditions": [
-        "has_cigar",
-        "primary_sut_has_writer"
-      ],
-      "transform_steps": [
-        "split_or_merge_adjacent_cigar_ops",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization, as total query-consumed length is preserved",
-      "evidence": [
-        {
-          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
-          "quote": "* Adjacent CIGAR operations should be different.",
-          "rule_severity": "ADVISORY",
-          "section_id": "Recommended Practice for the SAM Format"
-        }
-      ],
-      "ambiguity_flags": [
-        "The spec says 'should' not 'must', so implementations may differ in handling adjacent identical CIGAR operations"
-      ],
-      "query_methods": []
-    },
-    {
-      "mr_id": "31c937b866ae",
-      "mr_name": "SAM @CO comment line order invariance under writer round-trip",
-      "scope": "SAM.header",
-      "preconditions": [
-        "has_co_lines",
-        "primary_sut_has_writer"
-      ],
-      "transform_steps": [
-        "shuffle_co_comments",
-        "sut_write_roundtrip"
-      ],
-      "oracle": "parse(write(parse(x))) must deep-equal parse(x) after canonical normalization",
+      "oracle": "parse(seed) must equal parse(sut_write_roundtrip(seed)) after canonical normalization",
       "evidence": [
         {
           "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
-          "quote": "Each header line begins with the character ` @' followed by one of the two-letter header record type codes defined in this section. In the header, each line is TAB-delimited and, apart from @CO lines, each data field follows a format ` TAG:VALUE' where TAG is a two-character string that defines the format and content of VALUE.",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than\nonce and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once\nand the order in which the optional fields appear is not significant.",
           "rule_severity": "ADVISORY",
           "section_id": "The SAM Format Specification"
         }
       ],
-      "ambiguity_flags": [
-        "@CO lines are free-text comments with no ordering semantics specified"
-      ],
+      "ambiguity_flags": [],
       "query_methods": []
     }
   ],
   "summary": {
-    "enforced_count": 1,
-    "quarantine_count": 26,
-    "total": 27
+    "enforced_count": 4,
+    "quarantine_count": 17,
+    "total": 21
   }
 }

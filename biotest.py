@@ -729,6 +729,35 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
         if not primary_target_c:
             primary_target_c = cfg.get("feedback_control", {}).get("primary_target", "") or ""
 
+        # Fix #2 (Run 9 lesson): optional consensus quorum loosening.
+        # Default 0.501 preserves strict-majority semantics. For high-
+        # disagreement domains (e.g. SAM with 6 voters) the user can
+        # drop to ~0.34 to accept plurality-of-three. Uniqueness of the
+        # top bucket is still enforced inside get_consensus_output, so
+        # no weaker-than-plurality results ever count.
+        # Format-aware consensus defaults (Run-9 lessons):
+        #   - SAM: loose by default (0.34 plurality, field-level tol).
+        #     Spec-allowed variance is high (RNEXT="=", optional-tag
+        #     ordering, float precision); strict consensus floods
+        #     quarantine with false positives.
+        #   - VCF: strict by default (0.501 majority, no tolerance).
+        #     Run-6 baseline 46.9% was measured under strict and must
+        #     stay reproducible.
+        # Users who want to override either way set the explicit key in
+        # `biotest_config.yaml: feedback_control`.
+        _fmt_u = (format_filter or "").upper()
+        _quorum_default = 0.34 if _fmt_u == "SAM" else 0.501
+        _tolerance_default = _fmt_u == "SAM"
+        quorum = float(
+            cfg.get("feedback_control", {}).get(
+                "consensus_quorum_fraction", _quorum_default,
+            )
+        )
+        field_tolerance = bool(
+            cfg.get("feedback_control", {}).get(
+                "consensus_field_tolerance", _tolerance_default,
+            )
+        )
         result = run_test_suite(
             runners=available,
             registry_path=registry_path,
@@ -736,6 +765,8 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
             output_dir=output_dir,
             format_filter=format_filter,
             primary_target=primary_target_c,
+            consensus_quorum_fraction=quorum,
+            consensus_field_tolerance=field_tolerance,
         )
 
         # Export DET report

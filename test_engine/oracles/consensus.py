@@ -36,6 +36,7 @@ from typing import Any, Optional
 
 from ..runners.base import RunnerResult
 from .deep_equal import deep_equal
+from .tolerance import strip_to_strict
 
 
 # Parsers whose vote is considered authoritative in a tie.
@@ -92,6 +93,8 @@ def get_consensus_output(
     format_context: str = "",
     eligibility_map: Optional[dict[str, set[str]]] = None,
     float_tol: float = 1e-6,
+    quorum_fraction: float = 0.501,
+    field_tolerance: bool = False,
 ) -> ConsensusResult:
     """
     Compute majority-vote consensus across FORMAT-ELIGIBLE parser outputs.
@@ -125,6 +128,27 @@ def get_consensus_output(
                          `build_eligibility_map`).
         float_tol: Float tolerance used by deep_equal when bucketing
                    votes.
+        quorum_fraction: Minimum share of *successful voters* that the
+                   top bucket must hold (UNIQUELY largest) to declare
+                   consensus.
+                   - ``0.501`` (default) preserves the legacy "strict
+                     majority" semantics (e.g. 4-of-6, 3-of-4).
+                   - ``0.34`` loosens to plurality-of-three-of-six for
+                     noisy domains like SAM where 6 voters can emit 3+
+                     equivalent-but-not-byte-identical canonicals. The
+                     bucket still has to be **uniquely** largest —
+                     ties never win without an authoritative tiebreaker.
+                   Grounded in Lee et al. (ICSE'21 JEST): statistical
+                   localization of discrepancies across N implementations.
+        field_tolerance: When True, bucket voters on SPEC-MANDATORY
+                   fields only (SAM: QNAME/FLAG/RNAME/POS/…; VCF:
+                   chrom/pos/id/ref/alt/…). Optional fields like SAM
+                   tags and VCF INFO are stripped BEFORE comparison, so
+                   a pair of voters that agree on identity but differ
+                   on a derived tag goes into the SAME bucket. Consensus
+                   still covers the full canonical JSON value (stored
+                   from the first bucket-winning voter). Off by default —
+                   opt in for high-variance domains.
 
     Returns:
         ConsensusResult. Always non-null, but `consensus_value` is None
@@ -174,17 +198,30 @@ def get_consensus_output(
         )
 
     # Bucket voters by semantic equivalence.
+    # Fix #3 (Run 9 lesson): when `field_tolerance=True` and the
+    # format is SAM/VCF, bucket on the spec-mandatory fields only
+    # (tags / optional INFO stripped). Full canonical JSON is still
+    # kept in `bucket_values` for the return payload — the strip
+    # only narrows the bucket-merge decision, not the reported value.
+    def _bucket_key(val: dict[str, Any]) -> dict[str, Any]:
+        if field_tolerance and fmt in ("SAM", "VCF"):
+            return strip_to_strict(val, fmt)
+        return val
+
     bucket_values: list[dict[str, Any]] = []
+    bucket_keys: list[dict[str, Any]] = []
     bucket_voters: list[list[str]] = []
     for name, value in voters.items():
+        key = _bucket_key(value)
         placed = False
-        for idx, existing in enumerate(bucket_values):
-            eq, _ = deep_equal(existing, value, float_tol=float_tol)
+        for idx, existing_key in enumerate(bucket_keys):
+            eq, _ = deep_equal(existing_key, key, float_tol=float_tol)
             if eq:
                 bucket_voters[idx].append(name)
                 placed = True
                 break
         if not placed:
+            bucket_keys.append(key)
             bucket_values.append(value)
             bucket_voters.append([name])
 
@@ -198,9 +235,27 @@ def get_consensus_output(
     top_value = bucket_values[top_idx]
     total = len(voters)
 
-    # Strict majority wins outright.
-    if len(top_voters) * 2 > total:
+    # Quorum-with-uniqueness: the top bucket wins when it
+    #   (a) has at least `quorum_fraction * total` voters, rounded up,
+    #   (b) is STRICTLY larger than every other bucket (no ties).
+    # At quorum_fraction=0.501 this reduces to "strict majority" (4/6,
+    # 3/4, 2/3) — the legacy behaviour. At 0.34 it admits a clean 3/6
+    # plurality as long as no other bucket also has 3.
+    import math
+    quorum_min = max(1, math.ceil(total * quorum_fraction))
+    second_largest = max(
+        (len(b) for i, b in enumerate(bucket_voters) if i != top_idx),
+        default=0,
+    )
+    if len(top_voters) >= quorum_min and len(top_voters) > second_largest:
         dissenting = [n for i, bucket in enumerate(bucket_voters) if i != top_idx for n in bucket]
+        # Reason string communicates both the raw share and the quorum
+        # threshold so Run reports stay self-describing.
+        reason_mode = (
+            "majority"
+            if len(top_voters) * 2 > total
+            else f"plurality >={quorum_min}/{total}"
+        )
         return ConsensusResult(
             consensus_value=top_value,
             is_inconclusive=False,
@@ -210,7 +265,7 @@ def get_consensus_output(
             ineligible_parsers=sorted(ineligible),
             vote_buckets=[sorted(b) for b in bucket_voters],
             htslib_rejected_as_invalid=htslib_invalid,
-            reason=f"majority {len(top_voters)}/{total}",
+            reason=f"{reason_mode} {len(top_voters)}/{total}",
         )
 
     # No strict majority. Check for authoritative tie-breaker.

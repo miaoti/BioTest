@@ -175,7 +175,8 @@
       "Bash('C:/Program Files/Java/jdk-21.0.10/bin/java' -jar coverage_artifacts/jacoco/jacococli.jar report coverage_artifacts/jacoco/jacoco.exec --classfiles SUTfolder/java/htsjdk/build/classes --xml coverage_artifacts/jacoco/jacoco_post_run9.xml)",
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && grep \"Run 9\" \"{}/summary.json\" 2>/dev/null && echo \"MATCH\"')",
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -50 \"{}\"')",
-      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && cat \"{}\"')"
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && cat \"{}\"')",
+      "Bash(grep -rn \"get_consensus_output\" test_engine/ --include=\"*.py\" echo \"---\" grep -rn \"consensus_quorum\\\\|quorum_fraction\" --include=\"*.py\")"
     ]
   }
 }
