@@ -25,7 +25,160 @@ Run-by-run snapshots are archived as
 
 | Run | Date       | Wall   | Iters | **Weighted SAM** | Covered / Total | Enforced MRs | Notes |
 |:-:|:--|:-:|:-:|:-:|:-:|:-:|:--|
-| **9** | **2026-04-20** | **225 m** (timeout) | **3** | **21.0 %** | **1 092 / 5 207** | **1** | First htsjdk/SAM baseline. Run-6-style defaults (Rank 6 off, Tier 2 off). Coverage flat across all 3 iters. |
+| **9** | **2026-04-20** | **225 m** (timeout) | **3** | **21.0 %** | **1 092 / 5 207** | **1 / 27** | First htsjdk/SAM baseline. Run-6-style defaults (Rank 6 off, Tier 2 off). Coverage flat across all 3 iters; 96 % MR quarantine rate driven by cross-voter canonical-JSON disagreement on spec-allowed variance. |
+| **10** | **2026-04-21** | **402 m** (timeout) | **3** | **21.9 %** | **1 130 / 5 154** † | **6 / 29** | Fixes 1-3 active (see below). +1 pp line coverage over Run 9; but **6× MR survival** (6 vs 1) and **SCC 5.8 % vs 0.7 %**. Line coverage ceiling is structural, not a quarantine artefact. |
+
+† Run 10 denominator is 5 154 not 5 207 because the `htsjdk`
+harness JAR was rebuilt between Run 9 and Run 10; report generation
+uses the harness JAR's embedded htsjdk classes. Percentage-points
+still compare directly.
+
+---
+
+## Run 10 detailed breakdown (2026-04-21) — Fixes 1-3 active
+
+After Run 9 showed 96 % quarantine rate driven by cross-voter
+canonical-JSON disagreement on spec-allowed variance, we shipped three
+framework-level fixes. All SUT-agnostic, zero-user-input, auto-engaged
+by `format_filter=SAM`:
+
+1. **Fix #1 — Tolerant canonical SAM normalizer**
+   (`test_engine/canonical/sam_normalizer.py`):
+   - `RNEXT="=" → RNAME` resolution so parsers that preserve or resolve
+     the alias both canonicalise identically.
+   - `_round_float_sigfig` to 6 sig digits on all `f`-typed tags, so
+     `0.85` / `0.8500000` / `8.5e-1` collapse to one value.
+   - `BIOPYTHON_CONSUMED_TAGS = {MD, AS}` dropped globally so
+     biopython's missing tags don't cause bucket splits.
+
+2. **Fix #2 — M-of-N consensus quorum**
+   (`test_engine/oracles/consensus.py::get_consensus_output`):
+   - New `quorum_fraction` parameter. Auto-set to **0.34** for SAM,
+     preserves **0.501** (strict majority) for VCF. A top bucket wins
+     when it has ≥⌈N·quorum⌉ voters AND is UNIQUELY largest (no ties).
+
+3. **Fix #3 — Field-level strict/lenient separation**
+   (`test_engine/oracles/tolerance.py`):
+   - `SAM_RECORD_STRICT_FIELDS` = 11 mandatory columns; optional tags
+     and extensions stripped before bucket comparison when
+     `field_tolerance=True`. Auto-engaged for SAM; off for VCF.
+
+No per-SUT knobs. Operator runs with `primary_target=htsjdk`,
+`format_filter=SAM` and the fixes auto-engage via format-aware
+defaults in `biotest.py::run_phase_c`.
+
+### Raw results
+
+| Metric | Run 9 | Run 10 | Δ |
+|:--|:-:|:-:|:-:|
+| Weighted SAM coverage | 21.0 % | 21.9 % | +0.9 pp |
+| Covered lines | 1 092 | 1 130 | +38 lines |
+| Wall time | 225 min | 402 min | +177 min |
+| Iterations | 3 | 3 | — |
+| MRs mined (total) | 27 | 29 | +2 |
+| MRs enforced | **1** | **6** | **+5 (6×)** |
+| MRs quarantined | 26 | 23 | −3 |
+| **MR survival rate** | **3.7 %** | **20.7 %** | **+17 pp** |
+| SCC (spec-rule coverage) | 0.7 % | **5.8 %** | **+5.1 pp (8×)** |
+| DET rate | 61.5 % | 58.1 % | −3.4 pp |
+| Phase C tests | ~3 700 | 4 859 | +1 159 |
+| Bugs reported | 1 883 | 2 300 | +417 |
+
+### Honest reading of the numbers
+
+**What worked (strong signal)**:
+
+- **MR survival rate went from 3.7 % to 20.7 %** — a 6× improvement.
+  The consensus oracle no longer rejects valid SAM MRs on cross-voter
+  tag-ordering / float-precision / MD-presence variance. That was the
+  explicit goal of the three fixes.
+- **SCC tripled then some** — 0.7 % → 5.8 %. The MRs that now survive
+  are actually exercising new spec rules the framework had previously
+  marked unreached.
+- **DET rate dropped 3.4 pp** — fewer false-positive cross-voter
+  disagreements. Exactly what Fixes 1 + 3 target.
+
+**What didn't move (and why)**:
+
+- **Line coverage only +0.9 pp**. The rescued MRs are all malformed
+  (`violate_cigar_seq_length`, `violate_flag_bit_exclusivity`,
+  `violate_tlen_sign_consistency`, `violate_optional_tag_type_character`,
+  plus two new SAM.header-scope siblings). These MRs go through the
+  `_handle_rejection_consensus` branch and primarily exercise parser
+  **reject** paths — the same paths the non-malformed seeds were
+  already hitting. More MRs, more rejection tests, same code reached.
+- **All 6 enforced MRs are malformed — zero semantics-preserving MRs
+  survived**. The field-tolerance fix (#3) lets tag-level differences
+  merge into one bucket, but the semantics-preserving MRs
+  (`shuffle_*_subtags`, `permute_optional_tag_fields`,
+  `sam_bam_round_trip`, `sut_write_roundtrip`) still trigger
+  `consensus(x) ≠ consensus(T(x))` on mandatory fields — i.e. voters
+  genuinely disagree on the POS / CIGAR / TLEN / … of the transformed
+  record. That's a real semantic disagreement that tolerance shouldn't
+  mask and doesn't.
+
+**What got worse**:
+
+- **Wall time almost doubled** (225 min → 402 min). More MRs survived
+  → more MRs to run in Phase C → ~134 min per iteration (vs ~80 min
+  in Run 9). Same `timeout_minutes=180` cap; same overshoot mechanic
+  (timeout only checks between iters, iter 3 ran through).
+
+### Current (Run 10) enforced MR set
+
+```
+319f95e31472  SAM.record  violate_cigar_seq_length
+99d69275e18a  SAM.record  violate_flag_bit_exclusivity
+705c9755b48c  SAM.record  violate_tlen_sign_consistency
+fb51ee08fb7d  SAM.record  violate_optional_tag_type_character
+7e2d423f84b6  SAM.header  violate_flag_bit_exclusivity
+7dd41025b0f7  SAM.header  violate_optional_tag_type_character
+```
+
+All 6 are malformed/rejection-invariance MRs — the error-consensus
+oracle (Rank 3) benefits from the quorum loosening as much as the
+semantic-consensus oracle does, so we surfaced 5 additional ones.
+
+### Paradigm reality check
+
+Run 10's +1 pp line coverage at 2× wall time is **not a paradigm
+breakthrough** — it's the MR-mining/quarantine fix finally letting
+more malformed MRs through, plus a tiny amount of collateral coverage
+from the new seeds those MRs exercise. The structural facts from Run 9
+still hold:
+
+- `SAMRecord.java` sits at ~20 % (data-model bucket).
+- `SamFileValidator / SamFileHeaderMerger / SAMRecordSetBuilder`
+  stay at 0 %.
+- ~32 % of the SAM denominator remains unreachable via file-I/O.
+
+To move line coverage significantly past 22 %, we'd need a lever that
+unblocks the data-model bucket (Rank 5 API-query MRs — currently
+configured but only 1 enforced because the API-query theme produces
+`query_method_roundtrip` MRs which still depend on semantics-preserving
+consensus, and that's not yet improved for SAM — see "next levers"
+below).
+
+### Next levers (not applied yet)
+
+1. **Audit why semantics-preserving MRs still quarantine despite the
+   tolerance fixes**. The 23 still-quarantined MRs include
+   `shuffle_*_subtags`, `permute_optional_tag_fields`,
+   `sam_bam_round_trip`. Sample the per-bucket disagreement field paths
+   from bug_reports/: if the disagreement is on MAPQ / TLEN / POS, the
+   tolerance did its job and the MR genuinely fails semantics
+   (probably a transform bug). If it's on something we should have
+   stripped (e.g. internal header metadata), extend
+   `SAM_RECORD_STRICT_FIELDS` accordingly.
+
+2. **Cache Phase C results across iterations** so MRs don't re-test
+   seeds that haven't changed. Would cut Run 10's 402-min wall to
+   ~150 min without reducing coverage.
+
+3. **Accept the ceiling**: 21.9 % on htsjdk/SAM is the honest current
+   answer. Further progress requires per-SUT harness work to reach
+   the API-only classes — which the zero-user-cost constraint
+   forbids.
 
 ---
 

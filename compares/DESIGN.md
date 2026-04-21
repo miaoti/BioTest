@@ -758,6 +758,97 @@ Both commands produce real per-line coverage numbers; the old
 `pysam_docker_runner` coverage call returned zero for the Cython
 surface and only line-numbered the thin Python wrappers.
 
+### Risk 5 — Phase 4 zero-FOUND at short budget — **diagnosed 2026-04-21, execution-gap not method-flaw**
+
+**Original severity: critical.** Chats 1-4 ran at `--time-budget-s 300`
+across `jazzer / atheris / cargo_fuzz / evosuite_anchor / pure_random`
+and produced **zero** cells satisfying the §5.3.1 three-condition
+`FOUND` predicate. The surface-level reading is that the entire
+Phase-4 methodology is broken.
+
+**Why it is not a method flaw** — reconciling Chat 1/2/3/4
+`report.md` against the ground-truth-fuzzing literature:
+
+1. **biotest — the primary tool under evaluation — was excluded
+   from all four chats** per each `run_manifest.json`. This is the
+   single largest gap. 28 of the 35 bugs are
+   `differential_disagreement` type (silent output divergence between
+   voters, no crash); BioTest's differential + metamorphic oracle is
+   the only tool in the matrix designed to detect them. TWINFUZZ
+   (NDSS'25), FuzzJIT (USENIX Security'23), DUMPLING (NDSS'25), and
+   Semantic Crash Bucketing (van Tonder ASE'18) all independently
+   document that crash-only fuzzers miss semantic divergence by
+   design. Running the comparators alone and declaring "method
+   failed" is a single-arm trial missing the treatment arm.
+
+2. **Budget 288× below the benchmark-design floor.** Magma
+   (Hazimeh et al. SIGMETRICS'20) runs 24 h × 10 trials and reports
+   no single fuzzer triggers more than **68 %** of verified bugs;
+   FuzzBench (Metzman et al. OOPSLA'21) runs 23 h × 20 trials as
+   its default. Linearly scaling Magma's 68 % best-case to our
+   1/288 budget gives expected rate ~0.24 % → ~0.08 bugs out of 35
+   → **zero is the modal outcome** even for fuzzers that would
+   succeed at 24 h. Sub-linear scaling is more realistic for
+   structured inputs, making the expected rate even lower.
+
+3. **Jazzer's 11 `false+` cells are textbook-correct behaviour.**
+   Klees et al. CCS'18 §3.1–§3.2 showed raw crash counts over-count
+   bugs ~500× (coverage-unique) / ~46× (stack-hashed). Chat 1's
+   report identifies all 7 htsjdk-VCF jazzer crashes as two stack
+   signatures in `htsjdk.variant.vcf.AbstractVCFCodec.oneAllele:582`
+   — an `IndexOutOfBoundsException` that exists in htsjdk from
+   2.19.0 through 3.0.4 and is **not any of the 35 manifest bugs**.
+   The §5.3.1 predicate correctly flagged these as `false+` because
+   the same input crashes post-fix — exactly what Magma / FuzzBench
+   / Klees design the predicate to do. **Side finding:**
+   `oneAllele:582` appears to be a genuine undisclosed latent bug —
+   candidate for upstream report.
+
+4. **Chat 2's 3 `false+` cells are clearer still.** All three
+   htsjdk-SAM jazzer cells produce byte-identical trigger files from
+   a single poisoned seed (`real_world_htslib_colons.bam` in
+   `compares/results/bench_seeds/sam/`) whose `@SQ chr1,chr3` header
+   violates htsjdk's SAM name regex across every version tested.
+   libFuzzer halts on first seed crash (`MS: 0 ; base unit: 0000…`,
+   zero mutations performed) → entire 300 s budget burned on a
+   validation-not-bug. One poison seed × 300 s budget = 100 % budget
+   wasted. At 7200 s the poison-seed cost drops to ~4 %.
+
+5. **pure_random post-hoc replay (Chat 6) has not executed.**
+   `run_pure_random.py` is intrinsically `crash_count = 0`; the
+   Miller CACM'90 schema requires replaying the generated corpus
+   through each SUT's `ParserRunner` after the run (§4.3). Chat 6
+   was deferred. Every `pure_random` cell correctly reads `miss` —
+   it is not a scoring failure, it is an incomplete pipeline.
+
+6. **Noodles harness-version skew** eliminated 3-6 cells
+   structurally (pre-fix versions 0.23 / 0.48 do not compile against
+   the `main.rs` written for 0.70 API). Chat 4's report documents
+   each skip; anticipated in
+   `compares/PHASE4_EXECUTION_PLAN.md §"Chat 4 expected tooling
+   skips"`.
+
+**Resolution — execute the missing pieces, do not change the
+predicate.** In order of leverage:
+
+| # | action | cost | expected FOUND-rate lift |
+| :-- | :--- | :--- | :--- |
+| 1 | **Run biotest on all 35 bugs** at ≥ 2 h budget. | 35 × 7200 s = ~70 h one-way, ~18 h @ 4-way. | Large. 28 `differential_disagreement` bugs become addressable. |
+| 2 | **Raise crash-fuzzer budget to 7200 s** (Magma short-regime floor per Risk 2). | 24× current; ~7 h per chat. | Modest. Recovers the 6 `uncaught_exception` bugs crash-finders can theoretically see. |
+| 3 | **Execute Chat 6 post-hoc replay for `pure_random`.** | ~30 min. | Modest; scores `pure_random` against Miller CACM'90 schema. |
+| 4 | **Sanitize seed corpus.** One-shot ParserRunner sweep; drop any seed that throws on pre-fix *and* post-fix of every SUT. | ~20 min. | Medium; removes the poison-seed 100 %-budget-waste case. |
+| 5 | **Run the §4.4 Fairness Equalizer.** Re-feed every tool's accepted corpus through BioTest's differential-only oracle; credit each tool for the disagreements its inputs caused. | Script already specified; runtime ~10 min per tool. | Large. Gives crash-finders a pathway to score on semantic bugs their own oracle cannot see — the §4.4 design intent. |
+| 6 | **Add a grammar-aware mutator** (Nautilus / Gramatron / FormatFuzzer) as an optional tool row. | 1-2 days engineering. | Mathis PLDI'19: pFuzzer 52 % keyword coverage vs AFL 5 % on parser targets — sizeable lift for structured formats. |
+
+Full forensic diagnosis: `compares/PHASE4_DIAGNOSIS.md`. Chats 1 and
+2 already completed the manual `false+` triage work §5.3.1
+prescribes; their reports lift verbatim into the paper draft.
+
+**Status**: diagnosis complete; the §5.3.1 detection predicate is
+correct and unchanged; the gap is execution (biotest + budget +
+Chat 6 post-hoc + seed hygiene + equalizer). None require altering
+the measurement protocol.
+
 ## 10. Open Decisions
 
 All primary decisions are locked in §2/§3/§4. These remain open and are deferred to Phase-0 pre-flight:
@@ -2491,6 +2582,10 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   regime, ranking-stable" posture. Regrade provenance stamped in each
   growth file's `extra.regrade` block (`by`, `recipe`, `config`,
   `ticks_regraded`).
+
+  Full report (per-tick table, per-rep detail, corpus sizes, scope
+  bullets, reproducer): **`compares/results/coverage/jazzer/coverage_growth.md`**
+  (rendered by `compares/scripts/write_phase2_report.py`; idempotent).
   ```bash
   # Convenience wrapper — sets env + invokes the sampler twice:
   bash compares/scripts/phase2_jazzer_htsjdk.sh

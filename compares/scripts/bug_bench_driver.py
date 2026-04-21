@@ -115,6 +115,18 @@ def _install_biopython(version: str) -> None:
         raise RuntimeError(
             f"biopython sut-env venv missing at {SUT_VENV_BIO_PIP.parent.parent}. "
             "Run: bash compares/scripts/prepare_sut_install_envs.sh")
+    # Skip the expensive pip install when the venv already has the right
+    # version. The sut-env lives on the 9p /work share and hits
+    # `[Errno 12] Cannot allocate memory` under multi-chat I/O pressure
+    # on Windows Docker Desktop.
+    py = SUT_VENV_BIO_PIP.parent / "python"
+    probe = subprocess.run(
+        [str(py), "-c",
+         "import Bio, numpy; print(Bio.__version__)"],
+        capture_output=True, text=True,
+    )
+    if probe.returncode == 0 and probe.stdout.strip() == version:
+        return
     subprocess.run(
         [str(SUT_VENV_BIO_PIP), "install", "--force-reinstall",
          f"biopython=={version}"],
@@ -223,8 +235,14 @@ def _install_htsjdk_jar(version: str, out_path: Path) -> None:
 
 
 def _checkout_seqan3(commit: str, seqan3_src_dir: Path) -> None:
+    # Resolve rev-spec (e.g. "edbfa956f^") to a concrete SHA first — otherwise
+    # git checkout mis-interprets "^"/"~" as a pathspec and fails.
+    resolved = subprocess.run(
+        ["git", "-C", str(seqan3_src_dir), "rev-parse", commit],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
     subprocess.run(
-        ["git", "-C", str(seqan3_src_dir), "checkout", "-f", commit],
+        ["git", "-C", str(seqan3_src_dir), "checkout", "-f", resolved],
         check=True,
     )
 
