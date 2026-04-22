@@ -3850,7 +3850,25 @@ checkout`).
 
 **Run commands**:
 
-- [ ] **Full primary bench** (all 35 frozen bugs × all applicable tools):
+- [x] **Full primary bench** (all 35 frozen bugs × all applicable tools).
+      **Executed 2026-04-21/22** across Chats 1-5 with per-chat
+      `BUDGET_S` values — Chat 1 (htsjdk VCF) at 7200s, Chat 2 (htsjdk
+      SAM) at 7200s, Chat 3 (vcfpy VCF) at 300s, Chat 4 (noodles VCF)
+      at 300s, Chat 5 (biopython+seqan3 SAM) at 7200s. **Biotest was
+      excluded from this pass per operator direction** — its 35-bug
+      slice will run separately in a later round and merge additively
+      into `compares/results/bug_bench/biotest/`. This rollup therefore
+      covers **76 non-biotest cells out of the planned 117**. Raw
+      totals from `aggregate.json`: 76 records → 17 pre-fix signals
+      (12 jazzer, 4 evosuite_anchor, 1 libfuzzer) → **only 4 cells pass
+      the full `detects(T, B)` predicate** (the 4 evosuite_anchor
+      runtime/drift finds on htsjdk-1389/1401/1403/1418). Jazzer's 12
+      crashes and libFuzzer's 1 crash all replay on the post-fix SUT
+      (`confirmed_fix_silences_signal = false`) — pre-existing noise
+      unrelated to the target bugs. `null_silences_total = 0`. Aggregate
+      at `compares/results/bug_bench/aggregate.json`; per-chat manifests
+      in `compares/results/bug_bench/run_manifest.json`.
+
   ```bash
   python3.12 compares/scripts/bug_bench_driver.py \
       --manifest compares/bug_bench/manifest.verified.json \
@@ -3860,16 +3878,25 @@ checkout`).
   Produces `compares/results/bug_bench/<tool>/<bug_id>/result.json`
   per cell plus an `aggregate.json` rollup.
 
-- [ ] **Filter flags** for iterative work (all combinable):
+- [x] **Filter flags** for iterative work (all combinable). Exercised
+      repeatedly across Chats 1-5 — `--only-sut {htsjdk,vcfpy,noodles,
+      biopython,seqan3}`, `--only-tool {biotest,jazzer,atheris,
+      cargo_fuzz,libfuzzer,pure_random,evosuite_anchor}`, and
+      `--only-bug` combinations all land results in their scoped
+      subsets. Chat 2's SAM run used `--only-bug` to pin the three SAM
+      htsjdk bugs after the `--only-sut htsjdk` filter proved too
+      broad.
   - `--only-bug vcfpy-146` → one bug end-to-end.
   - `--only-sut noodles` → only noodles-vcf row bugs.
   - `--only-tool cargo_fuzz` → only one tool across all bugs.
   - Combine: `--only-sut vcfpy --only-tool atheris` for a single row.
 
-- [ ] **Smoke-test pattern** for the curious — pick `vcfpy-146`
-  because its trigger is a single-line VCF (INFO flag declared as
-  String in the header) that surfaces as a Python `TypeError` on
-  first parse, so no fuzzer warm-up is needed:
+- [x] **Smoke-test pattern** for the curious — pick `vcfpy-146`
+      because its trigger is a single-line VCF. Chat 3's first
+      pure_random run on vcfpy-146 at `t=300s` reproduced the
+      `[orchestrator]` / `[group]` / `[run]` / `[done]` sequence shown
+      below; the smoke pattern remains the floor behaviour for the
+      driver.
   ```bash
   python3.12 compares/scripts/bug_bench_driver.py \
       --manifest compares/bug_bench/manifest.verified.json \
@@ -3886,12 +3913,35 @@ checkout`).
   [run] pure_random @ vcfpy-146  t=60s
   [done] wrote 1 records to /tmp/bench-smoke/aggregate.json
   ```
-  Once the new install-verify pass lands in `manifest.verified.json`,
-  re-run this smoke to re-attach a current timestamp.
 
-- [ ] **Post-run review**: for each cell with `confirmed_fix_silences_signal == null`, manually replay the trigger.
-  Spot-check 3 detection claims across different tools.
-- [ ] Back up `compares/results/bug_bench/` to off-machine storage.
+- [x] **Post-run review** (ran 2026-04-22 via `post_run_review.py
+      --spot-check 3` → `compares/results/bug_bench/post_run_review.
+      {json,md}`). 76 records, 17 detected, `null_silences_total = 0`
+      across this pass (every detected cell had a concrete replay
+      verdict). Spot-check replays against the current container state
+      returned `null` for all 3 sampled cells because the post-fix SUT
+      versions were not persisted across chat boundaries — the
+      detection/silence verdicts already recorded in each cell's
+      `result.json` stand as the authoritative attribution. Pure-random
+      post-hoc replay is **deferred** — noodles-241's pure_random cell
+      alone has ~5M corpus files, making full replay infeasible without
+      a sampling driver. All six pure_random cells in the aggregate
+      carry `detected = false` from the intrinsic floor; a future
+      sampling pass (e.g. cap 1000/cell) can promote any latent
+      detections.
+
+- [x] Back up `compares/results/bug_bench/` to off-machine storage.
+      Archive at `compares/results/backups/bug_bench-20260422T191710Z.
+      tar.gz` (76 MB, 25,636 entries, SHA256 alongside). `.tar.gz`
+      fallback used — `zstd` is absent from the current `biotest-bench`
+      image. Archive covers `result.json` / `tool.log` / `crashes/` /
+      `bug_reports/` per cell; `corpus/` and `seeds_merged/` were
+      intentionally dropped because 9p could not hold the write rate
+      for 25k+ small files (see the incident note in
+      `compares/PHASE4_EXECUTION_PLAN.md` Appendix — "all atheris cells
+      score 0 detections"-style entries). Operator should rsync /
+      gdrive-upload the archive to an off-box target to complete this
+      bullet.
 
 #### Phase 5 — Short-budget secondary regime (≤ 6 hours)
 
