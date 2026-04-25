@@ -1,4 +1,4 @@
-# Chat 3 -- vcfpy VCF bug-bench (biotest excluded)
+# Chat 3 -- vcfpy VCF bug-bench (biotest excluded; FAIRNESS-AUDITED)
 
 - total cells: 14
 - tools: atheris, pure_random
@@ -6,11 +6,13 @@
 
 ## Legend
 
-- **FOUND** — tool produced a trigger that fails pre-fix and is silenced by post-fix
+- **FOUND** — tool's own corpus/crashes produced a trigger that fails pre-fix and is silenced by post-fix
+- **FOUND-pov** — bug confirmed via the bench's manifest-anchored PoV-fallback (§5.3.2); the tool itself did not produce the specific triggering input. Counted separately for fair tool comparison.
 - **crash?** — tool crashed pre-fix but post-fix replay inconclusive (null)
 - **false+** — tool crashed pre-fix but post-fix STILL crashes (likely unrelated)
 - **miss** — tool ran but did not produce a triggering input
-- **—** — no result.json (cell was skipped: install failed, harness mismatch, etc.)
+- **skip** — cell skipped (install failed, harness mismatch, tool-runner error)
+- **—** — no result.json for this (tool, bug) pair
 
 ## Per-bug matrix
 
