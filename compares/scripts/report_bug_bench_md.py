@@ -10,6 +10,32 @@ from collections import defaultdict
 from pathlib import Path
 
 
+_MANIFEST_TRIGGERS_PREFIX = "/work/compares/bug_bench/triggers/"
+
+
+def trigger_origin(record: dict) -> str:
+    """Return where the verifying trigger came from.
+
+    'tool' means the tool's own corpus/crashes/bug_reports produced
+    the trigger that confirmed the differential. 'pov' means the
+    bench's manifest-anchored PoV-fallback path fired (the
+    bench-level §5.3.2 fallback added 2026-04-21). Without this
+    distinction, a tool that produced any incidental crash gets
+    credited for bugs it did not actually generate the trigger for.
+    """
+    trig = record.get("trigger_input") or ""
+    notes = record.get("notes") or ""
+    if "PoV fallback" in notes or "canonical PoV" in notes:
+        return "pov"
+    if trig.startswith(_MANIFEST_TRIGGERS_PREFIX):
+        return "pov"
+    if "/crashes/" in trig or "/corpus/" in trig or "/bug_reports/" in trig:
+        return "tool"
+    if not trig:
+        return "none"
+    return "other"
+
+
 def classify(record: dict) -> str:
     if record.get("error"):
         return "skip"
@@ -20,7 +46,9 @@ def classify(record: dict) -> str:
     if not detected:
         return "miss"
     if confirmed is True:
-        return "FOUND"
+        # Distinguish a tool-genuine find from a bench PoV-fallback. Both
+        # confirm the bug exists; only the former is the tool's own work.
+        return "FOUND" if trigger_origin(record) == "tool" else "FOUND-pov"
     if confirmed is False:
         return "false+"
     return "crash?"
@@ -86,11 +114,13 @@ def main() -> None:
     lines.append("")
     lines.append("## Legend")
     lines.append("")
-    lines.append("- **FOUND** — tool produced a trigger that fails pre-fix and is silenced by post-fix")
+    lines.append("- **FOUND** — tool's own corpus/crashes produced a trigger that fails pre-fix and is silenced by post-fix")
+    lines.append("- **FOUND-pov** — bug confirmed via the bench's manifest-anchored PoV-fallback (§5.3.2); the tool itself did not produce the specific triggering input. Counted separately for fair tool comparison.")
     lines.append("- **crash?** — tool crashed pre-fix but post-fix replay inconclusive (null)")
     lines.append("- **false+** — tool crashed pre-fix but post-fix STILL crashes (likely unrelated)")
     lines.append("- **miss** — tool ran but did not produce a triggering input")
-    lines.append("- **—** — no result.json (cell was skipped: install failed, harness mismatch, etc.)")
+    lines.append("- **skip** — cell skipped (install failed, harness mismatch, tool-runner error)")
+    lines.append("- **—** — no result.json for this (tool, bug) pair")
     lines.append("")
 
     lines.append("## Per-bug matrix")
@@ -110,6 +140,7 @@ def main() -> None:
     for t in tools:
         cells = by_tool[t]
         found = [b for b in bugs if cells.get(b) == "FOUND"]
+        found_pov = [b for b in bugs if cells.get(b) == "FOUND-pov"]
         crashed = [b for b in bugs if cells.get(b) == "crash?"]
         falsep = [b for b in bugs if cells.get(b) == "false+"]
         missed = [b for b in bugs if cells.get(b) == "miss"]
@@ -117,6 +148,8 @@ def main() -> None:
         lines.append(f"### {t}")
         lines.append("")
         lines.append(f"- FOUND ({len(found)}): {', '.join(found) or '(none)'}")
+        if found_pov:
+            lines.append(f"- FOUND-pov ({len(found_pov)}): {', '.join(found_pov)}")
         lines.append(f"- crash? ({len(crashed)}): {', '.join(crashed) or '(none)'}")
         lines.append(f"- miss ({len(missed)}): {', '.join(missed) or '(none)'}")
         if falsep:
