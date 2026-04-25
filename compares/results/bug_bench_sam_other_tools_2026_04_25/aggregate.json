@@ -1,0 +1,112 @@
+{
+  "results": [
+    {
+      "tool": "jazzer",
+      "bug_id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 153.51178634166718,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1410/original.sam",
+      "signal": "differential_disagreement",
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": ""
+    },
+    {
+      "tool": "jazzer",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 158.50948214530945,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1360/original.sam",
+      "signal": "differential_disagreement",
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": ""
+    },
+    {
+      "tool": "jazzer",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 153.0907106399536,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1238/original.sam",
+      "signal": "differential_disagreement",
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "reverse \u00a75.3.1 via PoV fallback: harvested-trigger forward path didn't confirm, but the canonical PoV is accept-pre / reject-post"
+    },
+    {
+      "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 3,
+      "notes": ""
+    },
+    {
+      "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 3,
+      "notes": ""
+    },
+    {
+      "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 3,
+      "notes": ""
+    },
+    {
+      "tool": "pure_random",
+      "bug_id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1410/original.sam",
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 0,
+      "notes": "pre_fix SUT parses the picked trigger cleanly \u2014 detection demoted to False (no pre-fix signal to silence); likely cross-voter canonical-JSON variance."
+    },
+    {
+      "tool": "pure_random",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1360/original.sam",
+      "signal": null,
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "forward \u00a75.3.1 via STRICT gate: pre-fix STRICT rejects, post-fix STRICT accepts \u2014 over-strict spec rejection fixed (e.g. htsjdk-1360 EMPTY_READ, htsjdk-1410 INVALID_INSERT_SIZE)"
+    },
+    {
+      "tool": "pure_random",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1238/original.sam",
+      "signal": null,
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "reverse \u00a75.3.1: pre-fix accepted, post-fix rejects \u2014 accept-when-should-reject regression"
+    }
+  ]
+}
