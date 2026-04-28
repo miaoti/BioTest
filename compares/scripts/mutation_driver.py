@@ -96,22 +96,29 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     out.mkdir(parents=True, exist_ok=True)
     # mutmut 3.x's `guess_paths_to_mutate()` has hard-coded heuristics:
     # `lib/` → `src/` → cwd-basename. It has no CLI flag or setup.cfg
-    # override for the path list. So we exploit the basename heuristic:
-    # out/'s basename is already "vcfpy"; dropping the mutable package
-    # at `out/vcfpy/` satisfies `isdir(cwd.basename)` when cwd=out.
-    # mutmut then writes its rewritten-with-trampolines copy to
-    # `out/mutants/vcfpy/` and leaves `out/vcfpy/` untouched — we
-    # therefore capture the baseline fingerprints against `out/vcfpy/`
-    # (or equivalently the venv's pristine vcfpy) and the mutant-run
-    # phase imports from `out/mutants/vcfpy/` via sys.path insert.
-    src_root = out
-    src_pkg = out / "vcfpy"
-    tests_dir = out / "tests"     # mutmut auto-copies tests/ → mutants/tests/
-    baseline_file = out / "baseline.json"
+    # override. We therefore need the mutmut cwd to have basename
+    # `vcfpy` AND contain a `vcfpy/` subdirectory (which satisfies
+    # `isdir(cwd.basename)`).
+    #
+    # When --out already ends in `/vcfpy` (the original layout) we
+    # reuse it directly. When it's some other name (e.g.
+    # `vcfpy_runs/run_0/` for a per-rep re-run) we nest the mutmut
+    # workdir at `<out>/vcfpy/` so mutmut sees the right basename,
+    # and keep the top-level out/ for shared artefacts (summary.json,
+    # driver log, union_corpus/).
+    if out.name == "vcfpy":
+        work = out
+    else:
+        work = out / "vcfpy"
+        work.mkdir(parents=True, exist_ok=True)
+    src_root = work
+    src_pkg = work / "vcfpy"
+    tests_dir = work / "tests"    # mutmut auto-copies tests/ → mutants/tests/
+    baseline_file = work / "baseline.json"
     runner_log = out / "runner.log"
     mutmut_log = out / "mutmut_run.log"
     summary_path = out / "summary.json"
-    mutants_db = out / "mutants"  # mutmut's cache/results dir
+    mutants_db = work / "mutants"  # mutmut's cache/results dir
 
     # 1. Materialise a fresh mutable vcfpy source copy from the venv.
     if src_pkg.exists() and not args.reuse_src:
@@ -134,6 +141,25 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     corpus_dir = _materialise_corpus(args, out)
     if corpus_dir is None:
         return 2
+    # 2-pre. Phase E augmentation: union seeds/<fmt>_struct + seeds/<fmt>_rawfuzz
+    #        into the corpus when the SUT's parser is non-strict. This is the
+    #        path by which `biotest.py`'s Phase E auto-output reaches the
+    #        mutation harness. The M2 dual-policy disclosure (REVIEW2.md)
+    #        needs an isolated cmin-only measurement, so --no-augment-corpus
+    #        and --no-coverage-select bypass these post-corpus steps.
+    if not args.no_augment_corpus:
+        corpus_dir = _augment_with_phase_e(
+            corpus_dir, sut=args.sut, fmt=(args.format or "VCF"), out=out,
+        )
+    # 2a. Coverage-guided selection (opt-in but default-on for supported
+    #     cells). Closes the kill gap to atheris/jazzer/cargo-fuzz by
+    #     pruning redundant files. No-op if no collector exists for the
+    #     (sut, fmt) pair.
+    if not args.no_coverage_select:
+        corpus_dir = _coverage_select_if_supported(
+            corpus_dir, out, sut=args.sut, fmt=(args.format or "VCF"),
+            target=args.corpus_sample,
+        )
     corpus_size = sum(1 for _ in corpus_dir.iterdir() if _.is_file())
     print(f"[driver] corpus dir: {corpus_dir}  ({corpus_size} files)",
           flush=True)
@@ -188,7 +214,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     pregen_log = out / "pregen.log"
     rc = _docker_run(
         ["bash", "-c",
-         f"cd {_ctr_path(out)} && "
+         f"cd {_ctr_path(work)} && "
          f"{SYSTEM_PY} -c \"import mutmut.__main__ as m; "
          f"m.read_config(); m.create_mutants(); m.copy_also_copy_files(); "
          f"print('pregen ok: mutants/vcfpy present')\""],
@@ -196,7 +222,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
         stdout_file=pregen_log,
         stderr_file=pregen_log,
     )
-    if rc != 0 or not (out / "mutants" / "vcfpy").exists():
+    if rc != 0 or not (work / "mutants" / "vcfpy").exists():
         print(f"[driver] pre-generate FAILED (rc={rc}); see {pregen_log}",
               file=sys.stderr)
         return 2
@@ -205,7 +231,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     #    trampolines fall through to the original function whenever
     #    MUTANT_UNDER_TEST is unset, so calling vcfpy from this tree
     #    with no env var produces exactly what stats-phase will see.
-    rewritten_src_pkg = out / "mutants" / "vcfpy"
+    rewritten_src_pkg = work / "mutants" / "vcfpy"
     print(f"[driver] capturing baseline → {baseline_file} "
           f"(from {rewritten_src_pkg.name}/)", flush=True)
     rc = _docker_run(
@@ -249,7 +275,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     start = time.time()
     rc = _docker_run(
         ["bash", "-c",
-         f"cd {_ctr_path(out)} && "
+         f"cd {_ctr_path(work)} && "
          f"{SYSTEM_PY} /work/compares/scripts/mutation/run_mutmut.py run "
          f"--max-children {args.max_children}"],
         env=env,
@@ -265,7 +291,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     results_txt = out / "mutmut_results.txt"
     _docker_run(
         ["bash", "-c",
-         f"cd {_ctr_path(out)} && {SYSTEM_PY} -m mutmut results"],
+         f"cd {_ctr_path(work)} && {SYSTEM_PY} -m mutmut results"],
         timeout_s=120,
         stdout_file=results_txt,
         stderr_file=results_txt,
@@ -274,7 +300,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     # 7. mutmut 3.x stores state under `mutants/` in the cwd. Copy the key
     #    JSONs into the cell dir for audit.
     for name in ("stats.json", "results.json", "cache.json", "work.json"):
-        cand = out / "mutants" / name
+        cand = work / "mutants" / name
         if cand.exists():
             shutil.copy2(cand, out / f"mutmut_{name}")
 
@@ -282,7 +308,7 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
     #    totals) to build a DESIGN §4.5 summary block.
     summary = _summarise_mutmut_output(results_txt, mutmut_log)
     summary.update({
-        "tool": "atheris",
+        "tool": args.tool,
         "sut": "vcfpy",
         "format": "VCF",
         "phase": "mutation",
@@ -317,6 +343,85 @@ def _run_atheris_vcfpy(args: argparse.Namespace) -> int:
           f"{summary.get('reachable', '?')} reachable of "
           f"{summary.get('mutant_count', '?')} total)")
     return 0
+
+
+def _coverage_select_if_supported(
+    corpus_dir: Path, out: Path, sut: str, fmt: str, target: int,
+) -> Path:
+    """Run coverage-guided corpus selection if a collector exists for the
+    (sut, fmt) pair. Otherwise pass through the input corpus unchanged.
+
+    Closes the kill-count gap to coverage-guided fuzzers by ensuring the
+    files the mutation oracle actually samples (first-N lexicographic)
+    are coverage-diverse — jazzer/atheris produce their corpus this way
+    internally; we select for it post-hoc over our Rank-generated output.
+    """
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "compares/scripts"))
+        from corpus_coverage_select import _COVERAGE_COLLECTORS, select_directory
+    except Exception as e:
+        print(f"[driver] coverage-select import failed ({e}); skipping",
+              flush=True)
+        return corpus_dir
+
+    key = (sut.lower(), fmt.upper())
+    if key not in _COVERAGE_COLLECTORS:
+        return corpus_dir  # no per-file coverage collector for this cell
+
+    selected_dir = out / "corpus_selected"
+    try:
+        r = select_directory(
+            input_dir=corpus_dir, output_dir=selected_dir,
+            sut=sut, fmt=fmt, target=target,
+        )
+        print(f"[driver] coverage-select: {r['input_count']} → "
+              f"{r['selected_count']} files "
+              f"(covered {r['total_lines_covered']} lines)", flush=True)
+        return selected_dir
+    except SystemExit as e:
+        print(f"[driver] coverage-select failed ({e}); using original corpus",
+              flush=True)
+        return corpus_dir
+    except Exception as e:
+        print(f"[driver] coverage-select error ({e}); using original corpus",
+              flush=True)
+        return corpus_dir
+
+
+def _augment_with_phase_e(corpus_dir: Path, sut: str, fmt: str, out: Path) -> Path:
+    """Union the Phase-E augmented corpus dirs (`seeds/<fmt>_struct/`,
+    `seeds/<fmt>_rawfuzz/`) into a fresh staging dir for non-strict-
+    parser SUTs. Strict parsers (biopython, noodles) keep primary-only.
+    """
+    STRICT = {"biopython", "noodles"}
+    if sut.lower() in STRICT:
+        return corpus_dir
+    ext = fmt.lower()
+    aug_dirs = [REPO_ROOT / f"seeds/{ext}_struct",
+                REPO_ROOT / f"seeds/{ext}_rawfuzz"]
+    aug_dirs = [d for d in aug_dirs if d.is_dir() and any(d.iterdir())]
+    if not aug_dirs:
+        return corpus_dir
+    staged = out / "phase_e_augmented_corpus"
+    staged.mkdir(parents=True, exist_ok=True)
+    # Clear only same-ext to avoid clobbering sibling artifacts.
+    for f in staged.glob(f"*.{ext}"):
+        f.unlink()
+    # Copy primary
+    for f in corpus_dir.glob(f"*.{ext}"):
+        shutil.copy2(f, staged / f.name)
+    n_primary = sum(1 for _ in staged.glob(f"*.{ext}"))
+    # Union augmented dirs
+    n_aug = 0
+    for d in aug_dirs:
+        for f in d.glob(f"*.{ext}"):
+            tgt = staged / f.name
+            if not tgt.exists():
+                shutil.copy2(f, tgt)
+                n_aug += 1
+    print(f"[driver] phase-E augmentation: {n_primary} primary + {n_aug} "
+          f"augmented (struct/rawfuzz) → {staged}", flush=True)
+    return staged
 
 
 def _materialise_corpus(args: argparse.Namespace, out: Path) -> Path | None:
@@ -483,6 +588,10 @@ def _run_cargo_fuzz_noodles(args: argparse.Namespace) -> int:
     if not corpus.is_dir():
         print(f"[driver] corpus {corpus} is not a directory", file=sys.stderr)
         return 2
+    # Phase E augmentation. _augment_with_phase_e is a no-op for
+    # noodles (strict Rust parser, per STRICT set inside the helper) —
+    # call it for symmetry; helper returns unchanged corpus.
+    corpus = _augment_with_phase_e(corpus, sut="noodles", fmt="VCF", out=out)
 
     # Capture baseline once. Idempotent: if baseline.json already exists
     # AND matches the current source, skip.
@@ -510,6 +619,14 @@ def _run_cargo_fuzz_noodles(args: argparse.Namespace) -> int:
                   file=sys.stderr)
             return 2
 
+    # NOTE: coverage-guided corpus selection via outcome-fingerprint was
+    # evaluated for the PIT cells (r19 2026-04-23) and measured WORSE than
+    # passing the full corpus through — ~20 distinct outcome strings makes
+    # greedy set-cover degrade to near-random. The same coarseness applies
+    # to noodles' Rust oracle, so we keep it OFF here. Coverage-selection
+    # is reserved for cells with a Python-native per-file coverage.py
+    # collector (vcfpy, biopython), which gives line-level granularity.
+
     # Run cargo-mutants over the reader+record+header paths.
     # Reset mutants.out each run so `outcomes.json` reflects only this run.
     (out / "mutants.out").exists() and shutil.rmtree(out / "mutants.out")
@@ -532,10 +649,13 @@ def _run_cargo_fuzz_noodles(args: argparse.Namespace) -> int:
     print(f"[driver] cargo mutants across {len(args.mutation_files)} file patterns",
           flush=True)
     start = time.time()
+    # shlex-quote every arg so glob chars (**, *) in --file patterns
+    # aren't expanded by bash -c before cargo-mutants sees them.
+    import shlex
     rc = _docker_run(
         ["bash", "-c",
          f"cd /work/compares/baselines/noodles-vcf-0.70-src && "
-         + " ".join(f"'{a}'" if ' ' in a else a for a in cargo_mutants_cmd)],
+         + " ".join(shlex.quote(a) for a in cargo_mutants_cmd)],
         env={
             "PATH": "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:"
                     "/usr/sbin:/usr/bin:/sbin:/bin",
@@ -555,7 +675,7 @@ def _run_cargo_fuzz_noodles(args: argparse.Namespace) -> int:
     outcomes_path = out / "mutants.out" / "outcomes.json"
     summary = _summarise_cargo_mutants(outcomes_path)
     summary.update({
-        "tool": "cargo_fuzz",
+        "tool": args.tool,
         "sut": "noodles",
         "format": "VCF",
         "phase": "mutation",
@@ -953,7 +1073,7 @@ def _write_vcf_na_summary(out: Path, args: argparse.Namespace) -> int:
     """seqan3 has no VCF parser; emit a documented N/A payload."""
     out.mkdir(parents=True, exist_ok=True)
     summary = {
-        "tool": "libfuzzer",
+        "tool": args.tool,
         "sut": "seqan3",
         "format": "VCF",
         "phase": "mutation",
@@ -1042,6 +1162,13 @@ def _libfuzzer_seqan3_loop_in_container(args: argparse.Namespace) -> int:
     if not corpus.exists():
         print(f"mutation_driver: corpus {corpus} missing", file=sys.stderr)
         return 2
+    # Phase E augmentation for seqan3 (non-strict templated C++ parser).
+    # Use args.out (unique per invocation) to avoid races between
+    # parallel runs sharing args.tool='biotest'.
+    fmt_local = (args.format or "SAM").upper()
+    out_for_aug = Path(args.out).resolve()
+    out_for_aug.mkdir(parents=True, exist_ok=True)
+    corpus = _augment_with_phase_e(corpus, sut="seqan3", fmt=fmt_local, out=out_for_aug)
     all_corpus_files = sorted((p for p in corpus.iterdir() if p.is_file()),
                               key=lambda p: p.name)
     sample = (all_corpus_files[:args.corpus_sample]
@@ -1064,9 +1191,22 @@ def _libfuzzer_seqan3_loop_in_container(args: argparse.Namespace) -> int:
     _log(f"[mut] mut binary: {mut_bin}")
     _log(f"[mut] mut build dir: {mut_build}")
 
-    # Baseline run. Do NOT rebuild (the supplied binary is already the
-    # baseline); replay corpus and collect digests.
+    # Baseline run. Force a fresh build from the CURRENT (reverted)
+    # source before collecting digests — otherwise a previous
+    # campaign could leave `mut_bin` as a post-mutation build (we
+    # always revert the source in the finally-block, but never
+    # rebuild the binary back to the pristine state). Baseline
+    # digests collected against a stale mutant binary would corrupt
+    # every subsequent kill decision in this campaign.
     started_all = time.time()
+    rebuild_ok, rebuild_stderr = _rebuild_mut_binary(mut_build)
+    if not rebuild_ok:
+        _log(f"[mut] baseline rebuild FAILED — aborting campaign: "
+             f"{rebuild_stderr[-400:]}")
+        log.close()
+        return 2
+    _log(f"[mut] baseline binary rebuilt in "
+         f"{time.time()-started_all:.1f}s (guards against stale mutant state)")
     baseline = _run_corpus_digest(mut_bin, sample, args.per_file_timeout_s)
     (out / "baseline.json").write_text(json.dumps(baseline, indent=2),
                                        encoding="utf-8")
@@ -1129,7 +1269,7 @@ def _libfuzzer_seqan3_loop_in_container(args: argparse.Namespace) -> int:
     total_run = killed + survived
     score = (killed / total_run) if total_run else None
     summary = {
-        "tool": "libfuzzer",
+        "tool": args.tool,
         "sut": "seqan3",
         "format": "SAM",
         "phase": "mutation",
@@ -1235,7 +1375,7 @@ def _run_libfuzzer_seqan3(args: argparse.Namespace, fmt: str) -> int:
         return 2
     inner = [
         SYSTEM_PY, "/work/compares/scripts/mutation_driver.py",
-        "--tool", "libfuzzer", "--sut", "seqan3", "--format", "SAM",
+        "--tool", args.tool, "--sut", "seqan3", "--format", "SAM",
         "--in-container",
         "--corpus", corpus_ctr,
         "--out", out_ctr,
@@ -1264,10 +1404,10 @@ def _run_libfuzzer_seqan3(args: argparse.Namespace, fmt: str) -> int:
 def _cli() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--tool", required=True,
-                   choices=["atheris", "cargo_fuzz", "libfuzzer"],
+                   choices=["atheris", "cargo_fuzz", "libfuzzer", "biotest"],
                    help="Phase-2 tool whose corpus is the 'test suite'.")
     p.add_argument("--sut", required=True,
-                   choices=["vcfpy", "noodles", "seqan3"],
+                   choices=["vcfpy", "noodles", "seqan3", "biopython"],
                    help="SUT under mutation.")
     p.add_argument("--format", default=None, choices=["SAM", "VCF"],
                    help="Format — only consumed by libfuzzer×seqan3. seqan3 "
@@ -1344,16 +1484,55 @@ def _cli() -> int:
                    help="Internal flag: set when the script re-invokes "
                         "itself inside biotest-bench. Users should not set "
                         "this by hand.")
+    p.add_argument("--no-augment-corpus", action="store_true",
+                   help="Skip Phase-E struct/rawfuzz augmentation. Used by "
+                        "the M2 dual-policy disclosure (REVIEW2.md) to "
+                        "isolate the corpus_minimize.py selector effect.")
+    p.add_argument("--no-coverage-select", action="store_true",
+                   help="Skip the coverage-guided post-cmin selection "
+                        "(corpus_coverage_select). M2 dual-policy disclosure.")
     args = p.parse_args()
 
+    # biotest reuses the per-SUT backends below; before dispatch, remap
+    # default paths so --corpus / --out point at the biotest tree instead
+    # of atheris/cargo_fuzz/libfuzzer defaults.
+    default_corpus = REPO_ROOT / "compares/results/mutation/atheris/vcfpy/union_corpus"
+    default_out = REPO_ROOT / "compares/results/mutation/atheris/vcfpy"
+    if args.tool == "biotest":
+        if args.sut == "vcfpy":
+            if args.corpus == default_corpus:
+                args.corpus = REPO_ROOT / "compares/results/coverage/biotest/vcfpy/run_0/corpus"
+            if args.out == default_out:
+                args.out = REPO_ROOT / "compares/results/mutation/biotest/vcfpy"
+            return _run_atheris_vcfpy(args)
+        if args.sut == "noodles":
+            if args.corpus == default_corpus:
+                args.corpus = REPO_ROOT / "compares/results/coverage/biotest/noodles/run_0/corpus"
+            if args.out == default_out:
+                args.out = REPO_ROOT / "compares/results/mutation/biotest/noodles"
+            return _run_cargo_fuzz_noodles(args)
+        if args.sut == "seqan3":
+            fmt = (args.format or "SAM").upper()
+            if args.corpus == default_corpus:
+                args.corpus = REPO_ROOT / "compares/results/coverage/biotest/seqan3/run_0/corpus"
+            if args.out == default_out:
+                args.out = (REPO_ROOT / "compares/results/mutation/biotest/seqan3_sam"
+                            if fmt == "SAM"
+                            else REPO_ROOT / "compares/results/mutation/biotest/seqan3_vcf")
+            return _run_libfuzzer_seqan3(args, fmt)
+        print(f"mutation_driver: --tool biotest --sut {args.sut!r} not wired here; "
+              "htsjdk and biopython are driven by phase3_jazzer_pit.sh "
+              "and phase3_atheris_biopython.sh respectively (pass TOOL=biotest).",
+              file=sys.stderr)
+        return 2
     if args.tool == "atheris" and args.sut == "vcfpy":
         return _run_atheris_vcfpy(args)
     if args.tool == "cargo_fuzz" and args.sut == "noodles":
         # Default corpus + out dir for the Rust cell if caller didn't
         # override via flag.
-        if args.corpus == REPO_ROOT / "compares/results/mutation/atheris/vcfpy/union_corpus":
+        if args.corpus == default_corpus:
             args.corpus = REPO_ROOT / "compares/results/coverage/cargo_fuzz/noodles/run_0/corpus"
-        if args.out == REPO_ROOT / "compares/results/mutation/atheris/vcfpy":
+        if args.out == default_out:
             args.out = REPO_ROOT / "compares/results/mutation/cargo_fuzz/noodles"
         return _run_cargo_fuzz_noodles(args)
     if args.tool == "libfuzzer" and args.sut == "seqan3":
@@ -1365,9 +1544,9 @@ def _cli() -> int:
         # Resolve cell-specific defaults if the caller didn't override.
         default_out_sam = REPO_ROOT / "compares/results/mutation/libfuzzer/seqan3_sam"
         default_out_vcf = REPO_ROOT / "compares/results/mutation/libfuzzer/seqan3_vcf"
-        if args.out == REPO_ROOT / "compares/results/mutation/atheris/vcfpy":
+        if args.out == default_out:
             args.out = default_out_sam if fmt == "SAM" else default_out_vcf
-        if args.corpus == REPO_ROOT / "compares/results/mutation/atheris/vcfpy/union_corpus":
+        if args.corpus == default_corpus:
             args.corpus = (REPO_ROOT /
                            "compares/results/coverage/libfuzzer/seqan3/run_0/corpus")
         return _run_libfuzzer_seqan3(args, fmt)

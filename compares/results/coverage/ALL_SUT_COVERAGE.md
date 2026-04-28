@@ -14,39 +14,49 @@ Per-tick tables show **mean [min–max]** across the cell's reps.
 
 ## 0. Status matrix
 
+For a compact visual matrix (rows = SUT, columns = tool, one table per
+format), see the sibling `COVERAGE_MATRIX.md`.
+
 | Tool × SUT × format | Status | Budget (s) | Reps | Data dir |
 |:---|:---:|:---:|:---:|:---|
 | atheris × biopython × SAM | ✅ executed | 300 | 3 | `compares/results/coverage/atheris/biopython/` |
 | pure_random × biopython × SAM | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/biopython/` |
 | pure_random × htsjdk × SAM | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/htsjdk_sam/` |
 | pure_random × htsjdk × VCF | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/htsjdk_vcf/` |
-| cargo_fuzz × noodles × VCF | ✅ executed | 1800 | 2 | `compares/results/coverage/cargo_fuzz/noodles/` |
+| cargo_fuzz × noodles × VCF | ✅ executed | 1800 | 3 | `compares/results/coverage/cargo_fuzz/noodles/` |
 | pure_random × noodles × VCF | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/noodles/` |
 | aflpp × seqan3 × SAM | ✅ executed | 60 | 3 | `compares/results/coverage/aflpp/seqan3/` |
 | pure_random × seqan3 × SAM | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/seqan3/` |
-| atheris × vcfpy × VCF | ✅ executed | 1800 | 3 | `compares/results/coverage/atheris/vcfpy/` |
+| atheris × vcfpy × VCF | ✅ executed | 7200 | 3 | `compares/results/coverage/atheris/vcfpy/` |
 | pure_random × vcfpy × VCF | ✅ executed | 7200 | 3 | `compares/results/coverage/pure_random/vcfpy/` |
-| biotest × htsjdk × VCF | ⏳ pending | — | — | — |
-| biotest × htsjdk × SAM | ⏳ pending | — | — | — |
-| biotest × vcfpy × VCF | ⏳ pending | — | — | — |
-| biotest × noodles × VCF | ⏳ pending | — | — | — |
-| biotest × biopython × SAM | ⏳ pending | — | — | — |
-| biotest × seqan3 × SAM | ⏳ pending | — | — | — |
-| jazzer × htsjdk × VCF | ⏳ pending | — | — | — |
-| jazzer × htsjdk × SAM | ⏳ pending | — | — | — |
-| libfuzzer × seqan3 × SAM | ⏳ pending | — | — | — |
+| jazzer × htsjdk × VCF | ✅ executed | 7200 | 3 | `compares/results/coverage/jazzer/htsjdk_vcf/` |
+| jazzer × htsjdk × SAM | ✅ executed | 7200 | 3 | `compares/results/coverage/jazzer/htsjdk_sam/` |
+| libfuzzer × seqan3 × SAM | ✅ executed | 7200 | 3 | `compares/results/coverage/libfuzzer/seqan3/` |
+| biotest × htsjdk × VCF | 📝 end-of-run only | — | — | `coverage_notes/htsjdk/vcf/biotest.md` (Runs 6-8) |
+| biotest × htsjdk × SAM | 📝 end-of-run only | — | — | `coverage_notes/htsjdk/sam/biotest.md` (Runs 9-11) |
+| biotest × vcfpy × VCF | 📝 end-of-run only | — | — | `coverage_notes/vcfpy/vcf/biotest.md` (Run 1) |
+| biotest × noodles × VCF | 📝 end-of-run only | — | — | `coverage_notes/noodles/vcf/biotest.md` (Run 12) |
+| biotest × biopython × SAM | 📝 end-of-run only | — | — | `coverage_notes/biopython/sam/biotest.md` (Runs 1-4) |
+| biotest × seqan3 × SAM | 📝 end-of-run only (DESIGN scope = 0/0) | — | — | `coverage_notes/seqan3/sam/biotest.md` (Run 1) |
 
-**Executed**: 10 cells.  
-**Pending (from DESIGN §4.1 matrix)**: 9 cells.
+**Executed (tick-sampled)**: 13 cells.
+**BioTest end-of-run (non-tick)**: 6 cells — see `COVERAGE_MATRIX.md` §3
+for why these cannot yet be plotted on the same log-tick axis and the
+re-run plan to fix that.
 
-BioTest itself (the 6 SUT rows marked pending for `biotest`) is
-deliberately run outside this coverage sampler — Phase-D `biotest.py`
-writes its own JaCoCo / coverage.py / gcovr artefacts under
-`coverage_artifacts/` — so the six `biotest × <sut>` rows are always
-pending from Phase-2's sampler point of view. The libFuzzer × seqan3
-row is a long-budget 7200 s × 3 reps run tracked in
-`compares/results/coverage/libfuzzer/seqan3/_STATUS.md`; its per-rep
-JSONs will land there when the sweep completes.
+Legend for `Status`:
+- `✅ executed` — `growth_aggregate.json` present with tick-sampled
+  reps at `{1, 10, 60, 300, 1800, 7200}` (or the subset that fits the
+  cell's budget). Directly comparable row-to-row within the same
+  format.
+- `📝 end-of-run only` — BioTest's Phase-D loop wrote final JaCoCo /
+  coverage.py / gcovr / llvm-cov artefacts at end-of-run only, NOT at
+  tick boundaries. The number in `coverage_notes/.../biotest.md` is a
+  single wall-clock-terminal reading; wall times vary by run (14 m to
+  402 m) and are not aligned to the baseline tools' tick schedule.
+  Reconciliation requires re-running BioTest under `coverage_sampler.py`
+  via an adapter that polls coverage at each tick — see
+  `COVERAGE_MATRIX.md` §3c, Option A.
 
 ## 1. Per-SUT cross-tool comparison
 

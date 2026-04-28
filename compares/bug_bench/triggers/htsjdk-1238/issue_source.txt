@@ -1,0 +1,18 @@
+Source: https://github.com/samtools/htsjdk/pull/1238
+Issue:  https://github.com/samtools/htsjdk/issues/1471
+Title:  Validate sequence dictionary name characters per SAM spec
+
+Pre-fix (2.18.1) SAMSequenceRecord.java only rejects whitespace in
+the sequence name. Post-fix (2.18.2) introduces:
+
+    private static final Pattern LEGAL_RNAME_PATTERN = Pattern.compile(
+        "[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
+
+    public static void validateSequenceName(final String name) {
+        if (!LEGAL_RNAME_PATTERN.matcher(name).useAnchoringBounds(true).matches()) {
+            throw new SAMException("Sequence name '" + name + "' doesn't match regex: '"
+                + LEGAL_RNAME_PATTERN.pattern() + "'");
+        }
+    }
+
+Called from the constructor — fires regardless of ValidationStringency.

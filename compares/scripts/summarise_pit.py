@@ -124,12 +124,13 @@ def _cli() -> int:
     ap.add_argument("--baseline-json", type=Path, required=True)
     ap.add_argument("--target-classes-n", type=int, required=True)
     ap.add_argument("--fmt", required=True, choices=["VCF", "SAM"])
+    ap.add_argument("--tool", default="jazzer")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
     summary = summarise(args.report_dir)
     out = {
-        "tool": "jazzer",
+        "tool": args.tool,
         "sut": "htsjdk",
         "format": args.fmt,
         "phase": "mutation",

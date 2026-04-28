@@ -36,8 +36,14 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PHASE3_DIR="${REPO_ROOT}/compares/scripts/phase3_pit"
-OUT_ROOT="${REPO_ROOT}/compares/results/mutation/jazzer"
-COVERAGE_ROOT="${REPO_ROOT}/compares/results/coverage/jazzer"
+# TOOL env var lets us reuse this driver for biotest as well as jazzer.
+# When TOOL=biotest, coverage_root expects a staged biotest corpus at
+# compares/results/coverage/biotest/htsjdk_{vcf,sam}/run_0/corpus/ and
+# results land under compares/results/mutation/biotest/htsjdk_{vcf,sam}/.
+TOOL="${TOOL:-jazzer}"
+OUT_ROOT="${OUT_ROOT:-${REPO_ROOT}/compares/results/mutation/${TOOL}}"
+COVERAGE_ROOT="${COVERAGE_ROOT:-${REPO_ROOT}/compares/results/coverage/${TOOL}}"
+REPS="${REPS:-0 1 2}"
 
 FORMATS="${FORMATS:-VCF SAM}"
 THREADS="${THREADS:-4}"
@@ -71,7 +77,7 @@ PIT_CORE="${PIT_DIR}/pitest.jar"
 
 mkdir -p "${OUT_ROOT}"
 
-log() { echo "[$(date -Is)] [phase3] $*" | tee -a "${OUT_ROOT}/phase3_jazzer_htsjdk.log"; }
+log() { echo "[$(date -Is)] [phase3-${TOOL}] $*" | tee -a "${OUT_ROOT}/phase3_${TOOL}_htsjdk.log"; }
 
 # ---------------------------------------------------------------------------
 # 1. Download JUnit 4 + Hamcrest if not cached
@@ -100,7 +106,12 @@ fi
 # ---------------------------------------------------------------------------
 BUILD_DIR="${PHASE3_DIR}/build"
 mkdir -p "${BUILD_DIR}"
-log "compiling BaselineBuilder / {VCF,SAM}MutationTest"
+log "compiling BaselineBuilder / {VCF,SAM}MutationTest / PerFileCoverageProbe"
+# PerFileCoverageProbe needs jacoco-core + asm on compile classpath.
+# It's a no-op dependency when the jars are absent (compile step is skipped).
+JACOCO_CORE_JAR="${PHASE3_DIR}/lib/jacoco-core.jar"
+JACOCO_AGENT_JAR="${REPO_ROOT}/coverage_artifacts/jacoco/jacocoagent.jar"
+ASM_CP="${PHASE3_DIR}/lib/asm.jar:${PHASE3_DIR}/lib/asm-commons.jar:${PHASE3_DIR}/lib/asm-tree.jar"
 javac \
     -source 17 -target 17 \
     -d "${BUILD_DIR}" \
@@ -108,6 +119,11 @@ javac \
     "${PHASE3_DIR}/BaselineBuilder.java" \
     "${PHASE3_DIR}/VCFMutationTest.java" \
     "${PHASE3_DIR}/SAMMutationTest.java"
+if [[ -f "${JACOCO_CORE_JAR}" && -f "${JACOCO_AGENT_JAR}" ]]; then
+    javac -source 17 -target 17 -d "${BUILD_DIR}" \
+        -cp "${HTSJDK_FATJAR}:${JACOCO_CORE_JAR}:${JACOCO_AGENT_JAR}:${ASM_CP}:${BUILD_DIR}" \
+        "${PHASE3_DIR}/PerFileCoverageProbe.java" || true
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Per-format cell
@@ -128,12 +144,23 @@ run_cell() {
 
   # 4a. Materialise a combined corpus from the 3 reps (union by name;
   #     duplicates de-duped). Cap to CORPUS_MAX for walltime sanity.
+  # If a Rank-8 corpus-keeper + corpus_minimize run already produced a
+  # `corpus_min/` sibling dir (per DESIGN.md §Rank 8 companion tool),
+  # prefer it — it's coverage-fingerprint-deduped and directly matches
+  # the PIT walltime envelope. See
+  # `compares/scripts/corpus_minimize.py` and
+  # `test_engine/feedback/corpus_keeper.py`.
   log "=== cell jazzer x htsjdk ${FMT} ==="
   log "materialising combined corpus at ${CORPUS_DIR} (cap=${CORPUS_MAX})"
   rm -f "${CORPUS_DIR}"/*
   local I=0
-  for R in 0 1 2; do
+  for R in ${REPS}; do
     local SRC="${COVERAGE_ROOT}/htsjdk_${LCASE}/run_${R}/corpus"
+    local SRC_MIN="${COVERAGE_ROOT}/htsjdk_${LCASE}/run_${R}/corpus_min"
+    if [[ -d "${SRC_MIN}" ]]; then
+      log "  using coverage-minimised corpus ${SRC_MIN}"
+      SRC="${SRC_MIN}"
+    fi
     if [[ ! -d "${SRC}" ]]; then
       log "  skip: ${SRC} missing"
       continue
@@ -149,6 +176,34 @@ run_cell() {
     done < <(find "${SRC}" -maxdepth 1 -type f -print0)
     if (( I >= CORPUS_MAX )); then break; fi
   done
+
+  # 4a-augment. Union the Phase-E augmented seeds (Rank 12 struct +
+  # Rank 13 rawfuzz). These dirs are auto-populated by `biotest.py`'s
+  # Phase E. Skip cleanly when running for non-biotest tools or when
+  # the augmented dirs don't exist yet.
+  if [[ "${TOOL}" == biotest* ]]; then
+    local LCASE_FMT="${LCASE}"
+    for AUG in "${REPO_ROOT}/seeds/${LCASE_FMT}_struct" \
+               "${REPO_ROOT}/seeds/${LCASE_FMT}_rawfuzz"; do
+      if [[ -d "${AUG}" ]]; then
+        local TAG
+        TAG=$(basename "${AUG}")
+        local ADDED=0
+        while IFS= read -r -d '' F; do
+          if (( I >= CORPUS_MAX )); then break; fi
+          local NAME
+          NAME=$(basename "${F}")
+          if [[ ! -e "${CORPUS_DIR}/${NAME}" ]]; then
+            cp "${F}" "${CORPUS_DIR}/${NAME}"
+            I=$((I + 1)); ADDED=$((ADDED + 1))
+          fi
+        done < <(find "${AUG}" -maxdepth 1 -type f -print0)
+        log "  +${ADDED} from ${TAG}"
+        if (( I >= CORPUS_MAX )); then break; fi
+      fi
+    done
+  fi
+
   local CORPUS_COUNT
   CORPUS_COUNT=$(ls "${CORPUS_DIR}" | wc -l)
   log "combined corpus: ${CORPUS_COUNT} files"
@@ -157,6 +212,22 @@ run_cell() {
   log "building baseline outcomes"
   java -cp "${BUILD_DIR}:${HTSJDK_FATJAR}" \
       BaselineBuilder "${FMT}" "${CORPUS_DIR}" "${BASELINE_JSON}"
+
+  # NOTE: per-file JaCoCo coverage-guided selection was evaluated here
+  # (r21, 2026-04-23) on both htsjdk cells:
+  #   htsjdk_sam: 132 kills selected (150 files from 271) = 132 unselected — neutral
+  #   htsjdk_vcf: 186 kills selected (150 files from 260) vs 192 unselected — REGRESSED -6
+  # Line-level coverage is orthogonal to mutation-kill potential: a file
+  # that covers line X doesn't necessarily distinguish mutated-vs-
+  # unmutated behaviour at X — it has to exercise a specific byte pattern
+  # that makes the mutant's output differ. Greedy-selecting for max line
+  # coverage picks files that cover more *parser paths* but not
+  # necessarily more *kill-discriminating* inputs.
+  #
+  # PerFileCoverageProbe.java + corpus_coverage_select.py's --prebuilt-json
+  # path are left in place for future experiments (different target
+  # sizes, different mutation-operator sets), but the shell hook that
+  # wired them into the PIT flow is disabled — the full corpus wins.
 
   # 4c. Enumerate the target-class list per the fairness recipe.
   local TARGET_CLASSES
@@ -200,7 +271,7 @@ run_cell() {
       --targetTests "${TEST_CLASS}" \
       --sourceDirs "${HTSJDK_CLASSES_DIR}" \
       --classPath "${BUILD_DIR},${HTSJDK_CLASSES_DIR},${JUNIT_JAR},${HAMCREST_JAR}" \
-      --outputFormats "XML,HTML" \
+      --outputFormats "XML" \
       --mutators "${MUTATORS}" \
       --mutationUnitSize "${MUTATION_UNIT_SIZE}" \
       --maxMutationsPerClass "${MAX_MUTATIONS_PER_CLASS}" \
@@ -211,7 +282,7 @@ run_cell() {
       --skipFailingTests=true \
       --verbose=false \
       --jvmArgs="-Xmx2g,-XX:+UseParallelGC" \
-      2>&1 | tee -a "${OUT_ROOT}/phase3_jazzer_htsjdk.log" | tail -30
+      2>&1 | tee -a "${OUT_ROOT}/phase3_${TOOL}_htsjdk.log" | tail -30
 
   # 4e. Parse mutations.xml into summary.json.
   log "parsing PIT report into summary.json"
@@ -221,6 +292,7 @@ run_cell() {
       --baseline-json "${BASELINE_JSON}" \
       --target-classes-n "${TARGET_N}" \
       --fmt "${FMT}" \
+      --tool "${TOOL}" \
       --out "${CELL_DIR}/summary.json"
 
   log "cell ${FMT} done: $(cat "${CELL_DIR}/summary.json" | python3.12 -c 'import json,sys; d=json.load(sys.stdin); print(f"killed={d[\"killed\"]}/{d[\"reachable\"]}  score={d[\"score\"]*100:.2f}%")')"

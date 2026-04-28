@@ -31,9 +31,9 @@ chat first.
 | 0.5  | vcfpy install fallbacks (`--no-build-isolation` + git) | **landed** via Chat 5 retry pass |
 | 0.6  | Noodles per-version harness (Option A — accept skips)  | config only — documented skips |
 | 0.7  | EvoSuite minimum 3600 s budget                         | config only — set at invocation |
-| 0.8  | seqan3 per-anchor harness rebuild                      | **pending** — blocker for Chat 5 re-run |
-| 0.9  | Linux `biotest_harness` (no `.exe`) for seqan3 replay  | **pending** |
-| 0.10 | Per-SUT poison seed filter                             | **pending** — complements §0.1 |
+| 0.8  | seqan3 per-anchor harness rebuild                      | **landed** — `_install_seqan3` + per-anchor build dirs; tool-skips on compile failure |
+| 0.9  | Linux `biotest_harness` (no `.exe`) for seqan3 replay  | **landed** — ELF binary built; `SeqAn3Runner` platform-aware; replay returns `None` on exec failure |
+| 0.10 | Per-SUT poison seed filter                             | **landed** — `_per_sut_accepted_seeds` + seqan3 uses libfuzzer-harness probe to catch Chat-5 poison |
 | 0.11 | 9p tmpfs driver workaround (Windows Docker Desktop)    | operational note — adopt per chat |
 
 ### 0.1 Seed sanitization (removes the Chat-2 "chr1,chr3" class of budget waste) — **LANDED 2026-04-21**
@@ -215,7 +215,7 @@ the 3 skipped cells.
 
 Pick A unless the paper draft needs those 3 cells specifically.
 
-### 0.8 seqan3 libFuzzer harness is **not** rebuilt per anchor (surfaced by Chat 5 — blocker)
+### 0.8 seqan3 libFuzzer harness is **not** rebuilt per anchor (surfaced by Chat 5) — **LANDED 2026-04-21**
 
 Chat 5's `report.md` deep-dive identified an architectural bug in the
 seqan3 path: the libFuzzer harness
@@ -270,7 +270,7 @@ target bugs.
 **Until this lands, drop libfuzzer × seqan3 from Chat 5 re-runs** —
 they cannot produce informative data.
 
-### 0.9 seqan3 replay harness ships only as Windows `.exe` (surfaced by Chat 5)
+### 0.9 seqan3 replay harness ships only as Windows `.exe` (surfaced by Chat 5) — **LANDED 2026-04-21**
 
 `_replay_trigger_silenced`'s seqan3 branch calls `SeqAn3Runner`,
 which shells out to
@@ -300,7 +300,7 @@ can't confirm silence on Linux.
    and looks like a genuine negative). One-line fix in the seqan3
    branch — catch `OSError` and return `None`.
 
-### 0.10 per-SUT seed filtering (complement to §0.1 global sanitization)
+### 0.10 per-SUT seed filtering (complement to §0.1 global sanitization) — **LANDED 2026-04-21**
 
 §0.1 drops seeds rejected by *every* SUT. Chat 2 and Chat 5 both
 surfaced the residual case: seeds that are valid for some SUTs but

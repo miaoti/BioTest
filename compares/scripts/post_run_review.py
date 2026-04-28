@@ -74,11 +74,24 @@ def review(bench_root: Path, spot_check: int, seed: int = 0) -> dict:
         tool = r.get("tool", "?")
         sut = r.get("sut", "?")
         per_cell[(tool, sut)]["total"] += 1
-        if r.get("detected"):
-            per_cell[(tool, sut)]["detected"] += 1
+        det = bool(r.get("detected"))
+        conf = r.get("confirmed_fix_silences_signal")
+        err = r.get("install_error") or r.get("error")
+        if err:
+            per_cell[(tool, sut)]["skip"] += 1
+        elif det:
+            per_cell[(tool, sut)]["detected"] += 1  # "any crash" (legacy)
             detected.append(r)
-        if r.get("detected") and r.get("confirmed_fix_silences_signal") is None:
-            null_silences.append(r)
+            # Canonical FOUND: pre-fix failed AND post-fix silenced.
+            if conf is True:
+                per_cell[(tool, sut)]["FOUND"] += 1
+            elif conf is False:
+                per_cell[(tool, sut)]["false+"] += 1
+            else:
+                per_cell[(tool, sut)]["crash?"] += 1
+                null_silences.append(r)
+        else:
+            per_cell[(tool, sut)]["miss"] += 1
 
     # Spot-check: sample up to `spot_check` detections across distinct tools.
     rng = random.Random(seed)
@@ -100,6 +113,10 @@ def review(bench_root: Path, spot_check: int, seed: int = 0) -> dict:
             "post_fix_success": _replay(r["sut"], trig, fmt),
         })
 
+    found_total = sum(c.get("FOUND", 0) for c in per_cell.values())
+    false_plus_total = sum(c.get("false+", 0) for c in per_cell.values())
+    skip_total = sum(c.get("skip", 0) for c in per_cell.values())
+    miss_total = sum(c.get("miss", 0) for c in per_cell.values())
     return {
         "records_total": len(records),
         "per_cell": {
@@ -107,6 +124,10 @@ def review(bench_root: Path, spot_check: int, seed: int = 0) -> dict:
             for (tool, sut), counter in sorted(per_cell.items())
         },
         "detected_total": len(detected),
+        "FOUND_total": found_total,
+        "false_plus_total": false_plus_total,
+        "miss_total": miss_total,
+        "skip_total": skip_total,
         "null_silences_total": len(null_silences),
         "null_silences_sample": null_silences[:20],
         "spot_check": replay_results,
@@ -116,13 +137,32 @@ def review(bench_root: Path, spot_check: int, seed: int = 0) -> dict:
 def _render_md(summary: dict) -> str:
     lines = ["# Phase 4 post-run review\n"]
     lines.append(f"- records_total: {summary['records_total']}")
-    lines.append(f"- detected_total: {summary['detected_total']}")
+    lines.append(f"- **FOUND_total**: {summary.get('FOUND_total', 0)}  (canonical target-bug detections)")
+    lines.append(f"- false+_total: {summary.get('false_plus_total', 0)}  (adapter crashed pre-fix AND post-fix — real bug, not target)")
+    lines.append(f"- miss_total: {summary.get('miss_total', 0)}")
+    lines.append(f"- skip_total: {summary.get('skip_total', 0)}")
+    lines.append(f"- detected_total (any crash, legacy): {summary['detected_total']}")
     lines.append(f"- null_silences_total: {summary['null_silences_total']}\n")
-    lines.append("## Per-cell (tool/sut) detection counts\n")
-    lines.append("| cell | total | detected |")
-    lines.append("| :--- | ---: | ---: |")
+    lines.append("## Per-cell (tool/sut) detection breakdown\n")
+    lines.append(
+        "Columns distinguish **FOUND** (pre-fix failed, post-fix silenced — "
+        "the canonical bug-bench detection) from **false+** (real crash, "
+        "but post-fix still crashes → not the target bug). The legacy "
+        "`detected (any)` column is the sum of FOUND + false+ + crash?, "
+        "i.e. every cell where the adapter reported at least one crash.\n"
+    )
+    lines.append("| cell | total | FOUND | false+ | crash? | miss | skip | detected (any) |")
+    lines.append("| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
     for cell, counts in summary["per_cell"].items():
-        lines.append(f"| {cell} | {counts.get('total', 0)} | {counts.get('detected', 0)} |")
+        lines.append(
+            f"| {cell} | {counts.get('total', 0)}"
+            f" | {counts.get('FOUND', 0)}"
+            f" | {counts.get('false+', 0)}"
+            f" | {counts.get('crash?', 0)}"
+            f" | {counts.get('miss', 0)}"
+            f" | {counts.get('skip', 0)}"
+            f" | {counts.get('detected', 0)} |"
+        )
     lines.append("\n## Spot-check replays\n")
     if not summary["spot_check"]:
         lines.append("_no detected cells to spot-check_")

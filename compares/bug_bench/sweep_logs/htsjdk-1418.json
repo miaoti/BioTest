@@ -1,0 +1,58 @@
+{
+  "bug_id": "htsjdk-1418",
+  "sut": "htsjdk",
+  "fmt": "VCF",
+  "pov": "C:\\Users\\miaot\\Github\\BioTest\\compares\\bug_bench\\triggers\\htsjdk-1418\\original.vcf",
+  "tried": [
+    {
+      "version": "2.19.0",
+      "silenced": false,
+      "duration_s": 3.91,
+      "error": null
+    },
+    {
+      "version": "2.20.0",
+      "silenced": false,
+      "duration_s": 4.64,
+      "error": null
+    },
+    {
+      "version": "2.20.1",
+      "silenced": false,
+      "duration_s": 4.55,
+      "error": null
+    },
+    {
+      "version": "2.21.0",
+      "silenced": true,
+      "duration_s": 5.16,
+      "error": null
+    },
+    {
+      "version": "2.22.0",
+      "silenced": true,
+      "duration_s": 5.0,
+      "error": null
+    },
+    {
+      "version": "2.23.0",
+      "silenced": true,
+      "duration_s": 4.8,
+      "error": null
+    }
+  ],
+  "old_anchor": {
+    "type": "install_version",
+    "pre_fix": "2.20.1",
+    "post_fix": "2.21.0",
+    "verification_rule": "htsjdk 2.21.0 release notes cite 'Make VCFHeader not throw exception if contig header lines lack length field (#1418)'",
+    "confidence": "high"
+  },
+  "new_anchor": {
+    "type": "install_version",
+    "pre_fix": "2.20.1",
+    "post_fix": "2.21.0",
+    "verification_rule": "empirical sweep 2026-04-21 across 2.19.0..2.23.0: pre=2.20.1 fails, post=2.21.0 silences",
+    "confidence": "high"
+  }
+}

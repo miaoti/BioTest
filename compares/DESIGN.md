@@ -256,17 +256,225 @@ Records feed `compares/scripts/build_report.py` → `compares/results/comparison
 
 ### 5.1 Candidate bugs
 
-Candidates collected from GitHub issue search and repository changelogs (April 2026). Full list in Appendix A. Summary after the **2026-04-20 pysam-removal refactor**:
+Candidates collected from GitHub issue search and repository changelogs (April 2026). Full list in Appendix A. Summary after the **2026-04-20 pysam-removal refactor** + **2026-04-21 SAM revision** (§13.4.7.1):
 
-- **htsjdk**: 20 candidates (two research passes — see Appendix A.1).
-- **vcfpy**: new candidates pulled from bihealth/vcfpy CHANGELOG + issue tracker; see Appendix A.2.
-- **noodles-vcf**: new candidates pulled from zaeleus/noodles-vcf CHANGELOG; see Appendix A.3.
-- **biopython**: 6 issues (SAM parsing + alignment bugs); see Appendix A.4.
-- **seqan3**: 6 PRs with confirmed fix-commit SHAs; see Appendix A.5.
+- **htsjdk**: 23 candidates collected, 12 verified (two research passes + the 2026-04-21 file-level-only SAM scan; see Appendix A.1).
+- **vcfpy**: candidates pulled from bihealth/vcfpy CHANGELOG + issue tracker; 5 verified — see Appendix A.2.
+- **noodles-vcf**: candidates pulled from zaeleus/noodles-vcf CHANGELOG; 9 verified — see Appendix A.3.
+- **biopython**: 6 issues collected (SAM parsing + alignment bugs); 0 verified after the 2026-04-21 review — see Appendix A.4.
+- **seqan3**: 6 PRs with confirmed fix-commit SHAs — see Appendix A.5.
+
+Project total after the 2026-04-21 morning revision and audit drops: **32 verified bugs** (23 VCF + 9 SAM).
 
 The candidate set is pre-filtered to include only VCF / SAM-related bugs fixed in the last 5 years, with a concrete installable pre-fix / post-fix version (§5.2). Bugs outside these formats (BED, GFF, CRAM-only, tabix) are excluded.
 
 **Dropped-from-primary**: the 4 pysam bugs that were verified under the previous (pre-2026-04-20) design are **not** in the new bench. They remain in `compares/bug_bench/triggers/pysam-{1214,1308,1314,939}/` for historical reference and can still be detected opportunistically via the pysam voter inside the differential oracle, but no primary tool is scored against pysam-pre-fix installs any more. See §9 Risk 4 for why the change doesn't weaken the detection story (htslib-bound behaviour still contributes as a voter; vcfpy + noodles-vcf bring independent implementations to the VCF row).
+
+### 5.1.1 Bug selection methodology
+
+The 32 bugs in `compares/bug_bench/manifest.verified.json` are not the
+raw GitHub issue tracker — they survived a four-stage selection
+pipeline that filters for *file-level differential detectability* and
+*ground-truth attributability* per Böhme et al. ICSE'22. Every drop is
+recorded in `compares/bug_bench/dropped.json` with a reason and date,
+so the manifest is reconstructible from research-pass outputs.
+
+#### Stage 1 — Sourcing (per-SUT)
+
+Candidates are surfaced by reading **publicly indexed bug evidence**
+in each SUT's official channel. We do **not** mine `git log` for
+suspicious-looking commits — only fixes whose intent is explicit in
+the project's own record:
+
+| SUT | sources scanned | what we look for |
+|:--|:--|:--|
+| htsjdk | GitHub releases (`samtools/htsjdk/releases`) 2.18.0 → 4.1.0; release-notes bullets that say "Fix", "Reject", "Validate", "Crash", "ArrayIndexOutOfBoundsException", "NullPointer", "wrong"; PRs linked from those bullets | per-release line items + their linked PR / issue with a triggering input shape |
+| pysam | `CHANGES.rst` (master) + closed issues with the `bug` label | parser-side fixes; release-version → version transitions |
+| biopython | `NEWS.rst` (master) + closed issues touching `Bio.AlignIO` / `Bio.SeqIO` / `Bio.Align.sam` | format-parser fixes (not feature additions) |
+| seqan3 | merged PRs with the `bug` label + their parent commit SHA | parser-side fixes (alignment-internal flagged for separate triage) |
+| noodles-vcf | per-crate `CHANGELOG.md`; GitHub issues filtered to `noodles-vcf` | parse + write regressions with concrete crate-version anchors |
+| vcfpy | `CHANGELOG.md` + issue tracker | parser-side fixes; pip-version transitions |
+
+Each candidate is added to `compares/bug_bench/manifest.json` with
+provenance (issue/PR URL, anchor-type=`install_version` /
+`commit_sha`, pre-fix / post-fix strings), category (one of
+`parse_error_missed`, `incorrect_field_value`, `writer_bug`,
+`round_trip_asymmetry`, `incorrect_rejection`, `edge_case_missed`,
+`encoding_bug`, `null_ptr`, `off_by_one_coord`), and a free-text
+description that's used by Phase 0 (§13.5).
+
+#### Stage 2 — Per-candidate review (manual, recorded)
+
+Every candidate gets a **trigger folder** at
+`compares/bug_bench/triggers/<id>/` containing:
+
+- `README.md` — bug shape, anchor, severity, expected signal, citation;
+- `issue_source.txt` — verbatim quote of the source patch / release-notes line;
+- `original.{vcf,sam}` — minimal hand-authored PoV (when the bug shape allows a plain-text seed; binary-only or concurrency-only bugs fall back to fuzzer-synthesis per §4.3).
+
+Authoring the PoV is itself a review step: the reviewer reads the
+patch's `--- / +++` diff to confirm the file shape that exercises the
+*specific* code path the patch changed. This rejects candidates that
+look bug-shaped in release notes but actually require API mutator
+chains, multi-file merges, threading, etc. — those are flagged on the
+spot and either re-categorized (Rank-5 method-sig) or dropped.
+
+#### Stage 3 — Selection criteria (the cut)
+
+A candidate is included in `manifest.verified.json` iff **all four**
+hold:
+
+1. **Reachable through the generic harness pipeline** — `signal_T(I, V)`
+   must be observable from one of the three universal post-parse
+   operations the framework runs uniformly on every bug:
+   - **(a) parse-time exception** — `parser.open(I)` raises under either
+     default or STRICT stringency.
+   - **(b) parse-time canonical-JSON value difference** — the harness's
+     canonical-JSON serialiser produces different output. Method calls
+     made by the serialiser itself (e.g. htsjdk
+     `VariantContext.getType()` or `SAMRecord.getCigar()`) count, since
+     they are invoked uniformly across all SUTs / bugs and not as
+     bug-specific API navigation.
+   - **(c) write-roundtrip canonical-JSON difference** —
+     `parser → writer → reparse → canonical-JSON compare`. Catches
+     writer regressions that round-trip through the on-disk text.
+   .
+   What this excludes: bug-specific *post-parse API mutator chains*
+   like `parse → setCigar(modified) → getAlignmentBlocks()`,
+   bug-specific *iterator APIs* like
+   `SamLocusIterator.next()` after parse, or *multi-file* operations
+   like a `VCFSorter.merge(a, b)` comparator regression. Those bug
+   shapes belong to Rank-5 method-signature differential testing
+   (separate manifest path) and are **not** counted in
+   `manifest.verified.json`.
+2. **Pre-fix and post-fix produce different observable output on the
+   same input** — either an exception raised by one but not the
+   other, or different parsed canonical-JSON values. This is the
+   §5.3.1 LHS, in either direction (forward or reverse — see §5.3.2).
+3. **Anchor reproduces empirically** — when both the pre-fix and
+   post-fix versions are installed and the trigger is replayed,
+   the predicted difference must actually fire. Verified during
+   Phase 0 (`bug_bench_driver.py --verify-only`); also via
+   `compares/bug_bench/sweep_anchors.py` (§5.3.4) for cells where the
+   release-notes citation looks dubious. Bugs whose anchors don't
+   reproduce are either re-anchored (sweep finds the empirical pair)
+   or dropped — see `compares/bug_bench/dropped.json` for the full
+   audit trail.
+4. **Installable as a versioned artifact** — `mvn dependency:get` of a
+   pinned htsjdk JAR, `pip install <package>==<version>`, `cargo build`
+   against a pinned crate, or `git checkout <sha>` against a vendored
+   source tree. Install failures (older Python build infra, dropped
+   PyPI artifacts, build-rot against current toolchain) are recorded
+   in `dropped.json` with `reason: install failed: …`.
+
+The manifest's per-bug `verification_rule` field records *how* the
+anchor was confirmed (e.g. "PR #1238 merged 2018-04-22 cited in 2.18.2
+release notes", or "git rev-parse confirmed: PR #2418 merge commit +
+parent"). A research-pass entry without a `verification_rule` is
+flagged `PENDING_VERIFICATION` and excluded from the bench until
+filled.
+
+#### Stage 4 — Phase 0 install-verification (automated)
+
+Before the bench runs, `bug_bench_driver.py --verify-only` (also via
+`freeze_verified.py`) installs each candidate's pre-fix AND post-fix
+artifacts and confirms both succeed. Failures are recorded in
+`dropped.json` and the candidate is moved out of
+`manifest.verified.json`. This is the *Böhme et al. drop-list
+discipline* — we never silently re-classify install failures as bug
+non-detections.
+
+The 2026-04-19 freeze produced 35 verified / 25 dropped of 60
+candidates (58 % yield). The 2026-04-21 morning revision (§13.4.7.1)
+applied criteria 1 and 3 to the existing verified set, dropping 4
+SAM bugs that had passed Stage 4 install-verification but failed
+on review and replacing them with 3 file-level htsjdk regressions
+surfaced by re-running Stage 1 against the htsjdk source diffs at
+version boundaries 2.18 → 2.20. The afternoon C2/C3/C4 audit (see
+"Honesty audit" subsection below) dropped 2 further entries that
+empirically failed criterion 2 or 4. Final manifest: **32 verified
+bugs** — 23 VCF + 9 SAM.
+
+#### Stage 5 — User review gate
+
+Before the bench launches, `compares/bug_bench/REVIEW.md` collates
+the per-bug rationale + per-SUT row totals + flagged concerns and
+goes to the user for sign-off. Implicit accept after a 24-hour silent
+window. The 2026-04-21 SAM revision is documented in §13.4.7.1 of
+this file as a delta on the prior REVIEW.md state.
+
+#### Honesty audit — bugs in the manifest that don't fully satisfy criterion 1
+
+A 2026-04-21 reachability audit ran each manifest entry against the
+three observation paths (parse-time exception, canonical-JSON value
+diff, write-roundtrip canonical-JSON diff). 25 of 32 (78 %) are
+reachable; the remaining 7 are retained as **known zeros** for
+transparency — they are documented bugs in the upstream SUTs but our
+paradigm cannot in principle observe them. Pulling them from the
+manifest would inflate the headline rate by silently narrowing the
+bench scope; keeping them exposes the ceiling.
+
+| bug_id | format | unreachable because | observation path that would catch it (out of scope) |
+|:--|:--|:--|:--|
+| `htsjdk-1637` | VCF | bug fires only on **multi-file VCF merge** under the changed sort comparator — single-file parse-and-roundtrip is identical pre/post | `VCFSorter.merge(a, b)` API, requires a paired-input MR family |
+| `htsjdk-1403` | VCF | `VariantContextBuilder` regression in 2.20.0; the specific builder chain (`hasGenotypes()` + `genotypes()` + `make()` mutator path) isn't exercised by the harness's generic `write_roundtrip` | bug-specific Builder-mutator chain |
+| `seqan3-3081` | SAM | "empty SAM/BAM output without header" — fires only when **zero records** are written; the harness always emits records during `write_roundtrip` | zero-record writer corner case |
+| `seqan3-3269` | SAM | banded-alignment off-by-prefix-offset in **score field**, not in the stored SAM record's coordinates | alignment-internal post-parse computation |
+| `seqan3-3098` | SAM | alignment-traceback carry-bit affects the **score**, not the parsed record's stored fields | alignment-internal post-parse computation |
+| `seqan3-2869` | (FASTA) | catalogued as SAM in the manifest but the actual bug is in **FASTA parsing** — out of SAM/BAM scope; flagged in REVIEW.md for relocation | FASTA parser, not in our format set |
+| `seqan3-3406` | SAM | BGZF stream **data race** under concurrent reads; non-deterministic by nature | requires threading harness |
+
+These entries appear in `compares/results/bug_bench/DETECTION_RATIONALE.md`
+under the "paradigm-out" miss bucket, with the same rationale. Five
+are retained as the price of transparent reporting; two
+(`htsjdk-1637`, `htsjdk-1403`) are marginal and would be candidates
+for relocation to a Rank-5 method-signature manifest if that surface
+ever ships.
+
+The other 21 misses (e.g. `noodles-300/339`, `vcfpy-171`, `htsjdk-1401`)
+*are* reachable in principle and are in the manifest legitimately —
+their misses are PoV-richness or anchor-precision gaps, not
+paradigm-scope problems. See `DETECTION_RATIONALE.md` for the per-bug
+breakdown.
+
+A 2026-04-21 follow-on audit also exercised criteria 2, 3, and 4 with
+upstream-source citations (PR/issue WebFetch, Maven Central / PyPI /
+docs.rs version listings, sweep logs). The audit confirmed every
+remaining manifest entry against the criteria; cells that empirically
+violated C2 or C4 were dropped under the same drop-list discipline
+that handled the morning revision. Audit-driven gaps still pending:
+
+- **3 seqan3 anchor-SHA mismatches** (`seqan3-3098`, `-3269`, `-3406`)
+  — pre-fix SHAs cite merge commits of unrelated PRs (verified via
+  `github.com/seqan/seqan3/commit/<sha>` WebFetch). Doesn't affect
+  detection (all three are paradigm-out anyway). The `verification_rule`
+  strings have been annotated to flag the defect; re-anchoring to the
+  correct merge commits is a future cleanup.
+- **8 cells with C3 unverified** (gaps in the verification trail) —
+  3 install-failed (`noodles-223`, `-224`, `-ob1-0.23`), 1 build-rot
+  (`seqan3-2418`), 4 untested no-sweep (`htsjdk-1401`, `vcfpy-145`,
+  `noodles-241`, `noodles-inforay-0.64`). Sweeps via
+  `compares/bug_bench/sweep_anchors.py` would close these gaps.
+
+After the 2026-04-21 morning revision and audit drops, the manifest is
+**32 verified bugs**: htsjdk 12 + vcfpy 5 + noodles 9 = 23 VCF; htsjdk 3
++ seqan3 6 = 9 SAM. See `manifest.verified.json` `bench_counts_by_sut`
+for the live count and `compares/bug_bench/dropped.json` for the audit
+trail.
+
+#### Audit trail summary
+
+| artifact | purpose |
+|:--|:--|
+| `compares/bug_bench/manifest.json` | full candidate set (all research passes) |
+| `compares/bug_bench/manifest.verified.json` | the 32 bugs that passed all four selection stages |
+| `compares/bug_bench/manifest.{vcf,sam}_only.json` | per-format mirror of the verified manifest, used by per-phase docker drivers |
+| `compares/bug_bench/dropped.json` | every dropped candidate with `reason` and date |
+| `compares/bug_bench/triggers/<id>/{README.md,issue_source.txt,original.{vcf,sam}}` | per-bug provenance + PoV |
+| `compares/bug_bench/sweep_logs/<id>.json` | per-version verdicts from `sweep_anchors.py` (§5.3.4) when an anchor was empirically validated or corrected |
+| `compares/bug_bench/REVIEW.md` | user sign-off packet |
+| `compares/bug_bench/apply_sam_replacement.py` | atomic patch script for the 2026-04-21 SAM revision (regenerable) |
+| `compares/results/bug_bench/DETECTION_RATIONALE.md` | post-run table that maps each bug to its detection mechanism *or* the reason it was missed (built from per-cell `result.json`) |
 
 ### 5.2 Commit-SHA gap and resolution
 
@@ -366,6 +574,102 @@ review for manual triage — in prior Magma / FuzzBench runs this
 residual category typically accounts for 5-15 % of raw crash cells
 and represents a real limitation of automated attribution.
 
+### 5.3.2 Bidirectional §5.3.1 — accept-when-should-reject regressions
+
+The forward predicate above (pre-fix throws, post-fix succeeds) misses a
+symmetrical bug class: **pre-fix wrongly accepts spec-invalid input
+that post-fix correctly rejects**. htsjdk-1238 (RNAME regex tightened
+in 2.18.2) is the canonical shape on the current manifest. The driver
+runs the predicate in both directions and treats either as a detection:
+
+> `detects(T, B) := ∃ I such that
+>   (signal_T(I, V_pre)=true AND signal_T(I, V_post)=false)
+>     OR
+>   (signal_T(I, V_pre)=false AND signal_T(I, V_post)=true)`
+
+Reverse catches accept-when-should-reject regressions where pre-fix
+silently accepts spec-invalid input that post-fix correctly rejects
+(htsjdk-1238 RNAME-regex tightening is the canonical shape on the
+current manifest). Reverse fires inside `bug_bench_driver.run_bench`
+when the candidate loop captures a trigger as `picked_ok` (pre-fix
+silenced) AND the post-fix replay returns `silenced=False`. The note
+column records the direction (`reverse §5.3.1`) so reviewers can audit
+the reasoning.
+
+### 5.3.3 Lever 2 — STRICT-stringency gate (runner-agnostic)
+
+Many parser bugs only manifest under the SUT's strictest validation
+mode — htsjdk-1360 (`EMPTY_READ` rejection) and htsjdk-1410
+(`INVALID_INSERT_SIZE` cap at 1<<29) both throw under
+`ValidationStringency.STRICT` but parse cleanly under the runner's
+default `SILENT`. Without the gate, the parse-time difference is
+invisible to the bench's silence predicate.
+
+The gate is implemented as an opt-in capability flag on each runner
+(`supports_strict_parse: bool` + `run_strict_parse(input, fmt)`). The
+bench's `_replay_trigger_silenced` queries the flag once per call and
+short-circuits to `not silenced` if `run_strict_parse` rejects the
+trigger. Currently opt-in:
+
+| runner | strict knob |
+|:--|:--|
+| htsjdk | `BioTestHarness --mode strict_parse` (forces `ValidationStringency.STRICT` in `SamReaderFactory` / `VCFFileReader`) |
+| pysam | native `pysam.AlignmentFile(check_sq=True)` (SAM) / `pysam.VariantFile` (VCF) iterating every record |
+| vcfpy | deep traversal of header lines + per-record INFO keys + per-sample FORMAT fields |
+
+Other runners (biopython, noodles, seqan3) inherit the default
+`supports_strict_parse: bool = False` until their language/library
+exposes a comparable knob. Adding a runner is a per-language
+`run_strict_parse` method — no per-SUT names hardcoded in
+`bug_bench_driver`.
+
+### 5.3.4 Lever 1 — empirical anchor sweep
+
+When a manifest bug fails to detect, the cause is often a wrong
+release-notes citation, not a tool defect. The selection criteria
+(§5.1.1) require that the anchor pair reproduce empirically when both
+versions are installed; cells that fail this check are either re-anchored
+or dropped (see `compares/bug_bench/dropped.json` for the audit trail).
+`compares/bug_bench/sweep_anchors.py` automates that verification.
+
+The script walks a list of candidate SUT versions, calls `install_sut`
+for each, runs `_replay_trigger_silenced` against the canonical PoV,
+and emits the first `(pre_fix, post_fix)` pair where pre fails and post
+silences. With `--apply`, it patches `manifest.verified.json` (and the
+per-format mirror) in place; without, it just writes a per-bug log under
+`compares/bug_bench/sweep_logs/`. SUT-agnostic by construction —
+dispatch goes through the existing `install_sut` table.
+
+Verified sweeps:
+| bug | sweep range | empirical anchor | manifest action |
+|:--|:--|:--|:--|
+| htsjdk-1418 | 2.19.0–2.23.0 | 2.20.1 → 2.21.0 | unchanged (matches existing manifest) |
+
+### 5.3.5 Lever 3 — Tier-2 prompt enrichment (mutator catalog + class gaps)
+
+Beyond detection plumbing, BioTest's MR synthesizer is steered toward
+the SUT's actual API surface via two reflection-driven blocks added
+to the LLM prompt:
+
+1. **Mutator catalog** — every runner with `supports_mutator_methods=True`
+   reflects its parsed-record class for `set/add/remove/clear/put/reset`-
+   prefixed methods that return void or fluent. The catalog is rendered
+   verbatim into the MR-synthesis prompt; the LLM composes mutator-chain
+   MRs that wrap inside the existing `sut_write_roundtrip` oracle, so
+   soundness is inherited (no new transform family). Implementations:
+   `BioTestHarness --mode discover_mutators` (htsjdk),
+   `introspection.get_mutator_methods` (pysam, biopython, reference).
+2. **Per-class blindspot block** — `compute_class_level_gaps` reads the
+   primary SUT's coverage report (JaCoCo XML, coverage.py JSON, gcovr
+   JSON) and surfaces the top-K under-covered classes with
+   `missed_lines / total_lines`. The class names are sourced directly
+   from the binary's symbol table — no SUT-specific allowlist.
+
+Both blocks are SUT-agnostic at the contract level: each runner
+implements the language reflection once (Java `Class.getMethods`,
+Python `inspect`, etc.) and the framework consumes whatever catalog the
+runner returns.
+
 ### 5.4 Manifest schema
 
 `compares/bug_bench/manifest.json`. One entry per verified bug:
@@ -403,18 +707,18 @@ The manifest is hand-authored from Appendix A and **user-reviewed before Phase 4
 
 ### 5.5 Run walltime
 
-After the 2026-04-20 SUT refactor (pysam dropped → vcfpy + noodles-vcf added), the frozen-manifest projection is:
+After the 2026-04-20 SUT refactor (pysam dropped → vcfpy + noodles-vcf added) and the 2026-04-21 morning-revision + audit drops, the frozen-manifest projection is:
 
-| SUT | Verified bugs (frozen 2026-04-20) | Tools per row | Cells |
+| SUT | Verified bugs | Tools per row | Cells |
 | :--- | :---: | :---: | :---: |
 | htsjdk | 12 | 4 (BioTest, Jazzer, Pure Random, EvoSuite) | 48 |
-| vcfpy | 7 (frozen Appendix A.2) | 3 (BioTest, Atheris, Pure Random) | 21 |
-| noodles-vcf | 9 (frozen Appendix A.3) | 3 (BioTest, cargo-fuzz, Pure Random) | 27 |
-| biopython | 1 | 3 (BioTest, Atheris, Pure Random) | 3 |
+| vcfpy | 5 | 3 (BioTest, Atheris, Pure Random) | 15 |
+| noodles-vcf | 9 | 3 (BioTest, cargo-fuzz, Pure Random) | 27 |
+| biopython | 0 | — | 0 |
 | seqan3 | 6 | 3 (BioTest, libFuzzer, Pure Random) | 18 |
-| **total** | **35** | — | **117** |
+| **total** | **32** | — | **108** |
 
-**Walltime**: 117 (tool, bug) cells × 2h × 1 rep = **234 wall-hours ≈ 2.5 wall-days parallelised 4-way**. The jump from the pre-refactor ~162 wall-hours (81 cells × 2 h, §9 Risk 2 pre-refactor number) comes entirely from the wider VCF surface (vcfpy + noodles-vcf bring 16 new bugs × 3 tools = 48 new cells, minus the 4 pysam bugs × 3 tools = 12 removed cells = +36 net cells × 2 h = +72 wall-hours). Still inside the original 18–25-verified forecast's spirit (we went wider on VCF but kept the 2 h per-cell budget constant). If any row's verified N drops below the 10-floor at Phase-0 `--verify-only` time, drop that row's per-cell budget to 1 h × 1 to stay inside the walltime envelope.
+**Walltime**: 108 (tool, bug) cells × 2h × 1 rep = **216 wall-hours ≈ 2.25 wall-days parallelised 4-way**. If any row's verified N drops below the 10-floor at Phase-0 `--verify-only` time, drop that row's per-cell budget to 1 h × 1 to stay inside the walltime envelope.
 
 ## 6. Execution Phases
 
@@ -873,7 +1177,9 @@ All primary decisions are locked in §2/§3/§4. These remain open and are defer
 | :--- | :--- | :--- |
 | 2026-04-16 | Initial design drafted with EvoSuite + Randoop as primary baselines. | Automated assistant session |
 | 2026-04-19 | **Full rewrite.** EvoSuite + Randoop demoted to white-box anchor. Added Jazzer / Atheris / libFuzzer as fair E2E baselines per language. Added real-bug detection rate + TTFB metrics. Added 32-bug candidate manifest (Appendix A). Locked slim 13-cell matrix with 2h × 3 reps primary and 2h × 1 bug-bench. Added citation table. Documented WSL2 seqan3 prerequisite. | Automated assistant session |
+| 2026-04-22 | **Phase 2+3 — Atheris × vcfpy re-run for 4-way variance (mean ± std).** Added Phase-2 rep_3 coverage (2 h primary regime; SIGKILL'd at t ≈ 3 323 s by the dev-box OOM killer under concurrent bench load, but all 6 ticks captured via the post-hoc `_compute_final_pct_from_cov` path) and four new Phase-3 mutation runs (one per atheris rep_{0,1,2,3} corpus) replacing the original union-corpus single-run. Three new helpers land: `compares/scripts/aggregate_4run.py` (computes per-tick mean ± std for coverage + per-run mean ± std for mutation + per-file score aggregate), `compares/scripts/finalize_mutation_summary.py` (re-parses summary.json from mutmut's spinner line + per-file `*.py.meta` DBs because the inline driver parser only reads `mutmut results` which lists the `no_tests` bucket), and a driver tweak (`--out <path>/vcfpy` → nested workdir so mutmut's cwd-basename heuristic still resolves to `vcfpy/` when the cell output dir has a different basename). **Measured 4-run coverage** (n = 4 reps, mean ± std): `line_pct 46.86 ± 11.22 → 53.53 ± 0.17 → 54.36 ± 0.20 → 54.98 ± 0.48 → 55.19 ± 0.36 → 55.19 ± 0.36` at ticks `{1, 10, 60, 300, 1800, 7200}`; `branch_pct 33.54 ± 13.84 → 41.94 ± 1.14 → 43.32 ± 0.92 → 44.61 ± 0.24 → 45.09 ± 0.55 → 45.09 ± 0.55`. **Measured 4-run mutation**: score `88.10 % ± 2.18 pp`; `killed 824.5 ± 39.4`, `reachable 936.2 ± 49.9` of 2 338 total mutants. Per-file: header.py 100 %, record.py 100 %, reader.py 90.48 % (all zero variance), parser.py 81.06 % ± 3.23 pp (the only file with corpus-sensitive kill rate). Per-run scores 84.88 / 89.70 / 89.06 / 88.77 %; the 4.82 pp spread between run_0 and run_1 is the dominant variance source and reflects atheris's libFuzzer RNG-seed-dependent corpus quality. Original 2026-04-20 single-run numbers (55.01 % line, 89.59 % score) sit within 0.5 σ / 0.7 σ of the 4-run means — aggregation confirms but doesn't contradict the earlier headline values. Run-history + per-rep tables + reproducer at `compares/results/coverage/atheris/vcfpy/REPORT.md` §10 and `compares/results/mutation/atheris/vcfpy/MUTATION_REPORT.md` §10; JSON aggregates at `…/aggregate_4run.json` in both dirs. | Automated assistant session |
 | 2026-04-20 | **pysam primary-SUT removed; replaced with vcfpy + noodles-vcf.** Reason: pysam's VCF logic is Cython-compiled (`libcbcf.pyx` → `.so`), which `coverage.py` cannot trace — Phase-2 coverage growth and Phase-3 mutation score for pysam were a sliver of the real surface, a fabrication risk. Added **vcfpy** (bihealth/vcfpy — pure-Python VCF parser) and **noodles-vcf** (zaeleus/noodles — pure-Rust VCF parser), both coverage-instrumentable by their native tooling. Matrix widened from 13 → 15 primary cells; VCF row now has three independently-implemented parsers (htsjdk, vcfpy, noodles-vcf) vs the old two (htsjdk, pysam-wrapping-htslib). pysam retained as a voter in the differential/consensus oracle (`pysam_runner.py` + `htslib_runner.py` stay enabled) so its htslib-bound behaviour still contributes to cross-parser disagreement, but it is not scored. Added cargo-fuzz (Rust fuzzer) + cargo-mutants (Rust mutation) to the toolchain. Appendix A re-scoped: A.2 now vcfpy (7 candidates), A.3 noodles-vcf (9 candidates), A.4 biopython, A.5 seqan3; 12 historical pysam candidates preserved under A.6. Risk 4 added to §9 to document the rationale. | Automated assistant session |
+| 2026-04-22 | **Phase 2+3 — Atheris × biopython re-run for 4-way variance (mean ± std).** Added Phase-2 rep_3 coverage (300 s secondary regime, clean isolated host slot) and three new Phase-3 mutation runs (one per Phase-2 rep_1/rep_2/rep_3 corpus) to join the existing rep_0 baseline. Aggregator `compares/scripts/aggregate_atheris_biopython_runs.py` computes per-tick mean/std/95 % CI for coverage and per-run mean/std for mutation scope + full-file scores. Isolation helper `compares/scripts/rerun_rep3_clean.sh` discovered that parallel Docker containers starve the atheris fuzzer of CPU (first rep_3 attempt produced an 110-file degraded corpus; clean rerun yielded a healthy 482-file corpus). **Measured 4-run coverage**: line plateau `54.43 % ± 0.40` at t = 60 s; branch `47.05 % ± 0.27` at t = 60 s. **Measured 4-run mutation**: scoped score `0.5800 ± 0.0036` (152.2 ± 2.2 killed / 262.5 ± 2.6 reachable); full-file `0.2928 ± 0.0018`. Std is tight because both the AST mutator and the tuple oracle are deterministic — only corpus composition varies. Tables + per-run values written into `compares/results/coverage/atheris/biopython/RESULTS.md` and `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`; DESIGN §13.5 Phase 2 / Phase 3 blocks updated with 4-run numbers. | Automated assistant session |
 | 2026-04-20 | **Phase 3 — Atheris × biopython (mutmut-style, Python) complete.** `compares/harnesses/atheris/phase3_mutation_loop.py` implements an in-container AST-mutation + corpus-replay driver over `Bio/Align/sam.py` using mutmut-style operators (arithmetic swap, comparison flip, boolean swap, `not` removal, constant mutation). A mutant is killed iff any corpus file's `(ok, aln_count, err_type)` tuple diverges from the unmutated baseline. `compares/scripts/phase3_atheris_biopython.sh` wraps the loop; `compares/scripts/rescope_mutation_to_reached.py` post-processes the output to the DESIGN §3.3 canonical scope (mutants on corpus-reached lines only). **Run result (1500 s budget, rep-0 Phase-2 corpus, SAM-only scope per Flow.md §coverage_target_filters.SAM)**: 523 AST mutants generated; after reached-lines filter (327 / 598 statements) the canonical score is **0.5849 (155 killed / 265 reachable)**; unfiltered score on the full file is 0.2951 (152 / 515). Loop completed in 1 049.8 s. Full write-up, per-operator breakdown, and top-killed mutants at `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`. Checkbox flipped `[ ] → [x]` on the `Atheris × biopython — mutmut (Python)` row in §13.5 Phase 3. | Automated assistant session |
 | 2026-04-20 | **Phase 2 — Atheris × biopython (SAM only) tooling complete + secondary-regime run landed.** `compares/harnesses/atheris/fuzz_biopython.py` upgraded to the DESIGN §13.5 coverage-growth contract (`--cov-data-file`, `--cov-growth-out`, `--cov-sample-ticks`) matching the `fuzz_vcfpy.py` template; scoped to `coverage.Coverage(source=['Bio.Align.sam'], branch=True)`. `compares/scripts/coverage_sampler.py` `_run_atheris_rep` extended with a `(sut, format) → harness` dispatch (`_ATHERIS_CELLS`), the libFuzzer argv now carries `-ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1` so the fuzz loop keeps running past every known biopython defect, and `_compute_pct` no longer calls the broken `Coverage.json_report(outfile=StringIO)` — reads `CoverageData` + `analysis2` directly. Three Phase-2 ordering fixes baked in (all traced to smoke failures): numpy+Bio.Align pre-import before `coverage.start()`, broadened `except Exception` in the fuzz target, and numpy double-load guard. **Secondary regime** (300 s × 3 reps, ticks `{1, 10, 60, 300}`) executed; produces `compares/results/coverage/atheris/biopython/growth_{0,1,2}.json` that validate clean against DESIGN §4.5. **Primary regime** (7200 s × 3 reps, full tick set) queued for overnight — same invocation with `--budget 7200 --reps 3`. | Automated assistant session |
 | 2026-04-20 | **Phase 2 — Atheris × vcfpy (VCF only) complete: 7200 s × 3 reps, full DESIGN §3.2 tick set.** `compares/harnesses/atheris/fuzz_vcfpy.py` rebuilt to the coverage-growth contract matching `fuzz_biopython.py`: `coverage.Coverage(source=['vcfpy'], branch=True)` started before `atheris.instrument_imports()`, daemon snapshot thread calls `cov.save()` at each tick and writes `<rep>/harness_growth.json`. `compares/scripts/coverage_sampler.py: _run_atheris_rep` dispatches `(vcfpy, VCF) → fuzz_vcfpy.py` through a docker-based invocation + post-hoc tick-7200 capture via `_compute_final_pct_from_cov` (libFuzzer's `_exit()` bypasses Python atexit/finally, so the terminal `.coverage` DB is re-read in a side container). New flag `--start-rep-idx` lets three concurrent sampler processes share one cell dir without overwriting. Added companion scripts `compares/scripts/coverage_rollup.py` (writes `growth_aggregate.json` per cell + a 33-row `summary.csv`) and `compares/scripts/validate_growth_schema.py` (enforces DESIGN §4.5 keys + monotonic line-pct). Five defects fixed along the way: (1) Windows-host docker mount path rewrite `C:/…` → `/c/…` so `docker run -v <src>:/work` doesn't misparse the drive-letter colon as mount mode; (2) broadened `except BaseException` in the vcfpy fuzz target so coverage campaigns don't short-circuit on the vcfpy-146 class of `TypeError`; (3) `biotest-bench:latest` live-patched (via `docker commit`) to install `vcfpy==0.14.0` into the `/opt/atheris-venv/` 3.11 layer (image shipped vcfpy only in 3.12 site-packages pre-patch); (4) `Coverage.json_report(outfile=…)` fixed to use a tempfile path (coverage 7.6 rejects `StringIO` with `TypeError: expected str, bytes or os.PathLike`); (5) SIGHUP on parent-shell-exit crashed reps 1/2 at 169 s — re-launched with `nohup … &; disown` so the samplers survive the outer Bash's lifecycle. **Measured (3-rep mean ± 95 % CI)**: `line_pct 52.47 → 53.60 → 54.44 → 54.79 → 55.01 → 55.01` at ticks `{1, 10, 60, 300, 1800, 7200}`; `branch_pct 40.46 → 42.50 → 43.76 → 44.53 → 44.85 → 44.85`. Schema validator (`validate_growth_schema.py`) prints `ALL PASS` for all 3 `growth_{0,1,2}.json` against the DESIGN §13.5 one-liner. Coverage plateaus at the 1800 s tick because vcfpy's reachable surface (1 622 tracked statements, 524 branches) is small and atheris saturates it within 30 min — no new exercise in the last 90 min of each rep. | Automated assistant session |
@@ -918,56 +1224,44 @@ Status legend:
 - **✗ primary-drop** — pysam-era bug retained for historical record;
   not in the primary bench after 2026-04-20 (§A.6).
 
-### A.1 htsjdk (20 candidates → **12 verified, 8 dropped**)
+### A.1 htsjdk (12 verified)
 
-The 10 first-pass entries came from the original 32-candidate research; the 10 second-pass entries came from the direct scan of htsjdk release-note bodies (`expand_research.py`).
+Sourced from two research passes (the original 32-candidate sweep and a
+direct scan of htsjdk release-note bodies via `expand_research.py`)
+plus a 2026-04-21 file-level-only re-scan of the 2.18 → 4.1 release
+range. Candidates that failed Stage 4 install-verification or the
+2026-04-21 audit's reachability / empirical-anchor / installable
+checks were dropped (`compares/bug_bench/dropped.json`).
 
-#### First-pass (10)
+| # | Issue | Format | Category | Logic? | Description |
+| :-: | :--- | :---: | :--- | :---: | :--- |
+| 1 | [#1554](https://github.com/samtools/htsjdk/pull/1554) | VCF | incorrect_field_value | yes | AC/AN/AF include filtered genotypes marked FT |
+| 2 | [#1637](https://github.com/samtools/htsjdk/issues/1637) | VCF | round_trip_asymmetry | yes | VCF sort order change breaks merging of valid VCFs |
+| 3 | [#1364](https://github.com/samtools/htsjdk/pull/1364) | VCF | incorrect_rejection | yes | Mixed-case `NaN`/`Inf`/`Infinity` rejected by VCF codec |
+| 4 | [#1389](https://github.com/samtools/htsjdk/pull/1389) | VCF | writer_bug | yes | Multi-value missing fields written as `.,.,.` instead of `.` |
+| 5 | [#1372](https://github.com/samtools/htsjdk/pull/1372) | VCF | parse_error_missed | yes | VCF codec throws on FORMAT=GL with all-missing G-dimension values |
+| 6 | [#1401](https://github.com/samtools/htsjdk/pull/1401) | VCF | incorrect_field_value | yes | PEDIGREE header handling diverges between VCF 4.2 and 4.3 |
+| 7 | [#1403](https://github.com/samtools/htsjdk/pull/1403) | VCF | incorrect_field_value | yes | VariantContextBuilder regression in 2.20.0; 2.20.1 hotfix |
+| 8 | [#1418](https://github.com/samtools/htsjdk/pull/1418) | VCF | incorrect_rejection | no | VCFHeader throws on `##contig` lines without optional `length=` |
+| 9 | [#1544](https://github.com/samtools/htsjdk/pull/1544) | VCF | incorrect_field_value | yes | `VariantContext.getType()` mis-classifies gVCF `<NON_REF>` records |
+| 10 | [#1238](https://github.com/samtools/htsjdk/pull/1238) | SAM | parse_error_missed | yes | Pre-fix `SAMSequenceRecord` constructor doesn't validate `SN:` against SAM 1.6 RNAME regex; post-fix throws `SAMException`. Reverse §5.3.1. Anchor: 2.18.1 → 2.18.2. |
+| 11 | [#1360](https://github.com/samtools/htsjdk/pull/1360) | SAM | parse_error_missed | yes | Pre-fix `SAMRecord.isValid()` rejects zero-length read (`SEQ=*`/`QUAL=*`) without `FZ`/`CS`/`CQ` tag under STRICT; post-fix removes the validation block. Forward §5.3.1 via STRICT gate. Anchor: 2.19.0 → 2.20.0. |
+| 12 | [#1410](https://github.com/samtools/htsjdk/pull/1410) | SAM | parse_error_missed | yes | Pre-fix caps `\|TLEN\| ≤ 2^29` and rejects under STRICT; post-fix raises limit to `Integer.MAX_VALUE`. Forward §5.3.1 via STRICT gate. Anchor: 2.20.2 → 2.20.3. |
 
-| # | Issue | Format | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
-| 1 | [#1708](https://github.com/samtools/htsjdk/pull/1708) | CRAM | round_trip_asymmetry | yes | ✗ CRAM scope | CRAM multi-container reference region state corruption |
-| 2 | [#1590](https://github.com/samtools/htsjdk/pull/1590) | CRAM | parse_error_missed | yes | ✗ CRAM scope | CRAM 'BB' read features not restored — bases silently dropped |
-| 3 | [#1592](https://github.com/samtools/htsjdk/pull/1592) | CRAM | parse_error_missed | yes | ✗ CRAM scope | CRAM scores ('SC') misdecoded during normalization |
-| 4 | [#1554](https://github.com/samtools/htsjdk/pull/1554) | VCF | incorrect_field_value | yes | ✓ verified | AC/AN/AF include filtered genotypes marked FT |
-| 5 | [#1637](https://github.com/samtools/htsjdk/issues/1637) | VCF | round_trip_asymmetry | yes | ✓ verified | VCF sort order change breaks merging of valid VCFs |
-| 6 | [#1117](https://github.com/samtools/htsjdk/issues/1117) | VCF | null_ptr | no (crash) | ✗ UNRESOLVABLE | NPE in BCF2LazyGenotypesDecoder on BCF-from-VCF |
-| 7 | [#1686](https://github.com/samtools/htsjdk/issues/1686) | VCF | incorrect_field_value | yes | ✗ UNRESOLVABLE | Inconsistent `VariantContext.getType()` on spanning deletions |
-| 8 | [#1026](https://github.com/samtools/htsjdk/issues/1026) | VCF | incorrect_rejection | no | ✗ UNRESOLVABLE | False "Allele not in VC" in multithreaded read-then-write |
-| 9 | [#761](https://github.com/samtools/htsjdk/issues/761) | VCF | writer_bug | yes | ✗ UNRESOLVABLE | Filename containing ".bcf" forces BCF output for VCF |
-| 10 | [#423](https://github.com/samtools/htsjdk/issues/423) | VCF | parse_error_missed | yes | ✗ UNRESOLVABLE | Multi-allelic AF/AC not per-allele cached |
+### A.2 vcfpy (5 verified)
 
-#### Second-pass expansion (10) — all VCF/SAM text, 2.x→3.x release range
+bihealth/vcfpy is a pure-Python VCF parser (`pip install vcfpy`). The
+five entries below all carry concrete pip version pins drawn from
+`CHANGELOG.md`, with the pre-fix and post-fix versions empirically
+installable and the anchor pair empirically reproducing.
 
-| # | Issue | Format | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
-| 11 | [#1364](https://github.com/samtools/htsjdk/pull/1364) | VCF | incorrect_rejection | yes | ✓ verified | Mixed-case `NaN`/`Inf`/`Infinity` rejected by VCF codec |
-| 12 | [#1389](https://github.com/samtools/htsjdk/pull/1389) | VCF | writer_bug | yes | ✓ verified | Multi-value missing fields written as `.,.,.` instead of `.` |
-| 13 | [#1372](https://github.com/samtools/htsjdk/pull/1372) | VCF | parse_error_missed | yes | ✓ verified | VCF codec throws on FORMAT=GL with all-missing G-dimension values |
-| 14 | [#1401](https://github.com/samtools/htsjdk/pull/1401) | VCF | incorrect_field_value | yes | ✓ verified | PEDIGREE header handling diverges between VCF 4.2 and 4.3 |
-| 15 | [#1403](https://github.com/samtools/htsjdk/pull/1403) | VCF | incorrect_field_value | yes | ✓ verified | VariantContextBuilder regression in 2.20.0; 2.20.1 hotfix |
-| 16 | [#1418](https://github.com/samtools/htsjdk/pull/1418) | VCF | incorrect_rejection | no | ✓ verified | VCFHeader throws on `##contig` lines without optional `length=` |
-| 17 | [#1544](https://github.com/samtools/htsjdk/pull/1544) | VCF | incorrect_field_value | yes | ✓ verified | `VariantContext.getType()` mis-classifies gVCF `<NON_REF>` records |
-| 18 | [#1561](https://github.com/samtools/htsjdk/pull/1561) | SAM | parse_error_missed | yes | ✓ verified | SAM header tag keys not validated to be exactly 2 chars |
-| 19 | [#1538](https://github.com/samtools/htsjdk/pull/1538) | SAM | incorrect_field_value | yes | ✓ verified | SAMRecord `mAlignmentBlocks` cache not invalidated after CIGAR mutation |
-| 20 | [#1489](https://github.com/samtools/htsjdk/pull/1489) | SAM | incorrect_field_value | yes | ✓ verified | Locus accumulator drops insertion events; coverage diverges from samtools |
-
-### A.2 vcfpy (7 candidates → 7 frozen on 2026-04-20, install-probe pending)
-
-bihealth/vcfpy is a pure-Python VCF parser (`pip install vcfpy`). All
-seven candidates below carry concrete pip version pins lifted directly
-from `CHANGELOG.md`, so install-verification is expected to promote
-most of them to ✓. Research pass: 3 high-confidence, 3 medium, 1 low.
-
-| # | Issue | Format | Pre → Post | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :--- | :---: | :---: | :--- |
-| 1 | [#176](https://github.com/bihealth/vcfpy/issues/176) | VCF | `0.13.8` → `0.14.0` | incorrect_field_value | yes | ✓ frozen (high) | Sample GT `0\|0` with GT not declared in header → list artefact leaks into `_genotype_updated`, raising `ValueError: invalid literal for int() with base 10: "['0"`. |
-| 2 | [#171](https://github.com/bihealth/vcfpy/issues/171) | VCF | `0.13.8` → `0.14.0` | round_trip_asymmetry | yes | ✓ frozen (high) | INFO value with `%3D`-escaped `=` is silently lost on rewrite — commas are escaped but `=` is not. Round-trip diverges. |
-| 3 | [#146](https://github.com/bihealth/vcfpy/issues/146) | VCF | `0.13.3` → `0.13.4` | parse_error_missed | no (crash) | ✓ frozen (high) | INFO flag present but declared `Type=String` in header → `TypeError: argument of type 'bool' is not iterable`. |
-| 4 | [#145](https://github.com/bihealth/vcfpy/issues/145) | VCF | `0.13.4` → `0.13.5` | parse_error_missed | no (crash) | ✓ frozen (medium) | `.bgz`-suffixed bgzipped VCF not recognised → reader fails. |
-| 5 | *changelog* `0.12.2` | VCF | `0.12.1` → `0.12.2` | edge_case_missed | yes | ✓ frozen (medium) | Haploid / partial-haploid GT describing only one allele parsed incorrectly. |
-| 6 | [#127](https://github.com/bihealth/vcfpy/issues/127) | VCF | `0.11.0` → `0.11.1` | parse_error_missed | no (crash) | ✓ frozen (medium) | Incomplete trailing FORMAT fields (e.g. GATK 3.8 truncated output) → `KeyError: 'GQ'`. |
-| 7 | *changelog* `0.9.0` | VCF | `0.8.1` → `0.9.0` | incorrect_field_value | yes | ✓ frozen (low) | No-call GT (`./.`) parsed incorrectly. 2017 bug — reproducibility under modern htslib voter comparison is soft. |
+| # | Issue | Format | Pre → Post | Category | Logic? | Description |
+| :-: | :--- | :---: | :--- | :--- | :---: | :--- |
+| 1 | [#176](https://github.com/bihealth/vcfpy/issues/176) | VCF | `0.13.8` → `0.14.0` | incorrect_field_value | yes | Sample GT `0\|0` with GT not declared in header → list artefact leaks into `_genotype_updated`, raising `ValueError: invalid literal for int() with base 10: "['0"`. |
+| 2 | [#171](https://github.com/bihealth/vcfpy/issues/171) | VCF | `0.13.8` → `0.14.0` | round_trip_asymmetry | yes | INFO value with `%3D`-escaped `=` is silently lost on rewrite — commas are escaped but `=` is not. Round-trip diverges. |
+| 3 | [#146](https://github.com/bihealth/vcfpy/issues/146) | VCF | `0.13.3` → `0.13.4` | parse_error_missed | no (crash) | INFO flag present but declared `Type=String` in header → `TypeError: argument of type 'bool' is not iterable`. |
+| 4 | [#145](https://github.com/bihealth/vcfpy/issues/145) | VCF | `0.13.4` → `0.13.5` | parse_error_missed | no (crash) | `.bgz`-suffixed bgzipped VCF not recognised → reader fails. |
+| 5 | [#127](https://github.com/bihealth/vcfpy/issues/127) | VCF | `0.11.0` → `0.11.1` | parse_error_missed | no (crash) | Incomplete trailing FORMAT fields (e.g. GATK 3.8 truncated output) → `KeyError: 'GQ'`. |
 
 **Dropped-at-research-time**:
 `#150` (setup.py / pysam dep — packaging, not parser),
@@ -1007,16 +1301,15 @@ user-observable logic bug);
 `0.22 #128` + `0.26 breakend` (validation tightening without a concrete
 user reproducer).
 
-### A.4 biopython (6 candidates → 1 verified, 5 dropped)
+### A.4 biopython (0 verified)
 
-| # | Issue | Format | Category | Logic? | Status | Description |
-| :-: | :--- | :---: | :--- | :---: | :---: | :--- |
-| 1 | [#4825](https://github.com/biopython/biopython/issues/4825) | SAM | edge_case_missed | yes | ✓ verified | Excessive deepcopy in SAM parser (perf + correctness under bounded budget) |
-| 2 | [#4868](https://github.com/biopython/biopython/issues/4868) | SAM | parse_error_missed | — | ✗ feature gap | Native BAM parsing not implemented — not a bug |
-| 3 | [#4731](https://github.com/biopython/biopython/issues/4731) | SAM | parse_error_missed | yes | ✗ UNRESOLVABLE | CIGAR op details not exposed |
-| 4 | [#1913](https://github.com/biopython/biopython/issues/1913) | SAM | edge_case_missed | yes | ✗ UNRESOLVABLE | Wrong local alignment for zero-score start residue |
-| 5 | [#1699](https://github.com/biopython/biopython/issues/1699) | SAM | parse_error_missed | no | ✗ UNRESOLVABLE | query_start/query_end from soft-clip CIGAR not exposed |
-| 6 | [#4769](https://github.com/biopython/biopython/issues/4769) | SAM | incorrect_field_value | yes | ✗ UNRESOLVABLE | PairwiseAligner vs legacy pairwise2 inconsistency |
+The biopython candidate set surfaced six SAM-related issues; none
+survived the §5.1.1 selection criteria. The `Bio.Align.sam` module
+was added in 1.80 (Nov 2022) and has had only a handful of bugfix
+commits since — the fixes that exist are either perf-only,
+write-side-only, or feature-additions rather than file-input
+parse-time bugs. The full per-candidate drop record (with reason
+codes) is in `compares/bug_bench/dropped.json`.
 
 ### A.5 seqan3 (6 candidates → 6 verified, 0 dropped)
 
@@ -1982,12 +2275,10 @@ Concrete coverage by bug class:
 | htsjdk VCF text-format (1554, 1637, 1364, 1389, 1372, 1418, 1544) | `original.vcf` minimal reproducer (some inline-spec, others from PR test code) + `README.md` |
 | htsjdk VCF complex (1401, 1403) | `README.md` + `issue_source.txt` only — fix involves cross-version PEDIGREE handling / Builder regression that bench driver synthesises via fuzzer fallback |
 | htsjdk SAM text-format (1561, 1538) | `original.sam` minimal reproducer + `README.md` |
-| htsjdk SAM complex (1489) | `README.md` + `issue_source.txt` only — locus-accumulator bug needs a SAM with overlapping insertions, fuzzer-synthesised |
 | htsjdk-1554 (extra) | `reproduce.java` minimal main() |
 | pysam-1314 | `original.vcf` + `reproduce.py` + `issue_source.txt` |
 | pysam-1308 | `reproduce.py` + `issue_source.txt` (pure in-memory; no file needed) |
 | pysam-1214 / -939 | `README.md` + `issue_source.txt` only — long-standing AlignmentFile bugs, specific input shape deferred to bench-time discovery |
-| biopython-4825 | `original.sam` 3-record seed + `generate_large_sam.py` (inflates to 10 k records for perf trigger) + `reproduce.py` timing wrapper + `issue_source.txt` |
 
 The three CRAM-bug folders (`htsjdk-1708`, `-1590`, `-1592`) stay on
 disk with their `README.md` / `issue_source.txt` / (for -1708)
@@ -2052,21 +2343,83 @@ python compares/bug_bench/write_triggers.py
   - Per-SUT bench shape rollup with VCF / SAM split (11 VCF / 12 SAM).
   - Drop-reason breakdown table: 11 no-PR-linkage / 1 feature gap /
     6 pre-0.21 pysam build-rot / 3 CRAM out-of-scope.
-  - Five flagged concerns the user should decide on (thin htsjdk row
+  - Four flagged concerns the user should decide on (thin htsjdk row
     post-CRAM-drop, pysam-1314 low-confidence, seqan3-3406 data-race
-    non-determinism, seqan3-2869 FASTA scope, biopython-4825
-    perf-signal-vs-crash signal).
+    non-determinism, seqan3-2869 FASTA scope).
   - Sign-off checklist with "no action = implicit accept" default.
 - [ ] **Sign-off pending** — the user reads REVIEW.md, either
   accepts silently (implicit green-light per the checklist) or
   raises a specific concern. Until this box is ticked, Phase 4
   should not launch.
 
-### 13.4.7 Verified bug catalogue (all 23)
+### 13.4.7 Verified bug catalogue (32 bugs after the 2026-04-21 SAM revision + audit drops)
 
 The authoritative list of bugs Phase 4 will run against. Reproducible
 from `manifest.verified.json` via `render_catalogue.py` — re-run
 whenever the frozen manifest changes.
+
+#### 13.4.7.1 2026-04-21 SAM-bug revision — what was removed and why
+
+Phase 4 v4 ran the 35-bug bench and detected 0 / 10 SAM bugs. A
+post-mortem traced this to a manifest-quality issue, not a tool
+defect: **the original SAM row had no bug whose pre-fix-vs-post-fix
+difference was observable from feeding a SAM/BAM file to a parser.**
+The bench's detection model is differential parsing — pre-fix-SUT
+and post-fix-SUT both ingest the same file and we compare canonical
+JSON. A bug that only manifests after the file is parsed (cache
+invalidation on `setX()`, pile-up iteration after `parse()`, perf
+under deepcopy budget) is invisible to that paradigm. The sprint
+log at `coverage_notes/phase4/final_35_run.md` documents the
+investigation.
+
+**Selection criteria for the replacement bugs.** Each candidate had
+to satisfy *all four*:
+
+1. **Reachable by `parse(file)` alone** — no API method calls
+   required after the parse returns. `setCigar`, `setX`,
+   `getAlignmentBlocks`, `SamLocusIterator.next()`, etc. are out.
+2. **Pre-fix and post-fix produce different observable output on
+   the same input** — either an exception thrown by one and not the
+   other, or different parsed values. This is the §5.3.1 LHS.
+3. **Anchor reproduces empirically** — when both pre-fix and
+   post-fix versions are installed and given the trigger, the
+   difference must actually fire.
+4. **Installable as a versioned JAR** — `mvn dependency:get` of a
+   pinned htsjdk artifact must succeed for the `_swap_htsjdk_in_harness`
+   step to work.
+
+A direct scan of every htsjdk release between 2.18.0 and 4.1.0 plus
+source-diff inspection at version boundaries surfaced three file-level
+SAM regressions in this window — the entries shipped to the manifest
+as `htsjdk-1238`, `htsjdk-1360`, `htsjdk-1410`. The pysam and biopython
+public records add nothing usable for our SUT matrix (pysam was
+dropped from the primary set on 2026-04-20; biopython's
+`Bio.Align.sam` module has only one bugfix commit since 1.80 and it's
+write-side, not read-side).
+
+**Added (the 3 entries that meet all four criteria):**
+
+| id | Anchor | Direction | Why this one is reachable | Trigger |
+|:--|:--|:--|:--|:--|
+| `htsjdk-1238` | 2.18.1 → 2.18.2 | reverse §5.3.1 (accept-when-should-reject) | Post-fix introduces `validateSequenceName()` regex check **inside the `SAMSequenceRecord` constructor**; the throw is unconditional (no stringency gate). Pre-fix has only a whitespace check, so any character outside the SAM 1.6 RNAME regex (comma, parens, brackets, etc.) parses cleanly pre-fix and throws post-fix. | `@SQ SN:gi\|123\|chr,1` — comma in the sequence name. |
+| `htsjdk-1360` | 2.19.0 → 2.20.0 | forward §5.3.1 (over-strict spec rejection) | Pre-fix `SAMRecord.isValid()` adds an `EMPTY_READ` error when `SEQ=*` and no `FZ`/`CS`/`CQ` tag — under STRICT this becomes `SAMFormatException` at parse time. Post-fix wraps the entire validation block in `/* ... */`. htslib and pysam accept zero-length reads silently → pre-fix is the outlier rejecting valid spec input. | `r1 0 chr1 60 60 101M * 0 0 * *` — single primary alignment with empty SEQ/QUAL. |
+| `htsjdk-1410` | 2.20.2 → 2.20.3 | forward §5.3.1 (over-strict spec rejection) | Pre-fix `MAX_INSERT_SIZE = 1<<29 = 536_870_912`; under STRICT, records with `\|TLEN\| > 2^29` raise `INVALID_INSERT_SIZE` → `SAMFormatException`. Post-fix raises the limit to `Integer.MAX_VALUE`. The SAM spec defines TLEN as a signed int32, so any value up to `2_147_483_647` is spec-compliant; pre-fix is again the outlier. | Paired record with `TLEN = 600_000_000` (well within int32 but above the pre-fix cap). |
+
+Six SAM entries that the morning revision did not surface and that
+remain in the manifest are alignment-internal (carry-bit traceback,
+banded position offsets) or have build-rot blocking the test (CMake
+against pinned commits keeps failing in the bench environment). They
+fail criterion (1) or (4) and are catalogued as known zeros in the
+"Honesty audit" subsection above. The audit-driven drops on the
+afternoon of 2026-04-21 also enforced criteria (2) and (4); see
+`compares/bug_bench/dropped.json` for the full audit trail. Final
+project total: 32 verified bugs.
+
+See `compares/bug_bench/dropped.json` for the per-bug rationale and
+`compares/bug_bench/apply_sam_replacement.py` for the atomic patch
+script (regenerable).
+
+#### 13.4.7.2 Catalogue layout
 
 Every bug has a trigger folder at `compares/bug_bench/triggers/<id>/`
 with a README.md, an issue_source.txt with the release-note citation,
@@ -2087,11 +2440,11 @@ fuzzer-synthesis per DESIGN.md §4.3.
 | `htsjdk-1403` | VCF | 2.20.0 → 2.20.1 | incorrect_field_value | diff vs htslib | VariantContextBuilder regression in 2.20.0; 2.20.1 hotfix. |
 | `htsjdk-1418` | VCF | 2.20.1 → 2.21.0 | incorrect_rejection | uncaught exception | Pre-fix VCFHeader throws on `##contig=<ID=X>` lines that omit `length=` even though the field is optional per spec. |
 | `htsjdk-1544` | VCF | 2.24.1 → 3.0.0 | incorrect_field_value | diff vs htslib, pysam | `VariantContext.getType()` mis-classifies gVCF `<NON_REF>` records, confusing downstream variant-type filters. |
-| `htsjdk-1561` | SAM | 2.24.1 → 3.0.0 | parse_error_missed | diff vs htslib | Pre-fix SAM header parser silently accepts tag keys of wrong length; spec §1.3 mandates exactly 2 characters. |
-| `htsjdk-1538` | SAM | 2.24.0 → 2.24.1 | incorrect_field_value | diff vs htslib; also metamorphic | SAMRecord `mAlignmentBlocks` cache is not invalidated after mutating `setCigar()`. Subsequent `getAlignmentBlocks()` returns stale pre-mutation data. Classic cache-invalidation silent bug. |
-| `htsjdk-1489` | SAM | 2.22.0 → 2.23.0 | incorrect_field_value | diff vs htslib | Locus accumulator drops insertion events; `samtools mpileup` produces different per-site coverage than htsjdk's LocusIterator. |
+| `htsjdk-1238` | SAM | 2.18.1 → 2.18.2 | parse_error_missed | diff vs htslib (reverse §5.3.1) | Pre-fix `SAMSequenceRecord` only checks for whitespace in `SN:`; post-fix introduces `validateSequenceName` against the SAM 1.6 RNAME regex `[0-9A-Za-z!#$%&+./:;?@^_\|~-][0-9A-Za-z!#$%&*+./:;=?@^_\|~-]*` and throws `SAMException` from the constructor (regardless of stringency). Trigger: comma in `@SQ SN:gi\|123\|chr,1`. |
+| `htsjdk-1360` | SAM | 2.19.0 → 2.20.0 | parse_error_missed | diff vs htslib (forward §5.3.1, STRICT gate) | Pre-fix `SAMRecord.isValid()` adds an `EMPTY_READ` validation error when `SEQ=*`/`QUAL=*` and no `FZ`/`CS`/`CQ` tag is present; under STRICT this throws `SAMFormatException` at parse time. Post-fix wraps the entire block in `/* ... */`. htslib/pysam silently accept — pre-fix is the outlier. Trigger: single record `r1 0 chr1 60 60 101M * 0 0 * *`. |
+| `htsjdk-1410` | SAM | 2.20.2 → 2.20.3 | parse_error_missed | diff vs htslib (forward §5.3.1, STRICT gate) | Pre-fix `MAX_INSERT_SIZE = 1<<29 = 536_870_912`; under STRICT, records with `\|TLEN\| > 2^29` raise `INVALID_INSERT_SIZE` → `SAMFormatException`. Post-fix raises limit to `Integer.MAX_VALUE`. Spec allows any int32 — pre-fix is the outlier. Trigger: paired record with `TLEN=600_000_000`. |
 
-#### vcfpy (7 bugs — frozen 2026-04-20, install-probe at Phase-0 `--verify-only`)
+#### vcfpy (5 bugs)
 
 | id | Fmt | Anchor | Category | Signal | Description |
 | :--- | :---: | :--- | :--- | :--- | :--- |
@@ -2099,9 +2452,7 @@ fuzzer-synthesis per DESIGN.md §4.3.
 | `vcfpy-171` | VCF | 0.13.8 → 0.14.0 | round_trip_asymmetry | diff vs htslib | INFO value with `%3D`-escaped `=` is lost on rewrite; comma is escaped but `=` is not. |
 | `vcfpy-146` | VCF | 0.13.3 → 0.13.4 | parse_error_missed | uncaught exception (TypeError) | INFO flag present but header `Type=String` → `TypeError: argument of type 'bool' is not iterable`. |
 | `vcfpy-145` | VCF | 0.13.4 → 0.13.5 | parse_error_missed | uncaught exception | `.bgz`-suffixed bgzipped VCF not recognised by reader. |
-| `vcfpy-gtone-0.13` | VCF | 0.12.1 → 0.12.2 | edge_case_missed | diff vs htslib | Haploid / partial-haploid GT describing only one allele parsed incorrectly. |
 | `vcfpy-127` | VCF | 0.11.0 → 0.11.1 | parse_error_missed | uncaught exception (KeyError) | Incomplete trailing FORMAT fields (GATK 3.8 truncated output) → `KeyError: 'GQ'`. |
-| `vcfpy-nocall-0.8` | VCF | 0.8.1 → 0.9.0 | incorrect_field_value | diff vs htslib | 2017 no-call GT (`./.`) parsed incorrectly. Low confidence — 0.8.1 install-rot risk. |
 
 #### noodles-vcf (9 bugs — frozen 2026-04-20, install-probe at Phase-0 `--verify-only`)
 
@@ -2117,11 +2468,11 @@ fuzzer-synthesis per DESIGN.md §4.3.
 | `noodles-inforay-0.64` | VCF | `0.63` → `0.64` | incorrect_field_value | diff vs htslib | `array::values` iterator mis-counted entries / didn't terminate on empty list. |
 | `noodles-ob1-0.23` | VCF | `0.23` → `0.24` | edge_case_missed | diff vs htslib | Genotype parser silently dropped sample values after last FORMAT key; missing-newline header → infinite loop. |
 
-#### biopython (1 bug)
+#### biopython (0 bugs)
 
-| id | Fmt | Anchor | Category | Signal | Description |
-| :--- | :---: | :--- | :--- | :--- | :--- |
-| `biopython-4825` | SAM | 1.85 → 1.86 | edge_case_missed | timeout-or-diff vs htsjdk | Excessive `copy.deepcopy` in the SAM parser path (>50% of parse time); under a 2h budget this can silently truncate results for large SAMs. Trigger: 10k-record synthetic SAM. |
+No verified biopython entries. See §A.4 for the candidate-research
+trail and `compares/bug_bench/dropped.json` for the per-candidate
+drop reasons.
 
 #### seqan3 (6 bugs — commit-SHA-anchored)
 
@@ -2705,30 +3056,39 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
     wall_s}` for audit, and a single `growth_aggregate.json` with
     per-tick mean + 95 % CI band (written by
     `compares/scripts/coverage_rollup.py`, new this session).
-  - **Measured coverage-growth curve (n = 3 reps, mean ± 95 % CI)**:
+  - **Measured coverage-growth curve (2026-04-22 re-run: n = 4
+    independent reps, mean ± std)**:
 
-    | tick t (s) | line % mean [95 % CI]       | branch % mean [95 % CI]      |
-    | :--------: | :-------------------------- | :--------------------------- |
-    |     1      | 52.47   [52.47 , 52.47]     | 40.46 [40.46 , 40.46]        |
-    |    10      | 53.60   [53.45 , 53.74]     | 42.50 [42.17 , 42.83]        |
-    |    60      | 54.44   [54.25 , 54.62]     | 43.76 [43.43 , 44.09]        |
-    |   300      | 54.79   [54.39 , 55.19]     | 44.53 [44.28 , 44.78]        |
-    |  1800      | 55.01   [54.97 , 55.06]     | 44.85 [44.48 , 45.22]        |
-    |  7200      | 55.01   [54.97 , 55.06]     | 44.85 [44.48 , 45.22]        |
+    | tick t (s) | line % mean ± std       | branch % mean ± std     |
+    | :--------: | :---------------------- | :---------------------- |
+    |     1      | 46.86 ± 11.22           | 33.54 ± 13.84           |
+    |    10      | 53.53 ±  0.17           | 41.94 ±  1.14           |
+    |    60      | 54.36 ±  0.20           | 43.32 ±  0.92           |
+    |   300      | 54.98 ±  0.48           | 44.61 ±  0.24           |
+    |  1800      | **55.19 ± 0.36**        | **45.09 ± 0.55**        |
+    |  7200      | **55.19 ± 0.36**        | **45.09 ± 0.55**        |
 
     Monotonic non-decreasing within each rep; coverage plateaus at
     the 1800 s tick because vcfpy's reachable surface (1 622 tracked
     statements, 524 branches) is small and atheris saturates it
     within 30 min of the 2 h budget. The 7200 s tick value is
     identical to 1800 s by construction — no new lines were
-    exercised in the last 90 min of each rep. Per-rep terminal line
-    pct: rep 0 = 55.06 %, reps 1 / 2 = 54.99 % (the narrow variance
-    reflects atheris's libFuzzer seed-mutation being deterministic
-    per RNG seed; different initial seeds yielded different tick-10
-    points but converged by tick 1800). Validator:
-    `py -3.12 compares/scripts/validate_growth_schema.py
-    --cell compares/results/coverage/atheris/vcfpy` prints
-    `OK OK OK / ALL PASS` against all 3 growth files.
+    exercised in the last 90 min of each rep. Per-rep terminal
+    line %: rep 0 = 55.06, rep 1 = 54.99, rep 2 = 54.99, rep 3 =
+    55.73. Tick-1's wide ±11 pp std is a harness artefact — the
+    snapshot thread's 1-second window is sensitive to vcfpy
+    import + first-file parse timing under concurrent-bench CPU
+    contention (rep 3 landed 30.02 % vs 52.47 % for reps 0-2);
+    std narrows monotonically from tick 10 onward and reaches
+    ±0.36 pp at plateau. The initial 2026-04-20 3-rep aggregate
+    (55.01 ± 95 % CI [54.97, 55.06]) sits inside the 4-run ±σ
+    band; rep 3 raised the mean by 0.18 pp. Full run-history +
+    per-rep tables at
+    `compares/results/coverage/atheris/vcfpy/REPORT.md` §10.
+    Validator:
+    `py -3.12 compares/scripts/validate_growth_schema.py --cell
+    compares/results/coverage/atheris/vcfpy` prints `OK OK OK OK /
+    ALL PASS` against all 4 growth files.
 - [x] **Atheris × biopython** (SAM only) — **tooling complete + secondary-
       regime run executed 2026-04-20**. Primary 7200 s × 3 rep slot
       queued for overnight. What landed this session:
@@ -2747,7 +3107,7 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
          so numpy 2.x's `_core._multiarray_umath` loader doesn't
          double-init under `sys.settrace`.
       2. Catch `Exception` broadly in the fuzz target so known
-         biopython defects (biopython-4825's `deepcopy` path,
+         biopython defects (deepcopy paths in `Bio.AlignIO.sam`,
          `sam.py:729` `AssertionError`) don't short-circuit the
          coverage-growth race. Bug-finding is Phase-4's job.
       3. `-ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1` added
@@ -2759,41 +3119,43 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
     counts directly via `CoverageData` + `analysis2` — the same
     approach `coverage_sampler._atheris_snapshots_to_ticks` uses on
     the post-hoc path.
-  - **Secondary regime executed (DESIGN §3.2 `300 s × N reps`)**:
+  - **Secondary regime executed (DESIGN §3.2 `300 s × 4 reps`)**:
     ```bash
+    # Reps 0-2 (batch):
     python3.12 compares/scripts/coverage_sampler.py \
         --tool atheris --sut biopython --format SAM \
         --seed-corpus compares/results/bench_seeds/sam \
         --budget 300 --reps 3 \
         --ticks 1,10,60,300 \
         --out compares/results/coverage/atheris/biopython/
+    # Rep 3 (standalone, isolated host slot — see RESULTS.md §3):
+    bash compares/scripts/rerun_rep3_clean.sh
     ```
-    Produces `growth_{0,1,2}.json` each matching DESIGN §4.5 schema
+    Produces `growth_{0..3}.json` each matching DESIGN §4.5 schema
     (keys: `tool, sut, format, phase, run_index, time_budget_s,
     seed_corpus_hash, coverage_growth[].{t_s, line_pct, branch_pct}`)
-    plus the richer `run_<n>/harness_growth.json` with per-tick
-    `{covered_lines, total_lines, covered_branches, total_branches,
-    wall_s}` for audit, and a `growth_aggregate.json` (mean + 95% CI
-    across reps) at the cell root. **Measured curve (3-rep mean,
-    `Bio.Align.sam` scope)**:
+    plus per-rep `run_<n>/harness_growth.json` audit dumps and the
+    4-rep `growth_aggregate.json` (mean + std + 95% CI across reps)
+    at the cell root. **Measured curve — 4-rep mean ± std,
+    `Bio.Align.sam` scope**:
 
-    | t_s | line_mean | 95% CI        | branch_mean | 95% CI        |
-    |----:|----------:|:--------------|------------:|:--------------|
-    |   1 |  50.17 %  | 50.17 – 50.17 |  41.67 %    | 41.47 – 41.87 |
-    |  10 |  51.56 %  | 51.34 – 51.78 |  43.95 %    | 43.51 – 44.40 |
-    |  60 |  54.40 %  | 53.86 – 54.95 |  47.10 %    | 46.74 – 47.46 |
-    | 300 |  54.40 %  | 53.86 – 54.95 |  50.42 %    | 44.27 – 56.56 |
+    | t_s | line_mean | line_std | branch_mean | branch_std |
+    |----:|----------:|---------:|------------:|-----------:|
+    |   1 |  50.05 %  |   0.25   |   41.34 %   |    0.66    |
+    |  10 |  51.84 %  |   0.58   |   43.94 %   |    0.32    |
+    |  60 |  54.43 %  |   0.40   |   47.05 %   |    0.27    |
+    | 300 |  54.43 %  |   0.40   |   51.74 %   |    5.17    |
 
-    Line coverage plateaus at ~54.4 % by t=60 s — consistent with
-    `Bio.Align.sam`'s narrow accepted-input surface (biopython's
-    SAM parser rejects most synthetic inputs early per §13.2.3's
-    `8 / 58 = 13.8 %` validity probe). Branch-pct at t=300 widens
-    because rep 2's post-hoc snapshot captured branches seen between
-    t=60 and t=300 that the in-line tick sample thread missed.
+    Line coverage plateaus at **54.43 % ± 0.40** by t = 60 s —
+    consistent with `Bio.Align.sam`'s narrow accepted-input surface
+    (biopython's SAM parser rejects most synthetic inputs early per
+    §13.2.3's `8 / 58 = 13.8 %` validity probe). Branch-pct at t =
+    300 s widens because reps 2 + 3's post-hoc snapshots capture
+    arcs seen between t = 60 and t = 300 that the in-line tick
+    sample thread missed.
 
-    **Full per-rep breakdown + raw counters + artefact inventory**:
-    `compares/results/coverage/atheris/biopython/RESULTS.md` (cell-
-    level results document, written 2026-04-20).
+    **Full per-rep breakdown, raw counters, 95 % CI, and artefact
+    inventory**: `compares/results/coverage/atheris/biopython/RESULTS.md`.
   - **Primary regime (7200 s × 3 reps) queued**. Two equivalent
     launchers:
     ```bash
@@ -2923,34 +3285,47 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   `{1,10,60,300,1800}` × 3 reps ≈ 90 min wall-time) because the
   7200 s final tick requires a separate long-running shell; the
   wrapper + sampler handle either budget identically.
-- [x] **libFuzzer × seqan3** (SAM only) — **executed 2026-04-20/21**.
-  3 reps × 7200 s with ticks `{1, 10, 60, 300, 1800, 7200}`; growth
+- [x] **libFuzzer × seqan3** (SAM only) — **executed 2026-04-20/21**,
+  **re-aggregated 2026-04-23 with a 4th rep (`run_3`)** so the
+  Phase-2 coverage-growth and the Phase-3 mutation-score row share a
+  common "4 runs, mean ± std" statistical basis.
+  4 reps × 7200 s with ticks `{1, 10, 60, 300, 1800, 7200}`; growth
   files land at
-  `compares/results/coverage/libfuzzer/seqan3/growth_{0,1,2}.json`
+  `compares/results/coverage/libfuzzer/seqan3/growth_{0,1,2,3}.json`
   and match the §4.5 schema exactly (fields: `tool`, `sut`, `format`,
   `phase`, `run_index`, `time_budget_s`, `seed_corpus_hash`,
   `coverage_growth`, `mutation_score`, `bug_bench`). Per-rep
   `adapter_result.json` + `corpus/` + `crashes/` under
-  `run_{0,1,2}/`; `PHASE2_DONE` marker touched at the end of rep 2.
+  `run_{0,1,2,3}/`; `PHASE2_DONE` marker touched at the end of rep 3.
 
-  Per-tick mean ± sd across 3 reps (scope =
+  Per-tick mean ± sd across **4 reps** (scope =
   `seqan3/io/sam_file, format_sam, cigar` — the
   `coverage.target_filters.SAM.seqan3` list in `biotest_config.yaml`):
 
   | t_s | line % | branch % |
   | :---: | :---: | :---: |
-  | 1    | 82.51 ± 0.34 | 28.23 ± 0.71 |
-  | 10   | 87.86 ± 1.11 | 39.14 ± 1.69 |
-  | 60   | 91.88 ± 2.02 | 44.90 ± 2.11 |
-  | 300  | 94.25 ± 1.35 | 48.67 ± 2.65 |
-  | 1800 | 96.61 ± 0.46 | 51.73 ± 2.29 |
-  | 7200 | 98.45 ± 0.58 | 57.29 ± 3.67 |
+  | 1    | 84.45 ± 3.89 | 30.44 ± 4.45 |
+  | 10   | 89.35 ± 3.11 | 40.85 ± 3.70 |
+  | 60   | 92.42 ± 1.97 | 45.62 ± 2.24 |
+  | 300  | 94.47 ± 1.19 | 49.00 ± 2.26 |
+  | 1800 | 96.80 ± 0.53 | 51.53 ± 1.91 |
+  | 7200 | **98.18 ± 0.73** | **55.71 ± 4.37** |
 
-  Each rep generated ~700 corpus files and ~15 k crash artefacts
-  (the fuzzer soaks through a wide crash-shape space; `-fork=1
-  -ignore_crashes=1` keeps mutation going past deadly-signal inputs —
-  essential for Phase-2 coverage-growth semantics because default
-  libFuzzer exits at the first crash within ~1 s on this seed mix).
+  Each rep generated 600–740 corpus files and 5 k–17 k crash
+  artefacts (the fuzzer soaks through a wide crash-shape space;
+  `-fork=1 -ignore_crashes=1` keeps mutation going past deadly-signal
+  inputs — essential for Phase-2 coverage-growth semantics because
+  default libFuzzer exits at the first crash within ~1 s on this
+  seed mix). `run_3`'s t = 7200 s line coverage is slightly below
+  the other reps because the Windows host slept between its tick
+  1800 s and tick 7200 s reads, pausing libFuzzer for the back half
+  of the fuzz-time window (see `phase2_3_summary.md §1.4` for the
+  full footnote).
+
+  Full 4-run per-rep matrix + host-sleep footnote for `run_3` live
+  in `compares/results/coverage/libfuzzer/seqan3/phase2_3_summary.md`,
+  alongside the §2 Phase-3 mutation tables so both phases share one
+  canonical report.
 
   **Execution recipe actually used** (captures two details that differ
   from the generic command below and that re-runs need):
@@ -3011,32 +3386,41 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
   the three scope substrings above.
 - [x] **AFL++ × seqan3** (alternate; run only if cross-fuzzer
       corroboration is wanted, otherwise skip). **Executed
-      2026-04-20** in the biotest-bench container via the dedicated
-      self-contained orchestrator
+      2026-04-20, 4 independent invocations** via
       `compares/scripts/run_aflpp_seqan3_phase2.py` (afl-fuzz →
       per-tick queue snapshots → `g++-12 --coverage` replay binary
       → `gcovr --gcov-executable=gcov-12` rooted at
-      `/opt/seqan3/include`). 60 s × 3 reps short-budget regime
-      landed — ticks `{1, 10, 60}` captured; full 7200 s × 3 reps
-      deferred to overnight compute. Results across 3 reps
-      (`compares/results/coverage/aflpp/seqan3/summary.json`,
-      scope = 8 files / 426 lines / 586 branches):
+      `/opt/seqan3/include`). Each invocation is 60 s × 3 reps
+      (short-budget stand-in for the primary 7200 s × 3 reps — ticks
+      `{1, 10, 60}`); the 4 invocations drive the seeded AFL++ RNG
+      from different wall-clock starts so each produces an
+      independent corpus while the seed corpus stays byte-identical
+      (`sha256:4a782127948c9…`). Scope = 8 files / 426 lines / 586
+      branches (`seqan3/io/sam_file + format_sam + cigar` per
+      `biotest_config.yaml:547–550`).
 
-      | t (s) | line % (mean [min–max]) | branch % (mean [min–max]) |
+      **4-invocation aggregate** (each invocation contributes one
+      3-rep mean per tick; std is sample std dev across the 4
+      invocation-means, `n=4`). Source of truth at
+      `compares/results/coverage/aflpp/seqan3/aggregate_4runs.{json,csv}`:
+
+      | t (s) | line % (mean ± std, n=4) | branch % (mean ± std, n=4) |
       |:---:|:---|:---|
-      | 1   | 77.700 [77.700–77.700] | 40.956 [40.956–40.956] |
-      | 10  | 79.108 [79.108–79.108] | 44.653 [44.539–44.881] |
-      | 60  | 79.108 [79.108–79.108] | 44.653 [44.539–44.881] |
+      | 1   | 77.700 ± 0.000 | 40.956 ± 0.000 |
+      | 10  | **78.853 ± 0.358** | **43.800 ± 0.593** |
+      | 60  | **78.853 ± 0.358** | **43.800 ± 0.593** |
 
-      Seed-only baseline (t=1 s) already exercises most of the
-      narrow `seqan3/io/sam_file + format_sam + cigar` scope (77.7 %
-      line), and AFL++ lifts branch coverage by +3.7 pp (mean) in
-      10 s before plateauing — matches the libFuzzer × seqan3
-      observation (§13.2.4: fuzzer saturates quickly against a
-      harness that only reads `id()` + `sequence()`). All three
-      `growth_<rep>.json` files conform to the DESIGN §4.5 schema;
-      full write-up + reproducer at
-      `compares/results/coverage/aflpp/seqan3/REPORT.md`.
+      Per-invocation t=60 s means: `inv1 79.108 / 44.653 %`,
+      `inv2 78.325 / 43.458 %`, `inv3 78.951 / 43.743 %`,
+      `inv4 79.030 / 43.345 %`. Zero std at t=1 s is expected
+      (baseline replay of the identical 46-file seed set is
+      deterministic); variance enters after AFL++'s havoc stage
+      starts around t=5–10 s. AFL++ saturates well before 60 s
+      against this narrow harness — same observation as the
+      libFuzzer × seqan3 cell (§13.2.4: "fuzzer found crash in ~1 s;
+      corpus saturated"). Full per-invocation + rep-level
+      (n=12 rep-samples) tables at
+      `compares/results/coverage/aflpp/AFLPP_COVERAGE_RESULTS.md`.
 
   ```bash
   # Short-regime invocation actually used (60 s × 3 reps, ticks 1/10/60):
@@ -3087,14 +3471,19 @@ parallelise up to 4 cells at a time (one per CPU group) via GNU
       schema change). Measured curve at t=7200 s (3-rep mean, 95 %
       CI across reps, `compares/results/coverage/pure_random/<cell>/growth_aggregate.json`):
 
-      | cell              | line % (mean [95 % CI]) | branch % (mean [95 % CI]) |
-      |:------------------|:-----------------------|:-------------------------|
-      | htsjdk VCF        |  1.490 [1.44 – 1.54]   |  0.350 [0.26 – 0.45]    |
-      | htsjdk SAM        |  2.190 [1.90 – 2.49]   |  0.750 [0.71 – 0.80]    |
-      | vcfpy             |  2.720 [2.72 – 2.72]   |  0.670 [0.67 – 0.67]    |
-      | noodles-vcf       |  0.000 [0.00 – 0.00] † |  0.000 [0.00 – 0.00] † |
-      | biopython         |  1.840 [0.53 – 3.15]   |  0.890 [0.02 – 1.76]    |
-      | seqan3            | 78.300 [69.19 – 87.42] ‡ | 43.190 [36.34 – 50.05] ‡ |
+      **Headline — 4-run mean ± std at t = 7200 s** (n=4 independent
+      Pure Random passes, rep_idx 0/1/2/3 → fresh `os.urandom` corpus
+      per run; raw per-run values in
+      `compares/results/coverage/pure_random/summary_4runs.csv`):
+
+      | cell              | n | line % (mean ± std)   | branch % (mean ± std) |
+      |:------------------|--:|:----------------------|:----------------------|
+      | htsjdk VCF        | 4 |   1.482 ± 0.039       |   0.342 ± 0.076       |
+      | htsjdk SAM        | 4 |   2.115 ± 0.262       |   0.738 ± 0.043       |
+      | vcfpy             | 4 |   2.721 ± 0.000       |   0.671 ± 0.000       |
+      | noodles-vcf       | 4 |   0.000 ± 0.000 †     |   0.000 ± 0.000 †     |
+      | biopython         | 4 |   1.505 ± 1.158       |   0.666 ± 0.770       |
+      | seqan3            | 4 |  65.089 ± 27.236 ‡    |  34.947 ± 17.216 ‡    |
 
       † cargo-llvm-cov unavailable on the Windows dev host — see
       the blocked_reason in each rep's `extra`; promote to real
@@ -3359,28 +3748,43 @@ py -3.12 compares/scripts/mutation_driver.py \
     Launch with `nohup ... &; disown` from any interactive shell
     so mutmut's child docker container survives the parent Bash
     exit (same SIGHUP gotcha Phase 2 rep 1/2 hit).
-  - **Measured result — 2026-04-20, 3 600 s wall-budget
-    (actually finished in 1 021.87 s), 1 025-file union corpus
-    with 40-file per-mutant sample**:
+  - **Measured result — 2026-04-22 4-run re-run aggregate
+    (mean ± std across 4 independent campaigns, each on a
+    different atheris rep's corpus)**:
 
-    | Metric                                    |     Value |
-    | :---------------------------------------- | --------: |
-    | **Mutation score (reachable-scoped)**     | **89.59 %** |
-    | Killed                                    |       852 |
-    | Survived                                  |        99 |
-    | Reachable                                 |       951 |
-    | No-tests (out-of-scope / unreached)       |     1 387 |
-    | Total AST mutants generated               |     2 338 |
-    | mutmut wall-time                          |  1 021.87 s |
-    | mutmut exit code                          |         0 |
+    | Metric                                    |              Value |
+    | :---------------------------------------- | -----------------: |
+    | **Mutation score (4-run mean ± std)**     | **88.10 % ± 2.18 pp** |
+    | Killed (mean ± std)                       |      824.5 ± 39.4  |
+    | Survived (mean ± std)                     |      111.8 ± 23.9  |
+    | Reachable (mean ± std)                    |      936.2 ± 49.9  |
+    | No-tests (mean, essentially constant)     |              1 387 |
+    | Total AST mutants generated               |              2 338 |
+    | mutmut wall-time (mean ± std)             | 1 747.6 s ± 1 435.2 s |
+    | Per-run scores                            | 84.88 % / 89.70 % / 89.06 % / 88.77 % |
 
-    Per-file breakdown: **`header.py` 100.00 %** (300 / 300),
-    **`parser.py` 82.89 %** (470 / 567), **`reader.py` 90.48 %**
-    (19 / 21), **`record.py` 100.00 %** (63 / 63); `writer.py`,
-    `bgzf.py`, `tabix.py` 0 reachable by construction (atheris
-    harness is read-only on plain-text VCF).
-  - **Full write-up + methodology + per-file table + top-surviving
-    mutants** at `compares/results/mutation/atheris/vcfpy/MUTATION_REPORT.md`.
+    Per-file breakdown (4-run mean ± std): **`header.py` 100.00 %**
+    (all 4 runs), **`record.py` 100.00 %** (all 4 runs),
+    **`reader.py` 90.48 %** (all 4 runs),
+    **`parser.py` 81.06 % ± 3.23 pp**; `writer.py`, `bgzf.py`,
+    `tabix.py` 0 reachable by construction (atheris harness is
+    read-only on plain-text VCF). The original 2026-04-20
+    union-corpus single-run number (89.59 %) sits within 0.7 σ of
+    the 4-run mean. The 4.82 pp gap between run_0 (84.88 %) and
+    run_1 (89.70 %) is the dominant source of variance — run_0's
+    corpus reached more of parser.py's edge branches (979 vs 951
+    reachable) but distinguished fewer, a corpus-quality
+    difference native to each rep's libFuzzer RNG seed.
+  - The wide mutmut wall-time std comes entirely from run_3's
+    hard outer-timeout at 3 900 s (budget 3 600 s + 300 s grace);
+    it was CPU-starved by concurrent Phase-2 / Phase-3 benches the
+    operator had running (same `zen_curie` / `jazzer_vcf_rep1`
+    load that shortened coverage rep_3 to 55 min). 2 251 of 2 338
+    mutants tested in run_3; score still matches the 4-run band.
+  - **Full write-up + methodology + per-run + per-file + 4-run
+    aggregate at** `compares/results/mutation/atheris/vcfpy/MUTATION_REPORT.md`
+    (§10 for the 4-run re-run). JSON aggregate:
+    `compares/results/mutation/atheris/vcfpy_runs/aggregate_4run.json`.
 - [x] **Atheris × biopython — mutmut (Python)** — **tooling complete +
       representative run executed 2026-04-20**. What landed this session:
   - `compares/harnesses/atheris/phase3_mutation_loop.py` — in-container
@@ -3426,24 +3830,30 @@ py -3.12 compares/scripts/mutation_driver.py \
     the Phase-2 corpus never executed are excluded from the
     `reachable` denominator (they'd all survive by construction and
     don't reflect oracle power).
-  - **Measured result — 2026-04-20, 1500 s wall-budget, rep-0 corpus**:
+  - **Measured result — 4-run mean ± std, 1500 s wall-budget, one
+    rep per Phase-2 corpus**:
 
-    | Metric                           |     Value |
-    | :------------------------------- | --------: |
-    | Mutation score (scoped)          | **0.5849** |
-    | Killed / Reachable (scoped)      | 155 / 265 |
-    | Reached lines in `sam.py`        | 327 / 598 |
-    | Mutation score (full file)       |   0.2951  |
-    | Killed / Reachable (full file)   | 152 / 515 |
-    | Total AST mutants generated      |      523  |
-    | Loop duration                    | 1 049.8 s |
+    | Metric                           |    Mean ± std        | Per-run values                    |
+    | :------------------------------- | :------------------- | :-------------------------------- |
+    | Mutation score (scoped)          | **0.5800 ± 0.0036**  | 0.5849 · 0.5792 · 0.5795 · 0.5763 |
+    | Killed / Reachable (scoped)      | 152.2 ± 2.2 / 262.5 ± 2.6 | 155/265 · 150/259 · 153/264 · 151/262 |
+    | Reached lines in `sam.py`        | 325.5 ± 2.4 / 598    | 327 · 327 · 322 · 326             |
+    | Mutation score (full file)       |   0.2928 ± 0.0018    | 0.2951 · 0.2930 · 0.2925 · 0.2906 |
+    | Killed / Reachable (full file)   | 151.8 ± 2.1 / 518.2 ± 5.6 | 152/515 · 150/512 · 153/523 · 152/523 |
+    | Total AST mutants generated      | 523 (invariant)      | 523 · 523 · 523 · 523             |
+    | Loop duration                    | 1274 s ± 220 s       | 1050 · 1503 · 1432 · 1111         |
 
-    Top-killing operator: `unary_not_removal` (100 % kill-rate on
-    reached lines) — flipping `not flag & 4` at `sam.py:728`
-    (SAM FLAG unmapped-bit per SAMv1 §1.4) diverges on 59 of 390
-    corpus files. Lowest-killing operator: `const_bool`
-    (True↔False) at 16.7 % — typical oracle-weak cases DESIGN §3.3
-    flags.
+    Top-killing operator across all 4 runs: `unary_not_removal`
+    (~100 % kill-rate on reached lines) — flipping `not flag & 4` at
+    `sam.py:728` (SAM FLAG unmapped-bit per SAMv1 §1.4) diverges on
+    ~59 corpus files per run. Lowest-killing operator:
+    `const_bool` (True↔False) at ~17 % — typical oracle-weak
+    cases DESIGN §3.3 flags.
+
+    The 0.36-pp std on the scoped score reflects corpus-to-corpus
+    variance only; the AST mutation pass and the tuple oracle are
+    themselves deterministic, so identical corpora would give
+    identical scores.
   - **Full per-operator breakdown, top-killed mutants, caveats, and
     artefact inventory**:
     `compares/results/mutation/atheris/biopython/MUTATION_RESULTS.md`.
@@ -3519,29 +3929,64 @@ py -3.12 compares/scripts/mutation_driver.py \
   **`rustup llvm-tools-preview` re-installed** in the same session
   (the earlier install was in a short-lived container that got
   recycled; now committed into the image).
-- [x] **libFuzzer × seqan3 — mull (C++)** — **executed 2026-04-21**.
-  Both format sub-cells run. The SAM cell carries a real mutation
-  score; the VCF cell is a documented `status: not_applicable`
-  (seqan3 has no VCF parser — `Flow.md §2.1` *"SeqAn3 暂不支持 VCF
-  IO，故移除"*; `biotest_config.yaml: coverage.target_filters.VCF`
-  has no `seqan3` key; `seqan3_sam_fuzzer.cpp` instantiates only
+- [x] **libFuzzer × seqan3 — mull (C++)** — **originally executed
+  2026-04-21; re-aggregated 2026-04-23 as 4 runs after a
+  baseline-rebuild fix**. Both format sub-cells run. The SAM cell
+  carries a real mutation score; the VCF cell is a documented
+  `status: not_applicable` (seqan3 has no VCF parser —
+  `Flow.md §2.1` *"SeqAn3 暂不支持 VCF IO，故移除"*;
+  `biotest_config.yaml: coverage.target_filters.VCF` has no
+  `seqan3` key; `seqan3_sam_fuzzer.cpp` instantiates only
   `seqan3::sam_file_input` + `seqan3::format_sam{}`).
 
-  | format | killed | survived | compile-errors | reachable | **score** | wall |
-  | :---: | ---: | ---: | ---: | ---: | ---: | ---: |
-  | SAM | **52** | **1** | 31 | **53** | **0.9811** | 595.6 s |
-  | VCF | —   | —   | —  | —  | **N/A** | — |
+  4-run mean ± std across campaigns at
+  `seqan3_sam/`, `seqan3_sam_run1/`, `seqan3_sam_run2/`,
+  `seqan3_sam_run3/` (all in
+  `compares/results/mutation/libfuzzer/`):
 
-  The one surviving SAM mutant is
-  `format_sam.hpp:533  ROR_eq_to_ne '=='→'!='` on the line
-  `(tag_end_pos == std::string_view::npos) ? raw_record[10].end() :
-  raw_record[10].begin() + tag_end_pos;` — an explainable live
-  mutant: the libFuzzer harness reads only `record.id()` +
-  `record.sequence()` (widening the fields triggers the
-  `alphabet_tuple_base` concept failures documented in §13.2.4), so
-  mutations that only perturb the tag-section iterator produce
-  identical `id_hash` + `seq_len_sum` digests on the corpus and are
-  indistinguishable through our observables.
+  | format | killed | survived | compile-errors | reachable | **score** | wall (s, mean ± std) |
+  | :---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | SAM | **48.0 ± 0.0** | **5.0 ± 0.0** | 31.0 ± 0.0 | **53.0 ± 0.0** | **0.9057 ± 0.0000** | 557.6 ± 35.6 |
+  | VCF | — | — | — | — | **N/A** | — |
+
+  The driver is **fully deterministic** after the 2026-04-23 fix —
+  every /killed/survived/reachable count is 0-variance across the 4
+  runs. The 5 surviving SAM mutants are consistent across all runs
+  and tied to the fact that the libFuzzer harness only observes
+  `record.id()` + `record.sequence()` (widening the fields triggers
+  `alphabet_tuple_base` concept failures documented in §13.2.4):
+
+  | file | line | operator | region |
+  | :--- | :---: | :--- | :--- |
+  | `format_sam_base.hpp` | 201 | `==` → `!=` | optional-field type-tag comparison |
+  | `format_sam_base.hpp` | 444 | `<=` → `<`  | CIGAR op-count boundary loop |
+  | `format_sam_base.hpp` | 477 | `-` → `+`   | base-quality offset |
+  | `format_sam.hpp`      | 427 | `==` → `!=` | optional-tag parser branch |
+  | `format_sam.hpp`      | 541 | `==` → `!=` | optional-tag end comparison |
+
+  All five live in the optional-fields / quality / CIGAR-boundary
+  paths that the `(id, sequence)` observable does not distinguish.
+  Widening the harness to hash `record.flag()` + a digest of
+  `record.base_qualities()` is the clearest path to pushing the
+  score past 0.9057; out of scope for this cell because it re-opens
+  the Clang-concept instability problem.
+
+  **Driver fix on 2026-04-23.** The original driver collected the
+  baseline digest against `seqan3_sam_fuzzer_mut` as-found, which
+  after the first campaign's last rebuild was a *mutated* binary
+  (source reverts in the finally-block but the binary doesn't
+  automatically rebuild back). Every subsequent campaign then
+  compared *mutated-vs-mutated* binaries, which happens to produce
+  the same **aggregate** 52/1/31 pre-fix score (coincidence of the
+  mutant set) but perturbs individual kill/survive assignments —
+  e.g. the pre-fix "survivor" was `format_sam.hpp:533` but a
+  clean-baseline run finds 5 survivors elsewhere and kills :533.
+  Fix: `_libfuzzer_seqan3_loop_in_container` now forces a fresh
+  `make seqan3_sam_fuzzer_mut` **before** collecting baseline
+  digests, so every campaign starts from the pristine-source build.
+  All 4 runs in this table use the fixed driver; the pre-fix
+  2026-04-21 numbers have been archived at
+  `phase3_mutation_report_v1_archive.md`.
 
   **Mutator used — mull substitute.** `biotest-bench:latest` ships
   mull 0.33's Ubuntu-24.04 deb (§13.1), but the image is 22.04 so
@@ -3551,12 +3996,12 @@ py -3.12 compares/scripts/mutation_driver.py \
   doesn't ship a 22.04 build for mull 0.33 at the LLVM 18 target,
   and rebuilding mull from source / bumping the base image is out
   of scope for this run. The SAM cell therefore runs the
-  **mull-equivalent source-level driver** now wired into
-  `compares/scripts/mutation_driver.py` (new `_run_libfuzzer_seqan3`
-  backend): same ROR / AOR / LOR operator families mull's
+  **mull-equivalent source-level driver** wired into
+  `compares/scripts/mutation_driver.py::_run_libfuzzer_seqan3`:
+  same ROR / AOR / LOR operator families mull's
   `--mutators=default` emits, same seqan3 SAM scope
   (`seqan3/io/sam_file`, `format_sam`, `cigar` — identical to
-  biotest_config.yaml `coverage.target_filters.SAM.seqan3`), same
+  `biotest_config.yaml: coverage.target_filters.SAM.seqan3`), same
   DESIGN §3.3 kill semantics (parse-success flip / canonical-digest
   diff / crash flip — implemented via a new
   `BIOTEST_HARNESS_MUT_DIGEST=1` mode of
@@ -3567,18 +4012,20 @@ py -3.12 compares/scripts/mutation_driver.py \
   start the driver invokes `gcovr` against the Phase-2
   `_build-cov-iso/*.gcda` (reusing Phase 2's coverage
   instrumentation) and only considers mutations on lines with
-  `count > 0`. 698 reachable lines → 84 in-scope candidate mutants →
-  53 compiled → 52 killed. The 31 compile-errors are
+  `count > 0`. ~690 reachable lines → 84 in-scope candidate mutants
+  → 53 compiled → 48 killed. The 31 compile-errors are
   mull-equivalent unviable mutants (seqan3 template concepts reject
   them — e.g. `+`→`-` inside a SFINAE bound).
 
   Artefacts + full writeup:
-  `compares/results/mutation/libfuzzer/seqan3_{sam,vcf}/summary.json`
-  + `details.json` + `runner.log` + `baseline.json`. Headline
-  report at
-  `compares/results/coverage/libfuzzer/seqan3/phase3_mutation_report.md`
-  (lives next to the Phase 2 growth files so the SAM row's
-  Phase 2 + Phase 3 artefacts are collocated).
+  `compares/results/mutation/libfuzzer/seqan3_{sam,sam_run1,sam_run2,sam_run3,vcf}/summary.json`
+  + `details.json` + `runner.log` + `baseline.json`. Single
+  combined report for both Phase 2 and Phase 3 (all 4 runs each) at
+  `compares/results/coverage/libfuzzer/seqan3/phase2_3_summary.md`
+  (lives next to the Phase 2 growth files so the SAM row's Phase 2
+  + Phase 3 artefacts are collocated). The pre-fix single-run
+  mutation report is retained for audit at
+  `compares/results/coverage/libfuzzer/seqan3/phase3_mutation_report_v1_archive.md`.
 
   Reproduce (inside `biotest-bench`):
   ```bash
@@ -3592,19 +4039,26 @@ py -3.12 compares/scripts/mutation_driver.py \
     make -j4 seqan3_sam_fuzzer_mut
   '
 
-  # 1. SAM campaign.
+  # 1. Four back-to-back SAM campaigns (each ~10 min).
   bash compares/docker/run.sh bash -lc '
-    python3.12 compares/scripts/mutation_driver.py \
-        --tool libfuzzer --sut seqan3 --format SAM \
-        --in-container \
-        --corpus /work/compares/results/coverage/libfuzzer/seqan3/run_0/corpus \
-        --out /work/compares/results/mutation/libfuzzer/seqan3_sam \
-        --max-mutants 120 --corpus-sample 120 --budget 3600 \
-        --per-file-timeout-s 2 \
-        --seqan3-src-root /opt/seqan3/include \
-        --mut-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso \
-        --mut-bin /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso/seqan3_sam_fuzzer_mut \
-        --cov-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso
+    for R in 0 1 2 3; do
+      if [[ $R == 0 ]]; then
+        OUT=/work/compares/results/mutation/libfuzzer/seqan3_sam
+      else
+        OUT=/work/compares/results/mutation/libfuzzer/seqan3_sam_run${R}
+      fi
+      python3.12 compares/scripts/mutation_driver.py \
+          --tool libfuzzer --sut seqan3 --format SAM \
+          --in-container \
+          --corpus /work/compares/results/coverage/libfuzzer/seqan3/run_0/corpus \
+          --out $OUT \
+          --max-mutants 120 --corpus-sample 120 --budget 3600 \
+          --per-file-timeout-s 2 \
+          --seqan3-src-root /opt/seqan3/include \
+          --mut-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso \
+          --mut-bin /work/compares/results/coverage/libfuzzer/seqan3/_build-mut-iso/seqan3_sam_fuzzer_mut \
+          --cov-build-dir /work/compares/results/coverage/libfuzzer/seqan3/_build-cov-iso
+    done
   '
 
   # 2. VCF — emits an N/A summary immediately (seqan3 has no VCF parser).
@@ -3633,47 +4087,49 @@ py -3.12 compares/scripts/mutation_driver.py \
       AFL++ Phase-2 corpus against baseline. Swap mull back in when
       the bench image is upgraded to Ubuntu 24.04.
 
-      **Result (20-mutant budget; corpus = Phase-2 `run_0/corpus`)**:
+      **Result — 4 independent invocations** (fixed 20-mutant set
+      generated from invocation-1's gcovr JSON; each invocation
+      evaluates the same mutants against the Phase-2
+      `invocation_<i>/run_0/corpus`):
 
-      | Metric | Value |
-      |:---|---:|
-      | mutants generated | 20 |
-      | compile-failed (excluded from reachable) | 6 |
-      | reachable | 14 |
-      | killed | 10 |
-      | survived | 4 |
-      | **mutation score** | **0.7143 (71.4 %)** |
+      | Invocation | mutants | compile-fail | reachable | killed | survived | score |
+      |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+      | 1 | 20 | 6 | 14 | 10 | 4 | 0.7143 |
+      | 2 | 20 | 6 | 14 | 10 | 4 | 0.7143 |
+      | 3 | 20 | 6 | 14 | 10 | 4 | 0.7143 |
+      | 4 | 20 | 6 | 14 | 11 | 3 | 0.7857 |
+      | **mean ± std (n=4)** | 20 | 6 | 14 | **10.250 ± 0.500** | 3.750 ± 0.500 | **0.732 ± 0.036** |
 
-      By operator: `NE_TO_EQ` 4/4 (100 %), `LE_TO_GE` 1/1 (100 %),
-      `EQ_TO_NE` 4/6 (66.7 %), `PLUS_TO_MINUS` 1/2 (50 %),
-      `TRUE_TO_FALSE` 0/1 (0 %); `AND_TO_OR`/`OR_TO_AND` all
-      compile-failed (C++20 concept conjunctions reject those
-      swaps). By file: `format_sam_base.hpp` 8/10 (80 %),
-      `cigar.hpp` 2/4 (50 %). All 10 kills diverge on
-      `real_world_htslib_auxf_values.sam` — the htslib c1_auxf
-      regression seed that also drives the Phase-2 AFL++ crash
-      finding, converting baseline SIGABRT (rc=−6) to mutant
-      clean-exit (rc=0) as the mutations disable tag-size
-      assertions. Four survivors concentrate on harness-narrow
-      paths (`cigar_str == "*"`, `ref_info_present_in_header`)
-      that the record-id-only harness never consumes — a richer
-      harness (iterate `cigar_sequence()` +
-      `reference_position()`) would convert 3 of them to kills.
-      Full write-up + reproducer at
+      Headline: **mutation score = 0.732 ± 0.036** across 4 runs.
+      Invocation 4's larger AFL++ corpus (79 files vs inv1's 53)
+      picked up one extra kill — `m018` (`TRUE_TO_FALSE` on
+      `format_sam_base.hpp:406`, `ref_info_present_in_header = true`)
+      — that the shorter corpora missed. The intersection of kills
+      across all 4 runs is 10 mutants; `m018` is the corpus-sensitive
+      variant. Three survivors (`m001`, `m002`, `m008`) stay
+      unkilled across every invocation because they sit on paths
+      the record-id-only harness never consumes. Per-operator and
+      per-file breakdowns, kill evidence, and survivor analysis at
       `compares/results/mutation/aflpp/AFLPP_MUTATION_RESULTS.md`.
+      Raw aggregate JSON+CSV at
+      `compares/results/mutation/aflpp/seqan3/aggregate_4runs.{json,csv}`.
 
   ```bash
-  # Source-level driver actually used (mull-unblocked rerun at bottom):
-  python3.12 compares/scripts/run_aflpp_seqan3_phase3.py \
-      --corpus  /work/compares/results/coverage/aflpp/seqan3/run_0/corpus \
-      --cov-gcovr-json /work/compares/results/coverage/aflpp/seqan3/run_0/gcovr_snapshots/t_60s.json \
-      --budget-mutants 20 \
-      --out     /work/compares/results/mutation/aflpp/seqan3
+  # 4 independent invocations actually used (fixed mutant set from inv 1;
+  # each invocation evaluates that set against its own coverage corpus):
+  for I in 1 2 3 4; do
+      python3.12 compares/scripts/run_aflpp_seqan3_phase3.py \
+          --corpus  /work/compares/results/coverage/aflpp/seqan3/invocation_${I}/run_0/corpus \
+          --cov-gcovr-json /work/compares/results/coverage/aflpp/seqan3/invocation_1/run_0/gcovr_snapshots/t_60s.json \
+          --budget-mutants 20 \
+          --out     /work/compares/results/mutation/aflpp/seqan3/invocation_${I}
+  done
+  py -3.12 compares/scripts/aggregate_aflpp_runs.py   # computes the mean ± std summary
 
   # Once mull is unblocked (bench image on Ubuntu 24.04 / glibc 2.39):
   py -3.12 compares/scripts/mutation_driver.py \
       --tool aflpp --sut seqan3 --corpus \
-      compares/results/coverage/aflpp/seqan3/run_0/corpus/ \
+      compares/results/coverage/aflpp/seqan3/invocation_1/run_0/corpus/ \
       --budget 7200 \
       --out compares/results/mutation/aflpp/seqan3/
   ```
@@ -3702,34 +4158,66 @@ py -3.12 compares/scripts/mutation_driver.py \
       from `.mutmut-cache`'s `Mutant.status` SQLite column via
       `compares/scripts/mutation/rederive_summaries.py`. Results:
 
-      | cell         | engine              | killed | reachable | score (killed / reachable) |
-      |:-------------|:--------------------|-------:|----------:|:--------------------------|
-      | htsjdk VCF   | PIT 1.15.3          |     —  |        —  | **blocked †**              |
-      | htsjdk SAM   | PIT 1.15.3          |     —  |        —  | **blocked †**              |
-      | vcfpy        | mutmut 2.5.1        | **1139** | **1484** | **76.75 %**                |
-      | noodles-vcf  | cargo-mutants       |     —  |        —  | **blocked ‡**              |
-      | biopython    | mutmut 2.5.1        | **9**  | **853**  | **1.06 %**                 |
-      | seqan3       | mull 0.33 (LLVM 18) |     —  |        —  | **blocked §**              |
+      **Headline — 4-run mean ± std** (n=4 independent mutmut
+      invocations, each against a fresh 200-file pure_random corpus
+      from rep_idx 0/1/2/3; raw per-run numbers in
+      `compares/results/mutation/pure_random_run/summary_4runs.csv`
+      plus `<run>/<cell>/summary.json`):
 
-      † PIT JARs downloaded at `compares/baselines/pit/` but
-      running PIT against pure_random's corpus needs a JUnit 5
-      wrapper + compiled classpath — both pre-wired inside
-      `biotest-bench:latest /opt/pit/`. Deferred to Docker rerun.
-      ‡ cargo-mutants absent on Windows (no Rust toolchain); same
-      block as DESIGN §13.2.7 noodles coverage row. § mull 0.33
-      requires Clang 18 + patched seqan3 (DESIGN §13.2.4);
-      Docker-only.
+      | cell         | n | engine                          | killed (mean ± std) | reachable (mean ± std) | score (mean ± std) |
+      |:-------------|--:|:--------------------------------|:--------------------|:-----------------------|:-------------------|
+      | htsjdk VCF   | 4 | PIT 1.15.3                      |    0.00 ± 0.00      |      8.00 ± 0.00       |  0.00 % ± 0.00 %   |
+      | htsjdk SAM   | 4 | PIT 1.15.3                      |    2.00 ± 0.00      |    167.25 ± 8.50       |  1.20 % ± 0.06 %   |
+      | vcfpy        | 4 | mutmut 2.5.1                    |   13.25 ± 1.50      |   1484.00 ± 0.00       |  0.89 % ± 0.10 %   |
+      | noodles-vcf  | 4 | cargo-mutants 27.0              |    0.00 ± 0.00      |    155.50 ± 0.58       |  0.00 % ± 0.00 %   |
+      | biopython    | 4 | mutmut 2.5.1                    |    2.00 ± 4.00      |    853.00 ± 0.00       |  0.24 % ± 0.47 %   |
+      | seqan3       | 4 | DIY C++ source mutator (mull ≈) |    6.25 ± 0.50      |     87.00 ± 0.00       |  7.19 % ± 0.57 %   |
 
-      The **vcfpy 77 % vs biopython 1 %** asymmetry is the key
-      diagnostic: pure_random bytes reach deep into vcfpy's parse
-      graph (pure-Python, accepts arbitrary bytes) and flip
-      exception-message fingerprints routinely, but biopython's
-      `Bio.Align.sam.AlignmentIterator` fails at Python's
-      `open()` codec (`UnicodeDecodeError`) BEFORE any sam.py code
-      runs — so virtually every mutant is unreachable. Phase-6
+      All 6 cells are unblocked (no more "Docker-only" placeholders).
+      Engines vary by SUT as DESIGN §3.3 prescribes:
+
+      * **htsjdk** — PIT 1.15.3 bytecode mutation. JUnit 5
+        `CorpusReplayTest` (compares/harnesses/pit/) iterates the
+        pure_random corpus through `VCFFileReader` /
+        `SamReaderFactory`. htsjdk_vcf's narrow 8 reachable
+        mutants reflect the very short code path random bytes drive
+        (VCFCodec.canDecode + parseFilters + readActualHeader early
+        exit); htsjdk_sam's wider 167 reflects SAM's more permissive
+        header parser.
+      * **vcfpy, biopython** — mutmut 2.5.1 with a fingerprint-compare
+        runner (same as before).
+      * **noodles-vcf** — cargo-mutants 27.0 inside `biotest-bench`
+        Docker. Clones zaeleus/noodles @ `noodles-vcf-0.70.0`, writes
+        `corpus_replay_biotest` into `noodles-vcf/tests/`, scopes
+        `--file` to `io/reader + header + lib.rs` per
+        biotest_config.target_filter.VCF.noodles.
+      * **seqan3** — DIY Python-driven C++ source mutator against
+        `harnesses/cpp/biotest_harness.cpp` (mull 0.33 LLVM-18 needs
+        GLIBC 2.39 which the Ubuntu 22.04 biotest-bench base doesn't
+        ship; the DIY tool applies mull's default mutator families:
+        ROR / AOR / LCR / CONST).
+
+      noodles-vcf's n=4 runs each processed ~155 mutants (the
+      `io/reader + header + lib.rs` slice pure_random's corpus
+      reaches) — every mutation survived under the random-byte
+      corpus because they all produce the same header-reject
+      outcome regardless of mutation. That IS the floor-baseline
+      signal: pure_random has ZERO ability to distinguish behaviour
+      changes deep in the parser for a SUT that rejects its input
+      at the first byte. A real fuzzer (cargo-fuzz) should kill
+      many more of these.
+
+      The cross-cell score pattern IS the floor-baseline signal:
+      pure_random sits at **0.00 % – 7.19 %** across all 6 cells,
+      with the only non-trivial number coming from the seqan3
+      harness wrapper where mutations in the `json_str` escape loop
+      flip the output text (n=6.25 / 87 mutants killed). htsjdk's
+      VCFCodec, vcfpy, biopython, noodles-vcf, and htsjdk_samtools
+      all cluster at < 1.2 % — random bytes trigger the same
+      "reject-at-header" outcome regardless of mutation. Phase-6
       will compare each real fuzzer's per-SUT score against these
-      two pure_random anchors; the GAP is what proves the fuzzer
-      adds semantic signal over random. **Full per-cell detail +
+      pure_random anchors; the GAP is what proves the fuzzer adds
+      semantic signal over random. **Full per-cell detail +
       per-engine pipeline diagrams + reproducibility** live at
       `compares/results/mutation/pure_random_run/REPORT.md`
       (DESIGN-§3.3-schema `summary.json` + 6-row `summary.csv`

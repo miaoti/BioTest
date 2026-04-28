@@ -1,0 +1,21 @@
+Source: https://github.com/samtools/htsjdk/pull/1360
+Issue:  https://github.com/samtools/htsjdk/issues/1174
+
+Pre-fix SAMRecord.isValid() (htsjdk 2.19.0):
+
+    if (this.isEmpty() && !this.isSecondaryAlignment()
+            && !this.isSupplementaryAlignment()) {
+        boolean hasFZ = this.getAttribute("FZ") != null;
+        boolean hasCS = this.getAttribute("CS") != null;
+        boolean hasCQ = this.getAttribute("CQ") != null;
+        if (!hasFZ && !hasCS && !hasCQ) {
+            ret.add(new SAMValidationError(
+                SAMValidationError.Type.EMPTY_READ,
+                "Zero-length read without FZ, CS or CQ tag"));
+        }
+    }
+
+Under default STRICT stringency, SAMLineParser routes the validation
+error through reportErrorParsingLine() which throws SAMFormatException.
+
+Post-fix (2.20.0) wraps the entire block in /* ... */ — never executed.

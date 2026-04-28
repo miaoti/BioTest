@@ -389,6 +389,7 @@ def _run_mutmut_cell(
     src_env_var: str,
     mutate_dir_name: str,
     include_files: tuple[str, ...] | None = None,
+    corpus_sample: int = 200,
 ) -> dict:
     """Shared mutmut cell for vcfpy / biopython.
 
@@ -423,7 +424,7 @@ def _run_mutmut_cell(
         src_env_var: str(src_dst.resolve()),
         "MUTMUT_CORPUS_DIR": str(corpus_dir.resolve()),
         "MUTMUT_BASELINE_FILE": str(baseline_file.resolve()),
-        "MUTMUT_CORPUS_SAMPLE": "200",
+        "MUTMUT_CORPUS_SAMPLE": str(corpus_sample),
         "MUTMUT_CORPUS_TIMEOUT_S": "2.0",
         "PYTHONUNBUFFERED": "1",
     })
@@ -696,7 +697,214 @@ def _summarise_mutmut_output(results_txt: Path, log_file: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Blocked-cell handler (htsjdk / noodles / seqan3 on Windows host)
+# PIT (htsjdk) — Java bytecode mutation via pitest 1.15.3
+# ---------------------------------------------------------------------------
+#
+# Runs PIT against htsjdk classes using the CorpusReplayTest JUnit 5 test
+# that iterates every file in `biotest.corpus` through VCFFileReader or
+# SamReaderFactory. The test swallows exceptions by design — PIT uses
+# JaCoCo-style coverage + assertion reachability to infer kill/survive.
+#
+# Mutation scope matches DESIGN §3.3 + biotest_config target_filters:
+#   VCF → htsjdk.variant.vcf.* + htsjdk.variant.variantcontext.*
+#   SAM → htsjdk.samtools.*
+# Exclusions (JEXL filter-expression engine, BCF2 binary codec) are
+# handled by PIT's --excludedClasses flag so the denominator matches the
+# mutmut vcfpy row's "BioTest-exercised only" principle.
+
+PIT_DIR = REPO_ROOT / "compares" / "baselines" / "pit"
+PIT_JARS = [
+    PIT_DIR / "pitest-command-line-1.15.3.jar",
+    PIT_DIR / "pitest-1.15.3.jar",
+    PIT_DIR / "pitest-entry-1.15.3.jar",
+    PIT_DIR / "pitest-junit5-plugin-1.2.1.jar",
+    PIT_DIR / "commons-text-1.10.0.jar",
+    PIT_DIR / "commons-lang3-3.14.0.jar",
+]
+JUNIT_JAR = (
+    REPO_ROOT / "compares" / "baselines" / "junit"
+    / "junit-platform-console-standalone-1.10.1.jar"
+)
+HTSJDK_FATJAR = (
+    REPO_ROOT / "harnesses" / "java" / "build" / "libs"
+    / "biotest-harness-all.jar"
+)
+PIT_TEST_CLASSES_DIR = (
+    REPO_ROOT / "compares" / "harnesses" / "pit" / "classes"
+)
+PIT_HTSJDK_CLASSES_DIR = (
+    REPO_ROOT / "compares" / "harnesses" / "pit" / "htsjdk-classes"
+)
+PIT_TEST_SRC_DIR = REPO_ROOT / "compares" / "harnesses" / "pit"
+
+PIT_FORMAT_CONFIG: dict[str, tuple[str, str]] = {
+    # (targetClasses, targetTests method)
+    "VCF": (
+        "htsjdk.variant.vcf.*,htsjdk.variant.variantcontext.*",
+        "CorpusReplayTest#replayVcfCorpus",
+    ),
+    "SAM": (
+        "htsjdk.samtools.*",
+        "CorpusReplayTest#replaySamCorpus",
+    ),
+}
+# JEXL and BCF2 are explicitly out of scope (§3.3) — mutants there would
+# always survive against a pure-random VCF/SAM corpus. The NCBI SRA /
+# NGS classes are also excluded: htsjdk bundles thin wrappers around
+# `ngs/Alignment` which we don't redistribute, so PIT's bytecode
+# analyzer trips on ClassNotFoundException.
+PIT_EXCLUDED_CLASSES = (
+    "*JEXL*,*Jexl*,"
+    "htsjdk.variant.bcf2.*,"
+    "htsjdk.variant.vcf.VCF*Encoder,"
+    "htsjdk.samtools.sra.*,"
+    "htsjdk.samtools.cram.*,"
+    "htsjdk.samtools.SRA*"
+)
+
+
+def _ensure_pit_htsjdk_classes() -> None:
+    """Extract htsjdk/*.class from the fatjar to a flat directory so PIT's
+    coverage analyzer (which can't descend into nested jars) sees them.
+    Idempotent — skips if the marker class is already on disk."""
+    marker = PIT_HTSJDK_CLASSES_DIR / "htsjdk" / "variant" / "vcf" / "VCFCodec.class"
+    if marker.exists():
+        return
+    PIT_HTSJDK_CLASSES_DIR.mkdir(parents=True, exist_ok=True)
+    import zipfile
+    with zipfile.ZipFile(str(HTSJDK_FATJAR)) as zf:
+        for name in zf.namelist():
+            if name.startswith("htsjdk/") and name.endswith(".class"):
+                target = PIT_HTSJDK_CLASSES_DIR / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(zf.read(name))
+
+
+def _run_pit_cell(
+    fmt: str,
+    corpus_dir: Path,
+    budget_s: int,
+    out_dir: Path,
+) -> dict:
+    """Invoke PIT against htsjdk for the given format. Returns a summary
+    dict shaped like the mutmut cells: `{killed, survived, timeout,
+    suspicious, not_checked, reachable, score, ...}`."""
+    import xml.etree.ElementTree as _ET
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_dir = out_dir / "pit_report"
+    if report_dir.exists():
+        shutil.rmtree(report_dir, ignore_errors=True)
+
+    target_classes, target_tests = PIT_FORMAT_CONFIG[fmt]
+    # Classpath for PIT main + test + htsjdk + deps.
+    cp_entries = [
+        *[str(j.resolve()) for j in PIT_JARS],
+        str(PIT_TEST_CLASSES_DIR.resolve()),
+        str(PIT_HTSJDK_CLASSES_DIR.resolve()),
+        str(JUNIT_JAR.resolve()),
+    ]
+    cp = os.pathsep.join(cp_entries)
+
+    cmd = [
+        "java",
+        f"-Dbiotest.corpus={corpus_dir.resolve()}",
+        "-cp", cp,
+        "org.pitest.mutationtest.commandline.MutationCoverageReport",
+        "--reportDir", str(report_dir.resolve()),
+        "--targetClasses", target_classes,
+        "--excludedClasses", PIT_EXCLUDED_CLASSES,
+        "--targetTests", target_tests.split("#")[0],
+        "--sourceDirs", str(PIT_TEST_SRC_DIR.resolve()),
+        "--outputFormats", "XML",
+        "--threads", "1",
+        "--mutators", "DEFAULTS",
+        "--timeoutConst", "8000",
+        "--timeoutFactor", "1.5",
+        "--verbose", "false",
+    ]
+    run_log = out_dir / "pit_run.log"
+    start = time.time()
+    with run_log.open("wb") as fh:
+        try:
+            rc = subprocess.run(
+                cmd, stdout=fh, stderr=fh,
+                timeout=budget_s, check=False,
+            ).returncode
+        except subprocess.TimeoutExpired:
+            rc = -1
+    dur = time.time() - start
+
+    mutations_xml = report_dir / "mutations.xml"
+    killed = survived = timeout = suspicious = not_checked = 0
+    if mutations_xml.exists():
+        try:
+            tree = _ET.parse(str(mutations_xml))
+            for m in tree.getroot().findall("mutation"):
+                status = (m.get("status") or "").upper()
+                if status == "KILLED":
+                    killed += 1
+                elif status == "SURVIVED":
+                    survived += 1
+                elif status == "TIMED_OUT":
+                    timeout += 1
+                elif status == "RUN_ERROR":
+                    suspicious += 1
+                elif status == "NO_COVERAGE":
+                    # Matches mutmut's "not_checked / unreachable" bucket.
+                    not_checked += 1
+                elif status == "NON_VIABLE":
+                    # Mutation itself was invalid — exclude from
+                    # denominator.
+                    not_checked += 1
+                else:
+                    not_checked += 1
+        except Exception as e:  # noqa: BLE001
+            logger.warning("parse PIT XML failed: %s", e)
+
+    reachable = killed + survived + timeout + suspicious
+    total = reachable + not_checked
+    score = (killed / reachable) if reachable else 0.0
+    payload = {
+        "tool": "pure_random",
+        "sut": f"htsjdk_{fmt.lower()}",
+        "phase": "mutation",
+        "engine": "PIT 1.15.3",
+        "time_budget_s": budget_s,
+        "killed": killed,
+        "survived": survived,
+        "timeout": timeout,
+        "suspicious": suspicious,
+        "skipped": 0,
+        "no_tests": 0,
+        "not_checked": not_checked,
+        "reachable": reachable,
+        "mutant_count": total,
+        "score": round(score, 4),
+        "score_display": (
+            f"{score * 100:.2f}%" if reachable else "n/a (reachable=0)"
+        ),
+        "pit_duration_s": round(dur, 2),
+        "pit_exit_code": rc,
+        "corpus_dir": str(corpus_dir.resolve()),
+        "target_classes": target_classes,
+        "target_tests": target_tests,
+        "mutations_xml": str(mutations_xml.resolve()),
+    }
+    (out_dir / "summary.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8",
+    )
+    logger.info(
+        "[htsjdk_%s] PIT rc=%s dur=%.0fs killed=%d survived=%d "
+        "reachable=%d score=%s",
+        fmt.lower(), rc, dur, killed, survived, reachable,
+        payload["score_display"],
+    )
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# Blocked-cell handler (noodles / seqan3 — still blocked if tools absent)
 # ---------------------------------------------------------------------------
 
 def _run_blocked_cell(
@@ -747,8 +955,17 @@ def _run_blocked_cell(
 # Matrix driver
 # ---------------------------------------------------------------------------
 
-def run_cell(sut: str, budget_s: int, out_root: Path) -> dict:
-    """Dispatch to the per-SUT engine. Returns the per-cell summary dict."""
+def run_cell(
+    sut: str, budget_s: int, out_root: Path,
+    corpus_override: Path | None = None,
+    corpus_sample: int = 200,
+) -> dict:
+    """Dispatch to the per-SUT engine. Returns the per-cell summary dict.
+
+    `corpus_override` lets callers supply a caller-provided corpus
+    directory instead of auto-unioning the 3 Phase-2 reps. Used by
+    the 4-run aggregation (each run wants a distinct fresh corpus
+    so mutmut results vary across runs)."""
     out_dir = out_root / sut
     corpus_source_cell = {
         "htsjdk_vcf": "htsjdk_vcf",
@@ -758,11 +975,19 @@ def run_cell(sut: str, budget_s: int, out_root: Path) -> dict:
         "biopython": "biopython",
         "seqan3": "seqan3",
     }[sut]
-    try:
-        corpus_dir = _union_corpus(corpus_source_cell, out_dir)
-    except FileNotFoundError as e:
-        logger.warning("%s — %s", sut, e)
-        corpus_dir = None
+    if corpus_override is not None:
+        if not corpus_override.is_dir():
+            raise FileNotFoundError(
+                f"--corpus-override path not a directory: {corpus_override}"
+            )
+        corpus_dir = corpus_override
+        logger.info("[%s] using corpus override: %s", sut, corpus_dir)
+    else:
+        try:
+            corpus_dir = _union_corpus(corpus_source_cell, out_dir)
+        except FileNotFoundError as e:
+            logger.warning("%s — %s", sut, e)
+            corpus_dir = None
 
     if sut == "vcfpy":
         return _run_mutmut_cell(
@@ -779,6 +1004,7 @@ def run_cell(sut: str, budget_s: int, out_root: Path) -> dict:
             mutate_dir_name="vcfpy",
             # biotest_config target_filter: only what BioTest drives.
             include_files=VCFPY_IN_SCOPE_FILES,
+            corpus_sample=corpus_sample,
         )
     if sut == "biopython":
         _ensure_biopython_runner()
@@ -794,27 +1020,23 @@ def run_cell(sut: str, budget_s: int, out_root: Path) -> dict:
             # distinct so the biopython runner's importlib path is
             # unambiguous.
             mutate_dir_name="biopython_sam",
+            corpus_sample=corpus_sample,
         )
     if sut in ("htsjdk_vcf", "htsjdk_sam"):
         fmt = "VCF" if sut == "htsjdk_vcf" else "SAM"
-        reason = (
-            "PIT (pitest 1.15.3 JARs downloaded to compares/baselines/pit/) "
-            "requires a JUnit test harness that replays the pure_random "
-            "corpus + a Maven-managed classpath. Both are pre-wired inside "
-            "biotest-bench Docker image (/opt/pit/). Running the in-session "
-            "Windows host would need hand-written JUnit 5 + compile step; "
-            "deferred."
-        )
-        promote = (
-            f"# Inside biotest-bench container:\n"
-            f"python3.12 compares/scripts/mutation_driver.py "
-            f"--tool pure_random --sut htsjdk --format {fmt} "
-            f"--corpus compares/results/mutation/pure_random/{sut}/union_corpus "
-            f"--budget 7200 "
-            f"--out compares/results/mutation/pure_random/{sut}/"
-        )
-        return _run_blocked_cell(sut, "PIT (pitest 1.15.3)", reason,
-                                 promote, corpus_dir, budget_s, out_dir)
+        # Unblocked 2026-04-22 — PIT 1.15.3 runs natively on the
+        # Windows host now that the JUnit 5 wrapper + compiled
+        # classpath are checked in under compares/harnesses/pit/.
+        if corpus_dir is None or not corpus_dir.is_dir():
+            return _run_blocked_cell(
+                sut, "PIT 1.15.3",
+                f"corpus directory missing: {corpus_dir}",
+                "", corpus_dir, budget_s, out_dir,
+            )
+        # PIT runs on classfiles, not nested-jar entries — make sure the
+        # extracted htsjdk class tree exists (idempotent).
+        _ensure_pit_htsjdk_classes()
+        return _run_pit_cell(fmt, corpus_dir, budget_s, out_dir)
     if sut == "noodles":
         reason = (
             "cargo-mutants (Rust) requires the Rust toolchain (cargo + "
@@ -884,6 +1106,17 @@ def _cli() -> int:
     p.add_argument("--out-root", type=Path, default=None,
                    help="override the matrix output root "
                         "(default: compares/results/mutation/pure_random/)")
+    p.add_argument("--corpus-override", type=Path, default=None,
+                   help="supply a caller-provided corpus directory instead "
+                        "of auto-unioning the Phase-2 reps. Used by the "
+                        "4-run aggregation where each run wants a fresh "
+                        "corpus for variance across mutmut passes.")
+    p.add_argument("--corpus-sample", type=int, default=200,
+                   help="max files per mutant replay (smaller → faster "
+                        "mutmut run with slightly noisier score). "
+                        "Default 200 matches the Phase-3 first-run "
+                        "baseline; 50 is a reasonable fast-regime for "
+                        "re-runs in the 4-run aggregation.")
     p.add_argument("--verbose", action="store_true")
     args = p.parse_args()
 
@@ -903,7 +1136,11 @@ def _cli() -> int:
         out_root = (args.out.parent if args.out is not None
                     else matrix_out_root)
         try:
-            stats = run_cell(sut, args.budget, out_root)
+            stats = run_cell(
+                sut, args.budget, out_root,
+                corpus_override=args.corpus_override,
+                corpus_sample=args.corpus_sample,
+            )
         except Exception as e:  # noqa: BLE001
             logger.exception("cell %s failed", sut)
             stats = {

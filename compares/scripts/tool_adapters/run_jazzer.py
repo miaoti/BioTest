@@ -54,6 +54,8 @@ def run(
     corpus_dir, crashes_dir, log_file = prepare_out_dir(out_dir)
     seed_copy(seed_corpus, corpus_dir)
     target_class, instrument_globs = _target_class(format_hint)
+    reproducers_dir = out_dir / "reproducers"
+    reproducers_dir.mkdir(exist_ok=True)
 
     started = time.time()
     cmd = [
@@ -70,8 +72,11 @@ def run(
     # the libFuzzer runtime do the same at the runtime level. Belt-and-
     # braces so one crash doesn't burn the rest of the budget (Klees
     # CCS'18 §3.1; PHASE4_BASELINE_FIXES.md §0.2).
+    # --reproducer_path pins Java `Crash_<hash>.java` stubs into the run
+    # output; without it Jazzer dumps them into cwd (the repo root).
     cmd.extend([
         "--keep_going=1000",
+        f"--reproducer_path={reproducers_dir}",
         f"-artifact_prefix={crashes_dir}{os.sep}",
         f"-max_total_time={time_budget_s}",
         "-fork=1",

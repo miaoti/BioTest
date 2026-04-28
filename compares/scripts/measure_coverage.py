@@ -188,6 +188,74 @@ def _measure_coveragepy_json(json_path: Path, filter_rules_text: list[str]) -> l
     return buckets
 
 
+def _normalize_cargo_path(filename: str) -> str:
+    """Fold Cargo's registry-cache prefix + ``<crate>-<version>/`` suffix
+    so a filter rule like ``noodles-vcf/src/io/reader`` matches the real
+    registry path
+    ``/root/.cargo/registry/src/index.crates.io-<hash>/noodles-vcf-0.57.0/src/io/reader.rs``.
+
+    Example transforms:
+      ``/root/.cargo/registry/src/index.crates.io-abc/noodles-vcf-0.57.0/src/io/reader.rs``
+         -> ``noodles-vcf/src/io/reader.rs``
+      ``/work/harnesses/rust/noodles_harness/src/main.rs``   -> unchanged
+    """
+    import re
+    f = filename.replace("\\", "/")
+    m = re.search(r"index\.crates\.io-[^/]+/(.+)$", f)
+    if m:
+        f = m.group(1)
+    # Strip the semver suffix from the first path segment of a registry
+    # entry: crate-1.2.3 / crate-1.2.3-pre.4 -> crate
+    f = re.sub(
+        r"^([A-Za-z0-9_-]+?)-\d+\.\d+(?:\.\d+)?(?:-[A-Za-z0-9.+]+)?/",
+        r"\1/",
+        f,
+    )
+    return f
+
+
+def _measure_cargo_llvm_cov_json(
+    json_path: Path, filter_rules_text: list[str],
+) -> list[BucketResult]:
+    """Parse a ``cargo llvm-cov report --json`` / ``llvm-cov export`` JSON (Rust SUTs).
+
+    Shape::
+      {"data": [{"files": [{"filename": "path/to/file.rs",
+                             "summary": {"lines": {"covered": N, "count": M},
+                                          "branches": {...}}}]}]}
+
+    Filter rules are applied as **path substrings** against the
+    Cargo-normalized filename (registry prefix + version suffix
+    stripped), so a rule like ``noodles-vcf/src/io/reader`` matches
+    whatever version of the crate Cargo happens to have cached.
+    Include / exclude name patterns in the ``::`` suffix still apply
+    against the basename.
+    """
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    runs = data.get("data", [])
+    if not isinstance(runs, list):
+        return []
+    rules = parse_filter_rules(filter_rules_text)
+    import os
+    buckets: list[BucketResult] = []
+    for pkg, incl, excl in rules:
+        cov = total = 0
+        for run_block in runs:
+            for entry in run_block.get("files", []):
+                fpath = entry.get("filename", "")
+                fpath_norm = _normalize_cargo_path(fpath)
+                if pkg and pkg not in fpath_norm:
+                    continue
+                basename = os.path.basename(fpath)
+                if not filter_file_matches(basename, incl, excl):
+                    continue
+                summary = entry.get("summary", {}).get("lines", {})
+                cov += int(summary.get("covered", 0))
+                total += int(summary.get("count", 0))
+        buckets.append(BucketResult(pkg, cov, total))
+    return buckets
+
+
 def _measure_gcovr_json(json_path: Path, filter_rules_text: list[str]) -> list[BucketResult]:
     """Parse a gcovr JSON (C/C++ SUTs).
 
@@ -248,13 +316,20 @@ def _dispatch_reader(
                 f"metric={metric!r} is only supported for JaCoCo XML today; "
                 f"{report_path.suffix} reports don't carry branch summary data."
             )
+        # cargo-llvm-cov nests under `data: [{ files: [...] }]` with
+        # no top-level `files` key — check first before falling through
+        # to coverage.py (dict) / gcovr (list).
+        runs = data.get("data")
+        if isinstance(runs, list) and runs and isinstance(runs[0], dict) and "files" in runs[0]:
+            return _measure_cargo_llvm_cov_json(report_path, filter_rules_text)
         files = data.get("files")
         if isinstance(files, dict):
             return _measure_coveragepy_json(report_path, filter_rules_text)
         if isinstance(files, list):
             return _measure_gcovr_json(report_path, filter_rules_text)
         raise RuntimeError(
-            f"Unknown JSON shape in {report_path}: `files` is neither dict nor list"
+            f"Unknown JSON shape in {report_path}: `files` is neither dict nor list, "
+            f"and no `data[*].files` cargo-llvm-cov block present"
         )
     raise RuntimeError(
         f"Unknown report format: {report_path} (expected .xml / .json)"

@@ -73,7 +73,9 @@ def main() -> int:
     p.add_argument("--mut-out", type=Path, required=True,
                    help="mutation cell output dir (contains mutants.jsonl + summary.json)")
     p.add_argument("--cov-dir", type=Path, required=True,
-                   help="Phase-2 cell dir (contains run_0/.coverage)")
+                   help="Phase-2 cell dir (contains run_<N>/.coverage)")
+    p.add_argument("--cov-rep", type=int, default=0,
+                   help="which Phase-2 rep's .coverage to use (default 0)")
     p.add_argument("--module-substr", default="Bio/Align/sam",
                    help="source-file substring filter for line extraction")
     p.add_argument("--docker-image", default="biotest-bench:latest")
@@ -85,7 +87,7 @@ def main() -> int:
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
 
-    cov_file = args.cov_dir / "run_0" / ".coverage"
+    cov_file = args.cov_dir / f"run_{args.cov_rep}" / ".coverage"
     if not cov_file.exists():
         logger.error("coverage file missing: %s", cov_file)
         return 2

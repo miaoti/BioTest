@@ -2,7 +2,6 @@
   "verified": [
     "htsjdk-1554",
     "htsjdk-1637",
-    "biopython-4825",
     "seqan3-2418",
     "seqan3-3081",
     "seqan3-3269",
@@ -16,16 +15,11 @@
     "htsjdk-1403",
     "htsjdk-1418",
     "htsjdk-1544",
-    "htsjdk-1561",
-    "htsjdk-1538",
-    "htsjdk-1489",
     "vcfpy-176",
     "vcfpy-171",
     "vcfpy-146",
     "vcfpy-145",
-    "vcfpy-gtone-0.13",
     "vcfpy-127",
-    "vcfpy-nocall-0.8",
     "noodles-300",
     "noodles-339",
     "noodles-268",
@@ -34,7 +28,10 @@
     "noodles-259",
     "noodles-241",
     "noodles-inforay-0.64",
-    "noodles-ob1-0.23"
+    "noodles-ob1-0.23",
+    "htsjdk-1238",
+    "htsjdk-1360",
+    "htsjdk-1410"
   ],
   "dropped": [
     {
@@ -124,22 +121,52 @@
     {
       "id": "pysam-1314",
       "reason": "primary_drop_2026-04-20",
-      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN §2.6, §9 Risk 4). Trigger folder kept on disk for historical reference."
+      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN \u00a72.6, \u00a79 Risk 4). Trigger folder kept on disk for historical reference."
     },
     {
       "id": "pysam-1308",
       "reason": "primary_drop_2026-04-20",
-      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN §2.6, §9 Risk 4). Trigger folder kept on disk for historical reference."
+      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN \u00a72.6, \u00a79 Risk 4). Trigger folder kept on disk for historical reference."
     },
     {
       "id": "pysam-1214",
       "reason": "primary_drop_2026-04-20",
-      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN §2.6, §9 Risk 4). Trigger folder kept on disk for historical reference."
+      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN \u00a72.6, \u00a79 Risk 4). Trigger folder kept on disk for historical reference."
     },
     {
       "id": "pysam-939",
       "reason": "primary_drop_2026-04-20",
-      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN §2.6, §9 Risk 4). Trigger folder kept on disk for historical reference."
+      "note": "pysam removed from primary SUT set; retained as voter in the differential oracle (DESIGN \u00a72.6, \u00a79 Risk 4). Trigger folder kept on disk for historical reference."
+    },
+    {
+      "id": "biopython-4825",
+      "reason": "not_file_level: pure copy.deepcopy() perf regression; correctness side-effect speculative. Cannot be triggered by feeding a SAM file.",
+      "dropped_on": "2026-04-21"
+    },
+    {
+      "id": "htsjdk-1538",
+      "reason": "not_file_level: cached mAlignmentBlocks bug only fires after API mutation (setCigar). Differential cannot reach via parse(file).",
+      "dropped_on": "2026-04-21"
+    },
+    {
+      "id": "htsjdk-1561",
+      "reason": "wrong_anchor: empirically pre-fix 2.24.1 and post-fix 3.0.0 both accept the same trigger; validation only adds to getValidationErrors() and is never thrown. See research log 2026-04-21.",
+      "dropped_on": "2026-04-21"
+    },
+    {
+      "id": "htsjdk-1489",
+      "reason": "not_file_level: locus accumulator under-counts only when downstream code calls SamLocusIterator/AbstractLocusIterator after parse. Parse path is unaffected.",
+      "dropped_on": "2026-04-21"
+    },
+    {
+      "id": "vcfpy-gtone-0.13",
+      "reason": "C2_empirically_violated_2026-04-21: sweep_logs/vcfpy-gtone-0.13.json proves versions 0.11.0\u20130.13.5 ALL silence the captured PoV (silenced=true uniformly; new_anchor=null). Same failure mode as htsjdk-1561 \u2014 manifest's pre/post pair does not produce different observable output on the captured PoV. Either the haploid-GT bug doesn't manifest in vcfpy 0.12.x at all, or the PoV doesn't exercise the bug-specific code path.",
+      "dropped_on": "2026-04-21"
+    },
+    {
+      "id": "vcfpy-nocall-0.8",
+      "reason": "C4_empirically_violated_2026-04-21: PyPI simple index (https://pypi.org/simple/vcfpy/) shows the released versions jump 0.7.0 \u2192 0.9.0; vcfpy 0.8.1 was never published. The manifest's pre_fix anchor pins a non-existent version. Recovery would require a git-checkout fallback against a 0.8.x source SHA, which we don't have.",
+      "dropped_on": "2026-04-21"
     }
   ]
 }

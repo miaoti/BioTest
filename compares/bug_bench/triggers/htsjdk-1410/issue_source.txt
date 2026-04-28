@@ -1,0 +1,19 @@
+Source: https://github.com/samtools/htsjdk/pull/1410
+
+Pre-fix SAMRecord.java (htsjdk 2.20.2):
+
+    public static final int MAX_INSERT_SIZE = 1 << 29;
+
+    if (this.getInferredInsertSize() > MAX_INSERT_SIZE
+            || this.getInferredInsertSize() < -MAX_INSERT_SIZE) {
+        ret.add(new SAMValidationError(
+            SAMValidationError.Type.INVALID_INSERT_SIZE,
+            "Insert size out of range"));
+    }
+
+Under default STRICT stringency, SAMLineParser routes the validation
+error through reportErrorParsingLine() which throws SAMFormatException.
+
+Post-fix (2.20.3) one-line change:
+
+    public static final int MAX_INSERT_SIZE = Integer.MAX_VALUE;

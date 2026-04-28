@@ -1,0 +1,50 @@
+[randoop] bug=htsjdk-1360 targets=['htsjdk.samtools.SAMRecord'] pre=2.19.0 post=2.20.0 budget=600s
+[randoop] generate: java --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.desktop/java.awt=ALL-UNNAMED -classpath C:\Users\miaot\Github\BioTest\compares\baselines\randoop\source\randoop-all-4.3.3.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\fatjar\htsjdk-2.20.0.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\commons-compress-1.26.0.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\commons-jexl-2.1.1.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\commons-logging-1.3.0.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\json-20231013.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\nashorn-core-15.4.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\ngs-java-2.9.0.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\snappy-java-1.1.10.5.jar;C:\Users\miaot\Github\BioTest\compares\baselines\evosuite\deps\xz-1.9.jar randoop.main.Main gentests --time-limit=420 --output-limit=500 --junit-output-dir=C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\randoop-tests --junit-package-name=randoop.bench --flaky-test-behavior=OUTPUT --no-error-revealing-tests=false --no-regression-tests=false --testclass=htsjdk.samtools.SAMRecord
+Randoop for Java version "4.3.3, local changes, branch master, commit 8f08f5b, 2024-05-02".
+
+Will try to generate tests for 1 classes.
+PUBLIC MEMBERS=151
+Explorer = ForwardGenerator(steps: 0, null steps: 0, num_sequences_generated: 0;
+    allSequences: 0, regresson seqs: 0, error seqs: 0=0=0, invalid seqs: 0, subsumed_sequences: 0, num_failed_output_test: 0;
+    sideEffectFreeMethods: 1113, runtimePrimitivesSeen: 38)
+
+Progress update: steps=1, test inputs generated=0, failing inputs=0      (2026-04-26T19:24:44.316695300Z     15.5M used)
+Progress update: steps=662, test inputs generated=627, failing inputs=0      (2026-04-26T19:24:54.147961300Z     98.7M used)
+Normal method executions: 50463
+Exceptional method executions: 135
+
+Average method execution time (normal termination):      0.00223
+Average method execution time (exceptional termination): 0.208
+Approximate memory usage 98.7M
+Explorer = ForwardGenerator(steps: 662, null steps: 35, num_sequences_generated: 627;
+    allSequences: 627, regresson seqs: 500, error seqs: 0=0=0, invalid seqs: 0, subsumed_sequences: 0, num_failed_output_test: 127;
+    sideEffectFreeMethods: 1113, runtimePrimitivesSeen: 53)
+
+No error-revealing tests to output.
+
+About to look for failing assertions in 268 regression sequences.
+
+Regression test output:
+Regression test count: 268
+Writing regression JUnit tests...
+Created file C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\randoop-tests\randoop\bench\RegressionTest0.java
+Created file C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\randoop-tests\randoop\bench\RegressionTest.java
+Wrote regression JUnit tests.
+About to look for flaky methods.
+
+Invalid tests generated: 0
+
+Uncompilable sequences generated (count: 118).
+Please report uncompilable sequences at https://github.com/randoop/randoop/issues ,
+providing the information requested at https://randoop.github.io/randoop/manual/index.html#bug-reporting .
+[randoop] generated 2 java source(s)
+[randoop] compile (2 srcs) -> C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\classes_post
+Note: C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\randoop-tests\randoop\bench\RegressionTest0.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+[randoop] compile (2 srcs) -> C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\classes_pre
+Note: C:\Users\miaot\Github\BioTest\compares\baselines\randoop\results\htsjdk-1360\work\randoop-tests\randoop\bench\RegressionTest0.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+[randoop] 1 test class(es) generated
+[randoop] junit randoop.bench.RegressionTest0 rc=0 pass=True | Time: 0.057 //  // OK (268 tests)
+[randoop] junit randoop.bench.RegressionTest0 rc=0 pass=True | Time: 0.058 //  // OK (268 tests)
+[randoop] detected=0/1 (pre_pass=1 post_pass=1)

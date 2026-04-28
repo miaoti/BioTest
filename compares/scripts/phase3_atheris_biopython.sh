@@ -25,9 +25,11 @@ MAX_MUTANTS="${MAX_MUTANTS:-0}"
 DOCKER_IMAGE="${DOCKER_IMAGE:-biotest-bench:latest}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-CORPUS_DIR="${CORPUS_DIR:-${REPO_ROOT}/compares/results/coverage/atheris/biopython/run_0/corpus}"
-OUT_DIR="${REPO_ROOT}/compares/results/mutation/atheris/biopython"
-LOG_FILE="${OUT_DIR}/phase3_atheris_biopython.log"
+# TOOL env var lets us reuse this driver for biotest as well as atheris.
+TOOL="${TOOL:-atheris}"
+CORPUS_DIR="${CORPUS_DIR:-${REPO_ROOT}/compares/results/coverage/${TOOL}/biopython/run_0/corpus}"
+OUT_DIR="${OUT_DIR:-${REPO_ROOT}/compares/results/mutation/${TOOL}/biopython}"
+LOG_FILE="${OUT_DIR}/phase3_${TOOL}_biopython.log"
 mkdir -p "${OUT_DIR}"
 
 # Container-visible paths — REPO_ROOT is mounted as /work.
@@ -40,6 +42,17 @@ REL_CORPUS="${CORPUS_DIR#${REPO_ROOT}/}"
   echo "[$(date -Is)] corpus=${CORPUS_DIR}"
   echo "[$(date -Is)] out=${OUT_DIR}"
 } | tee -a "${LOG_FILE}"
+
+# NOTE: coverage-guided corpus selection was evaluated for biopython
+# (r19, 2026-04-23) and measured NEUTRAL — it picks 72 curated primary
+# seeds + 8 coverage-diverse struct files, but biopython's strict
+# AlignmentIterator sends struct files into error-handling paths whose
+# lines inflate reachable without producing kills (132/523 selected vs
+# run-1's 130/202 primary-only). For biopython the optimal corpus is
+# the curated primary set alone; coverage-selection does not help.
+# Integration is therefore limited to vcfpy (see mutation_driver.py
+# _coverage_select_if_supported for vcfpy — coverage.py signal there
+# genuinely maps to kills).
 
 MSYS_NO_PATHCONV=1 docker run --rm \
     -v "${REPO_ROOT}:/work" \

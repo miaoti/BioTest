@@ -2,6 +2,18 @@
   "results": [
     {
       "tool": "jazzer",
+      "bug_id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 3653.486765384674,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1410/original.sam",
+      "signal": "differential_disagreement",
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": ""
+    },
+    {
+      "tool": "jazzer",
       "bug_id": "htsjdk-1544",
       "sut": "htsjdk",
       "detected": true,
@@ -14,24 +26,24 @@
     },
     {
       "tool": "jazzer",
-      "bug_id": "htsjdk-1561",
-      "sut": "htsjdk",
-      "detected": true,
-      "ttfb_s": 3616.0222047567368,
-      "trigger_input": "/tmp/bug_bench_chat2_7200/jazzer/htsjdk-1561/crashes/crash-8b11f8b868851b8837b2658656f070d9cbb3a1b0",
-      "signal": "differential_disagreement",
-      "confirmed_fix_silences_signal": false,
-      "adapter_exit_code": -1,
-      "notes": ""
-    },
-    {
-      "tool": "jazzer",
       "bug_id": "htsjdk-1418",
       "sut": "htsjdk",
       "detected": true,
       "ttfb_s": 3600.917677998543,
       "trigger_input": "/tmp/bug_bench_chat1/jazzer/htsjdk-1418/crashes/crash-d40f0db44d0197bae5039947e0e3b0afb677ba87",
       "signal": "uncaught_exception",
+      "confirmed_fix_silences_signal": false,
+      "adapter_exit_code": 0,
+      "notes": ""
+    },
+    {
+      "tool": "jazzer",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 3651.4576756954193,
+      "trigger_input": "/tmp/bug_bench_chat2_7200/jazzer/htsjdk-1360/crashes/crash-000ea02d666d0955773d14d53e9dd4d7ca607277",
+      "signal": "differential_disagreement",
       "confirmed_fix_silences_signal": false,
       "adapter_exit_code": 0,
       "notes": ""
@@ -58,18 +70,6 @@
       "signal": "differential_disagreement",
       "confirmed_fix_silences_signal": false,
       "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "jazzer",
-      "bug_id": "htsjdk-1538",
-      "sut": "htsjdk",
-      "detected": true,
-      "ttfb_s": 3618.2932550907135,
-      "trigger_input": "/tmp/bug_bench_chat2_7200/jazzer/htsjdk-1538/crashes/crash-1d3f409090b073686f5cfa5bedbaeb9ddf5296f4",
-      "signal": "differential_disagreement",
-      "confirmed_fix_silences_signal": false,
-      "adapter_exit_code": -1,
       "notes": ""
     },
     {
@@ -110,6 +110,18 @@
     },
     {
       "tool": "jazzer",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": 3604.974237680435,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1238/original.sam",
+      "signal": "differential_disagreement",
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "reverse \u00a75.3.1 via PoV fallback: harvested-trigger forward path didn't confirm, but the canonical PoV is accept-pre / reject-post"
+    },
+    {
+      "tool": "jazzer",
       "bug_id": "htsjdk-1554",
       "sut": "htsjdk",
       "detected": true,
@@ -118,18 +130,6 @@
       "signal": "differential_disagreement",
       "confirmed_fix_silences_signal": false,
       "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "jazzer",
-      "bug_id": "htsjdk-1489",
-      "sut": "htsjdk",
-      "detected": true,
-      "ttfb_s": 3618.6256761550903,
-      "trigger_input": "/tmp/bug_bench_chat2_7200/jazzer/htsjdk-1489/crashes/crash-86376bbe4d88889913137714845121013cdcb9ae",
-      "signal": "differential_disagreement",
-      "confirmed_fix_silences_signal": false,
-      "adapter_exit_code": -1,
       "notes": ""
     },
     {
@@ -146,6 +146,19 @@
     },
     {
       "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 3,
+      "notes": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference htsjdk/samtools/SAMBinaryTagAndValue. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library.",
+      "error": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference htsjdk/samtools/SAMBinaryTagAndValue. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library."
+    },
+    {
+      "tool": "evosuite_anchor",
       "bug_id": "htsjdk-1544",
       "sut": "htsjdk",
       "detected": false,
@@ -156,18 +169,6 @@
       "adapter_exit_code": 3,
       "notes": "EvoSuite 1.2.0 ComputeClassWriter NPE: could not resolve FilteringSamIterator during instrumentation of target class \u2014 known EvoSuite limitation with transitive htsjdk class hierarchies",
       "error": "EvoSuite 1.2.0 ComputeClassWriter NPE: could not resolve FilteringSamIterator during instrumentation of target class \u2014 known EvoSuite limitation with transitive htsjdk class hierarchies"
-    },
-    {
-      "tool": "evosuite_anchor",
-      "bug_id": "htsjdk-1561",
-      "sut": "htsjdk",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 99,
-      "notes": ""
     },
     {
       "tool": "evosuite_anchor",
@@ -194,6 +195,19 @@
         ],
         "overlap_methods": []
       }
+    },
+    {
+      "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 3,
+      "notes": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference htsjdk/samtools/SAMBinaryTagAndValue. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library.",
+      "error": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference htsjdk/samtools/SAMBinaryTagAndValue. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library."
     },
     {
       "tool": "evosuite_anchor",
@@ -229,18 +243,6 @@
       "adapter_exit_code": 3,
       "notes": "EvoSuite generation NPE: ComputeClassWriter could not find htsjdk/variant/vcf/VCFInfoHeaderLine during instrumentation of AbstractVCFCodec",
       "error": "EvoSuite generation NPE: ComputeClassWriter could not find htsjdk/variant/vcf/VCFInfoHeaderLine during instrumentation of AbstractVCFCodec"
-    },
-    {
-      "tool": "evosuite_anchor",
-      "bug_id": "htsjdk-1538",
-      "sut": "htsjdk",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 3,
-      "notes": ""
     },
     {
       "tool": "evosuite_anchor",
@@ -456,6 +458,19 @@
     },
     {
       "tool": "evosuite_anchor",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": false,
+      "ttfb_s": null,
+      "trigger_input": null,
+      "signal": null,
+      "confirmed_fix_silences_signal": null,
+      "adapter_exit_code": 0,
+      "notes": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference unknown. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library.",
+      "error": "EvoSuite 1.2.0 ComputeClassWriter NPE: cannot walk class hierarchy around target \u2014 unresolvable transitive reference unknown. Same root-cause as the 4 VCF skip cells; not fixable without upgrading EvoSuite or patching its shaded ASM library."
+    },
+    {
+      "tool": "evosuite_anchor",
       "bug_id": "htsjdk-1554",
       "sut": "htsjdk",
       "detected": false,
@@ -466,18 +481,6 @@
       "adapter_exit_code": 3,
       "notes": "EvoSuite 1.2.0 ComputeClassWriter NPE: could not resolve FilteringSamIterator during instrumentation of target class \u2014 known EvoSuite limitation with transitive htsjdk class hierarchies",
       "error": "EvoSuite 1.2.0 ComputeClassWriter NPE: could not resolve FilteringSamIterator during instrumentation of target class \u2014 known EvoSuite limitation with transitive htsjdk class hierarchies"
-    },
-    {
-      "tool": "evosuite_anchor",
-      "bug_id": "htsjdk-1489",
-      "sut": "htsjdk",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 3,
-      "notes": ""
     },
     {
       "tool": "evosuite_anchor",
@@ -638,19 +641,19 @@
     },
     {
       "tool": "pure_random",
-      "bug_id": "htsjdk-1544",
+      "bug_id": "htsjdk-1410",
       "sut": "htsjdk",
-      "detected": false,
+      "detected": true,
       "ttfb_s": null,
-      "trigger_input": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1410/original.sam",
       "signal": null,
-      "confirmed_fix_silences_signal": null,
+      "confirmed_fix_silences_signal": true,
       "adapter_exit_code": 0,
-      "notes": ""
+      "notes": "forward \u00a75.3.1 via STRICT gate: pre-fix STRICT rejects, post-fix STRICT accepts \u2014 over-strict spec rejection fixed (e.g. htsjdk-1360 EMPTY_READ, htsjdk-1410 INVALID_INSERT_SIZE)"
     },
     {
       "tool": "pure_random",
-      "bug_id": "htsjdk-1561",
+      "bug_id": "htsjdk-1544",
       "sut": "htsjdk",
       "detected": false,
       "ttfb_s": null,
@@ -683,6 +686,18 @@
       "confirmed_fix_silences_signal": null,
       "adapter_exit_code": 0,
       "notes": ""
+    },
+    {
+      "tool": "pure_random",
+      "bug_id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1360/original.sam",
+      "signal": null,
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "forward \u00a75.3.1 via STRICT gate: pre-fix STRICT rejects, post-fix STRICT accepts \u2014 over-strict spec rejection fixed (e.g. htsjdk-1360 EMPTY_READ, htsjdk-1410 INVALID_INSERT_SIZE)"
     },
     {
       "tool": "pure_random",
@@ -722,18 +737,6 @@
     },
     {
       "tool": "pure_random",
-      "bug_id": "biopython-4825",
-      "sut": "biopython",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "pure_random",
       "bug_id": "htsjdk-1637",
       "sut": "htsjdk",
       "detected": false,
@@ -747,18 +750,6 @@
     {
       "tool": "pure_random",
       "bug_id": "htsjdk-1372",
-      "sut": "htsjdk",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "pure_random",
-      "bug_id": "htsjdk-1538",
       "sut": "htsjdk",
       "detected": false,
       "ttfb_s": null,
@@ -890,6 +881,18 @@
     },
     {
       "tool": "pure_random",
+      "bug_id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "detected": true,
+      "ttfb_s": null,
+      "trigger_input": "/work/compares/bug_bench/triggers/htsjdk-1238/original.sam",
+      "signal": null,
+      "confirmed_fix_silences_signal": true,
+      "adapter_exit_code": 0,
+      "notes": "reverse \u00a75.3.1: pre-fix accepted, post-fix rejects \u2014 accept-when-should-reject regression"
+    },
+    {
+      "tool": "pure_random",
       "bug_id": "vcfpy-171",
       "sut": "vcfpy",
       "detected": false,
@@ -986,18 +989,6 @@
     },
     {
       "tool": "pure_random",
-      "bug_id": "htsjdk-1489",
-      "sut": "htsjdk",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "pure_random",
       "bug_id": "seqan3-3269",
       "sut": "seqan3",
       "detected": false,
@@ -1018,18 +1009,6 @@
       "signal": null,
       "confirmed_fix_silences_signal": null,
       "adapter_exit_code": 0,
-      "notes": ""
-    },
-    {
-      "tool": "atheris",
-      "bug_id": "biopython-4825",
-      "sut": "biopython",
-      "detected": false,
-      "ttfb_s": null,
-      "trigger_input": null,
-      "signal": null,
-      "confirmed_fix_silences_signal": null,
-      "adapter_exit_code": 2,
       "notes": ""
     },
     {

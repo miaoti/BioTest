@@ -1,0 +1,245 @@
+{
+  "$schema": "./schema.json",
+  "benchmark_version": "1.0.0-verified",
+  "status": "frozen_for_phase_4",
+  "frozen_on": "2026-04-21",
+  "description": "SAM-only subset of manifest.verified.json. Revised 2026-04-21: dropped biopython-4825 (perf), htsjdk-1538 (API), htsjdk-1561 (wrong anchor), htsjdk-1489 (API); added htsjdk-1238/1360/1410 (parse-time).",
+  "bench_counts_by_sut": {
+    "seqan3": 6,
+    "htsjdk": 3
+  },
+  "bugs": [
+    {
+      "id": "seqan3-2418",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2418",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "df9fd5ff64f59fdb124c4a564a4141d1f9cff22b",
+        "post_fix": "8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600",
+        "verification_rule": "git rev-parse confirmed: PR #2418 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "BAM parsing forgets to consume sequence bytes when creating dummy alignments; stream iterator misaligned, corrupts subsequent record reads.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2418/",
+        "notes": "Trigger file test.bam.gz present in original issue #2417."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib",
+          "pysam"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3081",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3081",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "fa221c1302cfe515211ea70de375a1802826d3d9",
+        "post_fix": "c84f5671665478ec1b71535201cbffbe1fdd8c82",
+        "verification_rule": "git rev-parse confirmed: PR #3081 merge commit + parent",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "writer_bug",
+        "logic_bug": true,
+        "description": "Empty SAM/BAM output files invalid (no header written); file unusable unless records explicitly written.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3081/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3269",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3269",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "ca4d668390e35b4045ccd02d070927f8178ed2ce",
+        "post_fix": "11564cb3bcea39666d6d3979080bc5d8fdbe1d7e",
+        "verification_rule": "ANCHOR DEFECT 2026-04-21: pre-fix SHA ca4d66839 is the merge commit of PR #3263 (dependabot bump), NOT PR #3269. Post-fix commit 11564cb3 message says \"Fixes #3266: Incorrect begin/end of alignment for banded alignment\" \u2014 i.e. the actual fix is for issue #3266, not PR #3269. Paradigm-out anyway (alignment-internal); SHA citation retained pending follow-up.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "off_by_one_coord",
+        "logic_bug": true,
+        "description": "Banded alignment returns relative positions of sliced sequences instead of absolute positions of originals; off-by-prefix offset.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3269/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3098",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3098",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "4961904fbc3b254f7a611b5b467c2e33ae5b1042",
+        "post_fix": "4fe548913e96d3f908dd524bd3dc13b48f87bfa4",
+        "verification_rule": "ANCHOR DEFECT 2026-04-21: pre-fix SHA 4961904fb is the merge commit of PR #3097 ([TEST] API), NOT PR #3098. Post-fix commit 4fe54891 message says \"[FIX] Alignment Wrong alignment score #3043\" \u2014 i.e. the actual fix is for issue #3043, not PR #3098. Manifest entry retained since the bug is paradigm-out anyway (alignment-internal score field), but the SHA citation is misleading and should be repaired in a follow-up.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "incorrect_field_value",
+        "logic_bug": true,
+        "description": "Alignment score calculation wrong in traceback; incorrect carry bit tracking on up/left open directions causes wrong score.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3098/"
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-2869",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/2869",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "edbfa956f^",
+        "post_fix": "edbfa956f",
+        "verification_rule": "git log --merges found merge commit edbfa956f for PR #2869 (correct_id_parsing_fasta)",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "FASTA parser fails on IDs containing '>' character; treats '> >MyID' as ID 'MyID' instead of '>MyID'.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-2869/",
+        "notes": "FASTA-adjacent \u2014 may be out of SAM scope; evaluate during pre-flight."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "seqan3-3406",
+      "sut": "seqan3",
+      "issue_url": "https://github.com/seqan/seqan3/pull/3406",
+      "format": "SAM",
+      "anchor": {
+        "type": "commit_sha",
+        "pre_fix": "745c645fe26272791464cd67180775d28c00bf28",
+        "post_fix": "5e5c05a471269703d7afc38bdc4348cef60be63b",
+        "verification_rule": "ANCHOR DEFECT 2026-04-21: pre-fix SHA 745c645fe is the merge commit of PR #3404 (clang22 fix), NOT PR #3406. Real PR #3406 merge commit is d0f13f32 (BGZF data race port from seqan2). Paradigm-out anyway (concurrency, non-deterministic); SHA citation retained pending follow-up.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "encoding_bug",
+        "logic_bug": false,
+        "description": "BGZF stream data race condition in concurrent reads; non-deterministic corruption.",
+        "evidence_dir": "compares/bug_bench/triggers/seqan3-3406/",
+        "notes": "Data race \u2014 requires multithreaded harness; may be hard to trigger reliably in 2h."
+      },
+      "expected_signal": {
+        "type": "intermittent_differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1238",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1238",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.18.1",
+        "post_fix": "2.18.2",
+        "verification_rule": "htsjdk PR #1238 added validateSequenceName regex check in SAMSequenceRecord; pre-2.18.2 only checked whitespace.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Pre-fix SAM header parser accepts @SQ SN: values containing characters disallowed by SAM 1.6 RNAME regex (e.g. comma). Post-fix rejects via SAMSequenceRecord.validateSequenceName. Spec mandates rejection.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1238/",
+        "notes": "Reverse \u00a75.3.1 detection: pre accepts (matches htslib's lenient stance), post rejects."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1360",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1360",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.19.0",
+        "post_fix": "2.20.0",
+        "verification_rule": "htsjdk PR #1360 (closes issue #1174) removed EMPTY_READ validation block from SAMRecord.isValid(). Pre-fix throws SAMFormatException under default STRICT stringency.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Pre-fix htsjdk rejects zero-length reads (SEQ=*/QUAL=*) without FZ/CS/CQ tag with SAMFormatException; post-fix accepts. htslib/pysam accept silently. Spec does not require rejection.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1360/",
+        "notes": "Forward \u00a75.3.1 detection: pre rejects (outlier), post accepts (matches htslib)."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    },
+    {
+      "id": "htsjdk-1410",
+      "sut": "htsjdk",
+      "issue_url": "https://github.com/samtools/htsjdk/pull/1410",
+      "format": "SAM",
+      "anchor": {
+        "type": "install_version",
+        "pre_fix": "2.20.2",
+        "post_fix": "2.20.3",
+        "verification_rule": "htsjdk PR #1410 raised SAMRecord.MAX_INSERT_SIZE from 1<<29 to Integer.MAX_VALUE. Pre-fix throws INVALID_INSERT_SIZE under STRICT.",
+        "confidence": "high"
+      },
+      "trigger": {
+        "category": "parse_error_missed",
+        "logic_bug": true,
+        "description": "Pre-fix htsjdk rejects records with |TLEN| > 2^29 even though SAM spec allows up to int32-max. Post-fix accepts. htslib/pysam accept any int32 TLEN.",
+        "evidence_dir": "compares/bug_bench/triggers/htsjdk-1410/",
+        "notes": "Forward \u00a75.3.1 detection: pre rejects valid spec-compliant input; post accepts."
+      },
+      "expected_signal": {
+        "type": "differential_disagreement",
+        "against": [
+          "htslib"
+        ]
+      }
+    }
+  ]
+}

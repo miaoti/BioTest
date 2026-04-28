@@ -693,11 +693,19 @@ def run_cell(
     sut: str, fmt: str, seed_corpus: Path, out_dir: Path,
     budget_s: int, reps: int, ticks: tuple[int, ...],
     args: argparse.Namespace,
+    rep_start: int = 0,
 ) -> list[Path]:
+    """Run `reps` independent reps starting at rep_idx=`rep_start`.
+
+    `rep_start` lets callers add additional samples (e.g. run 4 of a
+    4-run aggregation) without clobbering existing growth_{0,1,2}.json
+    — the seed is derived from rep_idx (`0xB10 + rep_idx`), so
+    rep_start=3 uses a fresh seed AND writes growth_3.json next to the
+    existing files."""
     out_dir.mkdir(parents=True, exist_ok=True)
     seed_hash = _hash_corpus(seed_corpus)
     paths: list[Path] = []
-    for idx in range(reps):
+    for idx in range(rep_start, rep_start + reps):
         rep_dir = out_dir / f"run_{idx}"
         rep_dir.mkdir(parents=True, exist_ok=True)
         started = time.time()
@@ -777,6 +785,12 @@ def _cli() -> int:
                         "(DESIGN §3.2 primary = 7200)")
     p.add_argument("--reps", type=int, default=3,
                    help="independent reps (DESIGN §3.2 primary = 3)")
+    p.add_argument("--rep-start", type=int, default=0,
+                   help="start rep_idx at N — lets callers add samples "
+                        "(e.g. --rep-start 3 --reps 1 to append a 4th "
+                        "sample beside existing growth_{0,1,2}.json). "
+                        "Seed = 0xB10 + rep_idx, so each rep_start picks "
+                        "a fresh PRNG seed.")
     p.add_argument("--ticks", type=str,
                    default=",".join(str(t) for t in DEFAULT_TICKS_S),
                    help="comma-separated tick seconds "
@@ -822,6 +836,7 @@ def _cli() -> int:
                 sut=sut, fmt=fmt, seed_corpus=seed_corpus,
                 out_dir=cell_out, budget_s=args.budget,
                 reps=args.reps, ticks=ticks, args=args,
+                rep_start=args.rep_start,
             )
             results.append({
                 "sut": sut, "format": fmt, "cell": sub,
@@ -839,6 +854,7 @@ def _cli() -> int:
             seed_corpus=args.seed_corpus, out_dir=args.out,
             budget_s=args.budget, reps=args.reps, ticks=ticks,
             args=args,
+            rep_start=args.rep_start,
         )
         results.append({
             "sut": args.sut, "format": args.format,
