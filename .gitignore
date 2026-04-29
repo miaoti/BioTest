@@ -4,6 +4,35 @@ bug_reports/
 __pycache__/
 *.pyc
 
+# Python / coverage scratch
+.coverage
+.coverage.*
+.hypothesis/
+.pytest_cache/
+
+# LLVM coverage profile raw / merged files (should land under
+# compares/results/, not the repo root)
+*.profraw
+*.profdata
+
+# Coverage probe leftovers (SQLite DBs from one-off probes)
+test_cov_probe*
+test_phase_d_probe
+
+# Config snapshots — tracked in git history, no need to litter root
+biotest_config.yaml.backup_*
+
+# Upstream-project NEWS / CHANGELOG copies fetched during research,
+# re-fetchable from the upstream repo
+biopython_news.rst
+
+# Smoke / scratch dirs
+tmp/
+evosuite-report/
+
+# Mangled paths from broken Docker mount escapes (Windows host)
+/C:Users*
+
 # Tier-2 real-world seeds — fetched via seeds/fetch_real_world.py.
 # Hand-crafted Tier-1 seeds (minimal_*, spec_example) remain tracked.
 seeds/vcf/real_world_*.vcf
