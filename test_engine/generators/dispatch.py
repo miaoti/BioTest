@@ -72,6 +72,11 @@ from mr_engine.transforms.sam import (
     shuffle_co_comments,
     sam_bam_round_trip,
     sam_cram_round_trip,
+    normalize_unmapped_record_fields,
+    strip_mate_flags_if_unpaired,
+    normalize_seq_case,
+    cigar_zero_length_op_removal,
+    canonicalize_cigar_match_operators,
 )
 from mr_engine.transforms.malformed import (
     violate_info_number_a_cardinality,
@@ -588,6 +593,118 @@ def _dispatch_toggle_clipping(
             result.append(new_line + "\n" if line.endswith("\n") else new_line)
         else:
             result.append(line)
+    return result
+
+
+@_register("normalize_unmapped_record_fields")
+def _dispatch_normalize_unmapped(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: normalize MAPQ to 255 when FLAG 0x4 (unmapped) is set."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        new_line = normalize_unmapped_record_fields(stripped)
+        result.append(new_line + "\n" if line.endswith("\n") else new_line)
+    return result
+
+
+@_register("strip_mate_flags_if_unpaired")
+def _dispatch_strip_mate_flags(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: clear mate-context FLAG bits when 0x1 is unset."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        new_line = strip_mate_flags_if_unpaired(stripped)
+        result.append(new_line + "\n" if line.endswith("\n") else new_line)
+    return result
+
+
+@_register("normalize_seq_case")
+def _dispatch_normalize_seq_case(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: uppercase the SEQ column of each alignment line."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        new_line = normalize_seq_case(stripped)
+        result.append(new_line + "\n" if line.endswith("\n") else new_line)
+    return result
+
+
+@_register("cigar_zero_length_op_removal")
+def _dispatch_cigar_zero_length_op_removal(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: strip 0-length CIGAR ops + merge adjacents.
+    Z3 guard: verify CIGAR query length still matches SEQ length after."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        cols = stripped.split("\t")
+        if len(cols) >= 6 and cols[5] != "*":
+            new_cigar = cigar_zero_length_op_removal(cols[5])
+
+            # Z3 post-transform guard: CIGAR query length must match SEQ length
+            if len(cols) >= 10 and cols[9] != "*":
+                cigar_ops = [(int(m.group(1)), m.group(2))
+                             for m in re.finditer(r"(\d+)([MIDNSHP=X])", new_cigar)]
+                seq_len = len(cols[9])
+                if not check_cigar_seq_constraint(cigar_ops, seq_len):
+                    logger.debug("Z3 guard: CIGAR/SEQ mismatch after zero-op removal, discarding")
+                    _h_assume(False)
+
+            cols[5] = new_cigar
+            new_line = "\t".join(cols)
+            result.append(new_line + "\n" if line.endswith("\n") else new_line)
+        else:
+            result.append(line)
+    return result
+
+
+@_register("canonicalize_cigar_match_operators")
+def _dispatch_canonicalize_cigar_match_ops(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: rewrite M ops as =/X using MD tag, then recompute NM.
+    Z3 guard: verify CIGAR query length still matches SEQ length after."""
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        new_line = canonicalize_cigar_match_operators(stripped)
+
+        # Z3 post-transform guard on the result. canonicalize_cigar_match_operators
+        # preserves query-consumed length by construction (M -> mix of =/X
+        # which both consume), but the guard catches any future regressions
+        # or malformed seeds that slipped past the function's no-op gates.
+        cols = new_line.split("\t")
+        if len(cols) >= 10 and cols[5] != "*" and cols[9] != "*":
+            cigar_ops = [(int(m.group(1)), m.group(2))
+                         for m in re.finditer(r"(\d+)([MIDNSHP=X])", cols[5])]
+            seq_len = len(cols[9])
+            if not check_cigar_seq_constraint(cigar_ops, seq_len):
+                logger.debug("Z3 guard: CIGAR/SEQ mismatch after =/X canonicalization, discarding")
+                _h_assume(False)
+
+        result.append(new_line + "\n" if line.endswith("\n") else new_line)
     return result
 
 

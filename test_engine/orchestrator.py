@@ -27,6 +27,7 @@ from hypothesis import given, settings, HealthCheck, Phase, assume, Verbosity, t
 from hypothesis import strategies as st
 
 from .config import MR_REGISTRY_PATH, BUG_REPORTS_DIR
+from .feedback.corpus_keeper import CorpusKeeper
 from .generators.dispatch import apply_mr_transforms
 from .generators.seeds import SeedCorpus
 from .generators.strategy_router import get_strategy
@@ -120,6 +121,7 @@ def _run_single_test(
     primary_target: str = "",
     consensus_quorum_fraction: float = 0.501,
     consensus_field_tolerance: bool = False,
+    corpus_keeper: Optional[CorpusKeeper] = None,
 ) -> None:
     """
     Execute metamorphic + differential oracles for one (seed, rng_seed) pair.
@@ -397,6 +399,60 @@ def _run_single_test(
                 )
 
     finally:
+        # Coverage-growth corpus keeper (Rank 8): save every transformed
+        # file that at least one runner successfully parsed, before we
+        # unlink the tempfile.  See test_engine/feedback/corpus_keeper.py
+        # for why this is the single systemic fix for the Phase-3
+        # mutation-score deficit documented in
+        # compares/results/mutation/biotest/WHY_BIOTEST_UNDERPERFORMS.md.
+        if corpus_keeper is not None and corpus_keeper.enabled:
+            _rtx = locals().get("results_tx") or {}
+            _rx = locals().get("results_x") or {}
+            any_success = any(
+                r is not None and getattr(r, "success", False)
+                for r in _rtx.values()
+            )
+            # Refinement A: compute a canonical-JSON digest so the
+            # keeper can skip transforms whose parser output is
+            # byte-distinct but AST-identical (e.g. header-shuffle MRs).
+            # We pick the primary target's canonical JSON if available,
+            # else fall back to the first successful runner — doesn't
+            # matter which voter as long as we're consistent across the
+            # pair (source + transformed) for the same run.
+            import hashlib as _hl
+            import json as _json
+            def _canon_hash(bucket: dict) -> Optional[str]:
+                pref = primary_target or ""
+                cj = None
+                if pref and pref in bucket and getattr(bucket[pref], "success", False):
+                    cj = getattr(bucket[pref], "canonical_json", None)
+                if cj is None:
+                    for r in bucket.values():
+                        if getattr(r, "success", False):
+                            cj = getattr(r, "canonical_json", None)
+                            if cj is not None:
+                                break
+                if cj is None:
+                    return None
+                try:
+                    blob = _json.dumps(cj, sort_keys=True, default=str)
+                except (TypeError, ValueError):
+                    return None
+                return _hl.sha256(blob.encode("utf-8")).hexdigest()[:16]
+            tx_canon = _canon_hash(_rtx)
+            x_canon = _canon_hash(_rx)
+            try:
+                corpus_keeper.maybe_keep(
+                    transformed_path=transformed_path,
+                    fmt=fmt,
+                    mr_id=mr_id,
+                    source_seed=seed_path,
+                    any_runner_success=any_success,
+                    canonical_json_hash=tx_canon,
+                    source_canonical_hash=x_canon,
+                )
+            except Exception as e:  # pragma: no cover — defensive
+                logger.debug("corpus_keeper.maybe_keep failed: %s", e)
         try:
             transformed_path.unlink()
         except OSError:
@@ -790,6 +846,7 @@ def _run_mr_with_hypothesis(
     primary_target: str = "",
     consensus_quorum_fraction: float = 0.501,
     consensus_field_tolerance: bool = False,
+    corpus_keeper: Optional[CorpusKeeper] = None,
 ) -> None:
     """
     Run a single MR through Hypothesis with random seed exploration.
@@ -813,6 +870,7 @@ def _run_mr_with_hypothesis(
             primary_target=primary_target,
             consensus_quorum_fraction=consensus_quorum_fraction,
             consensus_field_tolerance=consensus_field_tolerance,
+            corpus_keeper=corpus_keeper,
         )
         return
 
@@ -864,6 +922,7 @@ def _run_mr_with_hypothesis(
                 primary_target=primary_target,
                 consensus_quorum_fraction=consensus_quorum_fraction,
                 consensus_field_tolerance=consensus_field_tolerance,
+                corpus_keeper=corpus_keeper,
             )
         finally:
             try:
@@ -917,6 +976,7 @@ def _run_mr_static(
     primary_target: str = "",
     consensus_quorum_fraction: float = 0.501,
     consensus_field_tolerance: bool = False,
+    corpus_keeper: Optional[CorpusKeeper] = None,
 ) -> None:
     """
     Run a single MR against all seeds with a fixed rng_seed per seed.
@@ -951,6 +1011,7 @@ def _run_mr_static(
                 primary_target=primary_target,
                 consensus_quorum_fraction=consensus_quorum_fraction,
                 consensus_field_tolerance=consensus_field_tolerance,
+                corpus_keeper=corpus_keeper,
             )
         except _OracleFailure:
             # In static mode, failures are already recorded inside
@@ -973,6 +1034,7 @@ def run_test_suite(
     primary_target: str = "",
     consensus_quorum_fraction: float = 0.501,
     consensus_field_tolerance: bool = False,
+    corpus_keeper: Optional[CorpusKeeper] = None,
 ) -> TestSuiteResult:
     """
     Run the full metamorphic + differential test suite.
@@ -1050,6 +1112,7 @@ def run_test_suite(
                 primary_target=primary_target,
                 consensus_quorum_fraction=consensus_quorum_fraction,
                 consensus_field_tolerance=consensus_field_tolerance,
+                corpus_keeper=corpus_keeper,
             )
         else:
             _run_mr_static(
@@ -1062,6 +1125,7 @@ def run_test_suite(
                 primary_target=primary_target,
                 consensus_quorum_fraction=consensus_quorum_fraction,
                 consensus_field_tolerance=consensus_field_tolerance,
+                corpus_keeper=corpus_keeper,
             )
 
     logger.info(
@@ -1071,5 +1135,7 @@ def run_test_suite(
         result.differential_failures, result.crashes,
         result.det_tracker.det_rate,
     )
+    if corpus_keeper is not None and corpus_keeper.enabled:
+        logger.info("Corpus keeper stats: %s", corpus_keeper.stats())
 
     return result

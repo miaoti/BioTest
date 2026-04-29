@@ -1,0 +1,29 @@
+% Abstract for the BioTest paper. main.tex wraps this in \begin{abstract}.
+
+Bioinformatics file-format parsers determine whether a variant
+call, alignment flag, or sample annotation reaches downstream
+analysis intact. Pipeline-level benchmarking
+efforts~\citep{krusche2019benchmarking} assume parsers are sound,
+yet the textual VCF and SAM specifications leave many record-level
+semantics to de facto consensus, so testers operate without an
+external oracle~\citep{barr2015oracle}. We present \biotest{}, a
+metamorphic testing pipeline that replaces the human
+MR-identification step, the dominant cost in metamorphic-testing
+adoption~\citep{chen2018metamorphic}, with a large language
+model (\texttt{deepseek-v4-flash}) grounded in the published
+specifications via retrieval-augmented prompting. The LLM mines
+identity-preserving relations once per format. Inputs flow
+through a thirteen-rank corpus stack and are graded by
+multi-runner consensus across $N{\geq}3$ independent
+implementations. The per-SUT user cost is the parse-and-emit shim
+that mainstream coverage-guided fuzzers already require, with a
+small canonicalization extension that emits canonical JSON.
+Across six $(\mathrm{SUT, format})$ configurations spanning four
+parser languages, \biotest{} sits within a single-digit
+mutation-adequacy deficit on five configurations, exceeds
+libFuzzer on seqan3/SAM, and trails Atheris by $32.5$\,pp on
+byte-content-lenient biopython/SAM. It attains the highest line
+coverage on every VCF SUT, and on a silence-on-fix benchmark of
+$32$ historical parser bugs~\citep{boehme2021estimating} detects $10$, spanning htsjdk
+(Java), vcfpy (Python), and noodles (Rust), where every
+crash-only input fuzzer in the slate detects zero.

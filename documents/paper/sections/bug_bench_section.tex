@@ -1,0 +1,97 @@
+% Real-bug detection subsection.
+
+\subsection{Real-Bug Detection}
+\label{sec:bug-bench}
+
+\input{sections/bug_bench_table.tex}
+
+\paragraph{Setup and manifest construction.}
+We complement \S\ref{sec:mutation-adequacy} with a real-bug
+benchmark in the
+Magma~\citep{hazimeh2020magma}\,/\,FuzzBench~\citep{metzman2021fuzzbench}
+ground-truth style. The manifest is $32$ historical parser bugs
+($23$ VCF $+ 9$ SAM), each pinned to a verified
+$V_{\mathrm{pre}}{\to}V_{\mathrm{post}}$ commit pair. Candidates
+are sourced from each SUT's upstream release notes and
+\texttt{bug}-label PRs over the last five years (we do not mine
+\texttt{git log} for suspicious commits). A candidate enters iff
+all four hold: (i) reachable through the file-input pipeline as a
+parse exception, canonical-JSON value diff, or write-roundtrip
+diff; (ii) pre-fix and post-fix observably differ on the same
+input; (iii) the anchor pair reproduces empirically; (iv) both
+versions install as a pinned artefact. Failures are transparently
+dropped per the ground-truth drop-list discipline of B\"ohme et
+al.~\cite{boehme2021estimating}, with the drop log in the
+artefact. Each entry ships a minimum-shape text PoV authored by
+reading the fix's \texttt{---/+++} diff. Bug shapes outside
+file-input differential testing (alignment-internal score, BGZF
+concurrency, multi-file merge) are retained as known zeros, so
+the manifest exposes the paradigm's ceiling on the same
+denominator.
+
+\paragraph{Detection predicate, tool slate, and budget.}
+Detection follows the silence-on-fix predicate of B\"ohme et
+al.~\cite{boehme2021estimating}: tool $T$ detects bug $B$ iff
+some input $I$ that $T$'s adapter produced during the budget
+satisfies $\mathit{signal}_T(I, V_{\mathrm{pre}}) \neq
+\mathit{signal}_T(I, V_{\mathrm{post}})$. Crashes surviving the
+post-fix replay (real defects, not the target) are counted as
+\textsc{false+}. The slate runs eight tools: the five
+coverage-guided fuzzers of \S\ref{sec:mutation-adequacy},
+\biotest{}, an uninformed Pure-Random
+floor~\citep{klees2018fuzz}, and two unit-level Java baselines
+(EvoSuite~\citep{fraser2011evosuite} under an
+``EvoSuite-anchor'' protocol that generates a JUnit suite against
+$V_{\mathrm{post}}$ and replays against $V_{\mathrm{pre}}$, plus
+Randoop~\citep{pacheco2007randoop}). Per Magma-style
+methodology~\citep{hazimeh2020magma}, every input fuzzer's seed
+corpus includes the manifest's canonical PoV alongside Tier-1+2
+spec-example seeds, equalising starting positions. The per-bug
+budget is $7200$\,s, gated by a language-eligibility matrix.
+
+\paragraph{Headline.}
+\biotest{} detects $10/32$ (audited end-to-end on tool-output
+triggers), every other input fuzzer detects $0/32$, and the
+any-tool union with the unit-level Java baselines is $14/32$.
+Forward (pre-fix rejects, post-fix accepts) fires on eight
+\emph{over-strict} regressions spanning htsjdk stringency
+edge-cases, vcfpy lazy-evaluation traps, and a noodles writer
+round-trip; reverse (pre-fix wrongly accepts, post-fix rejects)
+fires on two htsjdk \emph{accept-when-should-reject} regressions
+where the buggy version silently mis-classified or mis-counted a
+record. Crash-only oracles surface neither shape without a
+deliberate exception~\citep{klees2018fuzz,boehme2021estimating},
+which is why the same manifest returns $0$ for the crash-only
+slate; their $11$ \textsc{false+} cells (Jazzer $10$, libFuzzer
+$1$) are latent dependency-side defects whose patch does not
+touch the target.
+
+\paragraph{Why the unit-level baselines reach four htsjdk bugs
+the input fuzzers do not.}
+EvoSuite~\citep{fraser2011evosuite} synthesises JUnit cases by
+genetic search over method-call sequences, and
+Randoop~\citep{pacheco2007randoop} constructs feedback-directed
+random sequences over the same surface. Both bypass file parsing
+entirely by constructing \texttt{VariantContext} /
+\texttt{SAMRecord} instances via the API. Of the four manifest
+entries reached this way and not by the input-fuzzing slate, one
+is a \texttt{VariantContextBuilder} regression structurally
+out-of-scope for any file-input fuzzer; the other three are
+parse-time-reachable in principle but \biotest{}'s spec-grounded
+MR transforms in the per-cell budget did not synthesise a trigger
+that isolated the patch from co-occurring spec violations.
+
+\paragraph{Why \biotest{} leads in absolute count.}
+Despite seeing the SUT only through file parse + round-trip,
+\biotest{} is above both unit-level baselines on absolute count
+($10>4>3$). Two effects dominate. First, \biotest{} applies to
+all four host languages while EvoSuite and Randoop are Java-only
+and run on the htsjdk row alone ($12$ of $32$ cells); on that
+shared subset \biotest{} still leads ($6/12$ vs $4/12$ vs
+$3/12$). Second, the differential and metamorphic oracles
+surface silent value-disagreement bugs (e.g.\ mis-counted
+AC/AN/AF) that neither crash-only fuzzers nor unit-level GA can
+detect without an external comparator: crash-only oracles by
+construction~\citep{klees2018fuzz,boehme2021estimating}, and
+unit-level GA because its assertions are derived from a single
+SUT version's observed output.

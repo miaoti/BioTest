@@ -35,6 +35,13 @@ from mr_engine.transforms.sam import (
     shuffle_rg_record_subtags,
     shuffle_pg_record_subtags,
     shuffle_co_comments,
+    normalize_unmapped_record_fields,
+    strip_mate_flags_if_unpaired,
+    normalize_seq_case,
+    cigar_zero_length_op_removal,
+    canonicalize_cigar_match_operators,
+    _query_consumed,
+    _parse_cigar,
 )
 from mr_engine.transforms.malformed import (
     violate_tlen_sign_consistency,
@@ -48,7 +55,7 @@ from mr_engine.transforms.malformed import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_36_transforms(self):
+    def test_whitelist_has_41_transforms(self):
         # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
         # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip) +
         # 5 Rank-3 spec-rule-targeted malformed-input mutators +
@@ -56,9 +63,12 @@ class TestRegistry:
         # MR-Scout TOSEM 2024) +
         # 5 Phase-2 SAM header-subtag / @CO shuffles +
         # 3 Phase-2 SAM malformed mutators (TLEN / tag-type / FLAG) +
-        # 2 Phase-3 SAM round-trip MRs (SAM↔BAM, SAM↔CRAM).
+        # 2 Phase-3 SAM round-trip MRs (SAM↔BAM, SAM↔CRAM) +
+        # 5 Phase-4 SAM record-level transforms (normalize unmapped /
+        # strip mate flags / normalize SEQ case / cigar zero-length op
+        # removal / canonicalize CIGAR M -> =/X).
         wl = get_whitelist()
-        assert len(wl) == 36, f"Expected 36 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 41, f"Expected 41 transforms, got {len(wl)}: {wl}"
 
     def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
         # One writer transform forever, spanning BOTH formats — the
@@ -354,6 +364,314 @@ class TestToggleClipping:
         cigar, seq, qual = toggle_cigar_hard_soft_clipping("10M", "ACGTACGTAC", "IIIIIIIIII")
         assert cigar == "10M"
         assert seq == "ACGTACGTAC"
+
+
+# ===========================================================================
+# Phase-4 SAM record-level transforms — Picard validation rule MRs
+# ===========================================================================
+
+
+class TestNormalizeUnmappedRecordFields:
+    def test_deterministic(self):
+        line = "r1\t4\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == normalize_unmapped_record_fields(line)
+
+    def test_unmapped_with_high_mapq_normalizes_to_255(self):
+        line = "r1\t4\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        out = normalize_unmapped_record_fields(line)
+        assert out.split("\t")[4] == "255"
+
+    def test_unmapped_with_zero_mapq_unchanged(self):
+        line = "r1\t4\tchr1\t100\t0\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_unmapped_with_255_unchanged(self):
+        line = "r1\t4\tchr1\t100\t255\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_mapped_unchanged(self):
+        line = "r1\t0\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_unmapped_keeps_other_fields(self):
+        line = "r1\t4\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        out = normalize_unmapped_record_fields(line)
+        orig_cols = line.split("\t")
+        new_cols = out.split("\t")
+        # Only MAPQ (col 4) changed; all others byte-identical.
+        for i, (o, n) in enumerate(zip(orig_cols, new_cols)):
+            if i == 4:
+                continue
+            assert o == n, f"col {i} changed: {o!r} -> {n!r}"
+
+    def test_unparseable_flag_unchanged(self):
+        line = "r1\tNOTANUMBER\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_unparseable_mapq_unchanged(self):
+        line = "r1\t4\tchr1\t100\tBADMAPQ\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_too_few_columns_unchanged(self):
+        line = "r1\t4\tchr1\t100\t60"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_header_line_unchanged(self):
+        line = "@SQ\tSN:chr1\tLN:248956422"
+        assert normalize_unmapped_record_fields(line) == line
+
+    def test_trailing_newline_preserved(self):
+        line = "r1\t4\tchr1\t100\t60\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        out = normalize_unmapped_record_fields(line)
+        assert out.endswith("\n")
+        assert out.split("\t")[4] == "255"
+
+
+class TestStripMateFlagsIfUnpaired:
+    BASE = "r1\t{flag}\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+
+    def _flag_of(self, line):
+        return int(line.split("\t")[1])
+
+    def test_deterministic(self):
+        line = self.BASE.format(flag=0x40)
+        assert strip_mate_flags_if_unpaired(line) == strip_mate_flags_if_unpaired(line)
+
+    def test_unpaired_with_first_of_pair_clears(self):
+        line = self.BASE.format(flag=0x40)  # FIRST_OF_PAIR but not paired
+        out = strip_mate_flags_if_unpaired(line)
+        assert self._flag_of(out) == 0
+
+    def test_unpaired_with_proper_pair_clears(self):
+        line = self.BASE.format(flag=0x2)  # PROPER_PAIR but not paired
+        out = strip_mate_flags_if_unpaired(line)
+        assert self._flag_of(out) == 0
+
+    def test_paired_unchanged(self):
+        line = self.BASE.format(flag=0x1 | 0x40)  # 0x41 — paired + first
+        assert strip_mate_flags_if_unpaired(line) == line
+
+    def test_unpaired_keeps_unmapped_bit(self):
+        line = self.BASE.format(flag=0x4 | 0x40)  # 0x44 — unmapped + first
+        out = strip_mate_flags_if_unpaired(line)
+        assert self._flag_of(out) == 0x4
+
+    def test_unpaired_keeps_secondary_bit(self):
+        line = self.BASE.format(flag=0x100 | 0x40)
+        out = strip_mate_flags_if_unpaired(line)
+        assert self._flag_of(out) == 0x100
+
+    def test_unpaired_no_mate_bits_unchanged(self):
+        line = self.BASE.format(flag=0x100)  # secondary, no mate bits
+        assert strip_mate_flags_if_unpaired(line) == line
+
+    def test_unparseable_flag_unchanged(self):
+        line = self.BASE.format(flag="NOTANUMBER")
+        assert strip_mate_flags_if_unpaired(line) == line
+
+    def test_too_few_columns_unchanged(self):
+        line = "r1\t64\tchr1\t100"
+        assert strip_mate_flags_if_unpaired(line) == line
+
+    def test_header_line_unchanged(self):
+        line = "@HD\tVN:1.6"
+        assert strip_mate_flags_if_unpaired(line) == line
+
+
+class TestNormalizeSeqCase:
+    def _make(self, seq):
+        return f"r1\t0\tchr1\t100\t30\t{len(seq)}M\t*\t0\t0\t{seq}\t" + "I" * len(seq)
+
+    def test_deterministic(self):
+        line = self._make("acgt")
+        assert normalize_seq_case(line) == normalize_seq_case(line)
+
+    def test_lowercase_to_upper(self):
+        line = self._make("acgt")
+        out = normalize_seq_case(line)
+        assert out.split("\t")[9] == "ACGT"
+
+    def test_mixed_case(self):
+        line = self._make("aCgT")
+        out = normalize_seq_case(line)
+        assert out.split("\t")[9] == "ACGT"
+
+    def test_already_upper_unchanged(self):
+        line = self._make("ACGT")
+        assert normalize_seq_case(line) == line
+
+    def test_missing_seq_unchanged(self):
+        line = "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\t*\t*"
+        assert normalize_seq_case(line) == line
+
+    def test_iupac_codes_uppercased(self):
+        line = self._make("rynwkm")
+        out = normalize_seq_case(line)
+        assert out.split("\t")[9] == "RYNWKM"
+
+    def test_too_few_columns_unchanged(self):
+        line = "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0"
+        assert normalize_seq_case(line) == line
+
+    def test_header_line_unchanged(self):
+        line = "@SQ\tSN:chr1\tLN:1000"
+        assert normalize_seq_case(line) == line
+
+    def test_trailing_newline_preserved(self):
+        line = self._make("acgt") + "\n"
+        out = normalize_seq_case(line)
+        assert out.endswith("\n")
+        assert out.split("\t")[9] == "ACGT"
+
+
+class TestCigarZeroLengthOpRemoval:
+    def test_zero_in_middle(self):
+        assert cigar_zero_length_op_removal("5M0D5M") == "10M"
+
+    def test_zero_at_start(self):
+        assert cigar_zero_length_op_removal("0H10M") == "10M"
+
+    def test_zero_at_end(self):
+        assert cigar_zero_length_op_removal("10M0S") == "10M"
+
+    def test_no_zeros_no_merge(self):
+        assert cigar_zero_length_op_removal("5M5I") == "5M5I"
+
+    def test_multiple_zeros_with_merge(self):
+        # 0M (drop) | 3M | 0D (drop) | 2I | 0I (drop) | 3M -> 3M2I3M
+        assert cigar_zero_length_op_removal("0M3M0D2I0I3M") == "3M2I3M"
+
+    def test_star_unchanged(self):
+        assert cigar_zero_length_op_removal("*") == "*"
+
+    def test_empty_unchanged(self):
+        assert cigar_zero_length_op_removal("") == ""
+
+    def test_query_consumed_preserved(self):
+        for cigar in [
+            "5M0D5M",
+            "0H10M",
+            "10M0S",
+            "0M3M0D2I0I3M",
+            "5M5I",
+            "0H10M5I0M3S0H",
+        ]:
+            before = _query_consumed(_parse_cigar(cigar))
+            after = _query_consumed(_parse_cigar(cigar_zero_length_op_removal(cigar)))
+            assert before == after, f"query-consumed changed for {cigar!r}"
+
+    def test_all_zero_collapses(self):
+        # All-zero CIGAR collapses to empty (degenerate but safe).
+        assert cigar_zero_length_op_removal("0M0D") == ""
+
+    def test_adjacent_same_after_zero_drop_merges(self):
+        # Confirm the merge step runs after dropping zeros.
+        assert cigar_zero_length_op_removal("3M0D2M") == "5M"
+
+
+class TestCanonicalizeCigarMatchOperators:
+    def _line(self, cigar, seq, *tags):
+        qual = "I" * len(seq)
+        cols = ["r1", "0", "chr1", "100", "30", cigar, "*", "0", "0", seq, qual]
+        cols.extend(tags)
+        return "\t".join(cols)
+
+    def _cigar_of(self, line):
+        return line.split("\t")[5]
+
+    def _tag_value(self, line, prefix):
+        for f in line.split("\t")[11:]:
+            if f.startswith(prefix):
+                return f
+        return None
+
+    def test_deterministic(self):
+        line = self._line("5M", "ACGTA", "MD:Z:5")
+        assert canonicalize_cigar_match_operators(line) == canonicalize_cigar_match_operators(line)
+
+    def test_all_matches(self):
+        line = self._line("5M", "ACGTA", "MD:Z:5")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "5="
+
+    def test_simple_mismatch(self):
+        # MD:Z:2A2 -> 2 matches, 1 mismatch, 2 matches over a 5M run
+        line = self._line("5M", "ACGTA", "MD:Z:2A2")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "2=1X2="
+
+    def test_two_mismatches(self):
+        # 1+1+2+1+1 = 6 ref positions, so the M op must be 6M (not 5M).
+        line = self._line("6M", "ACGTAC", "MD:Z:1A2T1")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "1=1X2=1X1="
+
+    def test_with_deletion(self):
+        # 3M2D2M with MD:Z:3^AG2 -> 3=2D2=
+        line = self._line("3M2D2M", "ACGAC", "MD:Z:3^AG2")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "3=2D2="
+
+    def test_no_md_tag_unchanged(self):
+        line = self._line("5M", "ACGTA")
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_no_m_ops_unchanged(self):
+        line = self._line("5=", "ACGTA", "MD:Z:5")
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_no_m_ops_with_mismatch_unchanged(self):
+        line = self._line("5=2X", "ACGTACGTA", "MD:Z:5C1")
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_malformed_md_unchanged(self):
+        line = self._line("5M", "ACGTA", "MD:Z:bogus!@#")
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_md_coverage_mismatch_unchanged(self):
+        # MD says 10 matches, CIGAR only covers 5
+        line = self._line("5M", "ACGTA", "MD:Z:10")
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_star_cigar_unchanged(self):
+        line = "r1\t0\tchr1\t100\t30\t*\t*\t0\t0\t*\t*\tMD:Z:5"
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_too_few_columns_unchanged(self):
+        line = "r1\t0\tchr1\t100\t30\t5M"
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_header_line_unchanged(self):
+        line = "@SQ\tSN:chr1\tLN:248956422"
+        assert canonicalize_cigar_match_operators(line) == line
+
+    def test_nm_tag_recomputed(self):
+        # 5M, MD:Z:2A2 (1 mismatch), NM was 0 -> recomputed to 1
+        line = self._line("5M", "ACGTA", "NM:i:0", "MD:Z:2A2")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "2=1X2="
+        assert self._tag_value(out, "NM:i:") == "NM:i:1"
+
+    def test_nm_with_indels_includes_indel_length(self):
+        # 3M2I2M, MD:Z:5 (no mismatches in the M ops), NM should be 2 (the I bases).
+        line = self._line("3M2I2M", "ACGTTAC", "NM:i:2", "MD:Z:5")
+        out = canonicalize_cigar_match_operators(line)
+        # CIGAR becomes 3=2I2= (no mismatches), NM = 0 (X) + 2 (I) = 2
+        assert self._cigar_of(out) == "3=2I2="
+        assert self._tag_value(out, "NM:i:") == "NM:i:2"
+
+    def test_nm_recompute_with_deletion(self):
+        # 3M2D2M, MD:Z:3^AG2 -> 3=2D2=, NM = 0 (X) + 2 (D) = 2
+        line = self._line("3M2D2M", "ACGAC", "NM:i:2", "MD:Z:3^AG2")
+        out = canonicalize_cigar_match_operators(line)
+        assert self._cigar_of(out) == "3=2D2="
+        assert self._tag_value(out, "NM:i:") == "NM:i:2"
+
+    def test_trailing_newline_preserved(self):
+        line = self._line("5M", "ACGTA", "MD:Z:5") + "\n"
+        out = canonicalize_cigar_match_operators(line)
+        assert out.endswith("\n")
+        assert self._cigar_of(out) == "5="
 
 
 # ===========================================================================

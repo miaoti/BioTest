@@ -29,6 +29,17 @@ all voters emit byte-identical JSON for the same logical record:
 4. **Header-tag sort**: ``_parse_tag_fields`` already sorts; left
    here as a documented invariant so future header-emitting code stays
    consistent.
+5. **SEQ case normalization**: SAMv1 §1.4.10 admits both upper and
+   lowercase. We uppercase at parse time so parsers that preserve
+   case and parsers that normalize agree.
+6. **NM auto-compute**: When CIGAR is canonicalized to =/X (no M
+   ops) but NM is absent (some parsers drop NM after canonicalization),
+   we recompute NM = sum(X op lengths) + sum(I+D op lengths) per the
+   SAMtags spec NM definition. Returns None — and skips the auto-add —
+   when CIGAR has M ops (NM is indeterminate without reference).
+7. **Header section sort**: @SQ/@RG/@PG records sorted by canonical
+   key (SN/ID respectively) so the canonical JSON is invariant under
+   row-permutation MRs (`reorder_header_records`).
 
 These fixes are SUT-agnostic — they live in the framework's canonical
 normalizer, not in any per-runner code path.
@@ -119,7 +130,18 @@ def _parse_header(header_lines: list[str]) -> CanonicalSamHeader:
         elif record_type == "@CO":
             co.append("\t".join(fields[1:]))
 
-    return CanonicalSamHeader(HD=hd, SQ=sq, RG=rg, PG=pg, CO=sorted(co))
+    # Canonicalize record-level header collections so the canonical JSON
+    # is invariant under within-section row permutations. SAMv1 §1.3 lists
+    # these without an ordering constraint; sorting by the spec-defined
+    # canonical key (SN for @SQ, ID for @RG/@PG) collapses MR-induced
+    # permutations (Tolerance #7, the `reorder_header_records` MR).
+    sq_sorted = sorted(sq, key=lambda d: (d.get("SN", ""), d.get("LN", "")))
+    rg_sorted = sorted(rg, key=lambda d: d.get("ID", ""))
+    pg_sorted = sorted(pg, key=lambda d: d.get("ID", ""))
+
+    return CanonicalSamHeader(
+        HD=hd, SQ=sq_sorted, RG=rg_sorted, PG=pg_sorted, CO=sorted(co)
+    )
 
 
 def _parse_tag_fields(fields: list[str]) -> dict[str, str]:
@@ -169,7 +191,12 @@ def _parse_alignment(
     raw_pnext = int(cols[7])
     pnext = None if raw_pnext == 0 else raw_pnext
     tlen = int(cols[8])
-    seq = None if cols[9] == "*" else cols[9]
+    # Tolerance #5: SAMv1 §1.4.10 admits both upper and lower case in
+    # SEQ. Some round-trips (e.g. BAM 4-bit nibble encoding) already
+    # canonicalize to uppercase, while biopython preserves source case.
+    # Uppercasing here makes both styles produce identical canonical
+    # JSON. QUAL is Phred+33 ASCII, not letters, so leave it alone.
+    seq = None if cols[9] == "*" else cols[9].upper()
     qual = None if cols[10] == "*" else cols[10]
 
     # Strict-mode guard: sum of query-consuming CIGAR ops must equal
@@ -204,6 +231,17 @@ def _parse_alignment(
     # handled by `_parse_tag_fields`; this enforces the same invariant
     # for record-level tags so MR-induced reorderings normalise away).
     sorted_tags = dict(sorted(tags.items()))
+
+    # Tolerance #6: auto-compute NM when absent. Keeps voters comparable
+    # when CIGAR has been canonicalized to =/X by an upstream MR transform
+    # (e.g. canonicalize_cigar_match_operators) that upstream parsers may
+    # not have re-emitted as NM. Skipped when CIGAR contains any M op
+    # (NM is indeterminate without reference) or when CIGAR is "*".
+    if cigar is not None and "NM" not in sorted_tags:
+        computed_nm = _compute_nm_from_cigar(cigar)
+        if computed_nm is not None:
+            sorted_tags = {**sorted_tags, "NM": TagValue(type="i", value=computed_nm)}
+            sorted_tags = dict(sorted(sorted_tags.items()))
 
     return CanonicalSamRecord(
         QNAME=qname,
@@ -243,6 +281,21 @@ def _round_float_sigfig(value: float, sig: int = FLOAT_TAG_SIGFIGS) -> float:
     import math
     digits = sig - int(math.floor(math.log10(abs(value)))) - 1
     return round(value, digits)
+
+
+def _compute_nm_from_cigar(cigar: list[CigarOp]) -> Optional[int]:
+    """Compute NM tag value from CIGAR =/X/I/D op counts.
+
+    Returns None if CIGAR has any M ops (M is match-or-mismatch — NM
+    is genuinely indeterminate without MD or reference). Otherwise
+    returns the spec-defined NM = sum(len of X ops) + sum(len of I+D ops).
+
+    SAMtags NM definition: "Number of differences (mismatches plus
+    inserted and deleted bases) between the sequence and reference."
+    """
+    if any(op.op == "M" for op in cigar):
+        return None  # indeterminate — leave NM absent rather than guess
+    return sum(op.len for op in cigar if op.op in ("X", "I", "D"))
 
 
 def _parse_tag_value(val_str: str, tag_type: str) -> Any:

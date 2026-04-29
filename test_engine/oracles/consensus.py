@@ -185,7 +185,23 @@ def get_consensus_output(
                 if res.error_type == "parse_error" or "invalid" in err or "malformed" in err:
                     htslib_invalid = True
             continue
-        voters[name] = res.canonical_json
+        # Apply the per-format post-normalizer (2026-04-22): folds
+        # voter-specific canonicalisation quirks — noodles Rust-Debug
+        # fileformat, pysam CSV-quoted Description + IDX field + float32
+        # precision, htsjdk FORMAT field pruning / reorder, missing
+        # simple-meta scalars — so voters that parse the same semantic
+        # input land in the same bucket. Without this every VCF voter
+        # bucketed separately on correct input (see
+        # coverage_notes/phase4/oracle_and_detection_audit.md).
+        from ..canonical.post_normalize import post_normalize
+        normalized = post_normalize(res.canonical_json, fmt)
+        if isinstance(normalized, dict) and "_unusable" in normalized:
+            # Voter emits an incompatible schema (e.g. noodles stub with
+            # only a record count); treat as ineligible for this format
+            # rather than forcing it into its own singleton bucket.
+            ineligible.append(name)
+            continue
+        voters[name] = normalized
 
     if not voters:
         return ConsensusResult(

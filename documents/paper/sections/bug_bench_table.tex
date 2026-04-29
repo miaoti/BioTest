@@ -1,0 +1,35 @@
+% Bug-bench headline table.
+
+\begin{table*}[!t]
+\centering
+\caption{Real-bug detection on the $32$-bug manifest ($23$ VCF
+$+\,9$ SAM; \S\ref{sec:bug-bench}). \textsc{detected}: at least
+one tool-produced trigger satisfies silence-on-fix.
+\textsc{false+}: post-fix-surviving crashes (real defects, not
+the target bug).}
+\label{tab:bugbench-headline}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l c r r}
+\toprule
+                                    & paradigm                & \textsc{detected} & \textsc{false+} \\
+\midrule
+\biotest{}                          & file-input differential & $\mathbf{10}/32$  & 0  \\
+Jazzer~\citep{jazzer2024}           & in-process crash-only   & $0/32$            & 10 \\
+Atheris~\citep{atheris2023}         & in-process crash-only   & $0/32$            & 0  \\
+cargo-fuzz~\citep{cargofuzz2024}    & in-process crash-only   & $0/32$            & 0  \\
+libFuzzer~\citep{libfuzzer2024}     & in-process crash-only   & $0/32$            & 1  \\
+Pure-Random~\citep{klees2018fuzz}   & uninformed floor        & $0/32$            & 0  \\
+EvoSuite-anchor$^{\flat}$           & Java unit-level GA      & $4/32$            & 0  \\
+Randoop$^{\flat}$~\citep{pacheco2007randoop} & Java unit-level random  & $3/32$    & 0  \\
+\midrule
+\multicolumn{2}{l}{Any-tool union (file-input $\cup$ unit-level)}              & $\mathbf{14}/32$ & --- \\
+\bottomrule
+\end{tabular}
+\\[0.4em]
+{\footnotesize
+$^{\flat}$~Unit-level Java baselines exercise method APIs, not
+file inputs. Their detections are drawn from htsjdk regressions
+outside the input-fuzzing slate.}
+\end{table*}

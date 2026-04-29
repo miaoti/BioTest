@@ -747,7 +747,13 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
         # `biotest_config.yaml: feedback_control`.
         _fmt_u = (format_filter or "").upper()
         _quorum_default = 0.34 if _fmt_u == "SAM" else 0.501
-        _tolerance_default = _fmt_u == "SAM"
+        # Default field_tolerance=True for BOTH SAM and VCF. The audit
+        # in coverage_notes/phase4/oracle_and_detection_audit.md showed
+        # the full-record bucket path left VCF voters disagreeing on
+        # 46/47 correct inputs; strict bucketing on variant-identity
+        # fields (CHROM+POS+REF+ALT) combined with the post-normalizer
+        # is what actually lets the consensus oracle find real bugs.
+        _tolerance_default = _fmt_u in ("SAM", "VCF")
         quorum = float(
             cfg.get("feedback_control", {}).get(
                 "consensus_quorum_fraction", _quorum_default,
@@ -758,6 +764,17 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
                 "consensus_field_tolerance", _tolerance_default,
             )
         )
+        # Rank 8 lever — coverage-growth corpus keeper (see
+        # test_engine/feedback/corpus_keeper.py for rationale). Builds
+        # an accumulating pool of successfully-parsed transformed
+        # inputs under seeds/<fmt>/kept_<sha8>.{vcf,sam}, dedup'd by
+        # content hash and FIFO-capped per format. The SeedCorpus glob
+        # in subsequent iterations picks them up automatically — no
+        # wiring changes beyond this construct call. Configure via
+        # phase_c.corpus_keeper.{enabled, max_files_per_format}.
+        from test_engine.feedback.corpus_keeper import from_config as _ck_from_cfg
+        corpus_keeper = _ck_from_cfg(cfg, seeds_dir)
+
         result = run_test_suite(
             runners=available,
             registry_path=registry_path,
@@ -767,6 +784,7 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
             primary_target=primary_target_c,
             consensus_quorum_fraction=quorum,
             consensus_field_tolerance=field_tolerance,
+            corpus_keeper=corpus_keeper,
         )
 
         # Export DET report
@@ -827,7 +845,18 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
         from test_engine.feedback.rule_attempts import RuleAttemptTracker
         from mr_engine.registry import triage, merge_registries
 
-        controller = LoopController(feedback_cfg)
+        # Format-aware max_iterations (Run-11 lesson, 2026-04-21).
+        # Without user override, SAM caps at 2 iters (Jazzer paradigm
+        # ceiling reached in 2h budget; iters 3-4 re-run without new
+        # coverage) and VCF stays at 4. An explicit max_iterations
+        # key in biotest_config.yaml overrides either default.
+        # `format_context` hasn't been resolved yet at this point in
+        # the function, so read the format from the config directly.
+        _fc_view = dict(feedback_cfg)
+        _fmt_for_iter = (cfg.get("phase_c", {}).get("format_filter") or "").upper()
+        if "max_iterations" not in feedback_cfg:
+            _fc_view["max_iterations"] = 2 if _fmt_for_iter == "SAM" else 4
+        controller = LoopController(_fc_view)
         scc_tracker = SCCTracker(PROJECT_ROOT / "data" / "parsed")
         coverage_collector = MultiCoverageCollector(cfg.get("coverage", {}))
 
@@ -875,8 +904,16 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
         registry_path = PROJECT_ROOT / cfg.get("phase_b", {}).get(
             "registry_path", "data/mr_registry.json"
         )
-        state_path = PROJECT_ROOT / "data" / "feedback_state.json"
-        attempts_path = PROJECT_ROOT / "data" / "rule_attempts.json"
+        # Allow per-cell isolation in parallel sweeps via cfg overrides.
+        # Defaults keep historical behaviour (PROJECT_ROOT/data/...).
+        state_path = Path(cfg.get("feedback_control", {}).get(
+            "state_path", PROJECT_ROOT / "data" / "feedback_state.json"
+        ))
+        attempts_path = Path(cfg.get("feedback_control", {}).get(
+            "attempts_path", PROJECT_ROOT / "data" / "rule_attempts.json"
+        ))
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        attempts_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Resume from crash if state file exists
         if state_path.exists():
@@ -1146,7 +1183,12 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 "coverage_history": coverage_history,
                 "uncovered_regions_sample": iter_cov_uncovered[:20],
             }
-            (PROJECT_ROOT / "data" / "coverage_report.json").write_text(
+            cov_report_path = Path(cfg.get("feedback_control", {}).get(
+                "coverage_report_path",
+                PROJECT_ROOT / "data" / "coverage_report.json",
+            ))
+            cov_report_path.parent.mkdir(parents=True, exist_ok=True)
+            cov_report_path.write_text(
                 _json.dumps(cov_report, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
@@ -1187,7 +1229,12 @@ def run_phase_d(cfg: dict[str, Any]) -> PhaseDResult:
                 primary_failed_mr_ids=primary_failed_mr_ids,
                 format_context=format_context,
             )
-            scc_report.export(PROJECT_ROOT / "data" / "scc_report.json")
+            scc_report_path = Path(cfg.get("feedback_control", {}).get(
+                "scc_report_path",
+                PROJECT_ROOT / "data" / "scc_report.json",
+            ))
+            scc_report_path.parent.mkdir(parents=True, exist_ok=True)
+            scc_report.export(scc_report_path)
 
             # ── Record attempt outcomes against the cooldown tracker ──
             # Rules that just became covered get their failure history
@@ -1383,6 +1430,123 @@ def _build_empty_tracker():
 
 
 # ===========================================================================
+# Phase E: Corpus Augmentation (Rank 12 structural + Rank 13 lenient byte
+# fuzzer). Auto-runs after Phase D so the seed corpus that downstream
+# Phase-3 mutation testing reads from contains the structural-variety
+# and error-path-diversity inputs Run-6 / Run-7 measured to add ~5–20
+# kills per cell. Outputs are spec-derived and SUT-agnostic.
+# ===========================================================================
+
+@dataclass
+class PhaseEResult:
+    success: bool = False
+    sam_struct_kept: int = 0
+    sam_rawfuzz_kept: int = 0
+    vcf_struct_kept: int = 0
+    vcf_rawfuzz_kept: int = 0
+    duration_s: float = 0.0
+    error: Optional[str] = None
+
+
+def run_phase_e(cfg: dict[str, Any]) -> "PhaseEResult":
+    """Apply Rank 12 (structural_diversifier) and Rank 13 (lenient byte
+    fuzzer) over the Phase-D-completed seed corpus.
+
+    Outputs:
+      seeds/<fmt>_struct/   — Rank 12 structural variants
+      seeds/<fmt>_rawfuzz/  — Rank 13 lenient byte-fuzz variants
+
+    These are picked up automatically by phase3_jazzer_pit.sh,
+    phase3_atheris_biopython.sh, and mutation_driver.py at the
+    Phase-3 mutation-staging step (when TOOL=biotest*).
+
+    Default-on. Disable via biotest_config.yaml:
+        phase_e:
+            enabled: false
+    """
+    from pathlib import Path as _Path
+    t0 = time.monotonic()
+    if not cfg.get("phase_e", {}).get("enabled", True):
+        return PhaseEResult(success=True, duration_s=0.0)
+
+    repo_root = _Path(__file__).resolve().parent
+    seeds_root = repo_root / "seeds"
+    result = PhaseEResult(success=True)
+
+    # Per-format augmentation. Skip a format if its primary seed dir is
+    # empty — Rank 12/13 need at least one source seed to read header
+    # shape / build reasonable variants.
+    formats: list[str] = []
+    for fmt in ("VCF", "SAM"):
+        ext = fmt.lower()
+        seed_dir = seeds_root / ext
+        if seed_dir.is_dir() and any(seed_dir.glob(f"*.{ext}")):
+            formats.append(fmt)
+
+    if not formats:
+        logger.info("Phase E: no seed formats available — skipping")
+        result.duration_s = time.monotonic() - t0
+        return result
+
+    cfg_pe = cfg.get("phase_e", {})
+    struct_max_per_seed = int(cfg_pe.get("structural_max_per_seed", 200))
+    rawfuzz_n_per_seed = int(cfg_pe.get("rawfuzz_n_per_seed", 10))
+    rawfuzz_seed = int(cfg_pe.get("rawfuzz_seed", 42))
+
+    for fmt in formats:
+        ext = fmt.lower()
+        in_dir = seeds_root / ext
+        struct_dir = seeds_root / f"{ext}_struct"
+        rawfuzz_dir = seeds_root / f"{ext}_rawfuzz"
+
+        # Rank 12 — structural variant generator
+        try:
+            from mr_engine.transforms.structural_diversifier import (
+                generate_structural_directory,
+            )
+            r = generate_structural_directory(
+                input_dir=in_dir, output_dir=struct_dir, fmt=fmt,
+                max_per_seed=struct_max_per_seed,
+            )
+            kept = int(r.get("kept", 0))
+            if fmt == "SAM":
+                result.sam_struct_kept = kept
+            else:
+                result.vcf_struct_kept = kept
+            logger.info("Phase E: Rank 12 (%s structural) kept %d files in %s",
+                        fmt, kept, struct_dir)
+        except Exception as e:
+            logger.warning("Phase E: Rank 12 (%s) failed — %s", fmt, e)
+            result.success = False
+            if not result.error:
+                result.error = f"Rank12_{fmt}: {e}"
+
+        # Rank 13 — lenient byte fuzzer
+        try:
+            from mr_engine.transforms.lenient_byte_fuzzer import fuzz_directory
+            r = fuzz_directory(
+                input_dir=in_dir, output_dir=rawfuzz_dir, fmt=fmt,
+                n_per_seed=rawfuzz_n_per_seed, mutations_per_variant=4,
+                seed=rawfuzz_seed,
+            )
+            kept = int(r.get("kept", 0))
+            if fmt == "SAM":
+                result.sam_rawfuzz_kept = kept
+            else:
+                result.vcf_rawfuzz_kept = kept
+            logger.info("Phase E: Rank 13 (%s lenient byte fuzz) kept %d files in %s",
+                        fmt, kept, rawfuzz_dir)
+        except Exception as e:
+            logger.warning("Phase E: Rank 13 (%s) failed — %s", fmt, e)
+            result.success = False
+            if not result.error:
+                result.error = f"Rank13_{fmt}: {e}"
+
+    result.duration_s = time.monotonic() - t0
+    return result
+
+
+# ===========================================================================
 # Rich console output — Executive Summary
 # ===========================================================================
 
@@ -1471,6 +1635,7 @@ def print_executive_summary(
     phase_c: PhaseCResult,
     total_duration: float,
     phase_d: Optional[PhaseDResult] = None,
+    phase_e: Optional["PhaseEResult"] = None,
 ):
     """Print the final executive summary with rich formatting."""
     console.print()
@@ -1540,6 +1705,24 @@ def print_executive_summary(
             _status_icon(phase_d.success),
             _fmt_duration(phase_d.duration_s),
             d_details,
+        )
+
+    # Phase E row
+    if phase_e and (phase_e.duration_s > 0 or phase_e.error):
+        kept_total = (phase_e.vcf_struct_kept + phase_e.vcf_rawfuzz_kept
+                      + phase_e.sam_struct_kept + phase_e.sam_rawfuzz_kept)
+        e_details = (
+            f"+{kept_total} corpus files "
+            f"(VCF: {phase_e.vcf_struct_kept} struct + {phase_e.vcf_rawfuzz_kept} rawfuzz; "
+            f"SAM: {phase_e.sam_struct_kept} struct + {phase_e.sam_rawfuzz_kept} rawfuzz)"
+            if phase_e.success
+            else (phase_e.error or "skipped")
+        )
+        results_table.add_row(
+            "E: Augment",
+            _status_icon(phase_e.success),
+            _fmt_duration(phase_e.duration_s),
+            e_details,
         )
 
     console.print(results_table)
@@ -1684,14 +1867,15 @@ def run_pipeline(cfg: dict[str, Any], phase_filter: Optional[str] = None):
     phase_b_result = PhaseBResult(success=True)
     phase_c_result = PhaseCResult(success=True)
     phase_d_result = PhaseDResult(success=True, termination_reason="not_requested")
+    phase_e_result = PhaseEResult(success=True)
 
-    # Default: run ALL four phases. Phase D (feedback-driven loop) was
-    # historically omitted from the default set and had to be opted
-    # into with --phase D, which meant "python biotest.py" produced a
-    # suspiciously fast "PASS" without actually exercising the feedback
-    # loop. A user running the tool without flags expects the full
-    # pipeline to run — that's what --phase is for opting OUT of, not IN.
-    phases_to_run = {"A", "B", "C", "D"}
+    # Default: run ALL five phases. Phase E (corpus augmentation —
+    # Ranks 12+13) was added 2026-04-23 after Run-7/8 measured those
+    # ranks adding 5–20 kills per cell; making them part of the
+    # auto-pipeline means a default `python biotest.py` produces the
+    # same corpus the mutation-score harness reads from. Disable
+    # individually via --phases A,B,C,D or biotest_config.yaml flags.
+    phases_to_run = {"A", "B", "C", "D", "E"}
     if phase_filter:
         phases_to_run = {p.strip().upper() for p in phase_filter.split(",")}
 
@@ -1722,7 +1906,23 @@ def run_pipeline(cfg: dict[str, Any], phase_filter: Optional[str] = None):
         # --- Phase C ---
         if "C" in phases_to_run and cfg.get("phase_c", {}).get("enabled", True):
             task = progress.add_task("[cyan]Phase C:[/] Running cross-execution tests...", total=None)
-            phase_c_result = run_phase_c(cfg)
+            # Wrap Phase C in coverage.py when Phase D isn't also going to
+            # run, so standalone --phase C invocations still populate the
+            # coverage.py data file for Python SUTs. Phase D already wraps
+            # its own Phase C calls, so skip when D will follow.
+            cov_cfg = cfg.get("coverage", {})
+            _cov_ctx = None
+            if cov_cfg.get("enabled", False) and "D" not in phases_to_run:
+                from test_engine.feedback.coverage_collector import PythonCoverageContext
+                _cov_ctx = PythonCoverageContext(
+                    data_file=cov_cfg.get("coveragepy_data_file", ".coverage"),
+                    source_filter=cov_cfg.get("coveragepy_source_filter", []),
+                )
+            if _cov_ctx is not None:
+                with _cov_ctx:
+                    phase_c_result = run_phase_c(cfg)
+            else:
+                phase_c_result = run_phase_c(cfg)
             progress.remove_task(task)
             icon = "[green]OK[/]" if phase_c_result.success else "[red]FAIL[/]"
             console.print(f"  Phase C: {icon}  ({_fmt_duration(phase_c_result.duration_s)})")
@@ -1735,18 +1935,32 @@ def run_pipeline(cfg: dict[str, Any], phase_filter: Optional[str] = None):
             icon = "[green]OK[/]" if phase_d_result.success else "[red]FAIL[/]"
             console.print(f"  Phase D: {icon}  ({_fmt_duration(phase_d_result.duration_s)})")
 
+        # --- Phase E (corpus augmentation — Ranks 12 + 13) ---
+        if "E" in phases_to_run and cfg.get("phase_e", {}).get("enabled", True):
+            task = progress.add_task("[cyan]Phase E:[/] Corpus augmentation (Ranks 12 + 13)...", total=None)
+            phase_e_result = run_phase_e(cfg)
+            progress.remove_task(task)
+            icon = "[green]OK[/]" if phase_e_result.success else "[red]FAIL[/]"
+            kept_total = (phase_e_result.vcf_struct_kept + phase_e_result.vcf_rawfuzz_kept
+                          + phase_e_result.sam_struct_kept + phase_e_result.sam_rawfuzz_kept)
+            console.print(f"  Phase E: {icon}  ({_fmt_duration(phase_e_result.duration_s)}, "
+                          f"+{kept_total} corpus files: "
+                          f"VCF struct={phase_e_result.vcf_struct_kept}, rawfuzz={phase_e_result.vcf_rawfuzz_kept}; "
+                          f"SAM struct={phase_e_result.sam_struct_kept}, rawfuzz={phase_e_result.sam_rawfuzz_kept})")
+
     total_duration = time.monotonic() - total_t0
 
     # Print summary
     print_executive_summary(
         cfg, phase_a_result, phase_b_result, phase_c_result,
-        total_duration, phase_d_result,
+        total_duration, phase_d_result, phase_e_result,
     )
 
     # Exit code
     all_ok = (
         phase_a_result.success and phase_b_result.success
         and phase_c_result.success and phase_d_result.success
+        and phase_e_result.success
     )
     return 0 if all_ok else 1
 

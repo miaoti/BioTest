@@ -182,6 +182,38 @@ class ParserRunner(ABC):
     # Tier-2a per-class blindspot block flags as under-covered.
     supports_mutator_methods: bool = False
 
+    # ------------------------------------------------------------------
+    # OPTIONAL: STRICT-stringency parse (Lever 2 — bench verification)
+    # ------------------------------------------------------------------
+    # Runners that have a "strict" parse mode (htsjdk
+    # ValidationStringency.STRICT, pysam check_sq=True, vcfpy header
+    # validation, etc.) implement `run_strict_parse` and flip
+    # `supports_strict_parse = True`. The bench's silence predicate
+    # (`bug_bench_driver._replay_trigger_silenced`) calls it before the
+    # default-stringency parse to surface STRICT-only validation
+    # differences (e.g. htsjdk-1360 EMPTY_READ, htsjdk-1410
+    # INVALID_INSERT_SIZE — both invisible under default SILENT).
+    #
+    # The default stays False so existing runners are unaffected.
+    supports_strict_parse: bool = False
+
+    def run_strict_parse(
+        self,
+        input_path: Path,
+        format_type: str,
+        timeout_s: float = 30.0,
+    ) -> "RunnerResult":
+        """Parse `input_path` under the SUT's strictest validation mode.
+
+        Returns RunnerResult.success=True iff the file parses cleanly,
+        False if the strict path raises. Runners without a strict mode
+        raise NotImplementedError; the bench treats that the same as
+        not supporting strict parse (no-op).
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement run_strict_parse"
+        )
+
     def discover_mutator_methods(
         self,
         format_type: str,

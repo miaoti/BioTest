@@ -1,0 +1,100 @@
+% Pipeline overview figure for the BioTest paper.
+% Spans both columns of the IEEEtran conference template.
+% Two-row block diagram in the minimal academic style.
+%
+% Visual semantics (no embedded legend; caption does the work):
+%   - rounded rectangle, light fill, blue rule: framework phase
+%   - rounded rectangle, white fill, grey rule: data artefact
+%   - rounded rectangle, darker fill, heavier rule: user-supplied or decision step
+%   - solid arrow: forward data flow
+%   - dashed arrow: Phase D coverage feedback into Phase B
+
+\tikzset{
+  bt/box/.style={
+    rectangle, rounded corners=1.5pt,
+    draw=black!55, fill=white,
+    line width=0.4pt,
+    inner sep=2.5pt, minimum height=7mm,
+    align=center, font=\scriptsize
+  },
+  bt/phase/.style={
+    bt/box,
+    draw=blue!50!black, fill=blue!4,
+    line width=0.5pt
+  },
+  bt/oracle/.style={
+    bt/box,
+    draw=blue!55!black, fill=blue!10,
+    line width=0.7pt
+  },
+  bt/user/.style={
+    bt/box,
+    draw=black!80, fill=black!8,
+    line width=0.6pt
+  },
+  bt/flow/.style={
+    -{Latex[length=1.3mm,width=1.1mm]},
+    line width=0.45pt, draw=black!75
+  },
+  bt/feedback/.style={
+    -{Latex[length=1.3mm,width=1.1mm]},
+    dashed, line width=0.45pt, draw=black!55
+  },
+}
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize, node distance=3.5mm and 3.5mm]
+
+% --- Row 1: one-shot, per-format ----------------------------------
+\node[bt/box, text width=14mm] (spec)
+  {VCF / SAM\\spec};
+\node[bt/phase, right=of spec, text width=22mm] (A)
+  {\textbf{Phase A}\\Ingest \& embed\\\textit{(ChromaDB)}};
+\node[bt/phase, right=of A, text width=30mm] (B)
+  {\textbf{Phase B}\\LLM-RAG MR mining\\\textit{deepseek-v4-flash}};
+\node[bt/box, right=of B, text width=23mm] (mr)
+  {MR registry\\\textit{seed-validated}};
+\node[bt/box, right=of mr, text width=34mm] (stack)
+  {Corpus stack\\Ranks 1--7 metamorphic\\Ranks 8--13 \textbf{(Phase E)}\\augmentation};
+
+\draw[bt/flow] (spec) -- (A);
+\draw[bt/flow] (A) -- (B);
+\draw[bt/flow] (B) -- (mr);
+\draw[bt/flow] (mr) -- (stack);
+
+% --- Row 2: per-iteration -----------------------------------------
+\node[bt/user, below=11mm of A.south, text width=22mm] (shim)
+  {\textbf{User shim}\\\textit{parse} $\to$ JSON};
+\node[bt/phase, right=of shim, text width=24mm] (C)
+  {\textbf{Phase C}\\Multi-runner exec\\$N{\geq}3$ SUTs};
+\node[bt/oracle, right=of C, text width=27mm] (oracle)
+  {\textbf{Consensus oracle}\\differential $+$ metamorphic};
+\node[bt/box, right=of oracle, text width=28mm] (out)
+  {Candidate bugs\\$+$ mutation grading};
+
+\draw[bt/flow] (shim) -- (C);
+\draw[bt/flow] (C) -- (oracle);
+\draw[bt/flow] (oracle) -- (out);
+
+% Corpus stack feeds Phase C (drop between rows, lower channel)
+\draw[bt/flow]
+  (stack.south) |- ($(C.north)+(0,1.5mm)$) -- (C.north);
+
+% Phase D coverage feedback: oracle output back into Phase B
+% Routed in the upper channel between rows so it does not overlap
+% the corpus-drop arrow.
+\draw[bt/feedback]
+  (oracle.north) -- ++(0,6mm) -|
+  node[pos=0.18, above, font=\scriptsize, text=black!65]
+       {\textit{Phase D: coverage steering}}
+  (B.south);
+
+\end{tikzpicture}
+\caption{\biotest{} pipeline. Phases~A and~B run once per format,
+and phases~C, D, and~E run per iteration. The dashed arrow marks
+Phase~D coverage feedback into Phase~B. The user's only per-SUT
+artefact is the parse-and-emit shim, the same artefact in-process
+coverage-guided fuzzers require.}
+\label{fig:pipeline}
+\end{figure*}

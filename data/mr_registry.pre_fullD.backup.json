@@ -1,0 +1,1447 @@
+{
+  "enforced": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information lines order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_at_least_two_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each record's canonical JSON representation; all records must deep-equal after parsing regardless of meta-line ordering (except ##fileformat which stays first)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::List of changes::p1624",
+          "quote": "Meta-information lines can be in any order, with the exception of ##fileformat which must come first.",
+          "rule_severity": "CRITICAL",
+          "section_id": "List of changes"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured meta-line key-value pair order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header_has_structured_info_or_format_or_filter_lines"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 reordering key=value pairs inside ##INFO=<...>, ##FORMAT=<...>, or ##FILTER=<...> structured lines must not change parsed semantics",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p121",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p11",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "split_multi_allelic normalization invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2"
+      ],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 splitting a multi-ALT record into one record per ALT allele (with synchronized Number=A INFO/FORMAT arrays and remapped GT indices) must represent the same set of variant alleles; a spec-compliant parser must treat both forms equivalently",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p157",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section <ref>).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p158",
+          "quote": "R: The field has one value for each possible allele, including the reference. The order of the values must be the reference allele first, then the alternate alleles as listed in the ALT column.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat must be first line \u2014 moving it breaks spec compliance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "A compliant parser MUST reject (raise error, crash, or refuse to emit) a VCF file where ##fileformat is not the first line. Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p13",
+          "quote": "A single `fileformat' line is always required, must be the first line in the file, and details the VCF format version number.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "missing mandatory fixed column \u2014 dropping QUAL from data line",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "A compliant parser MUST reject a data line with fewer than 8 mandatory columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO). Silent acceptance or auto-filling with missing values is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p50",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles. fixed-fields-alt These alleles do not have to be called in any of the samples.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::List of changes::p1624",
+          "quote": "We state explicitly that zero length strings are not allowed, this includes the CHROM and ID column, INFO IDs, FILTER IDs and FORMAT IDs.",
+          "rule_severity": "CRITICAL",
+          "section_id": "List of changes"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "INFO Number=A cardinality violation \u2014 extra value beyond len(ALT)",
+      "scope": "VCF.record",
+      "preconditions": [
+        "header_has_info_number_a",
+        "alt_count=1"
+      ],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "A compliant parser MUST reject a record where an INFO field declared Number=A has a value count that does not equal len(ALT). Silent acceptance or truncation is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p157",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section <ref>).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p125",
+          "quote": "The Number entry is an Integer that describes the number of values that can be included with the INFO field.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "writer round-trip preserves 1-based POS coordinates and REF/ALT strings",
+      "scope": "VCF.record",
+      "preconditions": [
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all POS values, CHROM, REF, ALT, and END fields; the writer must not introduce off-by-one errors in coordinate serialization",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p48",
+          "quote": "POS --- position: The reference position, with the 1st base having position 1. Positions are sorted numerically, in increasing order, within each reference sequence CHROM.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Example 1::p924",
+          "quote": "Note that the positions must be sorted in increasing order:",
+          "rule_severity": "CRITICAL",
+          "section_id": "Example 1"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0340d2bf0c09",
+      "mr_name": "Meta-line shuffle preserves variant classification queries",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "is_snv",
+        "is_variant",
+        "is_filtered",
+        "is_het",
+        "is_phased"
+      ]
+    },
+    {
+      "mr_id": "ad668b4509db",
+      "mr_name": "INFO field key-value shuffle preserves variant type queries",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p11",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "is_snv",
+        "is_variant",
+        "is_filtered",
+        "affected_start",
+        "affected_end"
+      ]
+    },
+    {
+      "mr_id": "f64872b0c184",
+      "mr_name": "Structured meta-line key-value permutation preserves record queries",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p11",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "is_snv",
+        "is_variant",
+        "is_filtered",
+        "is_het",
+        "is_phased"
+      ]
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR/SEQ length violation detection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "After appending 5M to the CIGAR without extending SEQ, the CIGAR's query-consuming length no longer equals len(SEQ). Spec-compliant parsers must reject this record or flag it as invalid.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p53",
+          "quote": "If not a '*', the length of the sequence must equal the sum of lengths of M I S = X operations in CIGAR.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "d32bc566b4b5",
+      "mr_name": "POS 1-based coordinate invariance under CIGAR split-merge",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getAlignmentStart, getAlignmentEnd, getStart, getEnd, getLengthOnReference must be invariant under CIGAR split/merge since POS is defined as the 1-based leftmost mapping position of the first CIGAR operation that consumes a reference base, and the alignment end is derived from POS + CIGAR reference-consuming length.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that ``consumes'' a reference base (see table below). The first base in a reference sequence has coordinate 1. POS is set as 0 for an unmapped read without coordinate.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "Sum of lengths of the MIS=X operations shall equal the length of SEQ.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getStart",
+        "getEnd",
+        "getLengthOnReference"
+      ]
+    },
+    {
+      "mr_id": "fb2241bf6655",
+      "mr_name": "PNEXT 1-based coordinate invariance under header reordering",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for getMateAlignmentStart, getMateReferenceName, getMateUnmappedFlag. PNEXT is defined as the 1-based position of the primary alignment of the next read in the template. Reordering @SQ header lines does not change alignment record field values.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "PNEXT: 1-based Position of the primary alignment of the NEXT read in the template. Set as 0 when the information is unavailable. This field equals POS at the primary line of the next read.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getMateAlignmentStart",
+        "getMateReferenceName",
+        "getMateUnmappedFlag"
+      ]
+    },
+    {
+      "mr_id": "8fbc3d118f7a",
+      "mr_name": "Unmapped read POS=0 invariance under BAM round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for getReadUnmappedFlag, getAlignmentStart, getReferenceName, getStart. For unmapped reads (flag 0x4 set), POS must be 0 and RNAME must be '*'. The BAM round-trip must preserve this invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that ``consumes'' a reference base (see table below). The first base in a reference sequence has coordinate 1. POS is set as 0 for an unmapped read without coordinate.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadUnmappedFlag",
+        "getAlignmentStart",
+        "getReferenceName",
+        "getStart"
+      ]
+    },
+    {
+      "mr_id": "ce4ded5e9811",
+      "mr_name": "Query invariance under SAM optional tag field permutation",
+      "scope": "SAM.record",
+      "preconditions": [
+        "primary_sut_has_query_methods"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling optional TAG:TYPE:VALUE fields (columns 12+) does not change the 11 mandatory fields, so query methods that return mandatory-field values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p1",
+          "quote": "Each alignment line has 11 mandatory fields for essential alignment information such as mapping position, and variable number of optional fields for flexible or aligner specific information.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::SAM Version History::p326",
+          "quote": "Clarify that header field tags must be distinct within each line, and that the ordering of both header fields and alignment optional fields is not significant. (Jun 2021)",
+          "rule_severity": "CRITICAL",
+          "section_id": "SAM Version History"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getReadString",
+        "getBaseQualityString",
+        "getFlags",
+        "getMappingQuality"
+      ]
+    },
+    {
+      "mr_id": "a4eeeffccfb1",
+      "mr_name": "Query invariance under @SQ header subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling TAG:VALUE pairs inside @SQ records (e.g., SN:chr1 LN:248956422 -> LN:248956422 SN:chr1) is semantics-preserving per SAMv1 \u00a71.3, so query methods returning reference-related values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@SQ & Reference sequence dictionary. The order of @SQ lines defines the alignment sorting order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p27",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReferenceName",
+        "getContig",
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getLengthOnReference"
+      ]
+    },
+    {
+      "mr_id": "7bbdedead457",
+      "mr_name": "Query invariance under @HD subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling TAG:VALUE pairs inside the @HD header line (e.g., VN:1.6 SO:coordinate -> SO:coordinate VN:1.6) is semantics-preserving per SAMv1 \u00a71.3, so query methods returning alignment-level values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::SAM Version History::p326",
+          "quote": "Clarify that header field tags must be distinct within each line, and that the ordering of both header fields and alignment optional fields is not significant. (Jun 2021)",
+          "rule_severity": "CRITICAL",
+          "section_id": "SAM Version History"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getMappingQuality",
+        "getReadString",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "c109629a39d9",
+      "mr_name": "Query invariance under @CO comment line shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling @CO comment lines is semantics-preserving per SAMv1 \u00a71.3 (@CO lines are unordered free-text comments), so query methods returning alignment-level values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p30",
+          "quote": "@CO & One-line text comment. Unordered multiple @CO lines are allowed. UTF-8 encoding may be used.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getReferenceName",
+        "getAlignmentStart",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "5a747eb910c3",
+      "mr_name": "Query invariance under @PG record subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling TAG:VALUE pairs inside @PG program records is semantics-preserving per SAMv1 \u00a71.3 (intra-line field order is not significant), so query methods returning alignment-level values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Version History::p326",
+          "quote": "Clarify that header field tags must be distinct within each line, and that the ordering of both header fields and alignment optional fields is not significant. (Jun 2021)",
+          "rule_severity": "CRITICAL",
+          "section_id": "SAM Version History"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p27",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getMappingQuality",
+        "getReadString",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "e9c878249218",
+      "mr_name": "Query invariance under @RG record subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling TAG:VALUE pairs inside @RG read-group records is semantics-preserving per SAMv1 \u00a71.3 (intra-line field order is not significant), so query methods returning alignment-level values must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Version History::p326",
+          "quote": "Clarify that header field tags must be distinct within each line, and that the ordering of both header fields and alignment optional fields is not significant. (Jun 2021)",
+          "rule_severity": "CRITICAL",
+          "section_id": "SAM Version History"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p27",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getMappingQuality",
+        "getReadString",
+        "getCigarString"
+      ]
+    }
+  ],
+  "quarantine": [
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key-value pair order invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "info_has_multiple_keys"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 the semicolon-separated key=value pairs in the INFO column have no specified ordering; parsers must treat them as an unordered set",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p404",
+          "quote": "Duplicate keys are not allowed. Arbitrary keys are permitted, although those listed in Table <ref> and described below are reserved (albeit optional).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Fixed fields"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that INFO key=value pairs are unordered, but it only forbids duplicate keys and does not mandate any ordering, implying set semantics."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_at_least_two_samples"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 sample columns are identified by their header ID, not by column position; permuting columns must yield identical per-sample data when accessed by sample name",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The VCF spec does not explicitly state that sample columns can be in any order; however, sample data is accessed by column header name, not position, implying positional invariance is not required."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with GT and Number A/R field remapping invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 reordering ALT alleles with corresponding remapping of GT indices and Number=A/R INFO/FORMAT values preserves the same biological variant set",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p157",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section <ref>).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec mandates Number=A values follow ALT order, so remapping is required when ALT is permuted; the oracle must verify that the remapped representation is semantically equivalent."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "trim_common_affixes normalization invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]"
+      ],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 the canonical normalized representation must be semantically identical; any parser that normalizes must recognize the trimmed form as the same variant as the untrimmed form",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p214",
+          "quote": "For simple insertions and deletions in which either the REF or one of the ALT alleles would otherwise be null/empty, the REF and ALT Strings must include the base before the variant (which must be reflected in the POS field), unless the variant occurs at position 1 on the contig in which case it must include the base after the variant; this padding base is not required (although it is permitted) e.g. for complex substitutions or other variants where all alleles have at least one base represented in their Strings.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says padding base is 'not required (although it is permitted)' for complex substitutions \u2014 this MAY/SHOULD ambiguity means both padded and unpadded forms are valid, making this a strong MR candidate"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "left_align_indel normalization invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)!=len(ALT)",
+        "REF[0]==REF[-1]",
+        "pos>=2"
+      ],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 left-shifting an indel in a homopolymer run produces a canonical equivalent representation; a spec-compliant parser must recognize both forms as the same variant",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p214",
+          "quote": "For simple insertions and deletions in which either the REF or one of the ALT alleles would otherwise be null/empty, the REF and ALT Strings must include the base before the variant (which must be reflected in the POS field), unless the variant occurs at position 1 on the contig in which case it must include the base after the variant; this padding base is not required (although it is permitted) e.g. for complex substitutions or other variants where all alleles have at least one base represented in their Strings.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly mandate left-alignment; this is a best-practice normalization per Tan et al. 2015, not a VCF spec requirement per se"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "vcf_bcf_round_trip normalization invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) \u2014 round-tripping VCF through BCF2 binary encoding and back must produce semantically identical canonical output; any difference exposes a codec bug in precision, string encoding, or dictionary remapping",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p50",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles. These alleles do not have to be called in any of the samples.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p157",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section <ref>).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        }
+      ],
+      "ambiguity_flags": [
+        "BCF2 encoding specifics are implementation-defined; the spec does not mandate bit-exact round-trip fidelity for all field types (e.g., Float precision)"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "GT allele index out of bounds \u2014 index exceeds number of ALT alleles",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count=1",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "A compliant parser MUST reject a record where a GT allele index is greater than len(ALT) (i.e., references a non-existent alternate allele). Silent acceptance or auto-correction is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p50",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p63",
+          "quote": "The first key must always be the genotype (GT) if it is present.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state the exact bounds for GT allele indices (0..len(ALT)) in a single normative sentence, but it is implied by the definition of ALT as the list of alternate alleles and GT as indices into that list."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "d2e70d8d4cb6",
+      "mr_name": "Sample column permutation preserves per-sample genotype queries",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "permute_sample_columns",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method; sample identity is preserved by the permutation mapping",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that sample column order is semantically irrelevant, but the header line defines sample IDs which are permuted together with data columns"
+      ],
+      "query_methods": [
+        "gt_type",
+        "is_het",
+        "is_phased",
+        "gt_bases",
+        "gt_phase_char"
+      ]
+    },
+    {
+      "mr_id": "45784efe0361",
+      "mr_name": "Equivalent missing value injection preserves genotype queries",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "inject_equivalent_missing_values",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method; adding missing '.' values to FORMAT fields is semantically a no-op",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p525",
+          "quote": "If genotype information is present, then the same types of data must be present for all samples.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Genotype fields"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec requires FORMAT fields to be present for all samples; injecting a missing-value field is a new field not originally declared, which some parsers may reject"
+      ],
+      "query_methods": [
+        "gt_type",
+        "is_het",
+        "is_phased",
+        "gt_bases",
+        "gt_phase_char"
+      ]
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "SAM optional tag field order invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts optional tags so the text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: optional fields::p127",
+          "quote": "All optional fields follow the TAG:TYPE:VALUE format where TAG is a two-character string that matches /[A-Za-z][A-Za-z0-9]/.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The alignment section: optional fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "SAM @HD header subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts @HD subtags so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SAM @SQ header subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts @SQ subtags so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "SAM @RG header subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts @RG subtags so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "SAM @PG header subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts @PG subtags so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts @CO lines so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "In the header, each line is TAB-delimited and, apart from @CO lines, each data field follows a format `TAG:VALUE' where TAG is a two-character string that defines the format and content of VALUE. Thus header lines match /@(HD|SQ|RG|PG)(\\t[A-Za-z][A-Za-z0-9]:[ -~]+)+$/ or /@CO\\t.*/.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [
+        "@CO lines are free-text comments with no TAG:VALUE structure; the spec does not impose ordering semantics on them, but also does not explicitly state they can be reordered \u2014 the absence of ordering constraints implies they can be arbitrarily ordered"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "SAM header record reordering invariance (@SQ, @RG, @PG)",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line or has_rg_line or has_pg_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each query method; the canonical normalizer sorts header records of the same type so text-level comparison also passes",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec explicitly states @HD must be first if present, but does not mandate any specific order among @SQ, @RG, @PG lines of the same type; however, @SQ order defines the coordinate sort order (SAMv1 \u00a71.3), so reordering @SQ lines changes the semantics for coordinate-sorted files \u2014 this MR is only valid for unsorted/queryname-sorted files"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "96ca029635de",
+      "mr_name": "Header line subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line",
+        "has_sq_line",
+        "has_rg_line",
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "After independently shuffling the TAG:VALUE pairs within each header line (@HD, @SQ, @RG, @PG), the parsed SAM file must be semantically identical. All query methods that return alignment-level properties must return identical values before and after the transform.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "Adjacent CIGAR operation split/merge invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "After splitting or merging adjacent identical CIGAR operations (e.g., 10M -> 4M6M or 4M6M -> 10M), the total query-consuming length must remain unchanged, and the alignment position and all other record fields must remain semantically equivalent. The SEQ length must still equal the sum of M/I/S/=X operations in CIGAR.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p53",
+          "quote": "If not a '*', the length of the sequence must equal the sum of lengths of M I S = X operations in CIGAR.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "Adjacent CIGAR operations should be different per recommended practice (ADVISORY), but this is not a normative requirement."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Flag bit exclusivity violation detection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "Setting flag 0x4 (segment unmapped) on a mapped read (RNAME != '*' and POS > 0) creates an inconsistency that spec-compliant parsers must detect or handle. The spec states that if 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ. A conformant parser should either reject this record or handle the inconsistency gracefully.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'no assumptions can be made' when 0x4 is set, but does not explicitly mandate rejection \u2014 parsers may handle this differently."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag type character violation detection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "After replacing the type character of an optional tag with an illegal character ('X'), spec-compliant parsers must reject the record since the type must be one of A,i,f,Z,H,B.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "In an optional field, TYPE is a single case-sensitive letter which defines the format of VALUE",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec lists valid types (A,i,f,Z,H,B) but the exact rejection behavior when an invalid type is encountered is implementation-defined."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "BAM round-trip normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After round-tripping through BAM (SAM \u2192 BAM \u2192 SAM), the canonical normalized form of the file must be identical to the original. The BAM binary encoding preserves all SAM fields; any differences indicate a codec bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The BAM Format Specification::p186",
+          "quote": "[SAM v1 \u2014 The BAM Format Specification] BAM is compressed in the BGZF format. All multi-byte numbers in BAM are little-endian, regardless of the machine endianness. The format is formally described in the following table where values in brackets are the default when the corresponding information is not available; an underlined word in uppercase denotes a field in the SAM format.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The BAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "BAM uses little-endian byte order and BGZF compression; some edge cases around missing QUAL (0xFF fill) may differ between implementations."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "Write round-trip normalization invariance via primary SUT",
+      "scope": "SAM.record",
+      "preconditions": [
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Parsing the SAM file with the primary SUT, re-serializing via its writer API, and re-parsing must yield identical records. Any difference exposes a writer bug in the primary SUT.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p1",
+          "quote": "[SAM v1 \u2014 The SAM Format Specification] SAM stands for Sequence Alignment/Map format. It is a TAB-delimited text format consisting of a header section, which is optional, and an alignment section.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "Different SUTs may normalize optional tags or header ordering differently on write; the oracle compares parsed objects, not raw text."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency for paired reads must be enforced",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when paired-end reads have same-signed TLEN values; silent acceptance or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost, and the sign for any middle segment is undefined. If segments cover the same coordinates then the choice of which is leftmost and rightmost is arbitrary, but the two ends must still have differing signs.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'the two ends must still have differing signs' but does not specify what happens when TLEN is 0 or when segments are unmapped \u2014 some implementations may accept same-signed TLENs in edge cases"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c6fa4b634f8f",
+      "mr_name": "SAM header subtag order invariance under shuffle_hd_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling TAG:VALUE pairs within @HD header line does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "b21cab2c909c",
+      "mr_name": "SAM @SQ record subtag order invariance under shuffle_sq_record_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling TAG:VALUE pairs within @SQ records does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8504d219de57",
+      "mr_name": "SAM @RG record subtag order invariance under shuffle_rg_record_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling TAG:VALUE pairs within @RG records does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fbb06f43d03e",
+      "mr_name": "SAM @PG record subtag order invariance under shuffle_pg_record_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling TAG:VALUE pairs within @PG records does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31c937b866ae",
+      "mr_name": "SAM @CO comment line order invariance under shuffle_co_comments",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling @CO comment lines does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "In the header, each line is TAB-delimited and, apart from @CO lines, each data field follows a format ` TAG:VALUE' where TAG is a two-character string that defines the format and content of VALUE.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "@CO lines are free-text comments; the spec does not assign ordering semantics to them, but the canonical normalizer sorts them for deterministic comparison"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3536067649f8",
+      "mr_name": "SAM optional tag field order invariance under permute_optional_tag_fields",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): shuffling optional TAG:TYPE:VALUE fields on alignment lines does not change the canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c9a73331e977",
+      "mr_name": "SAM BAM codec round-trip invariance under sam_bam_round_trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): SAM parsed content is preserved after BAM binary encoding and decoding round-trip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The BAM Format Specification::p193",
+          "quote": "Base qualities are stored as bytes in the range $[0,93]$, without any +33 conversion to printable ASCII.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The BAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "BAM encodes base qualities as raw bytes; the canonical normalizer must handle the +33 offset difference between SAM text and BAM binary representation"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ca91c1984221",
+      "mr_name": "SAM CRAM codec round-trip invariance under sam_cram_round_trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available",
+        "cram_reference_available"
+      ],
+      "transform_steps": [
+        "sam_cram_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): SAM parsed content is preserved after CRAM binary encoding and decoding round-trip (accounting for lossy =/X\u2192M collapse)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "CRAM collapses =/X CIGAR operations to M by default per Bonfield CRAM 3.1; the canonical normalizer's cram_safe mode accounts for this lossy transformation"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2dc0ee17b8ae",
+      "mr_name": "SAM CIGAR split/merge invariance under split_or_merge_adjacent_cigar_ops",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): splitting or merging adjacent identical CIGAR operations preserves total query-consumed length and alignment semantics after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "CIGAR: CIGAR string. The CIGAR operations are given in the following table (set `*' if unavailable)",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec defines CIGAR operations but does not explicitly state that adjacent identical ops may be split or merged; this is a derived equivalence from the semantics of each operator"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "36e9326e8b1e",
+      "mr_name": "SAM header record reordering invariance under reorder_header_records",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "parse(x) == parse(T(x)): reordering same-type header lines (e.g. @SQ or @RG) preserves canonical content after write-roundtrip",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p26",
+          "quote": "Within each (non- @CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec states field order within a line is not significant, but does not explicitly address line order among same-type header records; @HD must remain first"
+      ],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 20,
+    "quarantine_count": 33,
+    "total": 53
+  }
+}

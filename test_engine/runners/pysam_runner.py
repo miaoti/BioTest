@@ -60,6 +60,14 @@ class PysamRunner(ParserRunner):
     # `--mode discover_methods` / `--mode query` in pysam_harness.py.
     supports_query_methods: bool = True
 
+    # Lever 2 — opt in to STRICT-stringency parsing. Bench's silence
+    # predicate calls run_strict_parse to detect STRICT-only validation
+    # differences. pysam exposes header / per-record validation via
+    # AlignmentFile(check_sq=True) and VariantFile (which always
+    # validates the header). Native path only — the Docker fallback
+    # would need an analogous --mode flag and is left for a follow-up.
+    supports_strict_parse: bool = True
+
     def __init__(self, coverage_dir: Optional[Path] = None):
         self._docker_runner: Optional[ParserRunner] = None
         self._coverage_dir = coverage_dir
@@ -269,6 +277,66 @@ class PysamRunner(ParserRunner):
                 duration_ms=(time.monotonic() - t0) * 1000,
             )
 
+    def run_strict_parse(
+        self,
+        input_path: Path,
+        format_type: str,
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        """Parse under pysam's strict-validation knobs.
+
+        SAM: AlignmentFile(check_sq=True) — header @SQ lines must match
+        records' RNAME, otherwise the iterator raises.
+        VCF: VariantFile auto-validates the header on open; iterating
+        every record exercises per-record sample/INFO type checks.
+        Returns success=True iff every record parses cleanly.
+
+        Native pysam only — Windows/Docker fallback returns ineligible.
+        """
+        fmt = format_type.upper()
+        if fmt not in self.supported_formats:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=format_type,
+                error_type="ineligible",
+                stderr=f"pysam strict_parse does not support {format_type!r}",
+            )
+        if not self._use_native():
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="ineligible",
+                stderr="pysam strict_parse: native pysam not available "
+                       "(Docker fallback intentionally not wired)",
+            )
+        t0 = time.monotonic()
+        try:
+            import pysam as _pysam
+            if fmt == "SAM":
+                with _pysam.AlignmentFile(
+                    str(input_path), "r", check_sq=True
+                ) as af:
+                    for _ in af:
+                        pass
+            else:  # VCF
+                with _pysam.VariantFile(str(input_path)) as vf:
+                    _ = vf.header
+                    for rec in vf:
+                        _ = (rec.chrom, rec.pos, rec.id, rec.ref,
+                             list(rec.alts) if rec.alts else None,
+                             dict(rec.info))
+                        for sname in vf.header.samples:
+                            _ = dict(rec.samples[sname])
+            return RunnerResult(
+                success=True, parser_name=self.name, format_type=fmt,
+                exit_code=0, duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                exit_code=2, error_type="parse_error",
+                stderr=f"strict_parse rejected: {type(e).__name__}: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+
     def _parse(self, input_path: Path, format_type: str) -> dict[str, Any]:
         import pysam
 
@@ -303,8 +371,14 @@ class PysamRunner(ParserRunner):
         # Records
         records = []
         for rec in vcf:
-            # CRITICAL: pysam rec.pos is 0-based! Add +1 for 1-based canonical.
-            pos = rec.pos + 1
+            # pysam 0.22+: `rec.pos` is ALREADY 1-based (`rec.start` is the
+            # 0-based sibling). Earlier releases exposed `.pos` as 0-based —
+            # the canonical-schema comment above was written against that
+            # older semantics and left the +1 in place, which pushed every
+            # VCF record's POS off-by-one on modern pysam builds. Confirmed
+            # by oracle-validation sanity check 2026-04-22:
+            #   file POS=14370  rec.pos=14370  rec.start=14369.
+            pos = rec.pos
 
             rec_id = None if rec.id is None else rec.id
             alt = list(rec.alts) if rec.alts else []
@@ -322,16 +396,27 @@ class PysamRunner(ParserRunner):
                 info[key] = val
             info = dict(sorted(info.items()))
 
-            # Samples
+            # Samples. pysam emits GT as a tuple of ints ``(0, 0)`` and
+            # keeps the phase bit on a separate ``phased`` attribute —
+            # if we listify and drop that flag, every phased call
+            # becomes ``"0/0"`` and disagrees with vcfpy/reference's
+            # ``"0|0"``. Build the string form explicitly here.
             sample_data: dict[str, dict] = {}
             for sample_name in samples:
                 sample = rec.samples[sample_name]
                 fields: dict[str, Any] = {}
+                phased = bool(getattr(sample, "phased", False))
                 for key in sample.keys():
                     val = sample[key]
-                    if isinstance(val, tuple):
-                        val = list(val)
-                    fields[key] = val
+                    if key == "GT" and isinstance(val, (list, tuple)):
+                        sep = "|" if phased else "/"
+                        fields[key] = sep.join(
+                            "." if x is None else str(x) for x in val
+                        )
+                    elif isinstance(val, tuple):
+                        fields[key] = list(val)
+                    else:
+                        fields[key] = val
                 sample_data[sample_name] = fields
 
             fmt = list(rec.format.keys()) if rec.format else None

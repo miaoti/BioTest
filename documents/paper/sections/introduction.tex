@@ -1,0 +1,108 @@
+\section{Introduction}
+\label{sec:introduction}
+
+A misread alignment flag, a 1-based coordinate parsed as 0-based,
+or a silent record drop in a Variant Call Format (VCF) file
+propagates from the parser to every downstream tool that consumes
+its output. Independent variant-calling pipelines disagree substantially on
+the same input data~\citep{orawe2013concordance}, and the
+discrepancy has motivated sustained investment in pipeline-level
+benchmark infrastructure such as Genome in a
+Bottle~\citep{zook2019giab} and the GA4GH best-practice
+protocol~\citep{krusche2019benchmarking}. These efforts grade the
+joint behaviour of caller and parser under the assumption that
+parsers are sound. Whether they are is rarely
+tested directly. Concrete consequences are easy to find in
+upstream issue trackers: htsjdk SAM regressions that accepted
+reference names with delimiters disallowed by SAM 1.6 and that
+over-strictly rejected reads with template lengths above
+$2^{29}$, and a vcfpy regression that silently accepted symbolic
+ALT alleles VCF restricts to gVCF mode. Such regressions
+corrupt records that downstream callers treat as authoritative,
+and the error propagates to every downstream analysis. The
+textual specifications fix the on-disk grammar but leave many
+record-level semantics to de facto consensus, so testers operate
+without an external oracle~\citep{barr2015oracle}.
+
+Metamorphic testing replaces ``what should the output be?'' with
+relations on related
+outputs~\citep{chen1998metamorphic,chen2018metamorphic}.
+File-format parsers fit cleanly: identity-preserving transforms
+over the spec-defined grammar yield equivalence relations
+derivable from the specification rather than from the parser
+source. The dominant cost is the relations themselves. The
+field's open-challenge survey~\citep{chen2018metamorphic}
+catalogues MR identification as the central problem, and existing
+studies report relations specified per SUT by human experts in
+the SUT's host language~\citep{segura2016survey}. The
+bioinformatics ecosystem maintains parsers for VCF and SAM in
+four host languages simultaneously (htsjdk in Java, biopython and
+vcfpy in Python, noodles in Rust, seqan3 in C++), so a
+hand-authored per-SUT pipeline does not scale. The strongest
+competing approaches do not scale either: coverage-guided fuzzers
+require bytecode rewriting, sanitizer-instrumented builds, or
+fork-server harnessing on top of the parse-and-emit shim every
+fuzz tool needs.
+
+We describe \biotest{}, a metamorphic testing pipeline that
+replaces the human MR-identification step with an LLM-driven,
+spec-grounded mining stage. The published specification is
+indexed for retrieval-augmented prompting~\citep{lewis2020rag}.
+An LLM (\texttt{deepseek-v4-flash}) proposes identity-preserving
+transforms grounded in the spec rule each transform claims to
+preserve, validated against a seed corpus before admission.
+Inputs flow through a thirteen-rank stack (Ranks~1--7
+metamorphic, Ranks~8--13 augmentation), and the oracle is
+multi-runner consensus across $N{\geq}3$ independent parsers. The
+user's per-SUT effort is a parse-and-emit shim that emits a
+canonical-JSON record set. \biotest{} adds no per-SUT MR, oracle
+predicate, seed-corpus curation, or instrumentation on top.
+Figure~\ref{fig:pipeline} gives the visual overview.
+
+We evaluate \biotest{} on six $(\mathrm{SUT, format})$
+configurations against five coverage-guided fuzzers and a
+Pure-Random floor across three axes: mutation adequacy,
+end-of-run line coverage, and a silence-on-fix
+benchmark~\citep{boehme2021estimating} of $32$ verified parser
+bugs (a fix is judged to silence a tool's signal iff the same
+input that triggers it on the pre-fix version no longer triggers
+it on the post-fix version). \biotest{} is competitive with the
+strongest coverage-guided fuzzer on text-rich parsers and trails
+on byte-content-lenient ones, consistent with the empirical
+pattern of Klees et al.~\cite{klees2018fuzz} and
+B\"ohme et al.~\cite{boehme2020boosting}. On the bug benchmark it detects $10$ of $32$ parser bugs across
+three host languages (Java/htsjdk, Python/vcfpy, Rust/noodles),
+where every crash-only input fuzzer in the slate detects zero.
+Detection is end-to-end audited under the silence-on-fix
+predicate of B\"ohme et al.~\cite{boehme2021estimating} on
+inputs the tool's adapter produced during the per-cell budget,
+not on the manifest's canonical proof-of-vulnerability files
+alone.
+
+\paragraph{Contributions.}
+\begin{enumerate}[label=(\roman*),leftmargin=*]
+  \item \biotest{}, a metamorphic testing pipeline for textual VCF
+        and SAM parsers in which an LLM mines spec-grounded MRs
+        (rather than per-SUT hand authoring) under RAG retrieval
+        and seed-corpus validation, with parser behaviour graded
+        by a multi-runner consensus oracle.
+  \item A thirteen-rank corpus stack that combines grammar-driven
+        metamorphic transforms with structural and lenient-byte
+        augmentation, plus empirical characterisation of when the
+        augmentation ranks fail.
+  \item A three-axis evaluation (mutation adequacy, line
+        coverage, $32$-bug silence-on-fix benchmark) under matched
+        protocols that maps where grammar-driven generation
+        matches, leads, and trails coverage-guided fuzzing under
+        the bounded per-SUT effort envelope
+        (\S\ref{sec:evaluation}).
+\end{enumerate}
+
+\paragraph{Roadmap.}
+\S\ref{sec:related} surveys prior work in metamorphic testing,
+coverage-guided fuzzing, mutation testing, and bioinformatics
+parser correctness. \S\ref{sec:design} and
+\S\ref{sec:implementation} present the design and implementation
+of \biotest{}. \S\ref{sec:evaluation} reports the three-axis
+evaluation, and \S\ref{sec:threats} discusses threats to validity.
+\S\ref{sec:conclusion} concludes.

@@ -790,7 +790,16 @@ class NoodlesCoverageCollector(CoverageCollector):
         # Can we regenerate from .profraw files?
         if self.profile_dir and self.profile_dir.exists():
             import shutil
-            if shutil.which("cargo") and any(self.profile_dir.glob("*.profraw")):
+            has_profraw = any(self.profile_dir.glob("*.profraw"))
+            if not has_profraw:
+                return False
+            # Either rust-bundled llvm-cov (preferred — sees external
+            # crate symbols) or cargo-llvm-cov (fallback) is enough.
+            llvm_cov = Path(
+                "/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu"
+                "/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov"
+            )
+            if llvm_cov.exists() or shutil.which("cargo"):
                 return True
         return False
 
@@ -799,24 +808,90 @@ class NoodlesCoverageCollector(CoverageCollector):
             return True
         if not self.manifest_path or not self.manifest_path.exists():
             return False
+        if not self.profile_dir or not self.profile_dir.exists():
+            return False
         import shutil
         import subprocess as _sp
-        if not shutil.which("cargo"):
+
+        # cargo-llvm-cov 0.8.5's `report --json` only enumerates workspace
+        # packages, even with `--package noodles-vcf` (the external crate
+        # rlib symbols never appear). Bypass it by driving the underlying
+        # llvm-cov tool directly: merge profraws -> profdata, then
+        # llvm-cov export against the instrumented binary. Output
+        # includes external deps (e.g. 168 noodles-vcf files when the
+        # crate is built with -C instrument-coverage).
+        toolchain_bin = Path(
+            "/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu"
+            "/lib/rustlib/x86_64-unknown-linux-gnu/bin"
+        )
+        llvm_profdata = toolchain_bin / "llvm-profdata"
+        llvm_cov = toolchain_bin / "llvm-cov"
+        if not llvm_profdata.exists() or not llvm_cov.exists():
+            # Fall back to cargo-llvm-cov if the rust-bundled tools
+            # aren't where we expect (host runs without the bench
+            # container).
+            if not shutil.which("cargo"):
+                return False
+            try:
+                self.report_path.parent.mkdir(parents=True, exist_ok=True)
+                cmd = [
+                    "cargo", "llvm-cov", "report", "--json", "--release",
+                    "--manifest-path", str(self.manifest_path),
+                ]
+                out = _sp.run(cmd, capture_output=True, text=True, timeout=180)
+                if out.returncode != 0:
+                    logger.warning("cargo llvm-cov report failed: %s", out.stderr)
+                    return False
+                self.report_path.write_text(out.stdout, encoding="utf-8")
+                return self.report_path.exists()
+            except Exception as e:
+                logger.warning("cargo-llvm-cov fallback failed: %s", e)
+                return False
+
+        # Locate the instrumented binary. The cov sweep builds it under
+        # target/release (RUSTFLAGS path) or target/llvm-cov-target/release
+        # (cargo llvm-cov path); prefer whichever exists.
+        manifest_dir = self.manifest_path.parent
+        candidates = [
+            manifest_dir / "target" / "release" / "noodles_harness",
+            manifest_dir / "target" / "llvm-cov-target" / "release"
+                          / "noodles_harness",
+        ]
+        binary = next((p for p in candidates if p.exists()), None)
+        if binary is None:
+            logger.warning(
+                "noodles cov binary not found under %s/target/{release,llvm-cov-target/release}",
+                manifest_dir,
+            )
             return False
+
         try:
             self.report_path.parent.mkdir(parents=True, exist_ok=True)
-            cmd = [
-                "cargo", "llvm-cov", "report", "--json",
-                "--manifest-path", str(self.manifest_path),
-            ]
-            out = _sp.run(cmd, capture_output=True, text=True, timeout=180)
-            if out.returncode != 0:
-                logger.warning("cargo llvm-cov report failed: %s", out.stderr)
+            profraws = sorted(self.profile_dir.glob("*.profraw"))
+            if not profraws:
                 return False
-            self.report_path.write_text(out.stdout, encoding="utf-8")
+            profdata = self.report_path.parent / "merged.profdata"
+            merge = _sp.run(
+                [str(llvm_profdata), "merge", "-sparse",
+                 *[str(p) for p in profraws],
+                 "-o", str(profdata)],
+                capture_output=True, text=True, timeout=120,
+            )
+            if merge.returncode != 0:
+                logger.warning("llvm-profdata merge failed: %s", merge.stderr)
+                return False
+            export = _sp.run(
+                [str(llvm_cov), "export", str(binary),
+                 f"-instr-profile={profdata}"],
+                capture_output=True, text=True, timeout=180,
+            )
+            if export.returncode != 0:
+                logger.warning("llvm-cov export failed: %s", export.stderr)
+                return False
+            self.report_path.write_text(export.stdout, encoding="utf-8")
             return self.report_path.exists()
         except Exception as e:
-            logger.warning("cargo-llvm-cov report generation failed: %s", e)
+            logger.warning("noodles report generation failed: %s", e)
             return False
 
     def collect(self, format_filter: Optional[list[str]] = None) -> CoverageResult:
@@ -843,10 +918,28 @@ class NoodlesCoverageCollector(CoverageCollector):
             # We iterate over files, keep those whose path matches the
             # crate filter, and sum line counts from summary when
             # available (falling back to per-segment counts).
+            # Normalize Cargo registry paths (strip /index.crates.io-<hash>/
+            # prefix and trailing -<version>/ on first segment) so filter
+            # rules like "noodles-vcf/src/io/reader" match the real
+            # /root/.cargo/registry/.../noodles-vcf-0.87.0/src/io/reader.rs.
+            # Mirrors compares/scripts/measure_coverage.py::_normalize_cargo_path.
+            import re as _re
+            def _normalize_cargo_path(fp: str) -> str:
+                f = fp.replace("\\", "/")
+                m = _re.search(r"index\.crates\.io-[^/]+/(.+)$", f)
+                if m:
+                    f = m.group(1)
+                f = _re.sub(
+                    r"^([A-Za-z0-9_-]+?)-\d+\.\d+(?:\.\d+)?(?:-[A-Za-z0-9.+]+)?/",
+                    r"\1/",
+                    f,
+                )
+                return f
+
             for run_block in data.get("data", []):
                 for file_data in run_block.get("files", []):
                     filename = file_data.get("filename", "")
-                    norm = filename.replace("\\", "/")
+                    norm = _normalize_cargo_path(filename)
                     if active_filter and not any(
                         f.replace("\\", "/").replace(".", "/") in norm
                         for f in active_filter

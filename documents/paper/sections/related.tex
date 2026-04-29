@@ -1,0 +1,79 @@
+\section{Related Work}
+\label{sec:related}
+
+\biotest{} sits at the intersection of metamorphic testing
+(supplying the oracle), coverage-guided greybox fuzzing (the
+strongest baselines), and mutation testing (the adequacy
+criterion). Our emphasis is on positioning rather than survey
+recapitulation.
+
+\subsection{Metamorphic Testing}
+Metamorphic testing was introduced by~Chen et
+al.~\cite{chen1998metamorphic} as a partial answer to the
+oracle problem~\citep{barr2015oracle,myers1979art}. Rather than
+asserting an absolute output, one asserts a metamorphic relation
+constraining how outputs change under structured input
+perturbations. Segura et al.~\cite{segura2016survey} survey
+empirical adoption and Chen et al.~\cite{chen2018metamorphic}
+catalogue the open challenges, of which MR identification is the
+dominant cost in the technique's adoption.
+
+Several lines of work attack MR identification by mining relations
+from existing artefacts. MeMo~\citep{blasi2021memo} extracts MRs
+from natural-language phrases in Javadoc comments, and
+MR-Scout~\citep{xu2024mrscout} synthesises MRs from user-written
+test cases. \biotest{} mines from a different source, the
+published format \emph{specification} itself. An LLM, grounded in
+the spec text via retrieval-augmented prompting and gated by a
+seed-corpus validator, proposes identity-preserving transforms that
+instantiate a parametric round-trip relation
+($\mathit{out}(\mathit{parse}(x)) \equiv
+\mathit{out}(\mathit{parse}(T(x)))$). The novelty we claim is the
+combination of spec-grounded LLM-driven MR mining with a
+SUT-agnostic generator and consensus oracle, not any individual
+component.
+
+\subsection{Coverage-Guided Greybox Fuzzing}
+The in-process baselines we compare against typically find $2$ to
+$5\times$ more bugs than blackbox baselines on a 24-hour
+budget~\citep{klees2018fuzz}, an advantage B\"ohme et
+al.~\cite{boehme2020boosting} explain information-theoretically.
+Grammar-aware fuzzers (Zest~\citep{padhye2019zest},
+Nautilus~\citep{aschermann2019nautilus},
+Superion~\citep{wang2019superion}, Smart Greybox
+Fuzzing~\citep{pham2021smartgreybox},
+Fuzz4All~\citep{xia2024fuzz4all}) recover structural fluency but
+require SUT-specific harness and build work that exceeds C2.
+
+\subsection{Mutation Testing}
+We use mutation testing as an adequacy proxy. Just et
+al.~\cite{just2014mutants} establish that mutation kills correlate
+with real-fault detection at $r{\approx}0.7$ on Defects4J, and
+Andrews et al.~\cite{andrews2005mutation} earlier showed mutants
+are an acceptable substitute for hand-seeded faults under
+standard operator sets. Papadakis et
+al.~\cite{papadakis2019mutation} survey the field and catalogue
+the equivalent-mutant problem. We adopt Vikram et
+al.~\cite{vikram2023guiding} kill-feedback corpus selection at
+the pre-grading minimisation step. We complement the proxy with
+the real-bug benchmark of \S\ref{sec:bug-bench}.
+
+\subsection{Bioinformatics Pipeline and Variant-Caller Testing}
+\label{sec:related-bioinformatics}
+
+The bioinformatics community has built benchmarking infrastructure
+around \emph{variant-caller correctness}. Genome in a
+Bottle~\citep{zook2019giab} provides gold-standard variant calls,
+and the GA4GH best-practice
+protocol~\citep{krusche2019benchmarking} (\texttt{hap.py},
+\texttt{vcfeval}) controls for representational equivalence
+between a candidate VCF and the truth set. O'Rawe et
+al.~\cite{orawe2013concordance} document substantial
+inter-pipeline disagreement on the same input data. These efforts
+grade the joint behaviour of caller, reference, and downstream
+parsing under the assumption that VCF and SAM parsers are sound.
+\biotest{} attacks the parser-correctness layer directly. A
+metamorphic violation, parser disagreement, or silent record drop
+that \biotest{} surfaces is a defect in a component that
+GIAB-style benchmarks assume to be sound, and the two efforts are
+therefore complementary.

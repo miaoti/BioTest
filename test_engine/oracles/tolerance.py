@@ -71,7 +71,14 @@ SAM_RECORD_STRICT_FIELDS: frozenset[str] = frozenset({
 # "lenient" signal instead of flipping consensus.
 # ---------------------------------------------------------------------------
 VCF_RECORD_STRICT_FIELDS: frozenset[str] = frozenset({
-    "chrom", "pos", "id", "ref", "alt", "qual", "filter", "format",
+    # Variant identity: CHROM+POS+REF+ALT uniquely identifies a variant
+    # per VCF spec §1.4.1. Keep this narrow for consensus bucketing —
+    # FORMAT / INFO / QUAL / FILTER / samples all vary across voters for
+    # spec-compliant reasons (precision, reordering, implicit PASS,
+    # FORMAT field pruning on fully-missing columns) and their
+    # differences don't signal parser bugs. ID is optional in VCF
+    # ("." = missing) and voters disagree on how to represent that.
+    "CHROM", "POS", "REF", "ALT",
 })
 
 
@@ -81,19 +88,19 @@ def strip_to_strict(canonical: dict[str, Any], format_: str) -> dict[str, Any]:
     ``format_`` picks the strict-field set:
       * ``'SAM'`` → keeps the 11 mandatory columns per record,
         discards the ``tags`` dict and any future extensions.
-      * ``'VCF'`` → keeps the 8 mandatory columns per record.
+      * ``'VCF'`` → keeps the 4 variant-identity columns per record
+        (CHROM+POS+REF+ALT).
     Unknown formats return the input unchanged — the caller should
     handle this path by falling back to full-record comparison.
 
-    The function walks the canonical JSON's record-list structure but
-    leaves header untouched (header semantics are handled by dedicated
-    header-shuffle MRs and don't benefit from field-level tolerance).
-
-    Shape assumptions
-    -----------------
-    Canonical SAM: ``{"header": {...}, "records": [{<record dict>}, ...]}``
-    Canonical VCF: ``{"header": {...}, "records": [{<record dict>}, ...]}``
-    Any other top-level shape returns the input unchanged.
+    Also drops ``header.meta`` (free-form ##KEY=VALUE lines from the
+    VCF header that per-voter APIs expose differently — htsjdk drops
+    ``ALT`` entries, vcfpy drops empty FILTER / PL, pysam adds
+    implicit PASS, GATK-produced files carry command-line keys like
+    ``LeftAlignVariants`` that survive some parsers but not others).
+    Variant identity doesn't depend on those keys, so excluding them
+    from the bucket-comparison key lets the oracle reach consensus on
+    records that the voters actually agree on.
     """
     if not isinstance(canonical, dict):
         return canonical
@@ -106,6 +113,19 @@ def strip_to_strict(canonical: dict[str, Any], format_: str) -> dict[str, Any]:
         return canonical
 
     out = deepcopy(canonical)
+
+    # Drop header entirely for strict bucketing. For VCF:
+    # header.meta (free-form ## keys) and header.fileformat
+    # (htsjdk/others disagree on version-string encoding) always
+    # dominated the bucket key on correct seeds. For SAM: header.HD
+    # (version/sort order/group), header.SQ (per-ref M5/SP/AS
+    # annotations voters emit inconsistently), and header.CO
+    # (comments) behave the same way. Variant / alignment identity
+    # doesn't need the header to agree — records[*] is what we care
+    # about.
+    if "header" in out:
+        out.pop("header", None)
+
     records = out.get("records")
     if not isinstance(records, list):
         return out

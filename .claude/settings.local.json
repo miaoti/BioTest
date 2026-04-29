@@ -183,7 +183,14 @@
       "WebFetch(domain:www.cs.dartmouth.edu)",
       "Bash(chmod +x /tmp/extract_coverage.sh)",
       "Bash(bash /tmp/extract_coverage.sh)",
-      "WebFetch(domain:bajinsheng.github.io)"
+      "WebFetch(domain:bajinsheng.github.io)",
+      "Bash(awk '{print $5}')",
+      "Bash(awk 'BEGIN{n=0} {a[n++]=$1; s+=$1} END{print \"  count:\", n; print \"  min:\", a[0]; print \"  max:\", a[n-1]; print \"  mean:\", int\\(s/n\\); print \"  median:\", a[int\\(n/2\\)]}')",
+      "Bash(cargo --version)",
+      "Bash(cargo llvm-cov *)",
+      "Bash(docker version *)",
+      "Bash(echo \"exit=$?\")",
+      "PowerShell(Test-Path *)"
     ]
   }
 }

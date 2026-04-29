@@ -10,14 +10,18 @@ canonicalise to the same Pydantic record.
 
 from __future__ import annotations
 
+from typing import Optional
+
 import pytest
 
 from test_engine.canonical.sam_normalizer import (
     BIOPYTHON_CONSUMED_TAGS,
     FLOAT_TAG_SIGFIGS,
+    _compute_nm_from_cigar,
     _round_float_sigfig,
     normalize_sam_text,
 )
+from test_engine.canonical.schema import CigarOp
 
 
 # ---------------------------------------------------------------------------
@@ -175,6 +179,243 @@ class TestCombinedTolerance:
             "All three Run-9 tolerance fixes must compose: RNEXT alias, "
             "float precision, and MD drop together."
         )
+
+
+# ---------------------------------------------------------------------------
+# Fix #5 — SEQ case normalization (B2)
+# ---------------------------------------------------------------------------
+
+class TestSeqCaseNormalization:
+    """SAMv1 §1.4.10 SEQ admits both upper and lower case. Different
+    parsers preserve or normalize; we uppercase here so canonical JSON
+    is invariant under either choice."""
+
+    @staticmethod
+    def _make(seq: str) -> str:
+        return (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:1000\n"
+            f"r1\t0\tchr1\t100\t60\t10M\t*\t0\t0\t{seq}\tIIIIIIIIII\n"
+        )
+
+    def test_lowercase_seq_uppercased(self):
+        canon = normalize_sam_text(self._make("acgtacgtac").splitlines(keepends=True))
+        assert canon.records[0].SEQ == "ACGTACGTAC"
+
+    def test_mixed_case_uppercased(self):
+        canon = normalize_sam_text(self._make("AcGtAcGtAc").splitlines(keepends=True))
+        assert canon.records[0].SEQ == "ACGTACGTAC"
+
+    def test_already_upper_unchanged(self):
+        canon = normalize_sam_text(self._make("ACGTACGTAC").splitlines(keepends=True))
+        assert canon.records[0].SEQ == "ACGTACGTAC"
+
+    def test_missing_seq_stays_none(self):
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:1000\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.records[0].SEQ is None
+
+    def test_iupac_uppercased(self):
+        # IUPAC ambiguity codes (12 chars to match 12M CIGAR).
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:1000\n"
+            "r1\t0\tchr1\t100\t60\t12M\t*\t0\t0\trynwkmRYNWKM\tIIIIIIIIIIII\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.records[0].SEQ == "RYNWKMRYNWKM"
+
+    def test_two_records_with_different_case_canonicalize_identically(self):
+        a = normalize_sam_text(self._make("acgtacgtac").splitlines(keepends=True))
+        b = normalize_sam_text(self._make("ACGTACGTAC").splitlines(keepends=True))
+        assert a.model_dump() == b.model_dump(), (
+            "SEQ case must canonicalize identically — otherwise the "
+            "consensus oracle false-positives on case-preserving vs "
+            "case-normalizing parsers."
+        )
+
+
+# ---------------------------------------------------------------------------
+# Fix #6 — NM auto-compute (B3)
+# ---------------------------------------------------------------------------
+
+class TestNmAutoCompute:
+    """When CIGAR is canonicalized to =/X by an upstream MR transform,
+    parsers that drop NM and parsers that preserve NM disagree. We
+    auto-compute NM here to keep voters comparable.
+
+    NM = sum(X op lengths) + sum(I+D op lengths) per SAMtags spec."""
+
+    @staticmethod
+    def _make(cigar: str, *, with_nm: Optional[int] = None) -> str:
+        # Use a SEQ length compatible with the CIGAR's query-consuming
+        # ops to avoid strict-mode mismatches. We don't enable strict
+        # mode here, so length is informational; pad to 10 for visual
+        # clarity.
+        nm_col = f"\tNM:i:{with_nm}" if with_nm is not None else ""
+        return (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:1000\n"
+            f"r1\t0\tchr1\t100\t60\t{cigar}\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII"
+            f"{nm_col}\n"
+        )
+
+    def test_nm_added_when_absent_with_eq_x_cigar(self):
+        canon = normalize_sam_text(self._make("3=2X").splitlines(keepends=True))
+        rec = canon.records[0]
+        assert "NM" in rec.tags
+        assert rec.tags["NM"].type == "i"
+        assert rec.tags["NM"].value == 2
+
+    def test_nm_kept_when_present(self):
+        canon = normalize_sam_text(
+            self._make("5M", with_nm=7).splitlines(keepends=True)
+        )
+        rec = canon.records[0]
+        assert "NM" in rec.tags
+        assert rec.tags["NM"].value == 7  # not recomputed/overwritten
+
+    def test_nm_not_added_when_cigar_has_m(self):
+        canon = normalize_sam_text(self._make("5M").splitlines(keepends=True))
+        rec = canon.records[0]
+        assert "NM" not in rec.tags, (
+            "NM is indeterminate when CIGAR has M ops; we must not guess."
+        )
+
+    def test_nm_not_added_when_cigar_missing(self):
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:1000\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        rec = canon.records[0]
+        assert "NM" not in rec.tags
+
+    def test_nm_includes_indel_bases(self):
+        # 3=2I3= → 0 mismatches + 2 insertions + 0 deletions = 2
+        canon = normalize_sam_text(self._make("3=2I3=").splitlines(keepends=True))
+        rec = canon.records[0]
+        assert rec.tags["NM"].value == 2
+
+    def test_nm_zero_for_all_match(self):
+        canon = normalize_sam_text(self._make("5=").splitlines(keepends=True))
+        rec = canon.records[0]
+        assert rec.tags["NM"].value == 0
+
+    def test_helper_returns_none_when_m_present(self):
+        # Direct unit test of the helper.
+        cigar = [CigarOp(op="M", len=10)]
+        assert _compute_nm_from_cigar(cigar) is None
+
+    def test_helper_sums_x_i_d_lengths(self):
+        cigar = [
+            CigarOp(op="=", len=3),
+            CigarOp(op="X", len=2),
+            CigarOp(op="I", len=1),
+            CigarOp(op="D", len=4),
+            CigarOp(op="=", len=3),
+        ]
+        # X(2) + I(1) + D(4) = 7
+        assert _compute_nm_from_cigar(cigar) == 7
+
+
+# ---------------------------------------------------------------------------
+# Fix #7 — Header @SQ/@RG/@PG section sort (B4)
+# ---------------------------------------------------------------------------
+
+class TestHeaderSectionSort:
+    """SAMv1 §1.3 imposes no ordering on @SQ/@RG/@PG lines (only @HD
+    must come first). Sorting by the spec-defined canonical key (SN
+    for @SQ, ID for @RG/@PG) makes the canonical JSON invariant under
+    the `reorder_header_records` MR."""
+
+    def test_sq_sorted_by_sn(self):
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr2\tLN:200\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.header.SQ[0]["SN"] == "chr1"
+        assert canon.header.SQ[1]["SN"] == "chr2"
+
+    def test_rg_sorted_by_id(self):
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "@RG\tID:zebra\tSM:sample1\n"
+            "@RG\tID:alpha\tSM:sample2\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.header.RG[0]["ID"] == "alpha"
+        assert canon.header.RG[1]["ID"] == "zebra"
+
+    def test_pg_sorted_by_id(self):
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "@PG\tID:zzz\tPN:tool_z\n"
+            "@PG\tID:aaa\tPN:tool_a\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.header.PG[0]["ID"] == "aaa"
+        assert canon.header.PG[1]["ID"] == "zzz"
+
+    def test_sq_permutation_canonicalizes_identically(self):
+        sam_a = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "@SQ\tSN:chr2\tLN:200\n"
+            "@SQ\tSN:chr3\tLN:300\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        sam_b = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr3\tLN:300\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "@SQ\tSN:chr2\tLN:200\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        a = normalize_sam_text(sam_a.splitlines(keepends=True))
+        b = normalize_sam_text(sam_b.splitlines(keepends=True))
+        assert a.header.SQ == b.header.SQ, (
+            "@SQ permutation must canonicalize identically — this is "
+            "the foundation of the reorder_header_records MR."
+        )
+        # Full canonical equality, too.
+        assert a.model_dump() == b.model_dump()
+
+    def test_hd_unchanged(self):
+        # @HD remains a single dict with its own internal-tag sort.
+        sam = (
+            "@HD\tVN:1.6\tSO:coordinate\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.header.HD is not None
+        assert canon.header.HD.get("VN") == "1.6"
+        assert canon.header.HD.get("SO") == "coordinate"
+
+    def test_co_already_sorted_unchanged(self):
+        # @CO sort behavior unchanged from before B4.
+        sam = (
+            "@HD\tVN:1.6\n"
+            "@SQ\tSN:chr1\tLN:100\n"
+            "@CO\tzebra comment\n"
+            "@CO\talpha comment\n"
+            "r1\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
+        )
+        canon = normalize_sam_text(sam.splitlines(keepends=True))
+        assert canon.header.CO == ["alpha comment", "zebra comment"]
 
 
 if __name__ == "__main__":

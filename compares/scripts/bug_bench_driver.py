@@ -99,6 +99,21 @@ class BugResult:
     confirmed_fix_silences_signal: bool | None
     adapter_exit_code: int
     notes: str = ""
+    # 2026-04-28: split `detected` into honest attribution.
+    #   - detected_via_tool_output: the trigger that satisfied §5.3.1
+    #     came from the tool's own `<tool>/<bug>/crashes/` directory —
+    #     i.e. the tool's adapter generated a file that fired the
+    #     silence predicate.
+    #   - detected_via_pov_verification: the trigger that satisfied
+    #     §5.3.1 was the canonical PoV under `compares/bug_bench/
+    #     triggers/<bug>/original.{vcf,sam}` — i.e. the manifest's
+    #     hand-authored ground-truth file. PoV verification is bench-
+    #     level work; every tool in the matrix gets the same uplift.
+    # Exactly one of the two is True when `detected=True`. Both are
+    # False when `detected=False`. Use these for honest tool-vs-tool
+    # comparisons; use `detected` for total-bug-bench coverage.
+    detected_via_tool_output: bool = False
+    detected_via_pov_verification: bool = False
 
 
 # ---------- SUT install helpers ---------------------------------------
@@ -750,6 +765,19 @@ def _per_sut_accepted_seeds(
     probe_kind = "libfuzzer-harness" if seqan3_fuzzer_probe else "ParserRunner"
     print(f"[seed-filter] {sut}/{fmt}: {len(accepted)}/{total} accepted "
           f"(probe: {probe_kind})")
+    # 2026-04-29: harness API drift guard. When pre-fix htsjdk versions
+    # predate methods used in BioTestHarness.java (e.g. 2.19.0 lacks
+    # `VCFHeader.getVCFHeaderVersion()`), every probe returns
+    # success=False/err=crash and the filter degenerates to "reject all".
+    # Treat 0 / total > 0 as "probe is uninformative" → return None
+    # (permissive default) so the cell still gets a real corpus to
+    # mutate. Without this, bug_bench_driver only ever ships the
+    # canonical PoV to the fuzzer.
+    if total > 0 and len(accepted) == 0:
+        print(f"[seed-filter] {sut}/{fmt}: probe rejected ALL seeds — "
+              f"treating as uninformative; passing through unfiltered")
+        _PER_SUT_ACCEPTED[key] = None  # type: ignore[assignment]
+        return None
     _PER_SUT_ACCEPTED[key] = accepted
     return accepted
 
@@ -1375,6 +1403,23 @@ def run_bench(
                              "cleanly — detection demoted to False "
                              "(no pre-fix signal to silence); likely "
                              "cross-voter canonical-JSON variance.")
+                # 2026-04-28: classify detection by trigger source.
+                # PoV path: compares/bug_bench/triggers/<id>/...
+                # Tool-output path: <tool_out>/crashes/...
+                via_tool = False
+                via_pov = False
+                if r["detected"] and r["trig"]:
+                    trig_norm = str(r["trig"]).replace("\\", "/")
+                    if "compares/bug_bench/triggers/" in trig_norm:
+                        via_pov = True
+                    elif "/crashes/" in trig_norm:
+                        via_tool = True
+                    else:
+                        # Fallback: anything not under crashes/ and not
+                        # under triggers/ is treated as tool output (the
+                        # adapter pointed to it directly via crashes_dir).
+                        via_tool = True
+
                 record = BugResult(
                     tool=r["tool"], bug_id=bug["id"], sut=sut,
                     detected=r["detected"], ttfb_s=r["ttfb"],
@@ -1382,6 +1427,8 @@ def run_bench(
                     confirmed_fix_silences_signal=confirmed,
                     adapter_exit_code=int(r["adapter_json"].get("exit_code", 0)),
                     notes=notes,
+                    detected_via_tool_output=via_tool,
+                    detected_via_pov_verification=via_pov,
                 )
                 (r["tool_out"] / "result.json").write_text(
                     json.dumps(asdict(record), indent=2), encoding="utf-8"

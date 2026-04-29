@@ -1,0 +1,47 @@
+% Standalone table -- included by mutation_score_section.tex.
+% Layout: three VCF columns plus three SAM columns, one row per
+% testing tool. Empty entries are tools that don't run on that SUT.
+
+\begin{table*}[!t]
+\centering
+\caption{Mutation-adequacy mean $\pm$ sample std (\%) across the
+six $(\mathrm{SUT, format})$ pairs. Identical mutation engines and
+target-class scopes per \S\ref{sec:design-fairness}.
+``---'' indicates the tool is not language-applicable.}
+\label{tab:mutation-headline}
+\small
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l c c c c c c c}
+\toprule
+& \multicolumn{3}{c}{\textbf{VCF}}
+& & \multicolumn{3}{c}{\textbf{SAM}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){6-8}
+Tool & htsjdk & vcfpy & noodles & & htsjdk & biopython$^{\dagger}$ & seqan3 \\
+\midrule
+\biotest               & $32.40{\pm}0.71$ & $85.66{\pm}0.14$ & $\phantom{0}8.10{\pm}0.27$ & & $21.14{\pm}1.42$ & $25.48{\pm}0.79$ & $\mathbf{97.44{\pm}0.00}$ \\
+Jazzer~\citep{jazzer2024}                 & $36.59{\pm}1.34$ & ---              & ---             & & $23.61{\pm}1.21$ & ---             & ---             \\
+Atheris~\citep{atheris2023}               & ---             & $87.37{\pm}1.83$ & ---             & & ---             & $58.00{\pm}0.36$ & ---             \\
+cargo-fuzz~\citep{cargofuzz2024}          & ---             & ---             & $\phantom{0}8.74{\pm}1.91$ & & ---             & ---             & ---             \\
+libFuzzer~\citep{libfuzzer2024}           & ---             & ---             & ---             & & ---             & ---             & $90.57{\pm}0.00$ \\
+AFL++~\citep{fioraldi2020aflpp}            & ---             & ---             & ---             & & ---             & ---             & $73.22{\pm}3.57$ \\
+Pure-Random                               & $\phantom{0}0.00{\pm}0.00$ & $\phantom{0}0.89{\pm}0.10$ & $\phantom{0}0.00{\pm}0.00$ & & $\phantom{0}1.20{\pm}0.06$ & $\phantom{0}0.24{\pm}0.47$ & $\phantom{0}7.19{\pm}0.57$ \\
+\midrule
+\biotest engine          & PIT          & mutmut        & cargo-mutants & & PIT             & mutmut-AST      & DIY mull-style \\
+$n_{\text{biotest}}$     & 10           & 10            & 10            & & 10              & 4               & 4              \\
+$n_{\text{baseline}}$    & 10           & 6             & 9             & & 6               & 4               & 3 / 4$^\ddag$  \\
+\bottomrule
+\end{tabular}
+\\[0.4em]
+{\footnotesize
+$^{\dagger}$~biopython matched-budget caps both \biotest{} and
+Atheris at the first 262 of 523 generated mutants. Full-population
+\biotest{} score: $25.81{\pm}0.00\%$.
+\quad
+$^{\ddag}$~Close-margin pairs were boosted from $n{=}4$ to
+$n{=}10$ on \biotest{}, and baseline $n$ is the achieved value
+shown. Close-margin baseline values are Jazzer/SAM $n{=}6$,
+Atheris/vcfpy $n{=}6$, and cargo-fuzz/noodles $n{=}9$ from
+documented run failures. seqan3 baseline values are
+libFuzzer $n{=}3$ and AFL++ $n{=}4$.}
+\end{table*}

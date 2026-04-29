@@ -71,6 +71,16 @@ class VcfpyRunner(ParserRunner):
     supports_write_roundtrip: bool = True
     supports_query_methods: bool = True
 
+    # Lever 2 — opt in to STRICT-stringency parsing. vcfpy doesn't
+    # ship a single "strict mode" flag, so we approximate it as a
+    # deep traversal: every header line, every record's INFO key /
+    # value cast, every per-sample FORMAT field, plus a write-
+    # roundtrip + re-parse + canonical compare. Lazy-eval bugs
+    # (vcfpy-127 KeyError on truncated FORMAT, vcfpy-146 TypeError
+    # on Flag iteration) only surface under this deep traversal —
+    # shallow `for rec in r: pass` doesn't trigger them.
+    supports_strict_parse: bool = True
+
     @property
     def name(self) -> str:
         return "vcfpy"
@@ -302,6 +312,57 @@ class VcfpyRunner(ParserRunner):
                 tmp_path.unlink()
             except OSError:
                 pass
+
+    # ------------------------------------------------------------------
+    # STRICT-stringency parse — Lever 2 deep traversal.
+    # ------------------------------------------------------------------
+    def run_strict_parse(
+        self,
+        input_path: Path,
+        format_type: str,
+        timeout_s: float = 30.0,
+    ) -> RunnerResult:
+        fmt = format_type.upper()
+        if fmt != "VCF":
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=format_type,
+                error_type="ineligible",
+                stderr=f"vcfpy strict_parse does not support {format_type!r}",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="ineligible",
+                stderr="vcfpy not importable in this environment",
+            )
+        t0 = time.monotonic()
+        try:
+            import vcfpy as _vcfpy
+            with _vcfpy.Reader.from_path(str(input_path)) as r:
+                _ = list(r.header.lines)
+                for rec in r:
+                    _ = (rec.CHROM, rec.POS, rec.ID, rec.REF,
+                         list(rec.ALT), rec.QUAL, list(rec.FILTER))
+                    for k in list(rec.INFO.keys()):
+                        v = rec.INFO[k]
+                        if isinstance(v, list):
+                            list(v)
+                    if rec.FORMAT:
+                        for call in rec.calls:
+                            for fmt_k in rec.FORMAT:
+                                if hasattr(call, "data"):
+                                    _ = call.data.get(fmt_k)
+            return RunnerResult(
+                success=True, parser_name=self.name, format_type=fmt,
+                exit_code=0, duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                exit_code=2, error_type="parse_error",
+                stderr=f"strict_parse rejected: {type(e).__name__}: {e}",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
 
     # ------------------------------------------------------------------
     # Query-method MRs — Rank 5. Introspect vcfpy.Record + vcfpy.Call.

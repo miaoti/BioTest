@@ -103,6 +103,17 @@
         "seqan3": "crash",
         "pysam": "crash"
       }
+    },
+    {
+      "seed": "seeds/sam/real_world_htslib_colons.bam",
+      "format": "SAM",
+      "verdicts": {
+        "htsjdk": "crash",
+        "biopython": "crash",
+        "seqan3": "crash",
+        "pysam": "success"
+      },
+      "note": "Manual drop post-\u00a70.1: all three fuzz-targeted SAM SUTs reject via SAMException (SQ name chr1,chr3 fails regex). \u00a70.1 rule kept this seed because pysam/htslib is lenient and accepts it; for the fuzz bench the pysam tie-break is the wrong signal. See Chat 2 false+ triage in compares/results/bug_bench_chat2_draft/report.md."
     }
   ]
 }

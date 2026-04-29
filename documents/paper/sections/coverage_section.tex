@@ -1,0 +1,49 @@
+% Code-coverage subsection.
+
+\subsection{Code Coverage}
+\label{sec:coverage}
+
+\paragraph{Setup.}
+We complement mutation-adequacy with a code-coverage measurement
+on the same six $(\mathrm{SUT, format})$ pairs, scoped by the same
+target-class filter the mutation engine uses
+(\S\ref{sec:design-fairness}) so the two metrics are graded on the
+same SUT surface. Line coverage (the fraction of source lines in
+each parser executed at least once during a tool's campaign) is
+collected by each language's standard coverage instrumentation
+(specific backends are listed in \S\ref{sec:implementation}). We
+report final-attainment line coverage, the end-of-campaign value
+each tool reaches inside its scope, because \biotest's Phase-D
+feedback loop (Figure~\ref{fig:pipeline}) terminates on its own
+stop-criteria rather than at a fixed wall-clock tick. Within each
+row of Table~\ref{tab:coverage-headline} the scope filter and
+instrumentation backend are identical across columns. Line
+percentages are directly comparable as final attainment.
+
+\input{sections/coverage_table.tex}
+
+\paragraph{Headline observations and take-away.}
+On the three VCF SUTs \biotest{} attains the highest mean final
+line coverage of any tool we measured ($36.40{\pm}6.35$\% on
+htsjdk, $67.05{\pm}4.30$\% on vcfpy, $23.85{\pm}10.70$\% on
+noodles). The noodles spread is wide because each fresh
+\biotest{} rep on a $6{,}920$-line target hits a different
+control-flow plateau before its stop-criterion fires, but the
+mean still leads the strongest coverage-guided baseline. On SAM
+\biotest{} trails the strongest baseline on each parser: by
+$4.20$\,pp on htsjdk ($20.85$\% vs Jazzer's $25.05$\%), by
+$5.75$\,pp on biopython ($48.65$\% vs Atheris's $54.40$\%), and
+by $7.10$\,pp on seqan3 ($91.35$\% vs libFuzzer's $98.45$\%).
+The pattern is consistent with the mutation-adequacy result of
+\S\ref{sec:mutation-adequacy}, and the VCF/SAM asymmetry has a
+concrete structural explanation. VCF depends on declarative
+typing constraints in the header (\texttt{INFO}, \texttt{FORMAT},
+contig declarations) that constrain record-level parsing, and
+\biotest{}'s spec-grounded generator exercises these constraints
+preferentially because each is named in the spec and retrieved by
+LLM mining. SAM depends more on flag-bit combinations and
+CIGAR-shape diversity within record bodies, where coverage-guided
+byte mutators accumulate inputs reaching rare control-flow paths
+more efficiently than spec-driven enumeration. The same asymmetry
+surfaces on the mutation-adequacy
+axis~\cite{klees2018fuzz,boehme2020boosting}.

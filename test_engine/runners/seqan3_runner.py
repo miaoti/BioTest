@@ -25,8 +25,20 @@ from ..config import HARNESSES_DIR, SUBPROCESS_TIMEOUT_S
 
 logger = logging.getLogger(__name__)
 
-# Expected location of the compiled binary
-HARNESS_BIN = HARNESSES_DIR / "cpp" / "build" / "biotest_harness.exe"
+# Expected location of the compiled binary. Platform-aware: Windows
+# build ships a PE32+ `.exe`; Linux (the bench container) ships a bare
+# ELF binary without the extension. Falls back to `.exe` if the bare
+# file doesn't exist so mixed-filesystem setups still work.
+_LINUX_BIN = HARNESSES_DIR / "cpp" / "build" / "biotest_harness"
+_WIN_BIN = HARNESSES_DIR / "cpp" / "build" / "biotest_harness.exe"
+if sys.platform.startswith(("linux", "darwin")) and _LINUX_BIN.exists():
+    HARNESS_BIN = _LINUX_BIN
+elif _WIN_BIN.exists():
+    HARNESS_BIN = _WIN_BIN
+else:
+    # Neither exists — pick the OS-appropriate expected path so the
+    # eventual is_available() check reports the missing binary cleanly.
+    HARNESS_BIN = _WIN_BIN if sys.platform == "win32" else _LINUX_BIN
 
 
 class SeqAn3Runner(ParserRunner):

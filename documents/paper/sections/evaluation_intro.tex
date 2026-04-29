@@ -1,0 +1,20 @@
+% Short opener for the Evaluation section.
+
+We evaluate \biotest{} along three complementary axes.
+\S\ref{sec:mutation-adequacy} reports mutation adequacy of the
+corpus produced by \biotest{} relative to corpora produced by
+mainstream coverage-guided fuzzers under the matched-engine
+fairness recipe of \S\ref{sec:design-fairness}.
+\S\ref{sec:coverage} reports line coverage on the same scope and
+SUT slate. \S\ref{sec:bug-bench} reports a real-bug benchmark of
+$32$ verified historical parser bugs. Mutation kills correlate
+with real-fault detection at
+$r{\approx}0.7$~\citep{just2014mutants}, so the three axes together
+provide construct triangulation. Per-pair sample sizes are
+reported in Table~\ref{tab:mutation-headline}.
+
+The evaluation spans six $(\mathrm{SUT, format})$ pairs:
+htsjdk/VCF, htsjdk/SAM (Java), vcfpy/VCF, biopython/SAM (Python),
+noodles/VCF (Rust), and seqan3/SAM (C++). All runs execute inside
+the reproducibility container described in
+\S\ref{sec:implementation}.

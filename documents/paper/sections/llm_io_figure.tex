@@ -1,0 +1,88 @@
+% LLM I/O figure: real artifacts traced through one accepted MR.
+% All content is verbatim from the BioTest artefact:
+%   - chunk:   data/parsed/VCFv4.5_chunks.json :: VCFv4.5.tex::The VCF specification::p12
+%   - prompt:  mr_engine/agent/prompts.py + mr_engine/behavior.py (ordering_invariance target)
+%   - MR:      data/mr_registry.json (entry "Permute VCF Header Meta-information Lines Order")
+%   - log:     data/full_run.log (compiled 2/2 MRs on attempt 1)
+%
+% Layout: 2x2 grid with clockwise flow so arrows are clean straight lines.
+%   (1) chunk  -->  (2) prompt
+%                       v
+%   (4) val    <--  (3) mr
+
+\tikzset{
+  llmio/box/.style={
+    rectangle, rounded corners=1.5pt,
+    draw=black!55, fill=black!3,
+    line width=0.4pt,
+    inner sep=4pt,
+    text width=82mm, align=left,
+    font=\footnotesize
+  },
+  llmio/llm/.style={
+    llmio/box,
+    draw=blue!50!black, fill=blue!4,
+    line width=0.5pt
+  },
+  llmio/flow/.style={
+    -{Latex[length=1.6mm,width=1.4mm]},
+    line width=0.55pt, draw=black!75
+  },
+}
+
+\begin{figure*}[!t]
+\centering
+\begin{tikzpicture}[node distance=6mm and 4mm, font=\footnotesize]
+
+% Row 1: (1) Spec chunk on the left, (2) LLM prompt on the right
+\node[llmio/box] (chunk)
+  {\textbf{(1) Retrieved spec chunk}\hfill
+   {\scriptsize\ttfamily VCFv4.5.tex::p12, severity=CRITICAL}\\[2pt]
+   ``Meta-information lines are optional, but if they are
+   present they must be completely well-formed. Other than
+   \texttt{\#\#fileformat}, they may appear in any
+   order.''};
+
+\node[llmio/llm, right=of chunk] (prompt)
+  {\textbf{(2) Phase~B prompt to \texttt{deepseek-v4-flash}}\hfill
+   {\scriptsize RAG-conditioned}\\[2pt]
+   \textit{Goal:} mine MRs for \texttt{ordering\_invariance} on
+   VCF.\\
+   \textit{Allowed:} whitelist of $\sim$20 atomic operators.\\
+   \textit{Output contract:} JSON of \{\texttt{mr\_name},
+   \texttt{scope}, \texttt{transform\_steps}, \texttt{oracle},
+   \texttt{evidence}\}.};
+
+% Row 2 (clockwise): (3) Generated MR on the right, (4) Validation on the left
+\node[llmio/llm, below=of prompt] (mr)
+  {\textbf{(3) Generated MR}\hfill
+   {\scriptsize one of three accepted}\\[2pt]
+   \texttt{mr\_name}: ``Permute VCF Header Meta-information Lines
+   Order''\\
+   \texttt{scope}: \texttt{VCF.header}\\
+   \texttt{transform\_steps}:
+   \texttt{[permute\_bcf\_header\_dictionary]}\\
+   \texttt{evidence}: chunk \texttt{::p12} (``may appear in any
+   order'')};
+
+\node[llmio/box, left=of mr] (val)
+  {\textbf{(4) Validation}\hfill\textsc{accepted}\\[2pt]
+   \textit{Whitelist gate:} pass.\\
+   \textit{Hash gate:} pass (no duplicate).\\
+   \textit{Seed-corpus gate:} pass (round-trip equality holds on
+   the reference parser).\\[2pt]
+   The targeted run admitted $3$ of $7$ candidate themes for VCF
+   \texttt{ordering\_invariance}.};
+
+% Clockwise-flow arrows: clean straight lines, no overlaps.
+\draw[llmio/flow] (chunk.east)  -- (prompt.west);
+\draw[llmio/flow] (prompt.south) -- (mr.north);
+\draw[llmio/flow] (mr.west)     -- (val.east);
+
+\end{tikzpicture}
+\caption{LLM I/O traced through one accepted metamorphic
+relation. Panels~2 and~3 are LLM-touched (blue), panels~1 and~4
+are framework data (grey). Every panel reproduces an artefact
+committed in the BioTest source tree.}
+\label{fig:llm-io}
+\end{figure*}

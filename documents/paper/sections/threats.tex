@@ -1,0 +1,57 @@
+\section{Threats to Validity}
+\label{sec:threats}
+
+\paragraph{Construct.}
+Mutation kills are an imperfect proxy for real-fault detection.
+Equivalent mutants depress every tool's score equally, and we
+minimise the asymmetry by reusing standard operator
+sets~\citep{papadakis2019mutation}. The silence-on-fix benchmark
+of \S\ref{sec:bug-bench} grounds adequacy in real bugs as
+construct triangulation.
+
+\paragraph{Internal: bug-bench manifest is post-audit.}
+The $32$-bug manifest reflects a second-pass audit that dropped
+four SAM entries failing review and added three fresh htsjdk-SAM
+regressions, with a strict-stringency verification policy added
+after the initial freeze. Neither choice was blinded to which
+bugs \biotest's paradigm could reach. We apply the post-revision
+predicate uniformly to every tool to mitigate.
+
+\paragraph{Internal: silence-on-fix attribution.}
+The bench seed corpus follows Magma-style
+PoV-seeding~\cite{hazimeh2020magma}, equalising starting
+positions across all input fuzzers. Detection is verified on
+tool-output triggers under the silence-on-fix
+predicate~\cite{boehme2021estimating}. Canary-based attribution
+per Magma~\cite{hazimeh2020magma} or magic-number injection per
+LAVA~\cite{dolangavitt2016lava} would supersede the predicate
+but require per-bug source instrumentation across all four host
+languages, which we defer to future work.
+
+\paragraph{Internal: rank-level ablation and LLM nondeterminism.}
+The thirteen-rank corpus stack ships in its deployed
+configuration with a single end-to-end kill rate per pair. The
+only rank-level ablation reported is Ranks~12-13 on biopython/SAM.
+Phase~B uses a hosted LLM whose sampling is not bit-deterministic,
+and the seed-corpus MR validator is not blinded to downstream
+performance. We ship the curation log with the artefact as
+mitigation. The four close-margin mutation-adequacy pairs run at
+$n{=}10$ and clear family-wise $\alpha{=}0.05$ under
+Holm--Bonferroni; biopython and seqan3 remain at $n{=}4$ where
+samples are deterministic.
+
+\paragraph{Internal: ablations not run.}
+Iteration-count parity on seqan3/SAM would isolate the
+wall-clock-vs-iteration confound behind the AFL++/libFuzzer gap.
+A Ranks~1-7 vs 1-13 ablation across every pair would quantify
+the augmentation-tier contribution beyond biopython/SAM. A
+hand-rolled differential-only oracle would isolate the
+$N{\geq}3$ majority-vote contribution.
+
+\paragraph{External: bounded generalisation.}
+The evaluation covers six $(\mathrm{SUT, format})$ pairs, two
+textual formats, and four parser languages. The result does not
+extend to checksum-validated binary formats (BCF, BAM, CRAM)
+where structural mutations are rejected at I/O time, nor to
+non-parser SUTs where the round-trip metamorphic relation does
+not apply.

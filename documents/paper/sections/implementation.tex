@@ -1,0 +1,67 @@
+\section{Implementation}
+\label{sec:implementation}
+
+\biotest{} is a Python orchestrator. Per-language SUT runners
+delegate parser invocation to the SUT's native toolchain, and the
+five phases of \S\ref{sec:design} are realised concretely as
+follows.
+
+\paragraph{Specification ingest (Phase~A).}
+The published format specification is segmented at rule and
+field-definition boundaries, embedded with a sentence-transformer
+encoder, and indexed in a ChromaDB vector store. The same store
+serves every SUT for the format and is rebuilt only when the spec
+version changes.
+
+\paragraph{LLM mining (Phase~B).}
+The runs reported here use \texttt{deepseek-v4-flash} via the
+DeepSeek API. The orchestrator is provider-agnostic. The prompt
+retrieves the top-ranked spec chunks by cosine similarity to the
+rule the proposal must cite~\citep{lewis2020rag} and constrains
+the model to a whitelist of $\sim 20$ atomic transforms registered
+in the framework. Each candidate MR traverses three sequential
+gates. The whitelist gate rejects unrecognised transforms. The
+hash gate collapses candidates whose
+$(\mathit{format}, \mathit{scope}, \mathit{transform\_steps})$
+tuple matches an already-admitted MR, so LLM nondeterminism does
+not inflate the registry. The seed-corpus gate validates the
+round-trip equality on a hand-curated reference corpus before
+admission, and is the load-bearing rejection cause across recorded
+snapshots. The first targeted mining run on the
+\texttt{ordering\_invariance} intent for VCF admitted three
+enforced MRs out of seven candidate themes, and the per-pair
+enforced count in the headline runs ranges from $3$ for SAM to
+$10$ for VCF. Figure~\ref{fig:llm-io} traces the pipeline through
+one such accepted MR with real artefacts from the spec chunk to
+the validation outcome.
+
+\input{sections/llm_io_figure}
+
+\paragraph{Runner architecture (Phases~C, D).}
+The runner subprocesses the SUT's harness, parses the
+canonical-JSON digest, and exposes the result through a uniform
+interface. Java harnesses run on a per-test JVM, Python harnesses
+import the parser directly, Rust harnesses run via
+\texttt{cargo test} against a generated crate, and C++ harnesses
+are compiled once as a gcov-instrumented binary. Coverage is
+collected with JaCoCo for Java, \texttt{coverage.py} for Python,
+\texttt{cargo-llvm-cov} for Rust, and \texttt{gcovr} for C++.
+
+\paragraph{Augmenters (Phase~E).}
+Rank~12 and Rank~13 ship as stand-alone generators that are not
+LLM-mined. Rank~12 outputs feed both the metamorphic oracle and
+mutation grading. Rank~13 outputs feed only the latter, since
+Rank~13 is intentionally not metamorphic.
+
+\paragraph{Reproducibility.}
+The orchestrator, SUT source pins, mutation engines, coverage
+tools, and baseline fuzzers ship as a single Docker image on
+Ubuntu~22.04. The C++ mutation engine is a re-implemented
+default-operator set rather than upstream
+Mull~\citep{denisov2018mull} due to a glibc/Ubuntu version
+conflict. The artefact is deposited as an anonymised Zenodo
+record (DOI placeholder for double-blind review, de-anonymised at
+camera-ready) containing the Docker image digest, the source-tree
+snapshot, the MR-curation log, and the per-pair raw kill counts
+and bug-bench records. We commit to the venue's
+artefact-evaluation track.

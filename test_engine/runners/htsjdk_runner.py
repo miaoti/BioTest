@@ -53,6 +53,16 @@ class HTSJDKRunner(ParserRunner):
     # getters on VariantContext (VCF) or SAMRecord (SAM).
     supports_query_methods: bool = True
 
+    # Tier 2b — opt in to mutator-method discovery. Mirrors
+    # discover_query_methods but with the SAM/VCF mutator prefix set
+    # (set/add/remove/clear/put/reset).
+    supports_mutator_methods: bool = True
+
+    # Lever 2 — opt in to STRICT-stringency parsing. Bench's silence
+    # predicate calls run_strict_parse to detect STRICT-only validation
+    # differences (htsjdk-1360, htsjdk-1410).
+    supports_strict_parse: bool = True
+
     @property
     def name(self) -> str:
         return "htsjdk"
@@ -356,18 +366,123 @@ class HTSJDKRunner(ParserRunner):
                     logger.warning("Failed to merge JaCoCo exec (roundtrip): %s", e)
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
+    def run_strict_parse(
+        self,
+        input_path: Path,
+        format_type: str,
+        timeout_s: float = SUBPROCESS_TIMEOUT_S,
+    ) -> RunnerResult:
+        """Parse via `--mode strict_parse` (ValidationStringency.STRICT).
+
+        Many SAM bugs (htsjdk-1360 EMPTY_READ, htsjdk-1410 INVALID_INSERT_SIZE,
+        etc.) only manifest under STRICT — the default SILENT path used by
+        `run` mutes the validation message but post-fix htsjdk removes the
+        check entirely. Calling this in addition to `run` is what surfaces
+        the parse-time difference for the bug-bench bidirectional §5.3.1
+        predicate.
+
+        Returns success=True iff the harness exits 0 (clean STRICT parse).
+        Exit code 2 = STRICT rejection (success=False, error_type=parse_error,
+        stderr carries the exception). Other non-zero = harness crash.
+        """
+        fmt = format_type.upper()
+        if fmt not in ("VCF", "SAM"):
+            return RunnerResult(
+                success=False, parser_name=self.name,
+                format_type=format_type, error_type="ineligible",
+                stderr=f"HTSJDKRunner.run_strict_parse: unknown format {fmt}",
+            )
+        if not self.is_available():
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="parse_error",
+                stderr="HTSJDK harness not available (check Java and JAR)",
+            )
+
+        ext = ".vcf" if fmt == "VCF" else ".sam"
+        tmp_dir = tempfile.mkdtemp(prefix="biotest_sp_")
+        tmp_jar = Path(tmp_dir) / "harness.jar"
+        tmp_input = Path(tmp_dir) / f"input{ext}"
+        try:
+            shutil.copy2(self._jar_path, tmp_jar)
+            shutil.copy2(input_path, tmp_input)
+        except OSError as e:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="crash",
+                stderr=f"Failed to stage harness/input in temp dir: {e}",
+            )
+
+        cmd = [self._java_cmd, "-jar", str(tmp_jar),
+               "--mode", "strict_parse", fmt, str(tmp_input)]
+        t0 = time.monotonic()
+        try:
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+            proc = subprocess.run(
+                cmd, capture_output=True, text=True, encoding="utf-8",
+                timeout=timeout_s, creationflags=creation_flags,
+            )
+            duration = (time.monotonic() - t0) * 1000
+            if proc.returncode == 0:
+                return RunnerResult(
+                    success=True, parser_name=self.name, format_type=fmt,
+                    exit_code=0, stderr=proc.stderr, duration_ms=duration,
+                )
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                exit_code=proc.returncode, stderr=proc.stderr,
+                error_type="parse_error" if proc.returncode == 2 else "crash",
+                duration_ms=duration,
+            )
+        except subprocess.TimeoutExpired:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="timeout",
+                stderr=f"HTSJDK strict_parse timed out after {timeout_s}s",
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        except Exception as e:
+            return RunnerResult(
+                success=False, parser_name=self.name, format_type=fmt,
+                error_type="crash", stderr=str(e),
+                duration_ms=(time.monotonic() - t0) * 1000,
+            )
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
     # ------------------------------------------------------------------
     # Rank 5 — query-method MRs (delegated to BioTestHarness.jar)
     # ------------------------------------------------------------------
     def discover_query_methods(self, format_type: str) -> list[dict]:
         """Subprocess wrapper around `--mode discover_methods <FORMAT>`."""
+        return self._discover_methods_for_mode(format_type, "discover_methods", "methods")
+
+    def discover_mutator_methods(self, format_type: str) -> list[dict]:
+        """Subprocess wrapper around `--mode discover_mutators <FORMAT>`.
+
+        Tier 2b prompt enrichment: reflects the public mutator surface
+        (set/add/remove/clear/put/reset prefixes; void or fluent
+        return) on `VariantContext` (VCF) or `SAMRecord` (SAM). The
+        catalog is consumed verbatim by the LLM-MR synthesizer to steer
+        composition of mutator-chain MRs that wrap inside the existing
+        `sut_write_roundtrip` oracle (no new transform family, oracle
+        soundness preserved).
+        """
+        return self._discover_methods_for_mode(format_type, "discover_mutators", "mutators")
+
+    def _discover_methods_for_mode(
+        self, format_type: str, mode: str, json_key: str
+    ) -> list[dict]:
         if not self.is_available():
             return []
         fmt = format_type.upper()
         if fmt not in ("VCF", "SAM"):
             return []
         cmd = [self._java_cmd, "-jar", str(self._jar_path),
-               "--mode", "discover_methods", fmt]
+               "--mode", mode, fmt]
         try:
             creation_flags = 0
             if sys.platform == "win32":
@@ -378,15 +493,15 @@ class HTSJDKRunner(ParserRunner):
             )
             if proc.returncode != 0:
                 logger.debug(
-                    "htsjdk discover_methods failed (rc=%d): %s",
-                    proc.returncode, proc.stderr[:200],
+                    "htsjdk %s failed (rc=%d): %s",
+                    mode, proc.returncode, proc.stderr[:200],
                 )
                 return []
             import json as _json
             payload = _json.loads(proc.stdout)
-            return payload.get("methods", [])
+            return payload.get(json_key, [])
         except Exception as e:
-            logger.debug("htsjdk discover_methods raised: %s", e)
+            logger.debug("htsjdk %s raised: %s", mode, e)
             return []
 
     def run_query_methods(

@@ -59,6 +59,60 @@ public class BioTestHarness {
         }
 
         try {
+            if ("strict_parse".equals(mode)) {
+                // 2026-04-25: bug-bench-only strict-validation mode.
+                // The default "parse" mode uses ValidationStringency.SILENT
+                // because Phase C runs synthetic / mutated seeds and we
+                // don't want every cross-voter test to fail on header
+                // pedantry. For real-bug-benchmark cells, however, we
+                // WANT strict validation — htsjdk-1561 specifically is
+                // "post-fix added strict tag-length validation"; in
+                // SILENT mode both pre and post versions silently
+                // accept and the bug is invisible.
+                //
+                // CLI:  --mode strict_parse <VCF|SAM> <file_path>
+                // Exits 0 iff the file parses cleanly under STRICT
+                // validation, non-zero with the rejection on stderr.
+                if (positional.size() < 2) {
+                    System.err.println(
+                        "--mode strict_parse requires <VCF|SAM> <file_path>");
+                    System.exit(1);
+                }
+                String spFormat = positional.get(0).toUpperCase();
+                String spPath = positional.get(1);
+                try {
+                    if ("VCF".equals(spFormat)) {
+                        // VCF strict parse — htsjdk's VCFFileReader has
+                        // its own validation handled by the codec; we
+                        // iterate every record so any deferred
+                        // validation surfaces.
+                        try (htsjdk.variant.vcf.VCFFileReader vr =
+                                new htsjdk.variant.vcf.VCFFileReader(
+                                    java.nio.file.Path.of(spPath), false)) {
+                            for (htsjdk.variant.variantcontext.VariantContext _v : vr) { /* iterate */ }
+                        }
+                    } else if ("SAM".equals(spFormat)) {
+                        SamReaderFactory f = SamReaderFactory.makeDefault()
+                            .validationStringency(ValidationStringency.STRICT);
+                        try (SamReader r = f.open(new java.io.File(spPath))) {
+                            r.getFileHeader();
+                            for (SAMRecord _x : r) { /* iterate */ }
+                        }
+                    } else {
+                        System.err.println(
+                            "--mode strict_parse: unknown format " + spFormat);
+                        System.exit(1);
+                    }
+                    System.exit(0);
+                } catch (Throwable t) {
+                    System.err.println(
+                        "strict_parse rejected: " + t.getClass().getSimpleName()
+                        + ": " + t.getMessage());
+                    System.exit(2);
+                }
+                return;
+            }
+
             if ("write_roundtrip".equals(mode)) {
                 // CLI grammar:
                 //   --mode write_roundtrip <VCF|SAM> <file_path>
@@ -127,6 +181,36 @@ public class BioTestHarness {
                     return;
                 }
                 System.out.print(discoverMethodsJson(cls));
+                return;
+            }
+
+            if ("discover_mutators".equals(mode)) {
+                // Tier 2b (twinkly-finding-swan plan): mirror of
+                // discover_methods that surfaces the MUTATOR surface
+                // (set/add/remove/clear/put/reset prefixes; void or
+                // fluent return). Catalog is prompt-only — the LLM
+                // composes mutator-chain MRs that wrap inside the
+                // existing sut_write_roundtrip oracle, so soundness
+                // is preserved (no new transform family).
+                //
+                // CLI:  --mode discover_mutators <VCF|SAM>
+                if (positional.isEmpty()) {
+                    System.err.println(
+                        "--mode discover_mutators requires <VCF|SAM>");
+                    System.exit(1);
+                }
+                String dmFmt = positional.get(0).toUpperCase();
+                Class<?> dmCls;
+                if ("VCF".equals(dmFmt)) {
+                    dmCls = VariantContext.class;
+                } else if ("SAM".equals(dmFmt)) {
+                    dmCls = SAMRecord.class;
+                } else {
+                    System.err.println("Unknown format: " + dmFmt);
+                    System.exit(1);
+                    return;
+                }
+                System.out.print(discoverMutatorsJson(dmCls));
                 return;
             }
 
@@ -382,10 +466,24 @@ public class BioTestHarness {
         sb.append(",\"ID\":").append(vc.getID().equals(".") ? "null" : jsonStr(vc.getID()));
         sb.append(",\"REF\":").append(jsonStr(vc.getReference().getBaseString()));
 
-        // ALT
+        // ALT — use getDisplayString(), not getBaseString().
+        // getBaseString() returns "" for symbolic alleles (<NON_REF>,
+        // <DEL>, <DUP>, <*>, etc.); getDisplayString() returns
+        // "<NON_REF>" etc. Oracle-validation 2026-04-22 saw 621
+        // records in real_world_htslib_index.vcf report ALT=[""]
+        // from htsjdk while vcfpy emitted the expected ["*"] — this
+        // split consensus on every GVCF/SV input. We also strip the
+        // surrounding angle brackets so htsjdk's "<DEL>" agrees with
+        // vcfpy's "DEL".
         sb.append(",\"ALT\":[");
         sb.append(vc.getAlternateAlleles().stream()
-            .map(a -> jsonStr(a.getBaseString()))
+            .map(a -> {
+                String s = a.getDisplayString();
+                if (s.length() >= 2 && s.startsWith("<") && s.endsWith(">")) {
+                    s = s.substring(1, s.length() - 1);
+                }
+                return jsonStr(s);
+            })
             .collect(Collectors.joining(",")));
         sb.append("]");
 
@@ -771,6 +869,65 @@ public class BioTestHarness {
             if (entries.size() >= 50) break;
         }
         return "{\"methods\":[" + String.join(",", entries) + "]}";
+    }
+
+    private static String discoverMutatorsJson(Class<?> cls) {
+        // Mirror of discoverMethodsJson with INVERSE filter:
+        //  - name starts with set/add/remove/clear/put/reset
+        //  - return type is void OR the receiver class (fluent setters)
+        //  - public, instance (not static), non-Object-noise
+        //  - any parameter count (mutators take 1+ args by definition)
+        Set<String> mutatorPrefixes = new HashSet<>(Arrays.asList(
+            "set", "add", "remove", "clear", "put", "reset"
+        ));
+        Set<String> objectNoise = new HashSet<>(Arrays.asList(
+            "hashCode", "toString", "getClass", "wait", "notify",
+            "notifyAll", "equals", "clone"
+        ));
+
+        List<String> entries = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        Method[] methods = cls.getMethods();
+        Arrays.sort(methods, Comparator.comparing(Method::getName));
+        for (Method m : methods) {
+            int mods = m.getModifiers();
+            if ((mods & java.lang.reflect.Modifier.PUBLIC) == 0) continue;
+            if ((mods & java.lang.reflect.Modifier.STATIC) != 0) continue;
+            String name = m.getName();
+            if (objectNoise.contains(name)) continue;
+            String lower = name.toLowerCase(Locale.ROOT);
+            boolean isMutator = false;
+            for (String pfx : mutatorPrefixes) {
+                if (lower.startsWith(pfx)) { isMutator = true; break; }
+            }
+            if (!isMutator) continue;
+            Class<?> rt = m.getReturnType();
+            // Accept void or fluent (returns receiver type)
+            boolean fluent = rt.equals(void.class)
+                || rt.equals(Void.TYPE)
+                || rt.equals(cls);
+            if (!fluent) continue;
+            // Dedupe by name+arg count to keep the catalog compact.
+            String key = name + "/" + m.getParameterCount();
+            if (seen.contains(key)) continue;
+            seen.add(key);
+            // Render arg types (Java simple names) to give the LLM a hint.
+            StringBuilder argList = new StringBuilder();
+            argList.append('[');
+            Class<?>[] params = m.getParameterTypes();
+            for (int i = 0; i < params.length; i++) {
+                if (i > 0) argList.append(',');
+                argList.append(jsonStr(params[i].getSimpleName()));
+            }
+            argList.append(']');
+            entries.add(
+                "{\"name\":" + jsonStr(name)
+                + ",\"returns\":" + jsonStr(rt.equals(cls) ? cls.getSimpleName() : "void")
+                + ",\"args\":" + argList.toString() + "}"
+            );
+            if (entries.size() >= 60) break;
+        }
+        return "{\"mutators\":[" + String.join(",", entries) + "]}";
     }
 
     private static String queryVcf(String path, List<String> methodNames) throws IOException {

@@ -116,6 +116,21 @@ phase_c:
   # DET report output
   det_report_path: data/det_report.json
 
+  # Rank 8 — coverage-growth corpus keeper (see
+  # test_engine/feedback/corpus_keeper.py + documents/Flow.md §Rank 8).
+  # Every transformed file (T_*) that at least one parser runner
+  # accepts gets saved to seeds/<fmt>/kept_<sha8>.{vcf,sam}, dedup'd
+  # by content hash, FIFO-capped per format. The next SeedCorpus()
+  # instantiation picks them up via the existing glob — no other
+  # wiring change needed. This is BioTest's analogue of the
+  # coverage-growth corpus that libfuzzer / jazzer / atheris /
+  # cargo-fuzz grow during their runs; it closes the Phase-3
+  # mutation-score gap documented in
+  # compares/results/mutation/biotest/WHY_BIOTEST_UNDERPERFORMS.md.
+  corpus_keeper:
+    enabled: true                # default true; set false to disable
+    max_files_per_format: 2000   # FIFO cap per (vcf, sam)
+
   # ═══════════════════════════════════════════════════════════════════
   # ⭐  SINGLE SOURCE OF TRUTH — which format is this run targeting?  ⭐
   # ═══════════════════════════════════════════════════════════════════
@@ -128,7 +143,7 @@ phase_c:
   #              below), and blindspot tickets all scope to this format.
   # Leave at `null` to run BOTH formats (only do this if you have plenty
   # of LLM quota + time — it doubles Phase B's API calls).
-  format_filter: SAM
+  format_filter: VCF
 
   # Systems Under Test — real parser implementations from SUTfolder/
   # (only actual external parsers; the built-in reference normalizer is
@@ -198,11 +213,17 @@ phase_c:
     - name: noodles
       language: Rust
       enabled: true
-      adapter: harnesses/rust/noodles_harness/target/release/noodles_harness.exe
+      adapter: harnesses/rust/noodles_harness/target/release/noodles_harness
       # Coverage binary (optional): built by `cargo llvm-cov` with
       # RUSTFLAGS="-C instrument-coverage" — runner will fall back to
       # the standard binary if the coverage build isn't present.
-      coverage_binary: harnesses/rust/noodles_harness/target/llvm-cov-target/release/noodles_harness.exe
+      # Paths are bare (no .exe); NoodlesRunner's DEFAULT_BIN adds
+      # `.exe` via `Path.with_suffix` on win32 automatically — for the
+      # explicit config override we match the Linux layout because the
+      # currently-built binaries live in the Docker biotest-bench image
+      # (Linux ELF). On Windows native, rebuild via cargo and re-add
+      # `.exe` here.
+      coverage_binary: harnesses/rust/noodles_harness/target/llvm-cov-target/release/noodles_harness
       llvm_profile_dir: coverage_artifacts/noodles
       timeout_s: 60
 
@@ -223,15 +244,20 @@ phase_c:
 # ---------------------------------------------------------------------------
 feedback_control:
   enabled: true
-  max_iterations: 4           # Run 7 data showed weighted coverage plateaus
-                              # by iter 3 (+0.4, +0.1, +0.2 pp on htsjdk/VCF);
-                              # iters 5-8 are pure wall-time waste. Raise only
-                              # when a new lever is validated to keep moving
-                              # past iter 3.
+  # max_iterations — AUTO-DEFAULTED by format_filter (Run 11 lesson):
+  #   VCF default = 4 (Run 7 showed iters 5-8 are wall-time waste).
+  #   SAM default = 2 (Jazzer hits paradigm ceiling in 1-2 iters in
+  #                    the same wall-time budget; iter 3-4 re-run the
+  #                    same MRs without moving coverage).
+  # Override per-run by uncommenting + setting an explicit integer:
+  max_iterations: 2             # Run 12 noodles-VCF: bounded budget to
+                                 # get initial comparison against Jazzer
+                                 # (cargo-fuzz) 22.72% baseline @ 1800s.
   plateau_patience: 3         # kept — SCC is sparse; real stop now also fires
                               # on weighted-coverage delta (see loop_controller).
   target_scc_percent: 95.0    # Stop when SCC reaches this target
-  timeout_minutes: 180        # Run 7 at 240 min still didn't hit the cap
+  timeout_minutes: 80         # 4rep sweep 2026-04-24: below 90-min wall cap so biotest self-terminates cleanly (coverage.py atexit fires); raise back to 180 for canonical runs
+
                               # because iters can't be interrupted; 180 min
                               # is enough for 4 iterations at observed rate.
   # Coverage-delta early-stop (Run 7 lesson, 2026-04-20):
@@ -283,7 +309,7 @@ feedback_control:
   # primaries are: htsjdk (JaCoCo), vcfpy (pure-Python coverage.py),
   # noodles (Rust, cargo-llvm-cov). pysam stays an enabled voter below,
   # but is no longer the coverage driver.
-  primary_target: htsjdk
+  primary_target: noodles
 
   # Prioritized-queueing window: each iteration shows the LLM the Top-K
   # highest-priority uncovered rules (sorted by complexity → proximity
@@ -319,7 +345,7 @@ feedback_control:
   # TitanFuzz (ISSTA'23), Fuzz4All (ICSE'24).
   # -------------------------------------------------------------------------
   seed_synthesis:
-    enabled: true                # flip to false to disable the lever
+    enabled: false               # 4rep sweep 2026-04-24: disabled to keep iter size bounded so biotest self-terminates before 90-min wall cap (coverage.py atexit fires cleanly on Python SUTs)
     max_seeds_per_iteration: 5   # Run 7 showed 8 seeds/iter compounded
                                  # quadratically with MR count (Phase C tests
                                  # ≈ seeds × MRs). 5 is the sweet spot.

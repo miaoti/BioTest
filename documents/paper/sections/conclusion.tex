@@ -1,0 +1,29 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+\biotest{} is a metamorphic-testing pipeline for textual VCF and
+SAM parsers whose per-SUT user effort is bounded by what
+coverage-guided fuzzers already require: a thin parse-and-emit
+shim and nothing else. The framework combines spec-grounded
+LLM-driven MR mining, a SUT-agnostic grammar-conforming generator,
+and a multi-runner consensus oracle applied uniformly across Java,
+Python, Rust, and C++. We evaluate it under a
+budget-and-mutation-engine parity protocol against five
+specialised fuzzers, a Pure-Random floor, and a silence-on-fix
+benchmark of $32$ verified historical parser bugs
+(\S\ref{sec:evaluation}).
+
+Across the three axes the result is a clean trade-off. \biotest{}
+sits within a small single-digit deficit of the strongest
+coverage-guided baseline on four mutation-adequacy configurations,
+trails by the margin Klees et al.\ and B\"ohme et
+al.~\cite{klees2018fuzz,boehme2020boosting} predict qualitatively
+on byte-content-lenient biopython, and exceeds the strongest
+baseline on seqan3/SAM through corpus-side retention of
+typed-exception inputs. On the real-bug benchmark the gap is
+structurally explained by the dominance of differential-disagreement
+signals in the manifest's parse-time bug shapes. A natural future
+direction is a per-SUT coverage-feedback extension on top of the
+SUT-agnostic core, which would recover some of the biopython gap
+while preserving the deployment story for users who cannot pay
+the engineering cost.

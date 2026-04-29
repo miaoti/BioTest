@@ -181,11 +181,23 @@ def snapshot_seeds_count(seeds_root: Path) -> dict[str, int]:
 
 def to_container_path(p: Path) -> str:
     """Convert a host (Windows) path under REPO_ROOT to its /work-bind
-    equivalent inside the biotest-bench container."""
-    s = str(p).replace("\\", "/")
+    equivalent inside the biotest-bench container.
+
+    Handles both absolute and relative `p`. Relative paths are resolved
+    against REPO_ROOT first; otherwise a relative `out-root` produced
+    paths like `/workcompares/...` (missing slash between /work and the
+    rest), which gcovr/biotest then failed to open.
+    """
+    abs_p = Path(p) if Path(p).is_absolute() else (REPO_ROOT / p)
+    s = str(abs_p).replace("\\", "/")
     repo_str = str(REPO_ROOT).replace("\\", "/")
     if s.startswith(repo_str):
-        return "/work" + s[len(repo_str):]
+        suffix = s[len(repo_str):]
+        if not suffix.startswith("/"):
+            suffix = "/" + suffix
+        return "/work" + suffix
+    # Path outside REPO_ROOT — fall through (caller error; container
+    # bind-mount won't see it anyway).
     return s
 
 
@@ -355,12 +367,8 @@ def run_biotest_container(
     """Launch biotest inside biotest-bench-setup. cfg_path is the host-
     side absolute path under /work/... — the container sees the same
     path because /work is a bind mount of the repo root."""
-    container_cfg = "/work" + str(cfg_path).replace("\\", "/").replace(
-        str(REPO_ROOT).replace("\\", "/"), ""
-    )
-    container_log = "/work" + str(log_path).replace("\\", "/").replace(
-        str(REPO_ROOT).replace("\\", "/"), ""
-    )
+    container_cfg = to_container_path(cfg_path)
+    container_log = to_container_path(log_path)
     # Ensure log dir exists on host (== /work in container).
     log_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -413,9 +421,8 @@ def regenerate_gcovr_json(work_dir: Path, fh, cell: Cell) -> None:
     """Run gcovr inside the container against the seqan3 build dir, write
     JSON to the cell's coverage_artifacts/gcovr.json."""
     out_json = work_dir / "coverage_artifacts" / "gcovr.json"
-    container_out = "/work" + str(out_json).replace("\\", "/").replace(
-        str(REPO_ROOT).replace("\\", "/"), ""
-    )
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    container_out = to_container_path(out_json)
     proc = subprocess.run(
         ["docker", "exec", "biotest-bench-setup", "bash", "-lc",
          f"python3.12 -m gcovr --json -o {container_out} "
@@ -435,12 +442,8 @@ def regenerate_noodles_llvm_cov(work_dir: Path, fh, cell: Cell) -> None:
     NoodlesCoverageCollector)."""
     profile_dir = work_dir / "coverage_artifacts" / "noodles"
     out_json = profile_dir / "llvm-cov.json"
-    container_profile = "/work" + str(profile_dir).replace("\\", "/").replace(
-        str(REPO_ROOT).replace("\\", "/"), ""
-    )
-    container_out = "/work" + str(out_json).replace("\\", "/").replace(
-        str(REPO_ROOT).replace("\\", "/"), ""
-    )
+    container_profile = to_container_path(profile_dir)
+    container_out = to_container_path(out_json)
     cmd = (
         "LLVM=/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/"
         "rustlib/x86_64-unknown-linux-gnu/bin && "

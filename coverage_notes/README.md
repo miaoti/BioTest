@@ -17,9 +17,30 @@ coverage_notes/
   biopython/
     sam/
       biotest.md     # BioTest runs on biopython/SAM (Run 1)
+  seqan3/
+    sam/
+      biotest.md     # BioTest runs on seqan3/SAM (Run 1 — harness-level 95.3 %, DESIGN-scope 0/0 pending harness link to seqan3)
+  vcfpy/
+    vcf/
+      biotest.md     # BioTest runs on vcfpy/VCF (Run 1 — 73.4 % weighted, 863/1 176 lines; + cross-tool comparison vs Atheris)
+  noodles/
+    vcf/
+      biotest.md     # BioTest runs on noodles-vcf/VCF (Run 12 — 39.6 % weighted, 2 741/6 920 lines; + cross-tool comparison vs cargo-fuzz / Pure Random)
   pysam/             # (empty — future)
-  seqan3/            # (empty — future)
+
+  MUTATION_SCORE_ANALYSIS.md   # Cross-SUT mutation-score report
+                               # (Run-8 4-rep mean±std, citations,
+                               # per-cell gap analysis vs baselines)
 ```
+
+## Cross-cutting reports (not per-SUT)
+
+- `MUTATION_SCORE_ANALYSIS.md` — cross-SUT mutation-score analysis
+  based on the Run-8 4-rep measurements. Compares BioTest against
+  jazzer / atheris / cargo-fuzz / libfuzzer baselines cell-by-cell
+  with referenced literature citations. Read this when you need to
+  explain *why* BioTest scores what it does relative to a baseline
+  on a given cell — all six cells are covered.
 
 ## Guidelines for adding a measurement
 

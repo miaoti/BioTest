@@ -1,0 +1,72 @@
+% IEEE conference / journal style. Switch to journal class with the
+% [conference] option for IEEE conference venues.
+\documentclass[conference]{IEEEtran}
+
+% --- packages ---
+\usepackage{cite}                 % IEEEtran's preferred citation style
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}             % enumerate[label=...] support
+\usepackage{xspace}               % \biotest{} trailing-space handling
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,backgrounds}
+
+% --- We use IEEEtran's native \cite{} (not natbib) since IEEEtran has
+%     its own bibliography style.  For the Evaluation section's
+%     \citep / \citet calls, alias them to \cite for safety.
+\providecommand{\citep}[1]{\cite{#1}}
+\providecommand{\citet}[1]{\cite{#1}}
+\providecommand{\citealp}[1]{\cite{#1}}
+
+% --- BioTest macro: small-caps "BioTest" with xspace trailing handling ---
+\newcommand{\biotest}{\textsc{BioTest}\xspace}
+
+\begin{document}
+
+\title{BioTest: Metamorphic Testing for Textual VCF and SAM Parsers}
+
+\author{
+  \IEEEauthorblockN{Anonymous Authors}
+  \IEEEauthorblockA{
+    \textit{Anonymous Institution}\\
+    \texttt{anonymous@example.org}
+  }
+}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+metamorphic testing, mutation testing, fuzz testing,
+bioinformatics, parser testing, oracle problem, software
+testing
+\end{IEEEkeywords}
+
+\input{sections/introduction}
+\input{sections/related}
+\input{sections/design}
+\input{sections/implementation}
+
+\section{Evaluation}
+\label{sec:evaluation}
+\input{sections/evaluation_intro}
+\input{sections/mutation_score_section}
+\input{sections/coverage_section}
+\input{sections/bug_bench_section}
+
+\input{sections/threats}
+\input{sections/conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{biotest}
+
+\end{document}

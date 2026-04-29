@@ -14,12 +14,36 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
+
+// ---------------------------------------------------------------------------
+// Optional seqan3 pre-pass for coverage instrumentation.
+//
+// When USE_SEQAN3 is defined at compile time (build inside biotest-bench
+// with `-DUSE_SEQAN3 -isystem /opt/seqan3/include` + Clang 18 with the two
+// in-tree seqan3 patches per DESIGN §13.2.4), the harness runs
+// seqan3::sam_file_input over the file BEFORE the existing text parser.
+// The seqan3 parse only touches `id()` / `sequence()` (richer fields hit
+// concept-instantiation storms — same minimal touch the libFuzzer harness
+// at compares/harnesses/libfuzzer/seqan3_sam_fuzzer.cpp uses); it's
+// wrapped in try/catch so seqan3 parse errors don't kill the JSON emit.
+// The text parser still produces the canonical JSON that downstream
+// oracles consume — output is byte-identical between USE_SEQAN3 builds
+// and plain text builds.
+//
+// This unblocks `seqan3 / SAM` coverage measurement under the DESIGN
+// scope (`seqan3/io/sam_file`, `format_sam`, `cigar`) — the seqan3 parse
+// loop fires the parser code paths gcovr is filtering for.
+// ---------------------------------------------------------------------------
+#ifdef USE_SEQAN3
+#  include <seqan3/io/sam_file/input.hpp>
+#endif
 
 // JSON string escaping
 std::string json_str(std::string const & s) {
@@ -66,6 +90,41 @@ int main(int argc, char * argv[]) {
         std::cerr << "This harness only supports SAM format\n";
         return 1;
     }
+
+    // seqan3 pre-pass — see header comment. Runs only when USE_SEQAN3
+    // was defined at compile time. Failures are swallowed so they
+    // never affect the canonical-JSON output the text parser produces
+    // below.
+#ifdef USE_SEQAN3
+    // Mirror the libFuzzer harness's sam_file_input usage exactly
+    // (compares/harnesses/libfuzzer/seqan3_sam_fuzzer.cpp): read into a
+    // string, hand seqan3 a stringstream + explicit format_sam{}. The
+    // stringstream + format_sam constructor throws on malformed input,
+    // which our catch handles. The path-based constructor `sam_file_input
+    // fin{filepath}` triggers abort() on some inputs (auto-format
+    // detection invokes assertions outside the exception path), so we
+    // avoid it.
+    try {
+        std::ifstream sf{filepath};
+        if (sf.is_open()) {
+            std::ostringstream oss;
+            oss << sf.rdbuf();
+            std::string buf = oss.str();
+            std::istringstream iss(std::move(buf));
+            seqan3::sam_file_input fin{iss, seqan3::format_sam{}};
+            for (auto && record : fin) {
+                auto const & id = record.id();
+                auto const & seq = record.sequence();
+                (void)id;
+                (void)seq;
+            }
+        }
+    } catch (std::exception const &) {
+        // Ignore — pre-pass is purely for coverage exercising.
+    } catch (...) {
+        // Same.
+    }
+#endif
 
     try {
         std::ifstream file(filepath);

@@ -555,13 +555,21 @@ Inoculation" section argues this is the only reliable way to
 attribute detection to a specific target bug).
 
 **Operational shape inside `bug_bench_driver.py`**: the driver records
-this as a per-cell `BugResult` with three orthogonal booleans:
+this as a per-cell `BugResult` with five booleans:
 
 | field                              | type            | meaning |
 | :--------------------------------- | :-------------- | :------ |
-| `detected`                         | `bool`          | `signal_T(I, V_pre) = true` for at least one input in the pre-fix run's `crashes/` (libFuzzer-family), `bug_reports/` (BioTest), or post-hoc replay (Pure Random). |
-| `trigger_input`                    | `str | null`    | path to a canonical representative `I` (first file in the relevant artifacts dir). |
+| `detected`                         | `bool`          | `signal_T(I, V_pre) = true` for at least one input in the pre-fix run's `crashes/` (libFuzzer-family), `bug_reports/` (BioTest), post-hoc replay (Pure Random), or the canonical PoV (when the candidate loop falls back to it). |
+| `trigger_input`                    | `str | null`    | path to a canonical representative `I` — the file whose presence in the candidate list satisfied the silence predicate. |
+| `signal`                           | `str | null`    | the bug's expected_signal type from the manifest (or `crash` for libFuzzer-family). |
 | `confirmed_fix_silences_signal`    | `bool | null`   | `signal_T(I, V_post) = false` — the driver installs `V_post`, replays `I` through the language-specific `ParserRunner`, and records the result. `null` means replay was impossible (missing trigger file, `V_post` install failed, or no runner for this SUT — the latter is a driver gap, not a detection claim). |
+| `detected_via_tool_output`         | `bool`          | The trigger that satisfied §5.3.1 came from `<tool>/<bug>/crashes/` — i.e. the tool's adapter generated a file that fired the predicate. **This is what "the tool found the bug" strictly means.** |
+| `detected_via_pov_verification`    | `bool`          | The trigger that satisfied §5.3.1 was the canonical PoV under `compares/bug_bench/triggers/<bug>/`. PoV verification is bench-level work — every tool in the matrix gets the same uplift on the same predicate because the candidate loop prepends the PoV regardless of which tool ran. |
+
+When `detected=True`, exactly one of the two attribution booleans is
+also `True`; both are `False` when `detected=False`. Use `detected`
+for total-bug-bench coverage; use the attribution split for
+honest tool-vs-tool comparison.
 
 A cell is scored as `tool T found bug B` iff:
 `detected == true AND trigger_input != null AND

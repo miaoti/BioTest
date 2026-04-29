@@ -1341,6 +1341,301 @@ finally:
 >   plan; it plugs branch-coverage feedback directly into Hypothesis
 >   strategy choices, going beyond `target()`'s scalar-objective search.
 
+#### 🗄️ 第九层：覆盖率增长语料库保存器 (Rank 8 — Coverage-Growth Corpus Keeper)
+
+**文件**：`test_engine/feedback/corpus_keeper.py` + `test_engine/orchestrator.py::_run_single_test`
+
+**动机 (Why)**：Phase-3 变异得分对比实验（`compares/results/mutation/biotest/WHY_BIOTEST_UNDERPERFORMS.md`，2026-04-22）揭示了 BioTest 在 htsjdk-VCF (-5.68pp)、htsjdk-SAM (-8.45pp) 的变异得分落后于 baseline 的**单一根因**：
+
+> Coverage-guided fuzzers（jazzer / atheris / libfuzzer / cargo-fuzz）**在运行时保留** corpus——每个触达新 edge 的输入都被保留下来。运行 2 小时后，它们的 kept corpus 有 ~200-1500 个文件，每个都因打开新路径被选中。BioTest 以前把每一个 transformed 文件都 `transformed_path.unlink()`（`orchestrator.py:401`），从未累积 byte-level 多样性。
+
+Per-operator 分析确认这是 **数值多样性** 缺失：`Math` 算子（swap `+`/`-`/`*`/`/`）、`VoidMethodCall`、`RemoveConditional_ORDER_ELSE` 这三类要求输入**数值变化**才能 kill 的变异，BioTest 的 kill 率是 baseline 的 1/3 到 1/6；相反，要求**结构多样性**的 `NullReturnVals`、`ConditionalsBoundary`、以及整个 biopython 行（+5.87pp）BioTest 反而**超越** baseline。语义保持 transform 产生的 byte-level 差异没被保留下来，因此等价于无法跨迭代累积。
+
+**原子操作**：在 `_run_single_test` 即将 `transformed_path.unlink()` 的 `finally` 段，先调用 `corpus_keeper.maybe_keep(transformed_path, fmt, mr_id, source_seed, any_runner_success, canonical_json_hash, source_canonical_hash)`。它：
+1. 检查 `any_runner_success`——至少一个 `ParserRunner.run()` 返回 `success=True`；
+2. 读取文件字节、计算 SHA-256；
+3. 与已保留哈希去重（每格式各自一个 set）；
+4. 如果池大小超过 `max_files_per_format` 上限（默认 2000），按 mtime 做 FIFO 驱逐；
+5. 写入 `seeds/<fmt>/kept_<sha8>.{vcf,sam}`——**与 Tier-1/Tier-2 种子在同一目录**，`SeedCorpus` 的 `vcf_dir.glob("*.vcf")` 自动发现，下一轮 Phase C/D 无需任何额外改动；
+6. 同时 append 到 `seeds/<fmt>/.kept_manifest.jsonl`（`.` 开头避免被 glob 到）以备审计。
+
+热路径成本 ~1 ms/MR 执行（一次 `sha256` + 一次 `write_bytes`），相对 Hypothesis 的例子生成几乎可忽略。
+
+**SUT-agnostic**：接口只依赖 `RunnerResult.success` 这个所有 `ParserRunner` 都实现的通用字段。新增 SUT 零 keeper 改动；新增 format 只需在 `max_files_per_format` 的 set-dict 里扩一行。
+
+**配置**：
+```yaml
+phase_c:
+  corpus_keeper:
+    enabled: true              # 默认开启
+    max_files_per_format: 2000 # 每 format FIFO 上限
+```
+
+**反馈闭环**：`seeds/<fmt>/kept_*.{vcf,sam}` 被下一轮 Phase C 的 `SeedCorpus` glob 捕获，因此 Phase D 迭代之间 corpus 自动成长。与 Rank 1 (LLM seed 合成) 形成互补：
+- Rank 1 面向 **uncovered-line 盲区**（生成意图清晰的新种子）；
+- Rank 8 面向 **已执行但被丢弃的多样性**（保留实际执行过的变换输出）。
+
+两者正交，不会双计。
+
+**Refinement A — canonical-AST-diff eligibility (2026-04-22 run-2 post-mortem)**：Run-2 发现单一 MR `shuffle_meta_lines` 产生 267 个 kept 文件，但它们的 canonical JSON 都和源 seed **完全相同**（只重排了 `##` 头行），所以 PIT/mutmut 的 `reachable` 分母完全不变，mutation score 只涨 +0.17pp。修正办法：keeper 现在接收 `canonical_json_hash`（主 SUT `RunnerResult.canonical_json` 的 sha256）和 `source_canonical_hash`；
+- 若 `canonical_json_hash == source_canonical_hash`——transform 在 AST 层面是 no-op，拒绝；
+- 若 `canonical_json_hash` 已经在 `_seen_canonical[fmt]` 里——已经有等价 AST 的文件被保留，拒绝；
+- 否则接受，并把两个 hash 都写进 manifest / 内存 set。
+
+Orchestrator 侧：`_run_single_test` 在 finally 段内用 `json.dumps(canonical_json, sort_keys=True)` → sha256 前 16 位计算两次——源（`results_x[primary_target]`）和变换（`results_tx[primary_target]`）。回退策略：主 SUT 没 `success=True` 时取第一个成功 runner；所有 runner 都失败时 `canonical_json_hash=None`，keeper 走传统 byte-hash 路径（向后兼容）。
+
+语义优势：这把 "keep byte-diversity" 改成了 "keep AST-diversity"——接近 Refinement B 的精神但 cost-free（无需探针）。单元测试覆盖四种情况（same-as-source 拒绝 / different 接受 / same-as-kept 拒绝 / no-hash 回退），见 `test_engine/feedback/corpus_keeper.py` 的 `maybe_keep` docstring。
+
+**预期增益**：在 htsjdk-VCF / htsjdk-SAM 两个 PIT 细胞上，3 轮 Phase D 迭代后 `reachable` 分母预计各自增加 40-80 个 mutant（参照 Zest/Padhye ISSTA'19：`+40-60%` coverage from corpus-growth 机制；我们从 `47 → ~250` 左右的种子池大小保守估计）。操作符级别上 `Math` / `VoidMethodCall` 的 kill 率应从 3-10% 回到 20-30% 的 baseline 水平。
+
+**不破坏的承诺**：
+- 不改变 `SeedCorpus` 的 glob 契约；
+- 不新增用户配置负担（开箱即用）；
+- 不引入 SUT-specific 逻辑；
+- 不改变 MR 执行语义（transform / oracle 调用完全不变）；
+- 不覆盖 `bug_reports/` 的任何行为（Keeper 和 bug-triage 完全独立）。
+
+#### 🧹 Phase-3 伴生工具：语义覆盖率导向的语料库压缩 (Coverage-guided Corpus Minimisation for Mutation Runs)
+
+**文件**：`compares/scripts/corpus_minimize.py`
+
+PIT / mutmut / cargo-mutants / mull 在变异得分阶段每个 mutant 都要重放整个 corpus——实际可行的上限是 120-200 文件/mutant。当 Rank 8 keeper 把 `seeds/<fmt>/` 累积到 2000+ 文件时，随机采样 200 个会浪费 reachable 分母：路径相似的输入互相抵消贡献。
+
+伴生工具实现 AFL-cmin 风格的贪心 set-cover：
+1. 对每个候选文件调用主 SUT 的 `ParserRunner.run()`；
+2. 计算 outcome fingerprint `(success, n_records, Σ POS+FLAG, error_type)`；
+3. 每个 bucket 保留一个 exemplar，然后按 round-robin 从 buckets 补足到 `--keep`；
+4. 输出 symlink-to-original（Windows 回退为 `shutil.copy2`）+ `kept.manifest.jsonl`。
+
+**SUT-agnostic**：只要目标 SUT 在 `test_engine/runners/` 有一个实现 `.run()` 的 `ParserRunner`，就能被 minimise。当前已覆盖 htsjdk / vcfpy / noodles / biopython / seqan3 / pysam / htslib。
+
+**何时使用**：
+- 手动：在长期运行后把 `seeds/<fmt>/` 压缩回 ~200 给 PIT/mull 用；
+- 自动：`compares/scripts/mutation_driver.py` 在看到 `--corpus` 超过阈值时自动调用（未来工作，现状仍手动）。
+
+**为何不替代 Rank 8**：Keeper 在 Phase C 运行时累积；minimiser 在 Phase 3 变异评估时削减。两者时序正交：Keeper 无选择压力——任何 parse-ok + AST-diverse 的 transform 都保留；minimiser 在 mutation-time 做最终 pick 以适配工具的 per-mutant budget。
+
+**Refinement B — kill-aware fitness（2026-04-22 run-2 post-mortem）**：Run-2 发现 outcome-fingerprint selector 把 biopython 的 corpus 从 600 压到 200 后，mutation score 从 64.36% 掉到 45.71%（-18.65pp 回归）——因为 `(success, n_records, Σ POS+FLAG, error_type)` fingerprint 把 CIGAR-variant 同质化，within-bucket 的数值多样性被丢弃。修正：`corpus_minimize.py::minimize_by_kills`——
+1. 对 Python SUT（biopython / vcfpy）在 site-packages 里定位 `sam.py`/`parser.py` 源文件；
+2. 用一套语法级 token-swap（`+`→`-`、`==`→`!=`、`and`→`or`、`True`→`False`……）生成 N=30 个 probe-mutation；
+3. 对每个 probe-mutation：写入源文件，`importlib.reload(<SUT module>)`，用 runner 跑每个 candidate corpus file，记录每个文件 "kill 了哪些 mutation"（outcome fingerprint 与 baseline 不同）；
+4. Greedy set-cover：迭代选择 kill-set 对已覆盖 set 贡献最大的文件，直到 `--keep` 满或无增益；
+5. 总是恢复源文件（`finally` 块 + `.min_bak` backup）。
+
+**为什么对 Java/Rust/C++ fallback 到 outcome-fingerprint**：这些 SUT 的 mutation 需要重新编译——每个 probe-mutation 要花 10-30s。200 candidates × 30 probes × 20s = 40 小时/cell，不可行。Python SUT 的 `importlib.reload` 是 `O(ms)`，所以 kill-aware 只对 Python 有经济可行性。
+
+CLI：`--strategy {kill_aware, outcome_fingerprint}`，默认 kill_aware。Fallback 透明（若 SUT source 不可达则自动降级到 outcome_fingerprint 并 log info 级信息）。
+
+Grounded in Vikram et al. ISSTA'23（*Guiding Greybox Fuzzing with Mutation Testing*，arXiv:2306.02773）——该论文证明用 mutation kill-count 做 corpus selection 的 fitness 在 fuzzer 上可以提升 30-50% mutation score；我们把同样的 fitness signal 用在 Phase-3 cmin step。
+
+**References**:
+> - Padhye, Lemieux, Sen — *Zest: Validity Fuzzing and Parametric
+>   Generators for Effective Random Testing*, ISSTA'19 (arXiv:1812.00078). 
+>   Zest shows that keeping every semantic-valid input that exercises new 
+>   coverage gives +40-60% branch coverage over pure random. Corpus Keeper 
+>   applies the same principle to metamorphic testing.
+> - Serebryany et al. — *libFuzzer: a library for coverage-guided fuzz 
+>   testing*, USENIX ATC'16. The corpus-keeper-on-new-edges pattern is the 
+>   canonical fuzzer-corpus-growth discipline the baselines in 
+>   `compares/DESIGN.md` inherit.
+> - Xia et al. — *Fuzz4All: Universal Fuzzing with Large Language Models*, 
+>   ICSE'24. Documents the complementarity of LLM-synthesised seeds (Rank 1) 
+>   and coverage-kept transform outputs (Rank 8).
+> - Vikram et al. — *Guiding Greybox Fuzzing with Mutation Testing*, 
+>   ISSTA'23. Motivates mutation-score feedback as a coverage-complement; 
+>   the minimiser script (`corpus_minimize.py`) implements the 
+>   pre-mutation cmin step that paper's protocol assumes.
+
+#### 🔢 第十层：数值域 validity-preserving 多样化器 (Rank 9 — Value Diversifier)
+
+**文件**：`mr_engine/transforms/value_diversifier.py`
+
+**动机 (Why)**：Run-2 实验（`RUN2_POSTMORTEM.md`）证实 Rank 8 corpus keeper 在单一 MR 运行下效果边际（+0.17-0.20pp）。Per-operator 分析定位原因到 **数值域覆盖缺失**：PIT 的 `Math` (+→-)、`VoidMethodCall`、`RemoveConditional_ORDER_ELSE` (< → >= 等) 三类变异需要输入数值**跨越边界**才能被 kill；BioTest 语义保持 transform 按定义保持 POS / QUAL / MAPQ / AF 等数值不变，所以这些变异在几乎每个输入上都 survive。Baseline fuzzer（jazzer/cargo-fuzz/libfuzzer）通过 byte-level 随机 mutation 天然产生数值多样性，kill 率对应高 1.7-5.7×。
+
+Rank 9 把这个缺失补上，但保留 BioTest 不同于 fuzzer 的身份：**validity-preserving**——每个生成的文件必须通过 `normalize_vcf_text` / `normalize_sam_text` 验证（同样的 gate Rank 1 LLM seed synthesis 用）。
+
+**原子操作**：对每个源种子，应用 per-field 数值扰动：
+- **VCF**：POS ± 10k（受 chromosome bound 限制）、QUAL 缩放（0-10x）、INFO=AF `[0,1]` 随机、INFO=DP `[0,10k]` 随机、INFO=MQ `[0,60]` 随机；
+- **SAM**：POS ± 10k、MAPQ `[0,60]` 随机、PNEXT ± 10k、TLEN ± 500、optional tag `i`/`f` 类型随机化。
+
+生成后每份候选走 3 层 gate：
+1. Validity——`normalize_{vcf,sam}_text` 不抛；
+2. Size——≤ 500 KB（与 Tier-2 corpus fetcher 同上限）；
+3. Uniqueness——SHA-256 dedup 跨 run。
+
+**与 MR 框架的关系**：Rank 9 **不是** metamorphic transform——它故意**改变**语义（POS 变了、QUAL 变了）。不走 oracle 路径，不产生 MR violation。它只填充 `seeds/<fmt>_diverse/` 目录；mutation-score 阶段明确把这个目录并入 corpus。
+
+**为什么放在 `seeds/<fmt>_diverse/` 而不是 `seeds/<fmt>/`**：后者是 Phase C MR 执行循环 glob 的目录。如果 diversifier 输出混进去，每个 MR 会把所有 17000+ diverse files 都跑一遍，Phase C 爆炸。分离目录让 SeedCorpus 继续只看 47 个真实种子运行 MR，mutation-score 阶段才合并两个 pool 做采样。
+
+**SUT-agnostic**：所有扰动都按照 VCF/SAM 的**规范列定义**操作，不依赖任何 SUT 的实现细节。新加一个 VCF/SAM parser SUT 零 diversifier 改动。
+
+**与其他 Rank 的正交性**：
+- Rank 1 (LLM seed synth)：面向 **uncovered lines**；生成全新种子；每 iteration 一次；
+- Rank 8 (corpus keeper)：面向 **已执行 MR transforms 的 AST-diverse 输出**；Phase C 运行中累积；
+- Rank 9 (value diversifier)：面向 **数值边界变异** kill 信号；一次性（或 Phase-D layer）离线生成；
+- 三者没有双计风险：Rank 1 的输出不通过 diversifier（已经是新种子），Rank 8 的输出不走 diversifier（AST 已经多样），Rank 9 的输出不进 `seeds/<fmt>/`（不被 MR 选中）。
+
+**独立 CLI**：
+```bash
+py -3.12 mr_engine/transforms/value_diversifier.py \
+    --input seeds/vcf --output seeds/vcf_diverse \
+    --format VCF --n-per-seed 10 --seed 42
+```
+
+**测量结果（run-3，2026-04-22）**：见 `compares/results/mutation/biotest/RUN3_VS_RUN2_VS_RUN1.md`（run-3 完成后填充）。
+
+**Refinement C — SUT-parser validity gate (2026-04-22 run-3 post-mortem)**：Run-3 发现 Rank 9 对 biopython 回归 -18.65pp，原因是 biopython 的 `Bio.Align.sam.AlignmentIterator` 比 canonical normalizer 严格——70% 的数值扰动文件被 biopython 拒绝在 parse 阶段，但被 normalizer 接受。修正：`diversify_directory` 接受 `sut_validate` 参数（`biopython` / `vcfpy`），每个候选在通过 normalizer 后再走一遍主 SUT 的 in-process parser。Python SUT 的 parse 开销 ~1 ms/file，所以 15000 candidate × 1 ms = 15 s 总开销，可接受。Java/Rust/C++ SUT 跳过此 gate（subprocess fork 每 candidate 10-100 ms，6000 × 50 ms = 5 min/cell，经济不划算；这些 SUT 的 parser 通常比 biopython 更宽容，回归 pattern 不出现）。
+
+CLI：`--sut-validate biopython`（SAM）/ `--sut-validate vcfpy`（VCF）。Fallback：若 `sut_validate` 未指定或 SUT 为 Java/C++/Rust，只走 normalizer gate（向后兼容 run-1 行为）。
+
+**References**:
+> - Offutt & Untch — *Mutation 2000: Uniting the Orthogonal*, Mutation
+>   Testing for the New Century 2001. Establishes numerical diversity
+>   as a first-class corpus-selection criterion — the theoretical
+>   basis for why mutation score requires boundary-crossing inputs.
+> - Padhye et al. — *Zest: Validity Fuzzing and Parametric Generators
+>   for Effective Random Testing*, ISSTA'19 (arXiv:1812.00078). Zest
+>   shows validity-gated random mutation matches coverage-guided
+>   fuzzer performance at ~10× lower cost. Rank 9 is Zest restricted
+>   to numerical fields + strict validity gating.
+
+#### 🔀 第十一层：字节级 validity-gated 变异器 (Rank 10 — Byte-Level Fuzzer)
+
+**文件**：`mr_engine/transforms/byte_fuzzer.py`
+
+**动机 (Why)**：Run-3 数据显示 Rank 9 value diversifier 对 htsjdk SAM 有效（+2.17pp，+21 abs kills），但对 htsjdk VCF / vcfpy / noodles **无效**——这些 cell 的 `RemoveConditional_EQUAL_ELSE`、`VoidMethodCall` 类变异要 kill 需要 **parser 的 tokenizer 状态机边界** 上的输入扰动，不是数值边界。Rank 9 按列结构改数值，触不到 tokenizer edge；需要**无结构**的字节级扰动。
+
+**与 libFuzzer/jazzer 全量集成的区别**：
+- 不按 SUT 语言写 harness——bit-flip / byte-sub 操作是格式无关的；
+- 不在 fuzzer 层做 coverage feedback——下游 Phase-3 mutation score 就是 fitness 信号；
+- 零新依赖——`random.getrandbits()` + 已有的 `normalize_{vcf,sam}_text` + 可选 Refinement C 的 SUT parser gate。
+
+是 Zest (Padhye ISSTA'19) 的**字节扰动子集**，without coverage feedback。
+
+**算子集合**（加权）：
+| 算子 | 权重 | 说明 |
+| :--- | :---: | :--- |
+| `sub_random_digit` | 0.35 | 交换一个 ASCII 数字为另一个随机数字；最高 valid-yield |
+| `flip_random_bit` | 0.30 | 翻一个随机 bit；最广多样性 |
+| `sub_random_byte` | 0.20 | 替换一个字节为随机 printable ASCII |
+| `insert_random_byte` | 0.075 | 插入随机 printable ASCII（容易破坏 TSV 列数） |
+| `delete_random_byte` | 0.075 | 删除随机字节（同上） |
+
+**保护 header**：VCF 的 `#`-前缀行、SAM 的 `@`-前缀行 **不被变异**——parser 在遇到第一个被扰动的 record 之前需要正常初始化 header。
+
+**Gate 链**：
+1. UTF-8 decode → 不抛；
+2. Canonical normalizer parse → 不抛；
+3. （可选）主 SUT 的 in-process parser → 不抛（Refinement C 同款 `sut_validate` 参数）；
+4. Size ≤ 500 KB；
+5. Content SHA-256 dedup。
+
+**输出**：`seeds/<fmt>_bytefuzz/bytefuzz_<sha8>.{vcf,sam}`。与 `seeds/<fmt>_diverse/` 并列；mutation-staging 脚本显式 union 两个目录 + primary `seeds/<fmt>/` 得到最终 mutation corpus。
+
+**正交性**：
+- Rank 9：按字段的**结构化数值**扰动；
+- Rank 10：**非结构化字节**扰动（bit/byte 级）。
+  两者互补：Rank 9 杀数值算子（POS arithmetic、QUAL comparison），Rank 10 杀 tokenizer 算子（equal/notequal comparisons in char-by-char state machines）。
+
+**预期增益**（基于操作符分析）：
+- htsjdk VCF: `RemoveCondEQUAL_ELSE` kill 率 25.2% → ~30%（PIT baseline 30.8%）；
+- vcfpy: 边际改进（vcfpy parser 已经宽容）；
+- noodles: 边际改进（Rust type system 拒绝很多字节变异）。
+
+**References**:
+> - Padhye et al. — *Zest: Validity Fuzzing and Parametric Generators for
+>   Effective Random Testing*, ISSTA'19 (arXiv:1812.00078). 字节级 mutation
+>   + validity gating = Zest 的精华；coverage feedback 是 Zest 独有，Rank 10
+>   把它替换成下游 mutation-score fitness。
+> - Serebryany et al. — *libFuzzer: a library for coverage-guided fuzz testing*,
+>   USENIX ATC'16. libFuzzer 的字节级算子库（bit-flip / byte-sub / byte-insert
+>   / byte-delete）是 Rank 10 `_OPERATORS` 列表的灵感来源。
+> - Miller, Fredriksen, So — *An Empirical Study of the Reliability of UNIX
+>   Utilities*, CACM'90. 原始 "random bytes + observe" 范式；Rank 10 加入
+>   validity gate，Miller 范式进化版。
+
+#### 📐 第十二层：边界值多样化器 (Rank 11 — Boundary-Value Diversifier)
+
+**文件**：`mr_engine/transforms/boundary_values.py`
+
+**动机 (Why)**：Run-3/4 实验（`RUN4_FINAL.md`）证实 Rank 9 的随机数值扰动只能**偶然**命中 PIT mutator 关心的边界——对 `RemoveConditional_ORDER_ELSE` (< → >=) 变异，kill 需要输入**跨越**被 mutation 的比较值；随机 POS ± 10k 命中特定边界的概率 ~1/10^4。Rank 11 用**确定性**的 Boundary Value Analysis (Myers 1979 *The Art of Software Testing*) 补上这个缺口：每个数值字段 emit 显式边界值，而不是靠随机探。
+
+**每个字段的边界值集合**（来自 VCF/SAM 规范，非 SUT impl 细节）：
+- **POS**: `1, 2, 100, 1_000_000, INT_MAX, INT_MAX-1`
+- **QUAL** (VCF): `0, 0.0, 1, 99.9, 9999, .`
+- **AF** (VCF INFO): `0.0, 0.00001, 0.5, 0.99999, 1.0`
+- **DP** (VCF INFO): `0, 1, 255, 65535, 1_000_000`
+- **MAPQ** (SAM): `0, 1, 60, 255`
+- **PNEXT** (SAM): `0, 1, 100, INT_MAX`
+- **TLEN** (SAM): `0, 1, -1, 500, 50_000, -50_000, INT_MAX, INT_MIN`
+
+**输出**：与 Rank 9 相同目录 `seeds/<fmt>_diverse/bv_<sha8>.<ext>`，共用 validity gate (normalizer + optional SUT-parser)。
+
+**与 Rank 9 的互补性**：
+- Rank 9：**随机**数值 + 多字段联合扰动 —— 广探索；
+- Rank 11：**确定**边界值 + 单字段显式枚举 —— 精准打击 BVA-sensitive mutants。
+同目录共存，mutation-staging 阶段一起 union 进 corpus。
+
+**Grounded in**：
+- Myers, G. *The Art of Software Testing* 1979 ch.4 — BVA 原始定义；
+- Just, Jalali, Ernst et al. — *Are Mutants a Valid Substitute for Real Faults?*, FSE'14. 经验显示 BVA inputs kill ~30% of relational-operator mutants that random generation misses.
+
+#### 🎯 Refinement D — 细胞自适应语料库组合 (Per-Cell Adaptive Corpus Composition)
+
+**触发（2026-04-22 run-4 post-mortem）**：Run-4 结果显示 Rank 10 字节级 fuzzer 对 biopython / noodles 产生**回归**（biopython run-4 53.15% vs run-1 64.36%，noodles run-4 8.03% vs run-1 8.36%），原因是这两个 SUT 的 parser **严格**——biopython 的 `AlignmentIterator` 和 noodles 的 Rust 类型系统会 parse-reject 80%+ 的字节变异文件，mutation engine 的有限 per-mutant budget 被浪费在无效输入上。
+
+**解决（一次性 staging 决策，无运行时开销）**：每个 mutation cell 按其 SUT 的 parser strictness 获得定制 corpus 组合：
+
+| SUT | parser tolerance | run-5 corpus composition |
+| :--- | :--- | :--- |
+| htsjdk (VCF + SAM) | tolerant | primary + 800 diverse/BV + 200 bytefuzz = 1047/1072 |
+| vcfpy | tolerant | primary + 800 diverse/BV + 200 bytefuzz = 1047 |
+| seqan3 | tolerant | primary + 800 diverse/BV + 200 bytefuzz = 1072 |
+| **noodles** | **strict (Rust type system)** | primary + 400 diverse/BV only, **no bytefuzz** = 447 |
+| **biopython** | **strict (`AlignmentIterator`)** | primary + 400 diverse/BV only, **no bytefuzz** = 472 |
+
+**SUT-agnostic automation**：staging 脚本根据 SUT 名自动路由；新增 SUT 只需在 staging 映射表加一行（`strict` / `tolerant` 标签）。Parser strictness 可以由一次性 baseline parse-rate probe 自动判断（阈值 50% reject → `strict`），操作员无需手动分类。
+
+**与 Rank 8/9/10/11 的关系**：不替代任何一个——它是把 Ranks 9/10/11 的 raw output 按细胞特性**过滤**。Ranks 9-11 仍把全部输出写入 `seeds/<fmt>_{diverse,bytefuzz}/`；Refinement D 在 mutation-staging 时按 SUT 选择 union 什么。这保证所有细胞都能受益于相应的 Rank 扩展，而严格 parser 不被拖累。
+
+**Run-5 post-mortem（2026-04-22, `compares/results/mutation/biotest/RUN5_FINAL.md`）**：Run-5 把 Refinement D 落地为"严格 SUT 跳过 bytefuzz、保留 diverse/BV"，结果 biopython 仍从 run-1 的 64.36% 回归到 run-5 的 25.94%——即使只含 diverse/BV 的 472-file corpus，biopython 严格 parser 依然 reject 大量 Rank 9/11 变异，reachable 从 202 膨胀到 505 但 kill 仅 +1。**正确形式应是 per-corpus-type parse-rate probe**（不是按 SUT 二分 strict/tolerant）：
+
+```
+for cell in (SUT, format):
+    for ctype in (primary, diverse, bytefuzz, bv):
+        if parse_success_rate(sample(ctype), sut_parser) > 0.70:
+            include ctype in staging union
+        else:
+            skip (avoid reachable-denominator inflation)
+```
+
+这会在 biopython 自动跳过 diverse/BV（probe rate ~15%），回到 run-1 的 primary-only corpus。**目前各细胞的 best-kept composite 通过手动选 run 实现（见 `compares/results/mutation/biotest/summary.csv`）；Run-6 的待办事项是把 probe-per-corpus-type 落地为 staging 脚本**。
+
+#### 🔧 第十三层：Phase E 自动语料库扩展 (Auto Corpus Augmentation — Ranks 12 + 13)
+
+**触发（2026-04-23 Run-9 fresh-baseline post-mortem）**：早期实验中 Rank 12（structural diversifier）和 Rank 13（lenient byte fuzzer）作为**独立 CLI 工具**存在 (`mr_engine/transforms/structural_diversifier.py`、`mr_engine/transforms/lenient_byte_fuzzer.py`)，需要操作员手动调用并把输出 stage 到 mutation 语料库 dir 里。这意味着 Run-8（4-rep mutation 度量）虽然使用了 Rank 12 + 13 的输出，但**那些都不是 `biotest.py` 默认管道的产物**——只是操作员临时拼接的增量。如果把 Run-8 的分数当作"工具的 mutation score"上报，就是把操作员手工劳动的结果记到工具账上。Run-9 fresh 用纯外部 seed 实测了这个差距。
+
+**修复（2026-04-23 Option B）**：把 Rank 12 + Rank 13 写进 `biotest.py` 的默认管道，作为 **Phase E (Corpus Augmentation)** 自动跑。从此默认运行 `py biotest.py` 会自动产生 `seeds/<fmt>_struct/` 和 `seeds/<fmt>_rawfuzz/`，下游 Phase 3 mutation harness 自动 union 这些 dir 进入 mutation 语料库。
+
+**Phase E 构造（biotest.py:run_phase_e）**：
+
+| 子步骤 | 调用模块 | 输出 dir | 默认参数 |
+| :--- | :--- | :--- | :--- |
+| Rank 12 (structural) — VCF | `structural_diversifier.generate_structural_directory` | `seeds/vcf_struct/` | `max_per_seed=200` |
+| Rank 12 (structural) — SAM | 同上 | `seeds/sam_struct/` | `max_per_seed=200` |
+| Rank 13 (lenient byte fuzz) — VCF | `lenient_byte_fuzzer.fuzz_directory` | `seeds/vcf_rawfuzz/` | `n_per_seed=10`, `seed=42` |
+| Rank 13 (lenient byte fuzz) — SAM | 同上 | `seeds/sam_rawfuzz/` | `n_per_seed=10`, `seed=42` |
+
+**Phase 3 mutation 自动 union**：Phase 3 driver 脚本（`phase3_jazzer_pit.sh`、`mutation_driver.py`）在 staging 阶段检测 `TOOL=biotest*` 并自动把 `seeds/<fmt>_struct/` 和 `seeds/<fmt>_rawfuzz/` 加入语料库（去重，受 `CORPUS_MAX` 上限）。**严格 parser SUT（biopython, noodles）跳过此 union**——保持 primary-only，避免 Run-5 post-mortem 中 reach 膨胀的回归。
+
+**配置开关**：`biotest_config.yaml: phase_e.enabled: true|false`（默认 `true`）。同样 `--phase E` 可单独运行 augmentation 步骤而不重新跑 Phase D。
+
+**SUT-agnostic 性质保留**：
+
+- Rank 12 的所有 catalog（CIGAR shape、tag types、INFO 组合等）都源自 VCFv4.2 / SAMv1 spec——加新 SUT 不需要改这些 catalog。
+- Rank 13 是 byte-level fuzzer + 弱 gate（"至少有一行"），完全 format-agnostic。
+- 都不需要 per-SUT harness。
+
 ### 4. 框架终止条件 (Termination Conditions)
 
 **文件**：`test_engine/feedback/loop_controller.py`
@@ -1426,11 +1721,12 @@ py -3.12 biotest.py --dry-run           # 校验配置
 ### 8. 📁 项目代码结构与产出 (Project Structure & Files)
 
 **Phase D 产出: 10 个新文件 (2,165 行) + 10 个修改文件 + pysam Docker 镜像。**
+**2026-04-22 mutation-adequacy 扩展：+3 个新结构文件（Rank 8/9/10）、+1 个 Phase-3 companion + 2 个 seeds/ 子目录，见底部。**
 
 ```text
 BioTest/
 ├── biotest.py                         # 👑 大总管 (960 行, Rich UI, A→B→C→D)
-├── biotest_config.yaml                # 全局配置 (198 行, 含 feedback/coverage/ci)
+├── biotest_config.yaml                # 全局配置 (198 行, 含 feedback/coverage/ci + phase_c.corpus_keeper)
 ├── harnesses/pysam/                   # D1: pysam Docker Harness
 │   ├── pysam_harness.py               # 独立 CLI (支持 --coverage)
 │   ├── Dockerfile                     # python:3.12-slim + pysam + coverage
@@ -1439,8 +1735,28 @@ BioTest/
 │   ├── jacoco/jacocoagent.jar         # JaCoCo 运行时 Agent
 │   ├── jacoco/jacococli.jar           # JaCoCo CLI (exec→xml 转换)
 │   └── pysam/source/                  # Docker 提取的 pysam 源码
+├── mr_engine/transforms/              # Phase B 变换库 + 2026-04-22 mutation-adequacy 侧杠杆
+│   ├── vcf.py / sam.py / malformed.py # 原 Ranks 1-5 transform 库 (既有)
+│   ├── query.py                       # Rank 5 API-query invariance
+│   ├── value_diversifier.py           # 🆕 Rank 9 数值域多样化器 (290 行)
+│   │   ├── diversify_vcf()            # VCF POS/QUAL/INFO 扰动
+│   │   ├── diversify_sam()            # SAM POS/MAPQ/TLEN/CIGAR-aware 扰动
+│   │   ├── _validate()                # normalizer gate + Refinement C SUT-parser gate
+│   │   └── diversify_directory()      # CLI: --input / --output / --sut-validate
+│   ├── byte_fuzzer.py                 # 🆕 Rank 10 字节级 fuzzer (225 行)
+│   │   ├── _OPERATORS                 # bit-flip / byte-sub / byte-insert/delete (加权)
+│   │   ├── _mutate_once()             # 头部保留 + body-line 随机扰动
+│   │   └── fuzz_directory()           # CLI: --input / --output / --n-per-seed / --sut-validate
+│   └── boundary_values.py             # 🆕 Rank 11 边界值多样化器 (210 行, 2026-04-22)
+│       ├── _POS_BOUNDARIES / _QUAL_BOUNDARIES / _AF_BOUNDARIES / ...
+│       ├── generate_vcf_boundary_variants() / generate_sam_boundary_variants()
+│       └── generate_boundary_directory()  # CLI: --input / --output / --max-per-seed / --sut-validate
+├── seeds/                             # 2026-04-22: 两个新的并列目录 (both gitignored)
+│   ├── vcf/, sam/                     # 原 Tier-1/2 种子 + Rank 8 `kept_*` (既有 glob 目录)
+│   ├── vcf_diverse/, sam_diverse/     # 🆕 Rank 9 输出 (mutation-staging 显式 union, NOT glob 到)
+│   └── vcf_bytefuzz/, sam_bytefuzz/   # 🆕 Rank 10 输出 (同上)
 └── test_engine/
-    ├── feedback/                      # D3: 反馈闭环核心 (6 个新文件)
+    ├── feedback/                      # D3: 反馈闭环核心 (6 + 1 = 7 个文件)
     │   ├── __init__.py
     │   ├── scc_tracker.py             # 语义约束覆盖率 (SCC) 计算
     │   ├── loop_controller.py         # 5 个终止条件 + 状态持久化
@@ -1453,13 +1769,37 @@ BioTest/
     │   │   ├── GcovrCollector         # C++: gcovr JSON 解析
     │   │   ├── PythonCoverageContext  # Phase C 执行包裹器
     │   │   └── MultiCoverageCollector # 聚合器 (格式感知白名单)
-    │   └── blindspot_builder.py       # 盲区工单 + 源码切片提取 (379 行)
-    │       ├── CodeSlice              # 源码切片数据类
-    │       ├── extract_code_slices()  # 从 SUT 源码树提取实际代码
-    │       └── build_blindspot_ticket # 三段式工单构建器
+    │   ├── blindspot_builder.py       # 盲区工单 + 源码切片提取 (379 行)
+    │   │   ├── CodeSlice              # 源码切片数据类
+    │   │   ├── extract_code_slices()  # 从 SUT 源码树提取实际代码
+    │   │   └── build_blindspot_ticket # 三段式工单构建器
+    │   └── corpus_keeper.py           # 🆕 Rank 8 覆盖率增长语料库保存器 (250 行)
+    │       ├── CorpusKeeper           # 主类（byte-hash + canonical-AST-hash 双重 dedup）
+    │       ├── KeepDecision           # 返回值 dataclass
+    │       ├── maybe_keep()           # orchestrator 从 _run_single_test 的 finally 调用
+    │       └── from_config()          # biotest_config.yaml 读取 factory
+    ├── orchestrator.py                # 2026-04-22 修改：_run_single_test finally 段新增
+    │                                  # corpus_keeper.maybe_keep() 调用 + canonical-JSON
+    │                                  # sha256 计算（Refinement A 的 AST-hash gate 入口）
     └── runners/
         ├── pysam_docker_runner.py     # Docker 子进程 Runner (含覆盖率挂载)
         └── pysam_runner.py            # Facade: Native → Docker 透明降级
+```
+
+**Phase-3 伴生工具**（`compares/scripts/`，属 comparison framework 而非 tool 主体；详见 `compares/DESIGN.md`）：
+
+```text
+compares/scripts/
+├── corpus_minimize.py                 # 🆕 AFL-cmin 风格语料库压缩器
+│   ├── minimize_by_outcome()          # outcome-fingerprint greedy selector
+│   └── minimize_by_kills()            # 🆕 Refinement B: 基于 kill-set 的 greedy set-cover
+│                                      # （对 Python SUT 有效；Java/Rust/C++ fallback 到 outcome-fingerprint）
+├── mutation/rederive_from_meta.py     # 🆕 mutmut 3.x 从 .meta 文件重算 killed count 的补丁
+├── biotest_mutation_rollup.py         # 🆕 6-cell 总览表生成器
+├── biotest_vs_baselines.py            # 🆕 vs baseline 差异比较
+├── biotest_run2_report.py             # 🆕 run-N 对比报告（run-1/2/3/4 通用）
+└── phase3_jazzer_pit.sh               # 修改：接受 TOOL=biotest / CORPUS_MAX / REPS env vars
+                                      # (原本 jazzer-only，现为任意 tool 泛用 PIT 驱动)
 ```
 
 ### 9. 🏆 首次 E2E 实战运行记录 (Live End-to-End Run)

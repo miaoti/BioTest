@@ -683,3 +683,473 @@ def _parse_fasta_names(fa_path: Path) -> set[str]:
     except OSError:
         pass
     return names
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 of SAM coverage plan — record-level metamorphic transforms targeting
+# Picard validation rules and SAMv1 spec invariants for unmapped/unpaired
+# reads, SEQ-case normalization, CIGAR zero-op cleanup, and CIGAR M ↔ =/X
+# canonicalization (with NM tag recomputation).
+#
+# Each transform here operates on a single SAM alignment line (or a CIGAR
+# string for the pure-CIGAR case) and is wrapped in dispatch.py to iterate
+# the non-header lines of the seed file. All transforms are written to be
+# byte-identity safe on no-op inputs.
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# 12. normalize_unmapped_record_fields
+# ---------------------------------------------------------------------------
+@register_transform(
+    "normalize_unmapped_record_fields",
+    format="SAM",
+    description=(
+        "When FLAG bit 0x4 (unmapped) is set, normalize MAPQ to the "
+        "spec-defined sentinel 255 (\"not available\"). RNAME/POS/CIGAR "
+        "are left untouched — SAMv1 §1.4 says \"no assumptions can be "
+        "made\" but does not mandate they be invalidated. Targets "
+        "Picard's INVALID_MAPPING_QUALITY validation rule."
+    ),
+    preconditions=("has_unmapped_reads",),
+)
+def normalize_unmapped_record_fields(sam_line: str) -> str:
+    """Normalize MAPQ to 255 (sentinel "not available") for unmapped reads.
+
+    SAMv1 §1.4 p47: "Bit 0x4 is the only reliable place to tell whether
+    the read is unmapped. If 0x4 is set, no assumptions can be made about
+    RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, 0x800."
+    SAMv1 §1.4.5: MAPQ=255 is the spec-defined sentinel for "not available".
+
+    Args:
+        sam_line: A single tab-separated SAM alignment line (no @ prefix).
+
+    Returns:
+        The same line with MAPQ canonicalized when applicable; byte-identical
+        on no-op (mapped read, MAPQ already 0/255, malformed, or header).
+    """
+    if sam_line.startswith("@"):
+        return sam_line
+    # Preserve trailing newline
+    trailing = ""
+    body = sam_line
+    if body.endswith("\r\n"):
+        trailing = "\r\n"
+        body = body[:-2]
+    elif body.endswith("\n"):
+        trailing = "\n"
+        body = body[:-1]
+
+    cols = body.split("\t")
+    if len(cols) < 11:
+        return sam_line
+
+    try:
+        flag = int(cols[1])
+    except (ValueError, IndexError):
+        return sam_line
+
+    if (flag & 0x4) == 0:
+        return sam_line  # mapped read, no normalization needed
+
+    try:
+        mapq = int(cols[4])
+    except (ValueError, IndexError):
+        return sam_line
+
+    if mapq == 0 or mapq == 255:
+        return sam_line  # already canonical
+
+    cols[4] = "255"
+    return "\t".join(cols) + trailing
+
+
+# ---------------------------------------------------------------------------
+# 13. strip_mate_flags_if_unpaired
+# ---------------------------------------------------------------------------
+@register_transform(
+    "strip_mate_flags_if_unpaired",
+    format="SAM",
+    description=(
+        "When FLAG bit 0x1 (multiple segments) is unset, clear the "
+        "mate-context bits 0x2, 0x8, 0x20, 0x40, 0x80. SAMv1 §1.4 p47: "
+        "these bits are only meaningful when 0x1 is set. Targets "
+        "Picard's INVALID_FLAG_PROPER_PAIR / FIRST_OF_PAIR / "
+        "SECOND_OF_PAIR / MATES_ARE_SAME_END validation rules."
+    ),
+)
+def strip_mate_flags_if_unpaired(sam_line: str) -> str:
+    """Clear bits 0x2/0x8/0x20/0x40/0x80 when the read is not paired (0x1 unset).
+
+    SAMv1 §1.4 p47: "Bits 0x2, 0x8, 0x20, 0x40, 0x80 are only meaningful
+    when 0x1 (multiple segments) is set."
+
+    Args:
+        sam_line: A single tab-separated SAM alignment line.
+
+    Returns:
+        The line with mate-context bits cleared when 0x1 is unset; byte-
+        identical on no-op (paired read, malformed, or header).
+    """
+    if sam_line.startswith("@"):
+        return sam_line
+    trailing = ""
+    body = sam_line
+    if body.endswith("\r\n"):
+        trailing = "\r\n"
+        body = body[:-2]
+    elif body.endswith("\n"):
+        trailing = "\n"
+        body = body[:-1]
+
+    cols = body.split("\t")
+    if len(cols) < 11:
+        return sam_line
+
+    try:
+        flag = int(cols[1])
+    except (ValueError, IndexError):
+        return sam_line
+
+    if (flag & 0x1) != 0:
+        return sam_line  # paired — mate flags are meaningful
+
+    keep_mask = ~(0x2 | 0x8 | 0x20 | 0x40 | 0x80)
+    new_flag = flag & keep_mask
+    if new_flag == flag:
+        return sam_line  # already clean
+
+    cols[1] = str(new_flag)
+    return "\t".join(cols) + trailing
+
+
+# ---------------------------------------------------------------------------
+# 14. normalize_seq_case
+# ---------------------------------------------------------------------------
+@register_transform(
+    "normalize_seq_case",
+    format="SAM",
+    description=(
+        "Uppercase the SEQ field (column 9) of a SAM alignment line. "
+        "SAMv1 §1.4.10 (SEQ): \"No assumptions can be made on the letter "
+        "cases\" — the regex permits both upper and lower case. No-op when "
+        "SEQ is the missing-value sentinel '*'."
+    ),
+)
+def normalize_seq_case(sam_line: str) -> str:
+    """Uppercase the SEQ column of a SAM alignment line.
+
+    SAMv1 §1.4.10: SEQ regex permits both cases; uppercasing is a
+    semantics-preserving canonicalization.
+
+    Args:
+        sam_line: A single tab-separated SAM alignment line.
+
+    Returns:
+        The line with SEQ uppercased when applicable; byte-identical on
+        no-op (SEQ='*', too few columns, or header).
+    """
+    if sam_line.startswith("@"):
+        return sam_line
+    trailing = ""
+    body = sam_line
+    if body.endswith("\r\n"):
+        trailing = "\r\n"
+        body = body[:-2]
+    elif body.endswith("\n"):
+        trailing = "\n"
+        body = body[:-1]
+
+    cols = body.split("\t")
+    if len(cols) < 10:
+        return sam_line
+
+    seq = cols[9]
+    if seq == "*":
+        return sam_line  # missing value, no-op
+
+    new_seq = seq.upper()
+    if new_seq == seq:
+        return sam_line
+
+    cols[9] = new_seq
+    return "\t".join(cols) + trailing
+
+
+# ---------------------------------------------------------------------------
+# 15. cigar_zero_length_op_removal
+# ---------------------------------------------------------------------------
+@register_transform(
+    "cigar_zero_length_op_removal",
+    format="SAM",
+    description=(
+        "Strip zero-length CIGAR ops and merge any newly-adjacent ops of "
+        "the same type. SAMv1 §1.4.6 doesn't forbid 0-length ops but the "
+        "SAM Recommended Practice (p134) says \"adjacent CIGAR operations "
+        "should be different\". htsjdk normalizes 0-length ops away "
+        "internally — this transform makes that canonicalization explicit."
+    ),
+    preconditions=("has_cigar",),
+)
+def cigar_zero_length_op_removal(cigar: str) -> str:
+    """Remove zero-length CIGAR ops then merge any newly-adjacent same ops.
+
+    Pure CIGAR-string transform; doesn't touch SEQ/QUAL. Total
+    query-consumed length is preserved (zero-length ops consume nothing).
+
+    Args:
+        cigar: CIGAR string like "5M0D5M" or "0H10M2I0M3S".
+
+    Returns:
+        Cleaned + merged CIGAR string. "*" passes through unchanged.
+
+    Raises:
+        AssertionError: If query-consumed length changes (should never
+            happen — zero-length ops consume zero bases by definition).
+    """
+    if cigar == "*" or not cigar:
+        return cigar
+
+    ops = _parse_cigar(cigar)
+    original_consumed = _query_consumed(ops)
+
+    # Strip zeros
+    nonzero = [(length, op) for length, op in ops if length > 0]
+
+    # Merge adjacent same ops (lifted from split_or_merge_adjacent_cigar_ops
+    # mode="merge")
+    merged: list[tuple[int, str]] = []
+    for length, op in nonzero:
+        if merged and merged[-1][1] == op:
+            merged[-1] = (merged[-1][0] + length, op)
+        else:
+            merged.append((length, op))
+
+    assert _query_consumed(merged) == original_consumed, (
+        f"CIGAR invariant violated: consumed {_query_consumed(merged)} "
+        f"!= original {original_consumed}"
+    )
+
+    return _unparse_cigar(merged)
+
+
+# ---------------------------------------------------------------------------
+# 16. canonicalize_cigar_match_operators
+# ---------------------------------------------------------------------------
+def _parse_md_tokens(md: str) -> Optional[list[tuple[str, object]]]:
+    """Parse an MD-tag value into a list of tokens.
+
+    Tokens are:
+      ("match", int)     -- N matched bases
+      ("mismatch", str)  -- one ref base that mismatches the read
+      ("delete", str)    -- deletion-from-reference; the str is the deleted bases
+
+    Returns None on parse error (caller must no-op).
+    """
+    # MD spec regex: [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)*
+    # We accept zero-length numeric runs because tools commonly emit "0A0"
+    # to denote two adjacent mismatches.
+    pos = 0
+    tokens: list[tuple[str, object]] = []
+    n = len(md)
+    while pos < n:
+        c = md[pos]
+        if c.isdigit():
+            j = pos
+            while j < n and md[j].isdigit():
+                j += 1
+            try:
+                tokens.append(("match", int(md[pos:j])))
+            except ValueError:
+                return None
+            pos = j
+        elif c == "^":
+            j = pos + 1
+            if j >= n or not md[j].isalpha():
+                return None
+            while j < n and md[j].isalpha():
+                j += 1
+            tokens.append(("delete", md[pos + 1:j]))
+            pos = j
+        elif c.isalpha():
+            tokens.append(("mismatch", c))
+            pos += 1
+        else:
+            return None
+    return tokens
+
+
+@register_transform(
+    "canonicalize_cigar_match_operators",
+    format="SAM",
+    description=(
+        "Rewrite each M (match-or-mismatch) op as a sequence of '=' "
+        "(match) and 'X' (mismatch) ops by walking the MD tag. After "
+        "rewriting CIGAR, recompute the NM tag (mismatch bases + indel "
+        "bases per SAMv1 §1.4.6 / SAMtags). No-op when CIGAR has no M "
+        "ops, MD tag is absent, or MD parsing fails."
+    ),
+    preconditions=("has_md_tag", "has_cigar_m_ops"),
+)
+def canonicalize_cigar_match_operators(sam_line: str) -> str:
+    """Replace CIGAR M ops with '=' / 'X' runs driven by the MD tag.
+
+    Walks MD tokens in lockstep with each CIGAR M op, emitting a run of
+    '=' for matched bases and 'X' for mismatched ones. D ops consume one
+    ^XXX MD deletion token whose letter count must equal the D-op length.
+    All other ops pass through unchanged.
+
+    After rewriting, if an NM tag is present, recompute its value as
+    (sum of X-op lengths) + (sum of I-op + D-op lengths) per SAMv1.
+
+    Args:
+        sam_line: A single tab-separated SAM alignment line.
+
+    Returns:
+        Line with M ops canonicalized to '='/'X' and NM updated; byte-
+        identical on any precondition failure (no MD tag, no M ops,
+        malformed MD, MD coverage mismatch, header line, < 11 cols).
+    """
+    if sam_line.startswith("@"):
+        return sam_line
+
+    trailing = ""
+    body = sam_line
+    if body.endswith("\r\n"):
+        trailing = "\r\n"
+        body = body[:-2]
+    elif body.endswith("\n"):
+        trailing = "\n"
+        body = body[:-1]
+
+    cols = body.split("\t")
+    if len(cols) < 11:
+        return sam_line
+
+    cigar = cols[5]
+    if cigar == "*":
+        return sam_line
+
+    # Find MD tag among optional tags (cols 11+).
+    md_value: Optional[str] = None
+    md_col_idx: Optional[int] = None
+    for i in range(11, len(cols)):
+        field = cols[i]
+        if field.startswith("MD:Z:"):
+            md_value = field[5:]
+            md_col_idx = i
+            break
+    if md_value is None:
+        return sam_line
+
+    # Parse CIGAR; bail on any malformed input.
+    try:
+        ops = _parse_cigar(cigar)
+    except Exception:
+        return sam_line
+    # Verify the parse round-trips — catches stray characters that the
+    # regex finditer silently skipped.
+    if _unparse_cigar(ops) != cigar:
+        return sam_line
+
+    # No-op if there are no M ops to canonicalize.
+    if not any(op == "M" for _, op in ops):
+        return sam_line
+
+    md_tokens = _parse_md_tokens(md_value)
+    if md_tokens is None:
+        return sam_line
+
+    # Walk CIGAR; for each M op consume `length` reference-aligned positions
+    # from MD; for each D op consume one ^XXX deletion token.
+    new_ops: list[tuple[int, str]] = []
+    md_idx = 0
+    md_match_remaining = 0  # cursor into a numeric "match" token
+
+    def _take_one_md_position() -> Optional[str]:
+        """Advance MD by one reference-aligned position; return '=' or 'X'.
+        Returns None on coverage exhaustion or malformed sequence."""
+        nonlocal md_idx, md_match_remaining
+        # Advance over consumed match tokens / mismatch tokens.
+        while md_idx < len(md_tokens):
+            kind, val = md_tokens[md_idx]
+            if kind == "match":
+                if md_match_remaining == 0:
+                    md_match_remaining = int(val)  # type: ignore[arg-type]
+                if md_match_remaining > 0:
+                    md_match_remaining -= 1
+                    if md_match_remaining == 0:
+                        md_idx += 1
+                    return "="
+                # Zero-length match: skip token.
+                md_idx += 1
+                continue
+            if kind == "mismatch":
+                md_idx += 1
+                return "X"
+            # Hitting a delete token mid-M op is a coverage mismatch.
+            return None
+        return None
+
+    for length, op in ops:
+        if op == "M":
+            run: list[str] = []
+            for _ in range(length):
+                eq_or_x = _take_one_md_position()
+                if eq_or_x is None:
+                    return sam_line  # MD exhausted / malformed -> no-op
+                run.append(eq_or_x)
+            # Compress consecutive identical chars into runs.
+            cur_char = run[0]
+            cur_len = 1
+            for ch in run[1:]:
+                if ch == cur_char:
+                    cur_len += 1
+                else:
+                    new_ops.append((cur_len, cur_char))
+                    cur_char = ch
+                    cur_len = 1
+            new_ops.append((cur_len, cur_char))
+        elif op == "D":
+            # Flush any pending zero-length match token.
+            if md_idx < len(md_tokens) and md_tokens[md_idx][0] == "match" and md_match_remaining == 0:
+                if md_tokens[md_idx][1] == 0:
+                    md_idx += 1
+            if md_match_remaining != 0:
+                return sam_line  # in-progress match shouldn't cross a D
+            if md_idx >= len(md_tokens):
+                return sam_line
+            kind, val = md_tokens[md_idx]
+            if kind != "delete" or len(val) != length:  # type: ignore[arg-type]
+                return sam_line
+            md_idx += 1
+            new_ops.append((length, op))
+        else:
+            new_ops.append((length, op))
+
+    # Trailing zero-length match token is acceptable.
+    if md_idx < len(md_tokens):
+        if md_tokens[md_idx][0] == "match" and md_match_remaining == 0 and md_tokens[md_idx][1] == 0:
+            md_idx += 1
+    if md_match_remaining != 0 or md_idx != len(md_tokens):
+        return sam_line  # MD content didn't sum to op coverage
+
+    new_cigar = _unparse_cigar(new_ops)
+
+    # Recompute NM if present: NM = X-bases + indel-bases.
+    new_nm_value: Optional[int] = None
+    nm_col_idx: Optional[int] = None
+    for i in range(11, len(cols)):
+        if cols[i].startswith("NM:i:"):
+            nm_col_idx = i
+            break
+    if nm_col_idx is not None:
+        new_nm_value = sum(l for l, op in new_ops if op == "X") + sum(
+            l for l, op in new_ops if op in ("I", "D")
+        )
+
+    cols[5] = new_cigar
+    if nm_col_idx is not None and new_nm_value is not None:
+        cols[nm_col_idx] = f"NM:i:{new_nm_value}"
+
+    return "\t".join(cols) + trailing
