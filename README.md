@@ -49,34 +49,156 @@ Phase D  Feedback Loop   coverage      →  Top-K blindspot tickets → next B r
 ```bash
 # 1. Prerequisites
 py -3.12 --version      # Python 3.12
-java -version           # Java 21
-docker --version        # Docker (needed for pysam on Windows)
-rustc --version         # Optional — only if building the noodles-vcf SUT
+java -version           # Java 21 (any recent LTS works)
+docker --version        # Docker (pysam runs in Docker on Windows)
+rustc --version         # Optional — only if you want the noodles-vcf SUT
+g++ --version           # Optional — only if you want the seqan3 SAM SUT
 
-# 2. Install Python deps (includes vcfpy 0.14+)
+# 2. Install Python deps + build the per-language harnesses
 py -3.12 -m pip install -r requirements.txt
-py -3.12 harnesses/pysam/build_docker.py      # Build pysam container
+bash harnesses/java/build.sh                                         # htsjdk JAR (required for the htsjdk SUT)
+py -3.12 harnesses/pysam/build_docker.py                              # pysam Docker image (required for the pysam SUT)
+cargo build --release \
+    --manifest-path harnesses/rust/noodles_harness/Cargo.toml         # noodles VCF SUT (optional)
+g++ -std=c++20 -O2 harnesses/cpp/biotest_harness.cpp \
+    -o harnesses/cpp/build/biotest_harness.exe                        # seqan3 SAM SUT (optional)
 
-# 2b. Build the noodles-vcf harness (optional — VCF voter in Rust).
-#     Skip if rustc isn't installed; the runner degrades gracefully.
-cargo build --release --manifest-path harnesses/rust/noodles_harness/Cargo.toml
-
-# 3. Configure LLM (one of: Groq, OpenAI, Anthropic, Google, DeepSeek, Ollama)
-#    Set LLM_MODEL=... and the corresponding *_API_KEY in .env
+# 3. Configure the LLM — pick ONE provider, set 2 vars in .env.
+#    Full provider matrix in "Switching the LLM provider" below.
+cat > .env <<'EOF'
+LLM_MODEL=deepseek-chat
+DEEPSEEK_API_KEY=sk-...
+EOF
 
 # 4. Populate Tier-2 seeds (optional, ~30 curated real-world files)
 py -3.12 seeds/fetch_real_world.py
 
-# 5. Run
-py -3.12 biotest.py                       # Full A → B → C
-py -3.12 biotest.py --phase C             # Only Phase C (re-use registry)
-py -3.12 biotest.py --phase A,B,C,D       # Include feedback loop
-py -3.12 biotest.py --dry-run             # Validate config only
+# 5. Run the pipeline
+py -3.12 biotest.py --phase D             # Recommended: full pipeline + feedback loop
+py -3.12 biotest.py                       # A → B → C only (no feedback loop)
+py -3.12 biotest.py --phase C             # Re-execute Phase C (re-use existing MR registry)
+py -3.12 biotest.py --dry-run             # Validate config and exit
 ```
 
 Tests:
 ```bash
 py -3.12 -m pytest tests/ --ignore=tests/test_golden_retrieval.py
+```
+
+After a run, results land here:
+
+| Path                               | Contents                                                      |
+|:-----------------------------------|:--------------------------------------------------------------|
+| `bug_reports/`                     | One JSON per disagreement, with parser outputs + spec evidence |
+| `data/det_report.json`             | DET rate per MR and per parser pair                            |
+| `data/scc_report.json`             | Spec coverage trajectory per Phase D iteration                |
+| `data/feedback_state.json`         | Phase D loop state (current iteration, plateau detection)      |
+| `coverage_artifacts/`              | Per-language coverage data (jacoco / coverage.py / gcovr / llvm-cov) |
+
+---
+
+## Configuring Your Run
+
+Two files steer the pipeline: `.env` (secrets + LLM choice) and
+`biotest_config.yaml` (everything else). These are the knobs you'll
+touch most often.
+
+### Switching the LLM provider
+
+The LLM is configured via two `.env` variables. Pick one row from the
+matrix and you're done — no code changes:
+
+| Provider        | `LLM_MODEL=`                                | API key var          | Notes                                              |
+|:----------------|:--------------------------------------------|:---------------------|:---------------------------------------------------|
+| DeepSeek        | `deepseek-chat`, `deepseek-reasoner`        | `DEEPSEEK_API_KEY`   | Cheap; chat = V3 (fast), reasoner = R1 (stronger)  |
+| OpenAI          | `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`, …       | `OPENAI_API_KEY`     |                                                    |
+| Anthropic       | `claude-3-5-sonnet-20241022`, `claude-opus-4-...`, … | `ANTHROPIC_API_KEY` |                                              |
+| Google          | `gemini-2.5-flash`, `gemini-1.5-pro`, …     | `GOOGLE_API_KEY`     |                                                    |
+| Groq            | `llama-3.3-70b-versatile`, `qwen2.5-72b-instruct`, … | `GROQ_API_KEY` | Recognized by model-name keyword, no prefix needed |
+| Ollama (local)  | `ollama/qwen2.5-coder:32b`, `ollama/llama3.3:70b`, … | (none)        | Set `OLLAMA_BASE_URL` (default `http://localhost:11434/v1`) |
+| vLLM (local)    | `vllm/<served-model-name>`                  | (optional)           | Set `VLLM_BASE_URL` (e.g. `http://localhost:8000/v1`) |
+
+Optional resilience: a comma-separated `LLM_FALLBACK_MODELS` retries the
+request on the next model in the chain when the primary errors. Mix
+providers freely.
+
+```bash
+# .env
+LLM_MODEL=deepseek-chat
+LLM_FALLBACK_MODELS=deepseek-reasoner,gpt-4o-mini
+DEEPSEEK_API_KEY=sk-...
+OPENAI_API_KEY=sk-...
+```
+
+### Choose which phases to run
+
+`biotest.py --phase` accepts any comma-separated subset of `A,B,C,D`:
+
+| Invocation         | What runs                                       | When to use                                      |
+|:-------------------|:------------------------------------------------|:-------------------------------------------------|
+| `--phase D`        | A (cached) → B → C → coverage feedback loop     | **Recommended for typical use**                  |
+| (no flag)          | A → B → C                                       | Want everything except the feedback loop         |
+| `--phase C`        | C only (reuses existing MR registry + ChromaDB) | Iterating on transforms or seed corpus           |
+| `--phase B`        | B only (reuses existing ChromaDB)               | Iterating on prompts or themes                   |
+| `--phase A`        | Just rebuild the spec vector store              | Specs changed                                    |
+| `--phase A,B,C,D`  | Force everything from scratch                   | Hard reset                                       |
+| `--dry-run`        | Validate config and exit                        | Sanity check before a long run                   |
+
+### Change the primary target (coverage measurement focus)
+
+Phase D's feedback loop drives off coverage on **one** SUT — the
+"primary target". Switch which SUT is measured by editing one key:
+
+```yaml
+# biotest_config.yaml
+feedback_control:
+  primary_target: vcfpy        # was: htsjdk. Any SUT in phase_c.suts works.
+```
+
+Valid primaries are SUTs whose runner reports coverage: **VCF** →
+`htsjdk` / `vcfpy` / `noodles`; **SAM** → `htsjdk` / `biopython` /
+`seqan3`. `pysam` ships its parser as compiled Cython, so coverage.py
+can't trace it; pysam is fine as a voter but is **not** a valid primary.
+
+### Switch format (VCF ↔ SAM)
+
+```yaml
+# biotest_config.yaml
+phase_c:
+  format_filter: SAM           # was: VCF
+```
+
+Phase B auto-derives the format-to-mine from this single key, so you
+don't need to edit `phase_b.formats` or seed paths separately.
+
+### Enable / disable individual SUTs
+
+Each SUT can be turned off without removing it from the file:
+
+```yaml
+# biotest_config.yaml
+phase_c:
+  suts:
+    - name: htsjdk
+      enabled: true
+    - name: noodles
+      enabled: false           # skip noodles for this run
+    - name: seqan3
+      enabled: false           # skip seqan3 if you didn't build the C++ harness
+    # …
+```
+
+Disabled SUTs don't run and don't need to be installed. Useful when you
+don't have a Rust or C++ toolchain on your machine.
+
+### Adjust the feedback loop budget
+
+```yaml
+# biotest_config.yaml
+feedback_control:
+  max_iterations: 4            # how many B+C+coverage rounds at most
+  timeout_minutes: 180         # graceful self-stop when wall time exceeds this
+  target_scc_percent: 95.0     # stop early when spec coverage hits this
 ```
 
 ---

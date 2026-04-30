@@ -1153,3 +1153,270 @@ def canonicalize_cigar_match_operators(sam_line: str) -> str:
         cols[nm_col_idx] = f"NM:i:{new_nm_value}"
 
     return "\t".join(cols) + trailing
+
+
+# ---------------------------------------------------------------------------
+# Round 2 — additional SAM record/header-level transforms.
+#
+# These three were identified in the prior MT/MR research dossier (Sec 5
+# "Recommended additions beyond the 8") + Tier 2 (deferred); each carries
+# direct SAM v1 spec backing.
+#
+# Goal: close the residual gap between BioTest's MR-driven coverage and
+# the SOTA coverage-guided baselines (jazzer, atheris, libfuzzer) on SAM.
+# ---------------------------------------------------------------------------
+
+# Ops that consume reference (ref_consume_length) — used by the bound check
+# in pos_shift_with_sq_ln_bound_check.
+_REF_CONSUMING = {"M", "D", "N", "=", "X"}
+
+
+def _ref_consumed_from_cigar_str(cigar: str) -> int:
+    """Total reference bases consumed by a CIGAR string. '*' returns 0.
+
+    Per SAM v1 §1.4.6, ops M/D/N/=/X consume reference bases. Used for
+    POS+CIGAR vs LN bound checking.
+    """
+    if cigar == "*" or not cigar:
+        return 0
+    total = 0
+    for m in re.finditer(r"(\d+)([MIDNSHP=X])", cigar):
+        if m.group(2) in _REF_CONSUMING:
+            total += int(m.group(1))
+    return total
+
+
+# ---------------------------------------------------------------------------
+# 16. pos_shift_with_sq_ln_bound_check
+# ---------------------------------------------------------------------------
+@register_transform(
+    "pos_shift_with_sq_ln_bound_check",
+    format="SAM",
+    description=(
+        "Shift every alignment record's POS by +shift AND increase the "
+        "matching @SQ LN by +shift. Bound-check: if any record's "
+        "POS + CIGAR_ref_consume would exceed the new LN, no-op. "
+        "POS=0 (unmapped per SAMv1 §1.4) and RNAME='*' records are "
+        "skipped. Spec backing: SAMv1 §1.4.4 (POS) + §1.3 (@SQ LN range "
+        "[1, 2^31-1]) + Picard `SAMValidationError.CIGAR_MAPS_OFF_REFERENCE` "
+        "validates POS+ref_consume <= LN. Exercises the POS-against-LN "
+        "validation path that other text-only MRs do not reach."
+    ),
+    preconditions=("has_sq_with_ln",),
+)
+def pos_shift_with_sq_ln_bound_check(
+    file_lines: list[str],
+    shift: int = 1000,
+) -> list[str]:
+    """Shift all alignment POS by +shift; widen @SQ LN by +shift.
+
+    Args:
+        file_lines: list of SAM file lines (header + alignments).
+        shift: positive integer shift in bp. Default 1000.
+
+    Returns:
+        List of lines with shifted POS / widened LN, OR a copy of
+        the input unchanged if any record's new POS would push the
+        alignment past the widened LN. Always returns a fresh list
+        (never mutates input).
+
+    Edge handling:
+        - Records with POS=0 OR RNAME='*' are skipped (unmapped).
+        - Records whose RNAME is not in the @SQ table are left alone
+          (the bound check has nothing to compare against).
+        - LN values that exceed SAMv1's [1, 2^31-1] range cap the no-op
+          gate.
+        - shift=0 returns a fresh copy of the input.
+    """
+    if shift == 0:
+        return list(file_lines)
+    if shift < 0:
+        raise ValueError(f"shift must be non-negative, got {shift}")
+
+    sq_lns: dict[str, int] = {}
+    sq_line_indices: list[int] = []
+    for i, line in enumerate(file_lines):
+        stripped = line.rstrip("\r\n")
+        if not stripped.startswith("@SQ\t"):
+            continue
+        sq_line_indices.append(i)
+        sn = ln = None
+        for f in stripped.split("\t")[1:]:
+            if f.startswith("SN:"):
+                sn = f[3:]
+            elif f.startswith("LN:"):
+                try:
+                    ln = int(f[3:])
+                except ValueError:
+                    ln = None
+        if sn is not None and ln is not None and ln > 0:
+            sq_lns[sn] = ln
+
+    if not sq_lns:
+        return list(file_lines)
+
+    # Bound check every mapped record. If any would overflow new LN, no-op.
+    record_indices: list[tuple[int, list[str]]] = []
+    for i, line in enumerate(file_lines):
+        stripped = line.rstrip("\r\n")
+        if stripped.startswith("@") or "\t" not in stripped:
+            continue
+        cols = stripped.split("\t")
+        if len(cols) < 11:
+            continue
+        rname = cols[2]
+        try:
+            pos = int(cols[3])
+        except ValueError:
+            continue
+        if pos == 0 or rname == "*":
+            continue  # unmapped — POS is irrelevant per SAMv1 §1.4
+        if rname not in sq_lns:
+            continue  # unknown ref — leave alone, no bound to check
+        ref_consume = _ref_consumed_from_cigar_str(cols[5])
+        new_ln = sq_lns[rname] + shift
+        if new_ln > (2**31 - 1):
+            return list(file_lines)  # would exceed SAMv1 LN range
+        new_pos = pos + shift
+        # SAMv1 spec implication: alignment occupies [POS, POS+ref_consume-1]
+        # (1-based inclusive). Must be <= LN.
+        if ref_consume > 0 and new_pos + ref_consume - 1 > new_ln:
+            return list(file_lines)
+        record_indices.append((i, cols))
+
+    # All checks passed — widen @SQ LN unconditionally (LN is independent of
+    # records; widening it just states "the reference is at least this long").
+    # Then shift POS only on the mapped records that survived the bound check.
+    # If `record_indices` is empty (e.g. only unmapped or unknown-RNAME records),
+    # we still widen LN — the file remains spec-conformant.
+    result = list(file_lines)
+    for sq_idx in sq_line_indices:
+        line = result[sq_idx]
+        stripped = line.rstrip("\r\n")
+        trailing = line[len(stripped):]  # preserve trailing \r\n if any
+        new_fields: list[str] = []
+        for f in stripped.split("\t"):
+            if f.startswith("LN:"):
+                try:
+                    ln = int(f[3:])
+                    f = f"LN:{ln + shift}"
+                except ValueError:
+                    pass
+            new_fields.append(f)
+        result[sq_idx] = "\t".join(new_fields) + trailing
+    for idx, cols in record_indices:
+        line = result[idx]
+        stripped = line.rstrip("\r\n")
+        trailing = line[len(stripped):]
+        cols[3] = str(int(cols[3]) + shift)
+        result[idx] = "\t".join(cols) + trailing
+    return result
+
+
+# ---------------------------------------------------------------------------
+# 17. canonicalize_rnext_equals_alias
+# ---------------------------------------------------------------------------
+@register_transform(
+    "canonicalize_rnext_equals_alias",
+    format="SAM",
+    description=(
+        "Toggle RNEXT between explicit RNAME and the '=' alias. "
+        "mode='alias' (default): when RNEXT==RNAME and RNEXT != '*', "
+        "replace RNEXT with '='. mode='explicit': when RNEXT=='=' and "
+        "RNAME != '*', replace RNEXT with the literal RNAME. SAMv1 §1.4.7 "
+        "explicitly allows '=' as a synonym for 'same as RNAME'. The "
+        "Run-10 sam_normalizer fix already canonicalizes the explicit "
+        "side (sam_normalizer.py:166-168); this transform produces text-"
+        "level variations on the OTHER side so all parsers' dual-form "
+        "handling is exercised."
+    ),
+    preconditions=(),
+)
+def canonicalize_rnext_equals_alias(
+    sam_line: str,
+    mode: str = "alias",
+) -> str:
+    """Toggle RNEXT '=' alias.
+
+    Args:
+        sam_line: a single SAM alignment line (no @ prefix).
+        mode: "alias" → RNAME→'=' when RNEXT==RNAME; "explicit" → '='→RNAME.
+
+    Returns:
+        Modified line, or input unchanged if precondition not met. Always
+        preserves the trailing newline state of the input.
+    """
+    if mode not in ("alias", "explicit"):
+        raise ValueError(f"Invalid mode: {mode!r}. Must be 'alias' or 'explicit'.")
+    stripped = sam_line.rstrip("\n")
+    trailing = sam_line[len(stripped):]
+    fields = stripped.split("\t")
+    if len(fields) < 11:
+        return sam_line
+    rname = fields[2]
+    rnext = fields[6]
+    if mode == "alias":
+        # RNEXT=RNAME (and not '*') → RNEXT='='
+        if rnext != "*" and rnext == rname and rname != "*":
+            fields[6] = "="
+            return "\t".join(fields) + trailing
+    else:  # mode == "explicit"
+        # RNEXT='=' (and RNAME not '*') → RNEXT=RNAME
+        if rnext == "=" and rname != "*":
+            fields[6] = rname
+            return "\t".join(fields) + trailing
+    return sam_line
+
+
+# ---------------------------------------------------------------------------
+# 18. bump_hd_vn_minor
+# ---------------------------------------------------------------------------
+@register_transform(
+    "bump_hd_vn_minor",
+    format="SAM",
+    description=(
+        "Toggle the @HD VN field between SAM versions 1.5 and 1.6. "
+        "Per the SAM v1 spec history, 1.5 -> 1.6 added clarifications "
+        "but kept backwards-compatibility for files that don't use "
+        "1.6-only features (none in our test corpus). Toggling exposes "
+        "version-gated parser branches in SUTs that switch behavior on "
+        "VN. Files without @HD or without VN are returned unchanged "
+        "(no @HD added — SAMv1 only requires @HD if header is present "
+        "and the file is sorted)."
+    ),
+    preconditions=("has_hd_vn",),
+)
+def bump_hd_vn_minor(header_lines: list[str]) -> list[str]:
+    """Toggle @HD VN between '1.5' and '1.6'.
+
+    Args:
+        header_lines: list of header lines (each starts with '@').
+
+    Returns:
+        Fresh list with @HD VN toggled (1.5 ↔ 1.6) where applicable;
+        non-@HD lines and @HD lines without VN are unchanged.
+    """
+    out: list[str] = []
+    for line in header_lines:
+        stripped = line.rstrip("\r\n")
+        trailing = line[len(stripped):]
+        if not stripped.startswith("@HD"):
+            out.append(line)
+            continue
+        new_fields: list[str] = []
+        toggled = False
+        for f in stripped.split("\t"):
+            if f.startswith("VN:"):
+                v = f[3:].strip()
+                if v == "1.6":
+                    f = "VN:1.5"
+                    toggled = True
+                elif v == "1.5":
+                    f = "VN:1.6"
+                    toggled = True
+            new_fields.append(f)
+        if toggled:
+            out.append("\t".join(new_fields) + trailing)
+        else:
+            out.append(line)
+    return out

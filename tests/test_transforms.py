@@ -40,6 +40,9 @@ from mr_engine.transforms.sam import (
     normalize_seq_case,
     cigar_zero_length_op_removal,
     canonicalize_cigar_match_operators,
+    pos_shift_with_sq_ln_bound_check,
+    canonicalize_rnext_equals_alias,
+    bump_hd_vn_minor,
     _query_consumed,
     _parse_cigar,
 )
@@ -55,7 +58,7 @@ from mr_engine.transforms.malformed import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_whitelist_has_41_transforms(self):
+    def test_whitelist_has_44_transforms(self):
         # 13 originals + 6 (Tan 2015 normalization / BCF round-trip /
         # CSQ permute) + 1 SUT-agnostic writer (sut_write_roundtrip) +
         # 5 Rank-3 spec-rule-targeted malformed-input mutators +
@@ -66,9 +69,11 @@ class TestRegistry:
         # 2 Phase-3 SAM round-trip MRs (SAM↔BAM, SAM↔CRAM) +
         # 5 Phase-4 SAM record-level transforms (normalize unmapped /
         # strip mate flags / normalize SEQ case / cigar zero-length op
-        # removal / canonicalize CIGAR M -> =/X).
+        # removal / canonicalize CIGAR M -> =/X) +
+        # 3 Round-2 SAM transforms (pos_shift_with_sq_ln_bound_check /
+        # canonicalize_rnext_equals_alias / bump_hd_vn_minor).
         wl = get_whitelist()
-        assert len(wl) == 41, f"Expected 41 transforms, got {len(wl)}: {wl}"
+        assert len(wl) == 44, f"Expected 44 transforms, got {len(wl)}: {wl}"
 
     def test_sut_write_roundtrip_is_registered_and_format_agnostic(self):
         # One writer transform forever, spanning BOTH formats — the
@@ -961,6 +966,229 @@ class TestPermuteCsqAnnotations:
     def test_single_record_unchanged(self):
         # Only one comma-less record — nothing to permute
         assert permute_csq_annotations("CSQ=A|x|y") == "CSQ=A|x|y"
+
+
+# ===========================================================================
+# Round 2 — pos_shift, RNEXT alias, HD VN bump
+# ===========================================================================
+
+class TestPosShiftWithSqLnBoundCheck:
+    HEADER = ["@HD\tVN:1.6\n", "@SQ\tSN:chr1\tLN:10000\n", "@SQ\tSN:chr2\tLN:5000\n"]
+
+    def test_basic_shift_widens_ln_and_pos(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        # @SQ chr1 LN should be 10000 + 500 = 10500
+        assert "LN:10500" in out[1]
+        # @SQ chr2 LN should be 5000 + 500 = 5500
+        assert "LN:5500" in out[2]
+        # POS should be 100 + 500 = 600
+        assert out[3].split("\t")[3] == "600"
+
+    def test_no_op_when_record_overflows_new_ln(self):
+        # Record at POS=9990, CIGAR=20M occupies bases 9990..10009. With LN=10000
+        # the original is INVALID already (off-reference). We only widen LN by
+        # shift, but the bound is on (new POS + ref_consume - 1 <= new_LN).
+        # POS=9990+500=10490, ref_consume=20, end=10509. new_LN=10500. 10509 > 10500 → no-op.
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t9990\t30\t20M\t*\t0\t0\t" + "A"*20 + "\t" + "I"*20 + "\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert out == lines
+
+    def test_unmapped_records_are_skipped_but_lns_still_widen(self):
+        # Unmapped record (FLAG=4, RNAME='*', POS=0) — bound check skips it.
+        lines = self.HEADER + [
+            "r1\t4\t*\t0\t255\t*\t*\t0\t0\tACGT\tIIII\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert "LN:10500" in out[1]  # @SQ still widens
+        assert "LN:5500" in out[2]
+        # Unmapped record's POS stays 0 (was skipped by bound check + shift loop).
+        assert out[3].split("\t")[3] == "0"
+
+    def test_unknown_rname_record_is_skipped(self):
+        # Record references chr_unknown which is NOT in @SQ — function leaves
+        # POS untouched (no LN to bound-check against).
+        lines = self.HEADER + [
+            "r1\t0\tchr_unknown\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert "LN:10500" in out[1]  # @SQ widens
+        assert out[3].split("\t")[3] == "100"  # POS unchanged
+
+    def test_shift_zero_is_no_op_copy(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=0)
+        assert out == lines
+        assert out is not lines  # but it's a fresh list
+
+    def test_negative_shift_raises(self):
+        with pytest.raises(ValueError):
+            pos_shift_with_sq_ln_bound_check(self.HEADER, shift=-1)
+
+    def test_no_sq_lines_returns_input_unchanged(self):
+        lines = ["@HD\tVN:1.6\n",
+                 "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGT\tIIII\n"]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert out == lines
+
+    def test_preserves_trailing_newlines(self):
+        # Mix \n and no-newline lines; transform must preserve each line's
+        # original trailing newline state.
+        lines = ["@HD\tVN:1.6\n",
+                 "@SQ\tSN:chr1\tLN:1000\n",  # \n
+                 "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGT\tIIII"]  # no \n
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert out[1].endswith("\n")
+        assert not out[2].endswith("\n")
+
+    def test_lns_exceeds_2_31_no_op(self):
+        # SAMv1 §1.3 LN max = 2^31 - 1 = 2147483647. If new LN would exceed,
+        # no-op rather than emit an out-of-spec value.
+        lines = ["@HD\tVN:1.6\n",
+                 f"@SQ\tSN:chr1\tLN:{2**31 - 100}\n",
+                 "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=200)
+        assert out == lines  # no-op
+
+    def test_freshness_input_not_mutated(self):
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t100\t30\t10M\t*\t0\t0\tACGTACGTAC\tIIIIIIIIII\n"
+        ]
+        original_lines = list(lines)
+        pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert lines == original_lines  # not mutated
+
+    def test_pos_zero_record_skipped(self):
+        # FLAG=0 (mapped) but POS=0 is a SAMv1 §1.4 boundary: 1-based POS, 0
+        # means "no position assigned" / unmapped. We treat it as skip.
+        lines = self.HEADER + [
+            "r1\t0\tchr1\t0\t30\t*\t*\t0\t0\t*\t*\n"
+        ]
+        out = pos_shift_with_sq_ln_bound_check(lines, shift=500)
+        assert out[3].split("\t")[3] == "0"
+
+
+class TestCanonicalizeRnextEqualsAlias:
+    @staticmethod
+    def _make(rnext: str, rname: str = "chr1") -> str:
+        return (f"r1\t0\t{rname}\t100\t30\t10M\t{rnext}\t200\t100\t"
+                "ACGTACGTAC\tIIIIIIIIII\n")
+
+    def test_alias_mode_collapses_rname_to_equals(self):
+        line = self._make(rnext="chr1")  # RNEXT == RNAME
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        assert out.split("\t")[6] == "="
+
+    def test_alias_mode_no_change_when_rnext_already_equals(self):
+        line = self._make(rnext="=")
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        # alias mode only acts when RNEXT == RNAME; "=" != "chr1"
+        # so this is a no-op.
+        assert out == line
+
+    def test_alias_mode_no_change_when_rnext_differs(self):
+        line = self._make(rnext="chr2")  # different chr
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        assert out == line
+
+    def test_alias_mode_no_change_when_rname_star(self):
+        line = self._make(rnext="*", rname="*")
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        assert out == line
+
+    def test_explicit_mode_expands_equals_to_rname(self):
+        line = self._make(rnext="=")
+        out = canonicalize_rnext_equals_alias(line, mode="explicit")
+        assert out.split("\t")[6] == "chr1"
+
+    def test_explicit_mode_no_change_when_rnext_already_explicit(self):
+        line = self._make(rnext="chr1")
+        out = canonicalize_rnext_equals_alias(line, mode="explicit")
+        assert out == line
+
+    def test_explicit_mode_no_change_when_rname_star(self):
+        # RNAME='*' means the read is unmapped; resolving '=' against '*'
+        # would emit "RNEXT:*" which is meaningful (unmapped mate) but the
+        # transform is conservative — no-op.
+        line = self._make(rnext="=", rname="*")
+        out = canonicalize_rnext_equals_alias(line, mode="explicit")
+        assert out == line
+
+    def test_invalid_mode_raises(self):
+        line = self._make(rnext="chr1")
+        with pytest.raises(ValueError):
+            canonicalize_rnext_equals_alias(line, mode="bogus")
+
+    def test_short_record_returns_unchanged(self):
+        # 5-column line (header-ish or partial). Function bails out.
+        line = "r1\t0\tchr1\t100\t30\n"
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        assert out == line
+
+    def test_preserves_trailing_newline(self):
+        line = self._make(rnext="chr1")
+        assert line.endswith("\n")
+        out = canonicalize_rnext_equals_alias(line, mode="alias")
+        assert out.endswith("\n")
+        line2 = line.rstrip("\n")
+        out2 = canonicalize_rnext_equals_alias(line2, mode="alias")
+        assert not out2.endswith("\n")
+
+
+class TestBumpHdVnMinor:
+    def test_1_6_to_1_5(self):
+        out = bump_hd_vn_minor(["@HD\tVN:1.6\tSO:coordinate\n"])
+        assert "VN:1.5" in out[0]
+        assert "VN:1.6" not in out[0]
+
+    def test_1_5_to_1_6(self):
+        out = bump_hd_vn_minor(["@HD\tVN:1.5\tSO:coordinate\n"])
+        assert "VN:1.6" in out[0]
+        assert "VN:1.5" not in out[0]
+
+    def test_other_vn_unchanged(self):
+        # Out-of-range VN value → leave alone (don't fabricate a toggle).
+        out = bump_hd_vn_minor(["@HD\tVN:1.4\tSO:coordinate\n"])
+        assert out == ["@HD\tVN:1.4\tSO:coordinate\n"]
+
+    def test_no_hd_unchanged(self):
+        # @SQ alone, no @HD — nothing to toggle.
+        in_lines = ["@SQ\tSN:chr1\tLN:1000\n"]
+        out = bump_hd_vn_minor(in_lines)
+        assert out == in_lines
+
+    def test_hd_without_vn_unchanged(self):
+        # @HD without VN field — left alone.
+        in_lines = ["@HD\tSO:coordinate\n"]
+        out = bump_hd_vn_minor(in_lines)
+        assert out == in_lines
+
+    def test_other_lines_unchanged(self):
+        in_lines = ["@HD\tVN:1.6\n",
+                    "@SQ\tSN:chr1\tLN:1000\n",
+                    "@RG\tID:sample1\tSM:sample1\n"]
+        out = bump_hd_vn_minor(in_lines)
+        assert out[1] == in_lines[1]
+        assert out[2] == in_lines[2]
+
+    def test_preserves_trailing_newline(self):
+        out = bump_hd_vn_minor(["@HD\tVN:1.6\tSO:coordinate\n"])
+        assert out[0].endswith("\n")
+        out2 = bump_hd_vn_minor(["@HD\tVN:1.6\tSO:coordinate"])
+        assert not out2[0].endswith("\n")
+
+    def test_idempotent_pair_returns_to_original(self):
+        # Toggling twice gets back to original (1.6 → 1.5 → 1.6).
+        in_lines = ["@HD\tVN:1.6\tSO:coordinate\n"]
+        once = bump_hd_vn_minor(in_lines)
+        twice = bump_hd_vn_minor(once)
+        assert twice == in_lines
 
 
 # ===========================================================================

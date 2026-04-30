@@ -77,6 +77,9 @@ from mr_engine.transforms.sam import (
     normalize_seq_case,
     cigar_zero_length_op_removal,
     canonicalize_cigar_match_operators,
+    pos_shift_with_sq_ln_bound_check,
+    canonicalize_rnext_equals_alias,
+    bump_hd_vn_minor,
 )
 from mr_engine.transforms.malformed import (
     violate_info_number_a_cardinality,
@@ -706,6 +709,82 @@ def _dispatch_canonicalize_cigar_match_ops(
 
         result.append(new_line + "\n" if line.endswith("\n") else new_line)
     return result
+
+
+# ===========================================================================
+# Round 2 SAM transforms (POS shift, RNEXT alias, HD VN bump)
+# ===========================================================================
+
+@_register("pos_shift_with_sq_ln_bound_check")
+def _dispatch_pos_shift_with_sq_ln(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """File-level: shift all alignment POS by +N + widen @SQ LN by +N.
+
+    The shift amount is chosen deterministically from the seed so multiple
+    invocations with the same seed produce the same shifted file (matches
+    the determinism contract every other transform follows).
+
+    Bound check inside the raw transform itself returns the input
+    unchanged if any record's new POS would push past the new LN — so
+    no Z3 post-guard needed here (the invariant is enforced at the
+    function entry).
+    """
+    rng = random.Random(seed)
+    # Pick a positive shift in a range that's interesting for parsers
+    # (small enough to keep typical seeds well within LN; large enough
+    # that the LN bump matters in chr-prefix range checks).
+    shift = rng.randint(100, 5000)
+    return pos_shift_with_sq_ln_bound_check(lines, shift=shift)
+
+
+@_register("canonicalize_rnext_equals_alias")
+def _dispatch_canonicalize_rnext_alias(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """Line-level: toggle RNEXT '=' alias.
+
+    Per-line mode is chosen via the seed (stable for a given seed) so
+    each pass produces a deterministic mix of alias↔explicit RNEXT
+    forms across the file. This way both directions are exercised
+    rather than us having to register two near-identical transforms.
+    """
+    rng = random.Random(seed)
+    mode = rng.choice(("alias", "explicit"))
+    result = []
+    for line in lines:
+        stripped = line.rstrip("\n\r")
+        if stripped.startswith("@") or "\t" not in stripped:
+            result.append(line)
+            continue
+        new_line = canonicalize_rnext_equals_alias(stripped, mode=mode)
+        result.append(new_line + "\n" if line.endswith("\n") else new_line)
+    return result
+
+
+@_register("bump_hd_vn_minor")
+def _dispatch_bump_hd_vn_minor(
+    lines: list[str], seed: Optional[int]
+) -> list[str]:
+    """File-level: toggle @HD VN between 1.5 and 1.6."""
+    header_lines = [l.rstrip("\n\r") for l in lines if l.rstrip("\n\r").startswith("@")]
+    body_lines = [l for l in lines if not l.rstrip("\n\r").startswith("@")]
+    new_header = bump_hd_vn_minor(header_lines)
+    # Re-add newlines to header lines (lookup from original header to preserve
+    # \r\n vs \n style — fall back to \n if absent).
+    out_header: list[str] = []
+    for orig, new_line in zip(
+        [l for l in lines if l.rstrip("\n\r").startswith("@")],
+        new_header,
+    ):
+        # Preserve trailing newline from original line.
+        trailing = orig[len(orig.rstrip("\n\r")):]
+        if not trailing:
+            trailing = "\n"
+        # If new_line already has the trailing, don't double it.
+        stripped = new_line.rstrip("\n\r")
+        out_header.append(stripped + trailing)
+    return out_header + body_lines
 
 
 # ===========================================================================

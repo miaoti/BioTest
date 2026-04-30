@@ -5,9 +5,9 @@
 Mutation kills are an imperfect proxy for real-fault detection.
 Equivalent mutants depress every tool's score equally, and we
 minimise the asymmetry by reusing standard operator
-sets~\citep{papadakis2019mutation}. The silence-on-fix benchmark
-of \S\ref{sec:bug-bench} grounds adequacy in real bugs as
-construct triangulation.
+sets~\citep{papadakis2019mutation}. The real-bug benchmark of
+\S\ref{sec:bug-bench} grounds adequacy in real bugs as construct
+triangulation.
 
 \paragraph{Internal: bug-bench manifest is post-audit.}
 The $32$-bug manifest reflects a second-pass audit that dropped
@@ -17,13 +17,14 @@ after the initial freeze. Neither choice was blinded to which
 bugs \biotest's paradigm could reach. We apply the post-revision
 predicate uniformly to every tool to mitigate.
 
-\paragraph{Internal: silence-on-fix attribution.}
+\paragraph{Internal: bug-detection attribution.}
 The bench seed corpus follows Magma-style
 PoV-seeding~\cite{hazimeh2020magma}, equalising starting
 positions across all input fuzzers. Detection is verified on
-tool-output triggers under the silence-on-fix
-predicate~\cite{boehme2021estimating}. Canary-based attribution
-per Magma~\cite{hazimeh2020magma} or magic-number injection per
+tool-output triggers under a pre-fix\,/\,post-fix differential
+predicate in the ground-truth fuzzing style of
+Magma~\cite{hazimeh2020magma}. Canary-based
+attribution from the same paper or magic-number injection per
 LAVA~\cite{dolangavitt2016lava} would supersede the predicate
 but require per-bug source instrumentation across all four host
 languages, which we defer to future work.
@@ -37,7 +38,7 @@ and the seed-corpus MR validator is not blinded to downstream
 performance. We ship the curation log with the artefact as
 mitigation. The four close-margin mutation-adequacy pairs run at
 $n{=}10$ and clear family-wise $\alpha{=}0.05$ under
-Holm--Bonferroni; biopython and seqan3 remain at $n{=}4$ where
+Holm--Bonferroni. Biopython and seqan3 remain at $n{=}4$ where
 samples are deterministic.
 
 \paragraph{Internal: ablations not run.}

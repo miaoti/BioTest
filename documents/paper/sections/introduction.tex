@@ -62,22 +62,21 @@ Figure~\ref{fig:pipeline} gives the visual overview.
 We evaluate \biotest{} on six $(\mathrm{SUT, format})$
 configurations against five coverage-guided fuzzers and a
 Pure-Random floor across three axes: mutation adequacy,
-end-of-run line coverage, and a silence-on-fix
-benchmark~\citep{boehme2021estimating} of $32$ verified parser
-bugs (a fix is judged to silence a tool's signal iff the same
-input that triggers it on the pre-fix version no longer triggers
-it on the post-fix version). \biotest{} is competitive with the
+end-of-run line coverage, and a real-bug
+benchmark~\citep{hazimeh2020magma} of $32$ verified parser bugs
+(a tool detects a bug iff some input it produces triggers the
+buggy version but not the patched version). \biotest{} is competitive with the
 strongest coverage-guided fuzzer on text-rich parsers and trails
 on byte-content-lenient ones, consistent with the empirical
 pattern of Klees et al.~\cite{klees2018fuzz} and
 B\"ohme et al.~\cite{boehme2020boosting}. On the bug benchmark it detects $10$ of $32$ parser bugs across
 three host languages (Java/htsjdk, Python/vcfpy, Rust/noodles),
 where every crash-only input fuzzer in the slate detects zero.
-Detection is end-to-end audited under the silence-on-fix
-predicate of B\"ohme et al.~\cite{boehme2021estimating} on
-inputs the tool's adapter produced during the per-cell budget,
-not on the manifest's canonical proof-of-vulnerability files
-alone.
+Detection is end-to-end audited under a pre-fix\,/\,post-fix
+differential predicate in the ground-truth fuzzing style of
+Magma~\cite{hazimeh2020magma}, on inputs the tool's adapter
+produced during the per-cell budget rather than on the
+manifest's canonical proof-of-vulnerability files alone.
 
 \paragraph{Contributions.}
 \begin{enumerate}[label=(\roman*),leftmargin=*]
@@ -91,7 +90,7 @@ alone.
         augmentation, plus empirical characterisation of when the
         augmentation ranks fail.
   \item A three-axis evaluation (mutation adequacy, line
-        coverage, $32$-bug silence-on-fix benchmark) under matched
+        coverage, $32$-bug real-bug benchmark) under matched
         protocols that maps where grammar-driven generation
         matches, leads, and trails coverage-guided fuzzing under
         the bounded per-SUT effort envelope

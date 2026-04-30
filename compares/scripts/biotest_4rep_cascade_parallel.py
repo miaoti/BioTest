@@ -382,7 +382,11 @@ def run_biotest_container(
     log(cell, f"    cmd: docker exec biotest-bench-setup python3.12 biotest.py …", fh)
     log(cell, f"    budget: {budget_s}s (container)", fh)
     started = time.time()
-    proc = subprocess.run(cmd, capture_output=True, timeout=budget_s + 120)
+    # Buffer = 600s. The container `timeout --kill-after=60 ${budget_s}` already
+    # bounds biotest at budget_s + 60s; the extra ~10 min margin gives docker
+    # exec time to flush coverage.py/gcovr atexit + return, especially when the
+    # MR menu is large enough to slow Phase D into bumping the wall cap.
+    proc = subprocess.run(cmd, capture_output=True, timeout=budget_s + 600)
     elapsed = time.time() - started
     return proc.returncode, elapsed
 
