@@ -7,23 +7,31 @@
 We grade the corpus produced by \biotest{} under the fairness
 recipe of \S\ref{sec:design-fairness}. Six $(\mathrm{SUT,
 format})$ pairs span four parser languages and four mutation
-engines. The four close-margin pairs (htsjdk/VCF, htsjdk/SAM,
-vcfpy/VCF, noodles/VCF) run at $n{=}10$ reps on the \biotest{}
-side after a power-driven boost from $n{=}4$. Biopython and seqan3
-retain $n{=}4$ where samples are deterministic
-($\sigma{=}0.00$) or operate at the protocol's
-budget-termination point. We report mean $\pm$ sample std. For
-biopython, the Atheris baseline terminates at the
-262\textsuperscript{nd} of 523 generated mutants under shuffle
-seed 42, and we cap \biotest{} at the same 262 mutants for
-protocol parity, additionally reporting the full-population result.
+engines (htsjdk/VCF and htsjdk/SAM use PIT, vcfpy/VCF and
+biopython/SAM use mutmut, noodles/VCF uses cargo-mutants, seqan3/SAM
+uses a DIY mull-style operator set). The four close-margin pairs
+(htsjdk/VCF, htsjdk/SAM, vcfpy/VCF, noodles/VCF) run at $n{=}10$
+reps on the \biotest{} side after a power-driven boost from
+$n{=}4$, with achieved baseline $n$ of $10/6/9/6$ respectively.
+Biopython and seqan3 retain $n{=}4$ where samples are
+deterministic ($\sigma{=}0.00$) or operate at the protocol's
+budget-termination point. We report mean $\pm$ sample std,
+per-cell sample std listed in
+Figure~\ref{fig:mutation-radar}'s legend mapping (\biotest/baseline):
+$0.71/1.34$, $0.14/1.83$, $0.27/1.91$, $1.42/1.21$, $0.79/0.36$,
+$0.00/0.00$ for htsjdk/VCF, vcfpy/VCF, noodles/VCF, htsjdk/SAM,
+biopython/SAM, seqan3/SAM. For biopython, the Atheris baseline
+terminates at the 262\textsuperscript{nd} of 523 generated mutants
+under shuffle seed 42, and we cap \biotest{} at the same 262
+mutants for protocol parity, additionally reporting the
+full-population result ($25.81{\pm}0.00\%$).
 
-\input{sections/mutation_table.tex}
+\input{sections/mutation_radar_figure.tex}
 
 \paragraph{Significance testing.}
 On the four close-margin pairs we use $n_{\mathrm{BT}}{=}10$ and
 the achieved baseline $n$ shown in
-Table~\ref{tab:mutation-headline}. We compute exact two-sided
+Figure~\ref{fig:mutation-radar}. We compute exact two-sided
 Mann--Whitney $U$ by full enumeration of the
 $\binom{n_1+n_2}{n_1}$ rank arrangements (no normal
 approximation), Vargha--Delaney
@@ -44,14 +52,15 @@ $\alpha{=}0.05$~\citep{arcuri2014statistical}, not a small-sample
 observation.
 
 \paragraph{Biopython is where coverage-guided fuzzing genuinely wins.}
-The largest signal is the $-32.52$\,pp deficit on biopython,
-under the matched-budget protocol that caps both \biotest{} and
-Atheris at the first $262$ generated mutants. Biopython's parser
-applies a strict structural validator but accepts byte-level
-variation within field values, and Atheris accumulates files that
-pass the validator and trip rare error paths. Enabling our
-Rank-12 structural and Rank-13 lenient-byte-fuzz augmentation
-does not move the mean
+The visible $-32.5$\,pp dip on the biopython axis of
+Figure~\ref{fig:mutation-radar} is the largest single signal in
+the radar. It is measured under the matched-budget protocol that
+caps both \biotest{} and Atheris at the first $262$ generated
+mutants. Biopython's parser applies a strict structural validator
+but accepts byte-level variation within field values, and Atheris
+accumulates files that pass the validator and trip rare error
+paths. Enabling our Rank-12 structural and Rank-13
+lenient-byte-fuzz augmentation does not move the mean
 ($25.48{\pm}0.79$ vs.\ un-augmented $25.57{\pm}0.00$,
 $\hat{A}_{12}{=}0.50$). This is the empirical pattern Klees et
 al.\ and B\"ohme et al.~\cite{klees2018fuzz,boehme2020boosting}
@@ -59,9 +68,11 @@ report on byte-content-lenient parsers. Closing the gap requires
 per-SUT bytecode instrumentation, outside our C2 envelope.
 
 \paragraph{Four close-margin configurations.}
-On htsjdk/VCF, htsjdk/SAM, vcfpy/VCF, and noodles/VCF the deficit
-to the strongest baseline is in the $1.5$ to $4.2$\,pp range, and
-\biotest{} is below the baseline on the dominant majority of
+On htsjdk/VCF, htsjdk/SAM, vcfpy/VCF, and noodles/VCF the
+\biotest{} vertex and the orange baseline marker overlap visibly
+in Figure~\ref{fig:mutation-radar}: the deficit is in the
+$1.5$ to $4.2$\,pp range, and \biotest{} is below the baseline on
+the dominant majority of
 $n_{\mathrm{BT}}{\times}n_{\mathrm{base}}$ rep-pairings
 ($\hat{A}_{12} \in \{0.000, 0.083, 0.111, 0.183\}$, all in the
 ``large'' magnitude band). We do not claim ``match'': Klees et
@@ -73,21 +84,22 @@ $851.5{\pm}1.4$ of $992$ reachable, Atheris kills
 $832.0{\pm}30.6$ of $952.4{\pm}50.5$ reachable.
 
 \paragraph{seqan3: the consensus oracle's retained corpus matters.}
-On seqan3/SAM \biotest{} exceeds libFuzzer~\citep{libfuzzer2024}
-by $+6.87$\,pp on the means, with both samples deterministic
-($\sigma{=}0.00$) under repeated runs against the same corpus. We
-report only the mean difference and decline to attach an
-$\hat{A}_{12}$ value, which on a pair of scalar means is
-uninformative beyond the sign. The mechanism is a corpus-retention
-difference under identical engine-side kill semantics.
-\biotest's spec-driven generator constructs inputs reaching
-distinct typed-exception classes (CIGAR-shape, tag-type, and
-flag-bit boundaries via Rank~12), whereas libFuzzer's
-coverage-guided byte mutator preferentially retains crashes and
-discards inputs that merely produce a typed exception. Mutations
-flipping one typed-exception class to another register as kills
-only when the corpus contains an input reaching the original
-class~\citep{barr2015oracle}.
+The starred vertex on the radar marks the only axis where
+\biotest{} exceeds every baseline outright: on seqan3/SAM
+\biotest{} is $+6.87$\,pp above libFuzzer~\citep{libfuzzer2024} on
+the means, with both samples deterministic ($\sigma{=}0.00$) under
+repeated runs against the same corpus. We report only the mean
+difference and decline to attach an $\hat{A}_{12}$ value, which on
+a pair of scalar means is uninformative beyond the sign. The
+mechanism is a corpus-retention difference under identical
+engine-side kill semantics. \biotest's spec-driven generator
+constructs inputs reaching distinct typed-exception classes
+(CIGAR-shape, tag-type, and flag-bit boundaries via Rank~12),
+whereas libFuzzer's coverage-guided byte mutator preferentially
+retains crashes and discards inputs that merely produce a typed
+exception. Mutations flipping one typed-exception class to another
+register as kills only when the corpus contains an input reaching
+the original class~\citep{barr2015oracle}.
 
 Construct- and internal-validity threats specific to this
 measurement are detailed in \S\ref{sec:threats}.

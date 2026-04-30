@@ -1,0 +1,231 @@
+% Mutation-adequacy radar.
+%
+% Design rationale: a tabular layout displays per-cell deltas one
+% number at a time and reads as six independent comparisons, which
+% under-sells \biotest's distinguishing property -- a single
+% framework spanning all six (SUT, format) cells. The radar makes
+% that property visual: \biotest{} is a closed hexagon, and each
+% coverage-guided baseline is a single point on its single
+% applicable axis. Per-cell scores are printed at every vertex so
+% no rigour is lost relative to the prior table.
+%
+% Visual layers, back to front:
+%   1. concentric percentage rings (25/50/75/100)
+%   2. six radial spokes (one per axis)
+%   3. Pure-Random polygon (grey, dashed)        -- floor reference
+%   4. \biotest{} polygon (blue, semi-transparent fill)
+%   5. strongest-baseline markers (orange dots)  -- one per axis
+%   6. star marker on the seqan3/SAM \biotest{} vertex
+%      (the only axis where \biotest{} exceeds every baseline)
+%   7. per-axis labels at the perimeter (compact, two lines)
+%   8. inline legend at the upper-left of the radar bounding box
+%
+% Unit convention: \R is a cm-unitless number. TikZ polar
+% coordinates of the form (angle:{\R*frac}) resolve to cm by
+% default, which gives the intended radius in cm.
+
+\begin{figure*}[!t]
+\centering
+\begin{tikzpicture}
+
+% Radius at 100% kill rate, in cm. 2.0 keeps the figure compact;
+% perimeter labels extend ~30 mm beyond the rings.
+\pgfmathsetmacro{\R}{2.0}
+
+% ---- (1) concentric percentage rings -----------------------------
+\foreach \pct in {25, 50, 75, 100}{%
+  \draw[draw=black!18, line width=0.30pt]
+        (0,0) circle ({\R*\pct/100});
+}
+% ring percentage labels along the +x direction, between vcfpy and
+% noodles spokes so they do not collide with the polygons
+\foreach \pct in {25, 50, 75, 100}{%
+  \node[font=\fontsize{5.5}{6}\selectfont, text=black!50,
+        anchor=south west, inner sep=0.3pt]
+        at (62:{\R*\pct/100}) {\pct};
+}
+
+% ---- (2) six radial spokes --------------------------------------
+\foreach \ang in {90, 30, -30, -90, -150, 150}{%
+  \draw[draw=black!25, line width=0.30pt] (0,0) -- (\ang:\R);
+}
+
+% ---- (3) Pure-Random polygon ------------------------------------
+% values: vcfpy 0.89, noodles 0.00, seqan3 7.19, biopython 0.24,
+%         htsjdk-SAM 1.20, htsjdk-VCF 0.00
+\filldraw[fill=black!10, fill opacity=0.50,
+          draw=black!55, line width=0.45pt,
+          dash pattern=on 1.4pt off 1.0pt]
+   (90:{\R*0.0089})
+-- (30:{\R*0.0000})
+-- (-30:{\R*0.0719})
+-- (-90:{\R*0.0024})
+-- (-150:{\R*0.0120})
+-- (150:{\R*0.0000})
+-- cycle;
+
+% ---- (4) \biotest{} polygon -------------------------------------
+% values: vcfpy 85.66, noodles 8.10, seqan3 97.44, biopython 25.48,
+%         htsjdk-SAM 21.14, htsjdk-VCF 32.40
+\filldraw[fill=blue!58!black, fill opacity=0.18,
+          draw=blue!58!black, line width=1.0pt, line join=round]
+   (90:{\R*0.8566})
+-- (30:{\R*0.0810})
+-- (-30:{\R*0.9744})
+-- (-90:{\R*0.2548})
+-- (-150:{\R*0.2114})
+-- (150:{\R*0.3240})
+-- cycle;
+
+% ---- (5) strongest-baseline markers (one per axis) --------------
+% strongest applicable baseline per axis:
+%   vcfpy   - Atheris    87.37
+%   noodles - cargo-fuzz  8.74
+%   seqan3  - libFuzzer  90.57
+%   biopython - Atheris  58.00
+%   htsjdk-SAM - Jazzer  23.61
+%   htsjdk-VCF - Jazzer  36.59
+\foreach \ang/\val in {%
+  90/0.8737, 30/0.0874, -30/0.9057,
+  -90/0.5800, -150/0.2361, 150/0.3659%
+}{%
+  \fill[orange!82!red] (\ang:{\R*\val}) circle (1.6pt);
+  \draw[orange!72!red, line width=0.4pt] (\ang:{\R*\val}) circle (1.6pt);
+}
+
+% ---- (6) \biotest{} vertex dots ---------------------------------
+% all axes get a small blue dot, except seqan3 (replaced by star)
+\foreach \ang/\val in {%
+  90/0.8566, 30/0.0810,
+  -90/0.2548, -150/0.2114, 150/0.3240%
+}{%
+  \fill[blue!58!black] (\ang:{\R*\val}) circle (1.3pt);
+}
+% star at seqan3/SAM \biotest{} vertex marks the win
+\node[star, star points=5, star point ratio=2.4,
+      draw=orange!72!red, fill=yellow!88!orange,
+      line width=0.45pt, inner sep=0pt, minimum size=5.0pt]
+      at (-30:{\R*0.9744}) {};
+
+% ---- (7) per-axis perimeter labels (compact, 2-line) ------------
+% Each label block: SUT/format - language (combined, bold + italic)
+%                 + BT score / baseline score (one line)
+%
+% Outer radius: \R + 0.30 cm (3 mm beyond the 100% ring).
+% Anchors are chosen so labels read away from the radar centre.
+
+% --- vcfpy / VCF (top) ---
+\node[anchor=south, align=center, inner sep=1pt]
+     at (90:{\R + 0.30}) {%
+  {\scriptsize\textbf{vcfpy / VCF}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Python)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   \textbf{\color{blue!58!black}BT 85.7}\;\;
+   {\color{orange!72!red}Atheris 87.4}}%
+};
+
+% --- noodles / VCF (upper right) ---
+\node[anchor=south west, align=left, inner sep=1pt]
+     at (30:{\R + 0.30}) {%
+  {\scriptsize\textbf{noodles / VCF}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Rust)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   \textbf{\color{blue!58!black}BT 8.1}\;\;
+   {\color{orange!72!red}cargo-fuzz 8.7}}%
+};
+
+% --- seqan3 / SAM (lower right) -- the WIN ---
+\node[anchor=west, align=left, inner sep=1pt]
+     at (-30:{\R + 0.30}) {%
+  {\scriptsize\textbf{seqan3 / SAM}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(C++)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   \textbf{\color{blue!58!black}BT 97.4\,$\bigstar$}\;\;
+   {\color{orange!72!red}libFuzzer 90.6}}%
+};
+
+% --- biopython / SAM (bottom) ---
+\node[anchor=north, align=center, inner sep=1pt]
+     at (-90:{\R + 0.30}) {%
+  {\scriptsize\textbf{biopython / SAM}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Python)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   \textbf{\color{blue!58!black}BT 25.5}\;\;
+   {\color{orange!72!red}Atheris 58.0}}%
+};
+
+% --- htsjdk / SAM (lower left) ---
+\node[anchor=north east, align=right, inner sep=1pt]
+     at (-150:{\R + 0.30}) {%
+  {\scriptsize\textbf{htsjdk / SAM}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Java)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   {\color{orange!72!red}Jazzer 23.6}\;\;
+   \textbf{\color{blue!58!black}BT 21.1}}%
+};
+
+% --- htsjdk / VCF (upper left) ---
+\node[anchor=south east, align=right, inner sep=1pt]
+     at (150:{\R + 0.30}) {%
+  {\scriptsize\textbf{htsjdk / VCF}\,
+   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Java)}\\[-0.4mm]
+  {\fontsize{7}{7.5}\selectfont
+   {\color{orange!72!red}Jazzer 36.6}\;\;
+   \textbf{\color{blue!58!black}BT 32.4}}%
+};
+
+% ---- (8) compact 2-row legend below the radar -------------------
+% Two rows of swatches, narrow enough to fit single-column width.
+\begin{scope}[shift={(0, {-\R - 1.35})}]
+  % row 1: BioTest swatch + label, baseline marker + label
+  \filldraw[fill=blue!58!black, fill opacity=0.18,
+            draw=blue!58!black, line width=0.9pt]
+            (-37mm,-0.8mm) rectangle (-33mm,0.8mm);
+  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
+        inner sep=1pt] at (-32.5mm, 0)
+        {\textsc{BioTest} (6/6 cells)};
+
+  \fill[orange!82!red] (4mm, 0) circle (1.6pt);
+  \draw[orange!72!red, line width=0.4pt] (4mm, 0) circle (1.6pt);
+  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
+        inner sep=1pt] at (5.5mm, 0)
+        {strongest baseline (1 cell each)};
+
+  % row 2: Pure-Random swatch + label, win-star + label
+  \filldraw[fill=black!10, fill opacity=0.50,
+            draw=black!55, line width=0.45pt,
+            dash pattern=on 1.4pt off 1.0pt]
+            (-37mm,-3.6mm) rectangle (-33mm,-2.0mm);
+  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
+        inner sep=1pt] at (-32.5mm, -2.8mm)
+        {Pure-Random floor};
+
+  \node[star, star points=5, star point ratio=2.4,
+        draw=orange!72!red, fill=yellow!88!orange,
+        line width=0.45pt, inner sep=0pt, minimum size=4.8pt]
+        at (4mm, -2.8mm) {};
+  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
+        inner sep=1pt] at (5.5mm, -2.8mm)
+        {\textsc{BioTest} leads every baseline};
+\end{scope}
+
+\end{tikzpicture}
+
+\caption{Mutation kill rate (\%) per (SUT, format) cell.
+\biotest{}'s closed polygon spans all six cells (four host
+languages); each coverage-guided fuzzer applies to a single host
+language and appears as a single point on its single applicable
+axis. \biotest{} \emph{exceeds} every baseline on seqan3/SAM by
+$+6.87$\,pp ($\bigstar$) and \emph{trails the strongest baseline}
+by $1.5$ to $4.2$\,pp on the four close-margin pairs (htsjdk/VCF,
+htsjdk/SAM, vcfpy/VCF, noodles/VCF) which all clear family-wise
+$\alpha{=}0.05$ under Holm--Bonferroni
+(\S\ref{sec:mutation-adequacy}). The only large gap is biopython/SAM
+($-32.5$\,pp vs Atheris) where the parser is byte-content-lenient
+and coverage-guided fuzzing is structurally
+favoured~\citep{klees2018fuzz,boehme2020boosting}. Per-cell
+$n_{\mathrm{BT}}/n_{\mathrm{base}}$, std (\biotest/baseline), and
+mutation engine are listed in
+\S\ref{sec:mutation-adequacy}.}
+\label{fig:mutation-radar}
+\end{figure*}

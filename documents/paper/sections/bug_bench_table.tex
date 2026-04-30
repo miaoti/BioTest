@@ -1,35 +1,51 @@
-% Bug-bench headline table.
+% Bug-bench headline table: per-(SUT, format) detection counts.
 
 \begin{table*}[!t]
 \centering
-\caption{Real-bug detection on the $32$-bug manifest ($23$ VCF
-$+\,9$ SAM; \S\ref{sec:bug-bench}). \textsc{detected}: at least
-one tool-produced trigger satisfies silence-on-fix.
-\textsc{false+}: post-fix-surviving crashes (real defects, not
-the target bug).}
+\caption{Real-bug detection per (SUT, format) on the $32$-bug
+manifest ($23$ VCF $+\,9$ SAM; \S\ref{sec:bug-bench}). Each cell
+is the number of bugs the tool's adapter detected under the
+pre-fix\,/\,post-fix differential predicate, in the ground-truth
+fuzzing style of Magma~\citep{hazimeh2020magma}. Column headers
+show the number of manifest bugs in each (SUT, format). ``---''
+indicates the tool is not language-applicable to the SUT.}
 \label{tab:bugbench-headline}
 \small
-\setlength{\tabcolsep}{6pt}
+\setlength{\tabcolsep}{4.5pt}
 \renewcommand{\arraystretch}{1.05}
-\begin{tabular}{l c r r}
+\begin{tabular}{l c c c c c c}
 \toprule
-                                    & paradigm                & \textsc{detected} & \textsc{false+} \\
+& \multicolumn{2}{c}{\textbf{htsjdk}}
+& \textbf{vcfpy}
+& \textbf{noodles}
+& \textbf{seqan3}$^{\dagger}$
+& \\
+\cmidrule(lr){2-3}
+Tool & VCF~(9) & SAM~(3) & VCF~(5) & VCF~(9) & SAM~(6) & Total~(32) \\
 \midrule
-\biotest{}                          & file-input differential & $\mathbf{10}/32$  & 0  \\
-Jazzer~\citep{jazzer2024}           & in-process crash-only   & $0/32$            & 10 \\
-Atheris~\citep{atheris2023}         & in-process crash-only   & $0/32$            & 0  \\
-cargo-fuzz~\citep{cargofuzz2024}    & in-process crash-only   & $0/32$            & 0  \\
-libFuzzer~\citep{libfuzzer2024}     & in-process crash-only   & $0/32$            & 1  \\
-Pure-Random~\citep{klees2018fuzz}   & uninformed floor        & $0/32$            & 0  \\
-EvoSuite-anchor$^{\flat}$           & Java unit-level GA      & $4/32$            & 0  \\
-Randoop$^{\flat}$~\citep{pacheco2007randoop} & Java unit-level random  & $3/32$    & 0  \\
+\biotest{}                                    & $\mathbf{4}$ & $\mathbf{2}$ & $\mathbf{3}$ & $\mathbf{1}$ & $0$ & $\mathbf{10}$ \\
+Jazzer~\citep{jazzer2024}                     & $0$          & $0$          & ---          & ---          & --- & $0$           \\
+Atheris~\citep{atheris2023}                   & ---          & ---          & $0$          & ---          & --- & $0$           \\
+cargo-fuzz~\citep{cargofuzz2024}              & ---          & ---          & ---          & $0$          & --- & $0$           \\
+libFuzzer~\citep{libfuzzer2024}               & ---          & ---          & ---          & ---          & $0$ & $0$           \\
+Pure-Random~\citep{klees2018fuzz}             & $0$          & $0$          & $0$          & $0$          & $0$ & $0$           \\
 \midrule
-\multicolumn{2}{l}{Any-tool union (file-input $\cup$ unit-level)}              & $\mathbf{14}/32$ & --- \\
+EvoSuite-anchor$^{\flat}$~\citep{fraser2011evosuite} & $4$   & $0$          & ---          & ---          & --- & $4$           \\
+Randoop$^{\flat}$~\citep{pacheco2007randoop}  & $1$          & $2$          & ---          & ---          & --- & $3$           \\
+\midrule
+\multicolumn{1}{l}{Any-tool union}            & $7$          & $3$          & $3$          & $1$          & $0$ & $\mathbf{14}$ \\
 \bottomrule
 \end{tabular}
 \\[0.4em]
 {\footnotesize
-$^{\flat}$~Unit-level Java baselines exercise method APIs, not
-file inputs. Their detections are drawn from htsjdk regressions
-outside the input-fuzzing slate.}
+$^{\dagger}$~The six seqan3/SAM manifest entries are paradigm-out
+for any file-input or unit-level fuzzer (alignment-internal
+score, zero-record writer, BGZF concurrency, FASTA, harness-build
+failures, oracle mismatches), so every tool scores $0$ on this
+column by construction. biopython/SAM is omitted because the
+verified manifest contains no biopython/SAM entries.
+\quad
+$^{\flat}$~Unit-level Java baselines (method-level test
+generation, not file-input fuzzing). Both are Java-only and run
+only on htsjdk.}
 \end{table*}
