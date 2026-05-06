@@ -1,0 +1,33 @@
+--- src/record/samples/series/value.rs
++++ replace parse_character_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -64,29 +64,17 @@
+ 
+ fn parse_float_value(src: &str) -> io::Result<Value<'_>> {
+     src.parse()
+         .map(Value::Float)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 
+ fn parse_character_value(src: &str) -> io::Result<Value<'_>> {
+-    let s = percent_decode(src).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+-    let mut chars = s.chars();
+-
+-    if let Some(c) = chars.next() {
+-        if chars.next().is_none() {
+-            return Ok(Value::Character(c));
+-        }
+-    }
+-
+-    Err(io::Error::new(
+-        io::ErrorKind::InvalidData,
+-        "invalid character",
+-    ))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string_value(src: &str) -> io::Result<Value<'_>> {
+     percent_decode(src)
+         .map(Value::String)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 

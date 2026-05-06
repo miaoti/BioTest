@@ -1,0 +1,21 @@
+--- src/record/samples/series.rs
++++ replace <impl crate::variant::record::samples::Series for Series<'_>>::name -> io::Result<&'a str> with Ok("")
+@@ -17,17 +17,17 @@
+ impl<'r> Series<'r> {
+     pub(super) fn new(name: &'r str, samples: &'r Samples<'r>, i: usize) -> Self {
+         Self { name, samples, i }
+     }
+ }
+ 
+ impl crate::variant::record::samples::Series for Series<'_> {
+     fn name<'a, 'h: 'a>(&'a self, _: &'h Header) -> io::Result<&'a str> {
+-        Ok(self.name)
++        Ok("") /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         i: usize,
+     ) -> Option<Option<io::Result<Value<'a>>>> {
+         let sample = self.samples.iter().nth(i)?;

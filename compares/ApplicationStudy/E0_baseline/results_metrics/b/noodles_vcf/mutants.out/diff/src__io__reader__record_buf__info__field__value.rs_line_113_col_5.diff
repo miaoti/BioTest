@@ -1,0 +1,29 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace parse_raw_char -> Result<char, ParseError> with Ok(Default::default())
+@@ -105,25 +105,17 @@
+     if s.is_empty() {
+         Ok(Value::Flag)
+     } else {
+         Err(ParseError::InvalidFlag)
+     }
+ }
+ 
+ fn parse_raw_char(s: &str) -> Result<char, ParseError> {
+-    let mut chars = s.chars();
+-
+-    if let Some(c) = chars.next() {
+-        if chars.next().is_none() {
+-            return Ok(c);
+-        }
+-    }
+-
+-    Err(ParseError::InvalidCharacter)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_char(s: &str) -> Result<Value, ParseError> {
+     parse_raw_char(s).map(Value::Character)
+ }
+ 
+ fn parse_char_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)

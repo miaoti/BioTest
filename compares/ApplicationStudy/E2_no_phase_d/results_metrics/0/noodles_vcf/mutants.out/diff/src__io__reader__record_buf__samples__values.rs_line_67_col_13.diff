@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ delete match arm MISSING in parse_values
+@@ -59,17 +59,17 @@
+     } else if s == MISSING {
+         return Ok(());
+     }
+ 
+     let mut raw_values = s.split(DELIMITER);
+ 
+     for (key, raw_value) in keys.as_ref().iter().zip(&mut raw_values) {
+         let value = match raw_value {
+-            MISSING => None,
++             /* ~ changed by cargo-mutants ~ */
+             _ => {
+                 if key == key::GENOTYPE {
+                     parse_genotype_value(raw_value)
+                         .map(Some)
+                         .map_err(ParseError::InvalidValue)?
+                 } else {
+                     let (number, ty) = header
+                         .formats()

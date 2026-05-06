@@ -1,0 +1,28 @@
+--- src/record/samples/series.rs
++++ replace <impl crate::variant::record::samples::Series for Series<'_>>::iter -> Box<dyn Iterator<Item = io::Result<Option<Value<'a>>>>+'a> with Box::new(Default::default())
+@@ -33,24 +33,17 @@
+         let sample = self.samples.iter().nth(i)?;
+         sample.get_index(header, self.i)
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<Option<Value<'a>>>> + 'a> {
+-        Box::new(
+-            self.samples
+-                .iter()
+-                .map(|sample| match sample.get_index(header, self.i) {
+-                    Some(value) => value.transpose(),
+-                    None => Ok(None),
+-                }),
+-        )
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::{samples::keys::key, samples::Series as _};
+ 

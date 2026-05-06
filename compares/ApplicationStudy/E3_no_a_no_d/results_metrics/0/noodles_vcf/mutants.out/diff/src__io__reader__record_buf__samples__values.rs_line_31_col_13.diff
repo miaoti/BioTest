@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ delete match arm Self::InvalidValue(e) in <impl error::Error for ParseError>::source
+@@ -23,17 +23,17 @@
+     ///
+     /// There are unexpectedly more values than keys.
+     UnexpectedValue,
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+         match self {
+-            Self::InvalidValue(e) => Some(e),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {

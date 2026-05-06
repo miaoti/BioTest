@@ -1,0 +1,36 @@
+##fileformat=VCFv4.3
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Number of Alleles">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="Mapping Quality">
+##INFO=<ID=H2,Number=0,Type=Flag,Description="H2">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depth">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled Genotype Likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1>
+##contig=<ID=chr2>
+##contig=<ID=chr3>
+##contig=<ID=chrX>
+##contig=<ID=chrY>
+##contig=<ID=chrM>
+##reference=file:///reference/hg38.fa
+##phasing=none
+##bcftools_version=1.19+htslib-1.19
+##source=generateVCF
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2
+
+chrX	585017	.	GCACT	TCAGA	308.74	q10	DP=30;AF=0.2112;NS=7;AN=9;AC=6;MQ=11.71;H2	GT:GQ:DP:AD:PL	1/1:73:26:19,6:122,97,4	0/1:68:68:20,30:172,180,71
+chr3	317296	.	GCAAG	G<DEL>G	939.06	PASS	DP=41;AF=0.3720;NS=3;AN=101;AC=90;MQ=12.22	GT:GQ:DP:AD:PL	/1:40:57:55,45:231,58,158	1/1:70:25:22,16:29,250,182
+chrY	338172	.	GT	TAGGG	987.24	q10	DP=40;AF=0.4875;NS=35;AN=124;AC=96;MQ=19.34;DB	GT:GQ:DP:AD:PL	0/1:58:35:35,22:44,243,246	0/0:61:81:28,21:116,195,5
+chr3	335967	rs830054	ATCC	<INS>	365.22	PASS	\P=76;NS=6;AN=45;MQ=22.74;H2	GT:GQ:DP:AD:PL	0/0:71:74:44,60:34,60,33	1/1:64:19:14,19:35,37,8
+chrY	513544	.	TCCCA	<CNV>	836.68	.	DP=328;NS=48;AN=166;MQ=57.59;H2	GT:GQ:DP:AD:PL	0/0:19:8:5,4:25,88,36	1/1:21:76:63,30:9,11,58
+chrY	166194	.	T	CG	.	q10	DP=361;AF=0.1140;NS=72;AN=22;AC=12;MQ=34.23	GT:GQ:DP:AD:PL	1/1:41:95:45,73:223,31,186	0/1:84:72:8,57:63,100,18
+chrY	792301	rs336351	TTTGA	CCATA	813.75	s50	DP=222;AF=0.2353;NS=87;AN=186;AC=125;MQ=20.38;H2	GT:GQ:DP:AD:PL	1/1:79:12:3,4:254,20,10	0/0:94:20:8,4:2,171,67

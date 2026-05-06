@@ -1,0 +1,35 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="All filters passed">
+##INFO=<Type=Integer,ID=TEST,Description="Testing Tag",Number=1>
+##FORMAT=<Description="Testing Tag, with commas and \"escapes\" and escaped escapes combined with \\\"quotes\\\\\"",ID=TT,Type=Integer,Number=A>
+##INFO=<Number=4,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases",ID=DP4,Type=Integer>
+##FORMAT=<Description="Genotype",Number=1,ID=GT,Type=String>
+##FORMAT=<Type=Integer,Number=1,ID=GQ,Description="Genotype Quality">
+##FORMAT=<Description="Read Depth",ID=DP,Type=Integer,Number=1>
+##FORMAT=<Number=G,Type=Float,Description="Genotype Likelihood",ID=GL>
+##FILTER=<Description="Quality below 10",ID=q10>
+##FILTER=<Description="Testing filter",ID=test>
+##contig=<length=249250621,assembly=b37,ID=1>
+##contig=<length=249250621,assembly=b37,ID=2>
+##contig=<length=198022430,assembly=b37,ID=3>
+##contig=<assembly=b37,length=191154276,ID=4>
+##test=<IE=5,ID=4>
+##readme=AAAAAA
+##readme=BBBBBB
+##INFO=<ID=INDEL,Type=Flag,Description="Indicates that the variant is an INDEL.",Number=0>
+##INFO=<Number=1,Description="Test string type",ID=STR,Type=String>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	A	B
+1	3000150	.	C	T	59.2	PASS	.	GT:GQ	./.:245	0/1:245
+1	3000151	.	C	T	59.2	PASS	.	GT:DP:GQ	1/0:32:245	./.:32:245
+1	3062915	id3D	GTTT	G	12.9	q10	DP4=1,2,3,4;INDEL;STR=test	GT:GQ:DP:GL	0/1:409:35:-20,-5,-20	0/1:409:35:-20,-5,-20
+1	3062915	idSNP	G	T,C	12.6	test	TEST=5;DP4=1,2,3,4	GT:TT:GQ:DP:GL	0/1:0,1:409:35:-20,-5,-20,-20,-5,-20	2:0,1:409:35:-20,-5,-20
+1	3106154	.	CAAA	C	342	PASS	.	GT:GQ:DP	./.:245:32	./.:245:30
+1	3106154	.	C	CT	59.2	PASS	.	GT:GQ:DP	./.:245:32	./.:245:30
+1	3157410	.	GA	G	90.6	q10	.	GT:GQ:DP	1/1:21:21	1/1:21:21
+1	3162006	.	GAA	G	60.2	PASS	.	GT:GQ:DP	./.:212:22	./.:212:22
+1	3177144	.	G	T	45	PASS	.	GT:GQ:DP	./.:150:30	./.:150:30
+1	3177144	.	G	.	45	PASS	.	GT:GQ:DP	./.:150:30	./.:150:30
+1	3184885	.	TAAAA	TA,T	61.5	PASS	.	GT:GQ:DP	./.:12:10	./.:12:10
+2	3199812	.	G	GTT,GT	82.7	PASS	.	GT:GQ:DP	./.:322:26	./.:322:26
+3	3212016	.	CTT	C,CT	79	PASS	.	GT:GQ:DP	./.:91:26	./.:91:26
+4	3258448	.	TACACACAC	T	59.9	PASS	.	GT:GQ:DP	./.:325:31	./.:325:31

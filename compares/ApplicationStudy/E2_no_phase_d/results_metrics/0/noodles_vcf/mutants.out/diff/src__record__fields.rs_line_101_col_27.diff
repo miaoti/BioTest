@@ -1,0 +1,21 @@
+--- src/record/fields.rs
++++ replace || with && in Fields::samples
+@@ -93,17 +93,17 @@
+ 
+         let is_missing = || {
+             src.split(DELIMITER)
+                 .next()
+                 .map(|s| s == MISSING)
+                 .unwrap_or_default()
+         };
+ 
+-        if src.is_empty() || is_missing() {
++        if src.is_empty() && /* ~ changed by cargo-mutants ~ */ is_missing() {
+             Samples::new("")
+         } else {
+             Samples::new(src)
+         }
+     }
+ }
+ 
+ impl Default for Fields {

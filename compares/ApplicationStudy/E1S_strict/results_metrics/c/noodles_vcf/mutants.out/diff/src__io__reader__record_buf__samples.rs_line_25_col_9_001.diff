@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/samples.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -17,21 +17,17 @@
+     /// The keys are invalid.
+     InvalidKeys(keys::ParseError),
+     /// A list of sample values is invalid.
+     InvalidValues(values::ParseError),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::UnexpectedInput => None,
+-            Self::InvalidKeys(e) => Some(e),
+-            Self::InvalidValues(e) => Some(e),
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             ParseError::UnexpectedInput => write!(f, "unexpected input"),
+             ParseError::InvalidKeys(_) => write!(f, "invalid keys"),

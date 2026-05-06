@@ -1,0 +1,196 @@
+phase_a:
+  enabled: false
+  specs:
+  - file: VCFv4.5.tex
+    format: VCF
+    version: '4.5'
+  - file: SAMv1.tex
+    format: SAM
+    version: '1.6'
+  github:
+    repo: samtools/hts-specs
+    branch: master
+    pin_sha: null
+  embedding_model: text-embedding-3-small
+  chroma_collection: hts_specs
+  rule_capability_tags:
+    index_io:
+    - binning index
+    - Basic binning index
+    - C source code for computing bin number
+    - BAI
+    - CSI
+    cram_io:
+    - CRAM
+phase_b:
+  enabled: true
+  themes:
+  - ordering_invariance
+  - semantics_preserving_permutation
+  - normalization_invariance
+  - rejection_invariance
+  - coordinate_indexing_invariance
+  - round_trip_invariance
+  - api_query_invariance
+  llm:
+    model: deepseek-chat
+    temperature: 0.0
+    max_retries: 3
+  registry_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\mr_registry.json
+phase_c:
+  enabled: true
+  seeds_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\seeds
+  output_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\bug_reports
+  det_report_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\det_report.json
+  corpus_keeper:
+    enabled: false
+    max_files_per_format: 2000
+    coverage_guided_culling:
+      enabled: true
+      measure_baseline_against_corpus: true
+  hypothesis:
+    enabled: true
+    max_examples: 50
+    max_examples_corpus_scaling:
+      enabled: true
+      baseline_corpus_size: 33
+      cap: 400
+  format_filter: VCF
+  suts:
+  - name: htsjdk
+    language: Java
+    enabled: true
+    sut_path: SUTfolder/java/htsjdk
+    adapter: harnesses/java/build/libs/biotest-harness-all.jar
+    java_cmd: java
+    timeout_s: 60
+    coverage_jvm_args: -javaagent:C:\Users\miaot\Github\BioTest\coverage_artifacts\jacoco\jacocoagent.jar=destfile=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\jacoco\jacoco.exec,append=true
+    coverage_exec_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\jacoco
+  - name: biopython
+    language: Python
+    enabled: true
+    sut_path: SUTfolder/python/biopython
+    timeout_s: 30
+  - name: seqan3
+    language: C++
+    enabled: true
+    sut_path: SUTfolder/cpp/seqan3
+    adapter: /work/harnesses/cpp/build/biotest_harness_cov_seqan3
+    coverage_binary: /work/harnesses/cpp/build/biotest_harness_cov_seqan3
+    timeout_s: 60
+  - name: pysam
+    language: Python
+    enabled: true
+    timeout_s: 60
+    coverage_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\pysam
+  - name: vcfpy
+    language: Python
+    enabled: true
+    timeout_s: 30
+  - name: noodles
+    language: Rust
+    enabled: true
+    adapter: /work/harnesses/rust/noodles_harness/target/release/noodles_harness
+    coverage_binary: /work/harnesses/rust/noodles_harness/target/release/noodles_harness
+    llvm_profile_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\noodles
+    timeout_s: 60
+  - name: htslib
+    language: CLI
+    enabled: true
+    timeout_s: 60
+feedback_control:
+  enabled: false
+  max_iterations: 1
+  plateau_patience: 3
+  target_scc_percent: 95.0
+  timeout_minutes: 80
+  min_coverage_delta_pp: 0.3
+  coverage_plateau_patience: 2
+  catastrophic_threshold: 0.5
+  catastrophic_min_sample: 5
+  primary_target: vcfpy
+  max_rules_per_iteration: 5
+  source_roots:
+    htsjdk: SUTfolder/java/htsjdk/src/main/java
+    biopython: .
+    seqan3: SUTfolder/cpp/seqan3/include
+    pysam: coverage_artifacts/pysam/source
+    vcfpy: .
+    noodles: SUTfolder/rust/noodles-vcf
+  seed_synthesis:
+    enabled: false
+    max_seeds_per_iteration: 5
+    max_file_bytes: 524288
+    generator_mode: true
+    generator_timeout_s: 5.0
+  mr_synthesis:
+    enabled: false
+    max_mrs_per_iteration: 5
+  prompt_enrichment:
+    per_class_blindspot: false
+    mutator_catalog: false
+  state_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\feedback_state.json
+  attempts_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\rule_attempts.json
+  coverage_report_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\coverage_report.json
+  scc_report_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\data\scc_report.json
+coverage:
+  enabled: true
+  jacoco_report_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\jacoco
+  jacoco_cli_jar: coverage_artifacts/jacoco/jacococli.jar
+  jacoco_classfiles_dir: SUTfolder/java/htsjdk/build/classes
+  coveragepy_data_file: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\.coverage
+  coveragepy_source_filter:
+  - Bio.Align.sam
+  - vcfpy.reader
+  pysam_coverage_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\pysam
+  pysam_source_filter:
+  - pysam
+  gcovr_report_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\gcovr.json
+  gcovr_build_dir: harnesses/cpp/build
+  gcovr_source_root: SUTfolder/cpp/seqan3/include
+  noodles_report_path: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\noodles\llvm-cov.json
+  noodles_manifest_path: harnesses/rust/noodles_harness/Cargo.toml
+  noodles_profile_dir: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\noodles
+  target_filters:
+    VCF:
+      htsjdk:
+      - htsjdk/variant/vcf
+      - htsjdk/variant/variantcontext::-JEXL,-Jexl,-*JEXL*,-*Jexl*
+      - htsjdk/variant/variantcontext/writer::VCF,Variant
+      pysam:
+      - libcbcf
+      - libcvcf
+      - bcftools.py
+      vcfpy:
+      - vcfpy/reader
+      - vcfpy/parser
+      - vcfpy/header
+      - vcfpy/record
+      - vcfpy/writer
+      noodles:
+      - noodles-vcf/src/io/reader
+      - noodles-vcf/src/io/writer
+      - noodles-vcf/src/header
+      - noodles-vcf/src/record
+      - noodles-vcf/src/variant
+      - noodles-vcf/src/lib.rs
+    SAM:
+      htsjdk:
+      - htsjdk/samtools::SAM,Sam
+      biopython:
+      - Bio/Align/sam
+      seqan3:
+      - seqan3/io/sam_file
+      - format_sam
+      - cigar
+      pysam:
+      - pysam
+ci_integration:
+  auto_open_issue: false
+  github_token_env: GITHUB_TOKEN
+global:
+  log_level: INFO
+  parallel: false
+  seed_rng: 43
+phase_e:
+  enabled: true

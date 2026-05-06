@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::sample_names_mut -> &mut SampleNames with Box::leak(Box::new(Default::default()))
+@@ -375,17 +375,17 @@
+     ///
+     /// let expected: IndexSet<_> = [String::from("sample0"), String::from("sample1")]
+     ///     .into_iter()
+     ///     .collect();
+     ///
+     /// assert_eq!(header.sample_names(), &expected);
+     /// ```
+     pub fn sample_names_mut(&mut self) -> &mut SampleNames {
+-        &mut self.sample_names
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a map of records with nonstandard keys.
+     ///
+     /// This includes all records other than `fileformat`, `INFO`, `FILTER`, `FORMAT`, `ALT`, and
+     /// `contig`.
+     ///
+     /// # Examples

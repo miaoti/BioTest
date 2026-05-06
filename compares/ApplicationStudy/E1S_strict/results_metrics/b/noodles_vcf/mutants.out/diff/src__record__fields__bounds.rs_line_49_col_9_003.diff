@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::genotypes_range -> RangeFrom<usize> with RangeFrom::from(0)
+@@ -41,17 +41,17 @@
+         self.quality_score_end..self.filters_end
+     }
+ 
+     pub fn info_range(&self) -> Range<usize> {
+         self.filters_end..self.info_end
+     }
+ 
+     pub fn genotypes_range(&self) -> RangeFrom<usize> {
+-        self.info_end..
++        RangeFrom::from(0) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Default for Bounds {
+     fn default() -> Self {
+         Self {
+             reference_sequence_name_end: 3,
+             variant_start_end: 4,

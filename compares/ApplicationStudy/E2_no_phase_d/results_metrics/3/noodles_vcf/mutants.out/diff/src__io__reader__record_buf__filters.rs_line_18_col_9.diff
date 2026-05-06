@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/filters.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -10,20 +10,17 @@
+     /// A filter is duplicated.
+     DuplicateFilter,
+ }
+ 
+ impl error::Error for ParseError {}
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-            Self::DuplicateFilter => write!(f, "duplicate filter"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_filters(s: &str, filters: &mut Filters) -> Result<(), ParseError> {
+     const DELIMITER: char = ';';
+     const PASS: &str = "PASS";
+ 
+     if s.is_empty() {

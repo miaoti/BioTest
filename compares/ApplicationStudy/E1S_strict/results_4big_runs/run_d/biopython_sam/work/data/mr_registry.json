@@ -1,0 +1,289 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "Missing VN in HD rejected under shuffle_hd_subtags",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "If a SAM header has an HD line but is missing the required VN tag, the parser must reject it. Shuffling the order of HD subtags does not introduce a VN tag, so the parser must also reject the transformed file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:66-75 shows HD VN is required and must come first",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "Invalid CIGAR zero-length ops rejected under canonicalize_cigar_match_operators",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "If a SAM record has zero-length CIGAR operations (invalid per SAM spec), the parser must reject it. Canonicalizing match operators (= → M, X → M) does not remove zero-length operations, so the parser must also reject the transformed file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "cigar_zero_length_op_removal exists as a transform to fix this, confirming zero-length ops are invalid",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "Invalid flag bit exclusivity rejected under normalize_seq_case",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "If a SAM record has mutually exclusive flag bits set (e.g., both 0x4 unmapped and 0x2 properly paired), the parser must reject it. Normalizing the case of SEQ and QUAL fields does not alter flag bits, so the parser must also reject the transformed file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "violate_flag_bit_exclusivity exists as a transform to introduce this invalidity",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Invalid TLEN sign consistency rejected under permute_optional_tag_fields",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "If paired-end SAM records have TLEN values with inconsistent signs (violating the paired-end TLEN convention), the parser must reject it. Permuting the order of optional tag fields does not alter TLEN values, so the parser must also reject the transformed file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "violate_tlen_sign_consistency exists as a transform to introduce this invalidity",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Undefined RNAME rejected under reorder_header_records",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "If a SAM record references an RNAME that is not defined in any SQ header line, the parser must reject it. Reordering the header records does not add missing SQ definitions, so the parser must also reject the transformed file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:95-103 shows SQ lines define reference sequence targets",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "pos_shift_within_bounds_preserves_coordinate_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "POS field is set and > 0",
+        "RNAME is set and references an SQ record with known LN",
+        "POS + CIGAR reference span <= SQ LN"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting POS by a delta within bounds, the alignment's coordinate semantics are preserved: the new POS equals old POS + delta, and all mate-pair coordinate relationships (RNAME, PNEXT, TLEN) remain consistent with the shift",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: shifting all positions by a constant offset within SQ length bounds preserves alignment semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "sam_bam_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "SAM file is valid and parseable"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After SAM→BAM→SAM round-trip, all coordinate fields (RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN) remain identical to the original",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: format round-tripping preserves all coordinate fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "sam_cram_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "SAM file is valid and parseable"
+      ],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "After SAM→CRAM→SAM round-trip, all coordinate fields (RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN) remain identical to the original",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: CRAM format round-tripping preserves all coordinate fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "sut_write_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "SAM file is valid and parseable"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After write-then-read round-trip through the SUT, all coordinate fields (RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN) remain identical to the original",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: SUT write round-trip preserves all coordinate fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "canonicalize_rnext_equals_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "RNEXT field is set to '=' or a valid RNAME"
+      ],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "After canonicalizing RNEXT '=' to the actual RNAME (or vice versa), all coordinate fields (POS, RNAME, PNEXT, TLEN) remain unchanged and the alignment semantics are preserved",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: RNEXT alias canonicalization preserves coordinate fields and alignment semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "normalize_unmapped_preserves_coordinate_structure",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record has unmapped flag (0x4) set",
+        "RNAME is '*' or POS is 0"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "After normalizing unmapped record fields, coordinate fields (RNAME='*', POS=0, MAPQ=255) are set to standard unmapped values, and the record remains semantically equivalent",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: unmapped records have standardized coordinate fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "shuffle_sq_subtags_preserves_coordinates",
+      "scope": "SAM.header",
+      "preconditions": [
+        "SAM header has SQ records with multiple subtags"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "After shuffling SQ record subtags, all alignment record coordinate fields (RNAME, POS, RNEXT, PNEXT) remain unchanged, as SQ subtag order does not affect coordinate semantics",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: SQ subtag shuffling does not affect alignment coordinate fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "cigar_zero_length_removal_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "CIGAR contains zero-length operations"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "After removing zero-length CIGAR operations, the reference coordinate span (POS + CIGAR reference consumption) remains identical, and POS field is unchanged",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Coordinate indexing invariance: zero-length CIGAR operation removal preserves reference coordinate span",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 13,
+    "total": 13
+  }
+}

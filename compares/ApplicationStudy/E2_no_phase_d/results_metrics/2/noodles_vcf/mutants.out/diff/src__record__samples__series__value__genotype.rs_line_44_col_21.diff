@@ -1,0 +1,21 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace == with != in parse_first_allele
+@@ -36,17 +36,17 @@
+     let phasing = if buf.starts_with(['|', '/']) {
+         let p = parse_phasing(&buf[..1])?;
+         buf = &buf[1..];
+         p
+     } else if src
+         .as_bytes()
+         .iter()
+         .filter(|&&b| matches!(b, b'|' | b'/'))
+-        .any(|&b| b == b'/')
++        .any(|&b| b != /* ~ changed by cargo-mutants ~ */ b'/')
+     {
+         Phasing::Unphased
+     } else {
+         Phasing::Phased
+     };
+ 
+     let position = parse_position(buf)?;
+ 

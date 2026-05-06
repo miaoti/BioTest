@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::formats_mut -> &mut Formats with Box::leak(Box::new(Default::default()))
+@@ -242,17 +242,17 @@
+     /// let format = Map::<Format>::from(id);
+     /// header.formats_mut().insert(id.into(), format.clone());
+     ///
+     /// let formats = header.formats();
+     /// assert_eq!(formats.len(), 1);
+     /// assert_eq!(&formats[0], &format);
+     /// ```
+     pub fn formats_mut(&mut self) -> &mut Formats {
+-        &mut self.formats
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a map of symbolic alternate alleles (`ALT`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

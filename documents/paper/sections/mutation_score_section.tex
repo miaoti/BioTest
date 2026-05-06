@@ -16,9 +16,8 @@ $n{=}4$, with achieved baseline $n$ of $10/6/9/6$ respectively.
 Biopython and seqan3 retain $n{=}4$ where samples are
 deterministic ($\sigma{=}0.00$) or operate at the protocol's
 budget-termination point. We report mean $\pm$ sample std,
-per-cell sample std listed in
-Figure~\ref{fig:mutation-radar}'s legend mapping (\biotest/baseline):
-$0.71/1.34$, $0.14/1.83$, $0.27/1.91$, $1.42/1.21$, $0.79/0.36$,
+with per-cell sample std (\biotest/baseline)
+$0.71/1.34$, $0.28/1.83$, $0.11/1.91$, $1.42/1.21$, $0.79/0.36$,
 $0.00/0.00$ for htsjdk/VCF, vcfpy/VCF, noodles/VCF, htsjdk/SAM,
 biopython/SAM, seqan3/SAM. For biopython, the Atheris baseline
 terminates at the 262\textsuperscript{nd} of 523 generated mutants
@@ -42,14 +41,18 @@ effect size equal to the probability that a randomly drawn
 \biotest{} is consistently below, and values approaching $1$
 indicate \biotest{} is consistently above), with conventional
 small/medium/large thresholds at $0.56/0.64/0.71$, and
-Holm--Bonferroni correction at $k{=}4$. All four pairs clear
-family-wise $\alpha{=}0.05$, with the strongest signal at
-htsjdk/VCF (Holm $p{=}4.0\times 10^{-5}$) and the weakest at
-vcfpy/VCF (Holm $p{=}3.7\times 10^{-2}$). The descriptive ranking
+Holm--Bonferroni correction at $k{=}4$. Three of four pairs
+(htsjdk/VCF, htsjdk/SAM, noodles/VCF) clear family-wise
+$\alpha{=}0.05$, with the strongest signal at htsjdk/VCF
+(Holm $p{=}4.0\times 10^{-5}$). On vcfpy/VCF the gap to Atheris
+under the new $n{=}10$ draw is $-0.05$\,pp
+($87.32$ vs.\ $87.37$\,pp, $\hat{A}_{12}{\approx}0.5$): the
+rep-distributions overlap and the cell reduces to a statistical
+tie rather than a measurable deficit~\citep{arcuri2014statistical}.
+For the three remaining close-margin pairs the descriptive ranking
 (\biotest{} below the strongest baseline on the dominant majority
-of rep-pairings) is now an inferential conclusion at family-wise
-$\alpha{=}0.05$~\citep{arcuri2014statistical}, not a small-sample
-observation.
+of rep-pairings) is an inferential conclusion at family-wise
+$\alpha{=}0.05$, not a small-sample observation.
 
 \paragraph{Biopython is where coverage-guided fuzzing genuinely wins.}
 The visible $-32.5$\,pp dip on the biopython axis of
@@ -67,21 +70,26 @@ al.\ and B\"ohme et al.~\cite{klees2018fuzz,boehme2020boosting}
 report on byte-content-lenient parsers. Closing the gap requires
 per-SUT bytecode instrumentation, outside our C2 envelope.
 
-\paragraph{Four close-margin configurations.}
-On htsjdk/VCF, htsjdk/SAM, vcfpy/VCF, and noodles/VCF the
-\biotest{} vertex and the orange baseline marker overlap visibly
-in Figure~\ref{fig:mutation-radar}: the deficit is in the
-$1.5$ to $4.2$\,pp range, and \biotest{} is below the baseline on
+\paragraph{Three close-margin deficits, one statistical tie.}
+On htsjdk/VCF, htsjdk/SAM, and noodles/VCF the \biotest{} vertex
+and the strongest-baseline marker overlap visibly in
+Figure~\ref{fig:mutation-radar}: the deficit ranges from
+$-0.35$\,pp on noodles, through $-2.47$\,pp on htsjdk/SAM, to
+$-4.19$\,pp on htsjdk/VCF. \biotest{} is below the baseline on
 the dominant majority of
 $n_{\mathrm{BT}}{\times}n_{\mathrm{base}}$ rep-pairings
-($\hat{A}_{12} \in \{0.000, 0.083, 0.111, 0.183\}$, all in the
-``large'' magnitude band). We do not claim ``match'': Klees et
+($\hat{A}_{12} \in \{0.000, 0.111, 0.183\}$, all in the ``large''
+magnitude band). On vcfpy/VCF the new $n{=}10$ draw produces
+$87.32{\pm}0.28$\,pp against Atheris's $87.37{\pm}1.83$\,pp: a
+$-0.05$\,pp difference inside both samples' standard deviations,
+with absolute kills $815.7{\pm}6.3$ of $934.1{\pm}5.7$ reachable
+for \biotest{} versus $832.0{\pm}30.6$ of $952.4{\pm}50.5$ for
+Atheris. The rep-distributions overlap and we therefore claim
+parity with Atheris on vcfpy/VCF rather than a deficit. We do not
+claim ``match'' on the three remaining cells: Klees et
 al.~\cite{klees2018fuzz} report a $2$--$5{\times}$ advantage for
 coverage-guided fuzzers, and we measure how close grammar-driven
-generation can come under our design constraints. On vcfpy the
-absolute kill count remains competitive: \biotest{} kills
-$851.5{\pm}1.4$ of $992$ reachable, Atheris kills
-$832.0{\pm}30.6$ of $952.4{\pm}50.5$ reachable.
+generation can come under our design constraints.
 
 \paragraph{seqan3: the consensus oracle's retained corpus matters.}
 The starred vertex on the radar marks the only axis where

@@ -1,0 +1,18 @@
+--- src/io/reader/record_buf/value.rs
++++ replace percent_decode -> Result<Cow<'_, str>, str::Utf8Error> with Ok(Cow::Owned("xyzzy".to_owned()))
+@@ -1,14 +1,14 @@
+ use std::{borrow::Cow, str};
+ 
+ use percent_encoding::percent_decode_str;
+ 
+ pub(crate) fn percent_decode(s: &str) -> Result<Cow<'_, str>, str::Utf8Error> {
+-    percent_decode_str(s).decode_utf8()
++    Ok(Cow::Owned("xyzzy".to_owned())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_percent_decode() -> Result<(), str::Utf8Error> {

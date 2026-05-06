@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/ids.rs
++++ delete match arm Self::InvalidId(e) in <impl error::Error for ParseError>::source
+@@ -14,17 +14,17 @@
+     InvalidId(id::ParseError),
+     /// An ID is duplicated.
+     DuplicateId(String),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+         match self {
+-            Self::InvalidId(e) => Some(e),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {

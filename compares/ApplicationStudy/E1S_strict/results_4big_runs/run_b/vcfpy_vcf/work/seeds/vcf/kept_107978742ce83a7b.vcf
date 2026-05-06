@@ -1,0 +1,28 @@
+##fileformat=VCFv4.3
+##INFO=<ID=CIPOS,Number=.,Type=String,Description="Confidence interval around POS">
+##INFO=<ID=LATEX,Number=.,Type=String,Description="LaTeX formula: $\alpha + \beta$">
+##FORMAT=<ID=DP,Number=.,Type=Integer,Description="Read Depth">
+##LaTeXMeta=<ID=test,Description="\textbf{Important} \textit{note} with $\frac{1}{2}$">
+##fileDate=20070106
+##FORMAT=<ID=PL,Number=.,Type=String,Description="Phred-scaled likelihoods">
+##INFO=<ID=H2,Number=.,Type=String,Description="H2 tag with \textbf{bold} text">
+##contig=<ID=chrU,length=272436>
+##contig=<ID=chrY,length=262044>
+##INFO=<ID=AF,Number=.,Type=Float,Description="Allele Frequency">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr14,length=668942>
+##INFO=<ID=DP,Number=.,Type=Integer,Description="Total Depth">
+##INFO=<ID=AA,Number=.,Type=String,Description="Ancestral Allele">
+##FORMAT=<ID=GQ,Number=.,Type=Integer,Description="Genotype Quality">
+##INFO=<ID=VT,Number=.,Type=String,Description="Variant Type">
+##contig=<ID=chr10,length=520731>
+##FORMAT=<ID=GT,Number=.,Type=String,Description="Genotype">
+##INFO=<ID=TEXCMD,Number=.,Type=String,Description="\textit{italic} and \textbf{bold}">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE_0	SAMPLE_1
+chrU	9889	rs519573	CG	CGGTG,AA	20.39	.	AF=0.7435;DP=876;END=9934;CIPOS=-4,7	GT	1/0	0/1
+chrY	946333	.	C	ATAG,GAG	18.68	.	AF=0.2404;END=946399	DP:PL	199:195,5,184	82:143,174,219
+chr10	503138	.	CGCGT	AC	12.95	PASS	AF=0.5463;DP=806	GT:GQ	1/0:88	0/0:6
+chrU	670570	.	AG	CCAA,G,CGA	86.99	PASS	AF=0.1585;AA=A;H2=\textbf{important}	GT:PL	1/1:124,182,223	0/1:162,32,228
+chr10	665611	.	C	TTTGA	67.35	.	AF=0.6285;LATEX=$\alpha + \beta$	PL	254,20,10	61,63,140
+chrU	5631	.	GG	GTT,CG,C	9.96	q10	AF=0.1470;VT=SV;H2=\textbf{important}	GT:DP	1/0:162	1/1:5
+chrU	274668	.	GC	TG	16.12	PASS	AF=0.1870;AA=C;VT=INDEL;TEXCMD=\textit{italic}	GT	0/1	0/0

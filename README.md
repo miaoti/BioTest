@@ -388,10 +388,10 @@ See `documents/Flow.md` §5.5 for the runner-contract details.
 
 ---
 
-## The 36 Atomic Transforms
+## The 44 Atomic Transforms
 
-Each transform either preserves biological semantics (1–20, 26–32) or
-deliberately violates a specific spec rule to exercise rejection paths
+Each transform either preserves biological semantics (1–20, 26–32, 36–43)
+or deliberately violates a specific spec rule to exercise rejection paths
 (21–25, 33–35). All are grounded in published literature — see
 `documents/Flow.md` for full citations.
 
@@ -468,6 +468,90 @@ New Rank-3 malformed mutators (all SAM):
 | 34 | `violate_optional_tag_type_character`  | SAM | Tag type char restricted to `AifZHB` (SAMtags §2.1)                |
 | 35 | `violate_flag_bit_exclusivity`         | SAM | FLAG 0x4 unmapped ⇔ RNAME=`*` / POS=0 (SAMv1 §1.4.1)               |
 
+### SAM Round 1 — record-level transforms (5 new, 2026-04-26)
+
+Five record-level SAM transforms targeting Phase-4 of the SAM coverage
+plan. Selected from a research dossier of SAMv1 §1.4 / §1.5 / SAMtags
+specs; each spec-cited and unit-tested. All-SUT applicable (text-only
+record mutations).
+
+| #  | Transform                              | Scope  | SAMv1.tex citation | Purpose                                                       |
+|:--:|:---------------------------------------|:------:|:-------------------|:--------------------------------------------------------------|
+| 36 | `normalize_unmapped_record_fields`     | Record | §1.4.1 (FLAG 0x4)  | When FLAG&0x4 set: force RNAME=`*`, POS=0, MAPQ=0, CIGAR=`*`, RNEXT=`*`, PNEXT=0, TLEN=0 |
+| 37 | `strip_mate_flags_if_unpaired`         | Record | §1.4.2 (FLAG 0x40/0x80) | When FLAG&0x1 unset, clear paired-end-only flag bits      |
+| 38 | `normalize_seq_case`                   | Record | §1.4.10 (SEQ chars)| Force SEQ to uppercase ACGTN (when not `*`)                   |
+| 39 | `cigar_zero_length_op_removal`         | Record | §1.4.6             | Remove `0M`, `0I`, `0D`, `0N`, `0S`, `0H`, `0P`, `0=`, `0X` ops |
+| 40 | `canonicalize_cigar_match_operators`   | Record | §1.4.6 + SAMtags MD| Rewrite each `M` op as a sequence of `=`/`X` ops driven by the MD tag; recompute NM |
+
+Round-1 4-rep cascade result (relative to pre-Round-1 baseline):
+**htsjdk_sam +2.85pp, biopython_sam +1.10pp, seqan3_sam +1.00pp.**
+
+### SAM Round 2 — three more spec-cited transforms (3 new, 2026-04-29)
+
+Three additional transforms, each pre-cascade code-reviewed against the
+SAMv1.tex spec.
+
+| #  | Transform                              | Scope  | SAMv1.tex citation | Purpose                                                                 |
+|:--:|:---------------------------------------|:------:|:-------------------|:------------------------------------------------------------------------|
+| 41 | `pos_shift_with_sq_ln_bound_check`     | File   | line 739–743 + LN range | Shift all alignment POS by +N + widen `@SQ LN` by +N (Recommended Practice path) |
+| 42 | `canonicalize_rnext_equals_alias`      | Record | line 571           | Toggle RNEXT between `=` alias and explicit value when RNEXT==RNAME      |
+| 43 | `bump_hd_vn_minor`                     | Header | 1.5↔1.6 deltas     | Toggle `@HD VN` between 1.5 and 1.6 (semantics-preserving for the corpus shape) |
+
+Round-2 4-rep cascade was approximately neutral
+(htsjdk −1.08pp, biopython +0.70pp, seqan3 −0.45pp; all within std
+bands). Diagnosis in `documents/Flow.md` "SAM coverage refine —
+Round 2": the 18-transform menu hit saturation under the fixed 5400s
+wall budget — more transforms cost more Phase-B mining than they
+gained in Phase-C coverage at the published budget.
+
+### SAM Refine experiment (4 new + harness mode + 7 literal seeds, 2026-04-30 → 05-01)
+
+Diff-driven gap closure: per-cell coverage diffs (`compares/results/coverage/SAMrefine/`)
+identified three patterns that explained ≥86% of the SOTA-favoring
+gap. Targeted interventions:
+
+| Lever | What it adds | Cells | Δ from L1+L2+L4+L5 |
+|:-----:|:-------------|:------|:-------------------|
+| **L1** (4 transforms below) | Rare format tokens biotest's emitter never emitted | all 3 | ~+2.0pp combined |
+| **L2** (`--mode parse_validate` in `harnesses/java/BioTestHarness.java`) | Post-parse `SAMRecord.isValid()` (113-line body) + `getAlignmentBlocks()` + `validateCigar()` per record, env-var-gated for htsjdk only | htsjdk_sam | +2.7-3.5pp |
+| **L4** (cascade orchestrator config tune) | `seed_synthesis.max_seeds_per_iteration: 5→3` (saturation mitigation) | all 3 | small, compounding |
+| **L5** (cell-partitioned literal seeds) | 7 hand-crafted `seeds/sam/literals_*.sam` files seeding magic constants per cell | all 3 | small, multiplicative with L1 |
+
+#### L1 — four new emitter-dialect transforms
+
+| #  | Transform                              | Scope  | SAMv1.tex citation | Purpose                                                                 |
+|:--:|:---------------------------------------|:------:|:-------------------|:------------------------------------------------------------------------|
+| 44 | `add_sq_rare_tags`                     | Header | §1.3 `@SQ`         | Append AH/AN/AS/DS/TP to each `@SQ` line (when missing); reaches biopython `_read_header` arms + htsjdk `SAMSequenceDictionary.addSequenceAlias` |
+| 45 | `add_pg_rare_tags`                     | Header | §1.3 `@PG`         | Append CL/DS/VN to each `@PG` line; reaches seqan3 `format_sam_base.hpp:538-549, 558-568` |
+| 46 | `add_hd_group_order_tag`               | Header | §1.3 `@HD GO`      | Add `GO:none` to `@HD` if absent; reaches seqan3 `format_sam_base.hpp:374, 379-380` |
+| 47 | `emit_h_hex_optional_tag`              | Record | §1.5 H-type        | Convert one `B:c/C/s/S/i/I` tag to a lossy single-byte `H:hex` projection; reaches seqan3 `read_sam_byte_vector` body |
+
+Each ships with 8–12 unit tests (31 total) in `tests/test_transforms.py`.
+
+#### Refine cascade result (4-rep mean, n=4)
+
+| Cell | Round 2 | **Refine** | Δ vs Round 2 | SOTA | **Δ vs SOTA** |
+|---|---:|---:|---:|---:|---:|
+| **htsjdk_sam** | 20.90% ± 2.33% | **25.77% ± 2.51%** | **+4.88pp ↑** | jazzer 25.47% | **+0.30pp ⭐** |
+| biopython_sam | 51.45% ± 0.78% | 53.98% ± 0.52% | +2.52pp ↑ | atheris 54.40% | −0.42pp (within std) |
+| seqan3_sam | 91.75% ± 0.10% | 94.18% ± 0.67% | +2.43pp ↑ | libfuzzer 98.45% | −4.27pp (harness-bound) |
+
+**Headline: htsjdk_sam beat jazzer by +0.30pp** — the first SAM cell
+where biotest's metamorphic-relation pipeline exceeds a coverage-guided
+fuzzer SOTA on a fair wall-time / filter-scope comparison. Reps 0+1
+individually hit 28.0% / 27.9% before kept_* corpus saturation pulled
+reps 2+3 down to 23.6%.
+
+seqan3_sam stayed −4.27pp below libfuzzer because the residual gap is
+**483 missed branches in `if constexpr` template arms** driven by the
+C++ harness's `record_type` parameterisation — orthogonal to any
+input-domain lever; out of scope for this experiment.
+
+Full writeup: `compares/results/coverage/biotest_4rep_cascade_sam_refine_20260430/SUMMARY.md`.
+Evidence + plan + reviewer passes: `compares/results/coverage/SAMrefine/`
+(`root_cause.md`, `sota_mechanisms.md`, per-cell diffs, `refine.md` v2,
+`refine_review.md`, `refine_implementation_review.md`).
+
 ---
 
 ## How the framework keeps coverage climbing
@@ -509,7 +593,7 @@ per-SUT harness code (Liyanage & Böhme ICSE'23 published ceiling ~60%).
 See `documents/Flow.md` for the full writeup and `coverage_notes/` for
 per-run measurements.
 
-### SAM coverage plan (2026-04-19) — 6 additional levers
+### SAM coverage plan (2026-04-19) — 6 additional levers + 3 refine rounds
 
 A companion, SUT-agnostic lever stack specifically for closing the SAM
 coverage gap. All 6 live entirely in framework code + data; nothing
@@ -526,6 +610,22 @@ per-SUT changes.
 
 Expected cumulative lift on biopython/SAM (Run 1 baseline 44.0 %):
 **55–62 %**, ceiling-bounded by the published ~60 % automated-MR limit.
+
+**Three refine rounds extended this plan in 2026-04-26 → 05-01** (full
+detail in `documents/Flow.md` "SAM coverage refine" section):
+
+| Round | What it added | Cascade result vs SOTA |
+|---|---|---|
+| Round 1 (2026-04-26) | 5 record-level SAM transforms (#36–40 above) | htsjdk +2.85, biopython +1.10, seqan3 +1.00 pp vs prior baseline |
+| Round 2 (2026-04-29) | 3 spec-cited SAM transforms (#41–43 above) | Approximately neutral (saturation under fixed wall budget) |
+| Refine experiment (2026-04-30 → 05-01) | 4 emitter-dialect transforms (#44–47), `--mode parse_validate` Java harness mode, 7 cell-partitioned literal seeds, blindspot-driven cascade tuning | **htsjdk_sam beats jazzer by +0.30pp**; biopython −0.42pp from atheris (within std); seqan3 −4.27pp from libfuzzer (harness-bound branch gap) |
+
+The Refine experiment was diff-driven — per-cell coverage diffs against
+the published SOTA fuzzers identified three patterns explaining ≥86%
+of the gap, and L1/L2/L4/L5 levers above were each tied to a specific
+pattern's evidence. Plan + reviewer passes documented under
+`compares/results/coverage/SAMrefine/`. Final cascade SUMMARY at
+`compares/results/coverage/biotest_4rep_cascade_sam_refine_20260430/SUMMARY.md`.
 
 ---
 

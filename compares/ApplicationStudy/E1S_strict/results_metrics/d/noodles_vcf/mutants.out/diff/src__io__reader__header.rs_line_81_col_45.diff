@@ -1,0 +1,21 @@
+--- src/io/reader/header.rs
++++ replace != with == in read_header
+@@ -73,17 +73,17 @@
+ where
+     R: BufRead,
+ {
+     let mut reader = Reader::new(reader);
+ 
+     let mut parser = header::Parser::default();
+     let mut buf = Vec::new();
+ 
+-    while read_line(&mut reader, &mut buf)? != 0 {
++    while read_line(&mut reader, &mut buf)? == /* ~ changed by cargo-mutants ~ */ 0 {
+         parser
+             .parse_partial(&buf)
+             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+     }
+ 
+     parser
+         .finish()
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))

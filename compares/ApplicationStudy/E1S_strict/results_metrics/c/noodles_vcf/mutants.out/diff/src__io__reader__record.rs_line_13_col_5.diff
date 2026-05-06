@@ -1,0 +1,59 @@
+--- src/io/reader/record.rs
++++ replace read_record -> io::Result<usize> with Ok(0)
+@@ -5,55 +5,17 @@
+ 
+ use super::read_line;
+ use crate::Record;
+ 
+ pub(crate) fn read_record<R>(reader: &mut R, record: &mut Record) -> io::Result<usize>
+ where
+     R: BufRead,
+ {
+-    let fields = record.fields_mut();
+-
+-    let buf = &mut fields.buf;
+-    buf.clear();
+-
+-    let bounds = &mut fields.bounds;
+-
+-    let mut len = 0;
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.reference_sequence_name_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.variant_start_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.ids_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.reference_bases_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.alternate_bases_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.quality_score_end = buf.len();
+-
+-    len += read_required_field(reader, buf)?;
+-    bounds.filters_end = buf.len();
+-
+-    let (n, is_eol) = read_last_required_field(reader, buf)?;
+-    len += n;
+-    bounds.info_end = buf.len();
+-
+-    if !is_eol {
+-        len += read_line(reader, buf)?;
+-    }
+-
+-    Ok(len)
++    Ok(0) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn read_required_field<R>(reader: &mut R, dst: &mut String) -> io::Result<usize>
+ where
+     R: BufRead,
+ {
+     let (len, is_eol) = read_field(reader, dst)?;
+ 

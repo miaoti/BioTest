@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::alternate_bases -> AlternateBases<'_> with Default::default()
+@@ -48,17 +48,17 @@
+ 
+     /// Returns the reference bases.
+     pub fn reference_bases(&self) -> &str {
+         self.0.reference_bases()
+     }
+ 
+     /// Returns the alternate bases.
+     pub fn alternate_bases(&self) -> AlternateBases<'_> {
+-        self.0.alternate_bases()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the quality score.
+     pub fn quality_score(&self) -> Option<io::Result<f32>> {
+         self.0.quality_score()
+     }
+ 
+     /// Returns the filters.

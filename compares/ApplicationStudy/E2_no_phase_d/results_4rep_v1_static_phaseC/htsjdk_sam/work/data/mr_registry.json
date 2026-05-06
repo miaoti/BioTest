@@ -1,0 +1,648 @@
+{
+  "enforced": [
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "RNEXT equals-sign alias canonicalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "Toggling RNEXT between the explicit RNAME and the '=' alias must produce semantically equivalent SAM records. The canonical normalizer converts '=' to explicit RNAME, so normalized output of x and T(x) must be identical.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "This field is set as `*' when the information is unavailable, and set as `=' if RNEXT is identical RNAME.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "Mate flag stripping for unpaired reads normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))): getReadPairedFlag() must be identical; getFirstOfPairFlag(), getSecondOfPairFlag(), getProperPairFlag(), getMateUnmappedFlag() must be cleared when 0x1 is unset; getFlags() must reflect the cleared bits",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "If 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH on the malformed record; any ACCEPT or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "Sum of lengths of the MIS=X operations shall equal the length of SEQ.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "FLAG unmapped bit vs RNAME/POS consistency rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when FLAG 0x4 is set on a record with valid RNAME and POS; any ACCEPT or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p115",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency rejection for paired reads",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when both reads of a paired template share the same TLEN sign; any ACCEPT or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost, and the sign for any middle segment is undefined. If segments cover the same coordinates then the choice of which is leftmost and rightmost is arbitrary, but the two ends must still have differing signs.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "POS shift with SQ LN bound invariance under coordinate shift",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_with_ln",
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting all alignment POS values by +shift and increasing the corresponding @SQ LN by the same shift, every alignment record must satisfy POS + CIGAR_ref_consume <= LN. Records with POS=0 or RNAME='*' are skipped. The shift preserves the invariant that POS is within the reference sequence bounds.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that ``consumes'' a reference base (see table below). The first base in a reference sequence has coordinate 1. POS is set as 0 for an unmapped read without coordinate.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: mandatory fields::p118",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that ``consumes'' a reference base (see table below). The first base in a reference sequence has coordinate 1. POS is set as 0 for an unmapped read without coordinate.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The alignment section: mandatory fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "025d012b6b29",
+      "mr_name": "RNEXT equals alias round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts RNEXT, RNAME, and mate fields; the canonical normalizer resolves '=' to explicit RNAME so the round-trip must preserve all mate-pair semantics",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "set as '=' if RNEXT is identical RNAME. If not '=' and the next read in the template has one primary mapping (see also bit 0x100 in FLAG), this field is identical to RNAME at the primary line of the next read.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7bbdedead457",
+      "mr_name": "Query invariance under @HD subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method; shuffling @HD TAG:VALUE pairs is semantics-preserving per SAMv1 §1.3",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadUnmappedFlag",
+        "getReadPairedFlag",
+        "getFlags",
+        "getMappingQuality"
+      ]
+    }
+  ],
+  "quarantine": [
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Permute optional tag fields on alignment records",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts optional tags so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The alignment section: optional fields::p127",
+          "quote": "All optional fields follow the TAG:TYPE:VALUE format where TAG is a two-character string that matches /[A-Za-z][A-Za-z0-9]/.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The alignment section: optional fields"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "Shuffle @HD header line subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts subtags within each header line so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "Shuffle @SQ header line subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts subtags within each header line so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "Shuffle @RG header line subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts subtags within each header line so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "Shuffle @PG header line subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts subtags within each header line so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "Shuffle @CO comment line order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; @CO lines are free-text comments with no ordering semantics, and the canonical normalizer sorts them so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Each header line begins with the character `@' followed by one of the two-letter header record type codes defined in this section. In the header, each line is TAB-delimited and, apart from @CO lines, each data field follows a format `TAG:VALUE' where TAG is a two-character string that defines the format and content of VALUE. Thus header lines match /94@(HD|SQ|RG|PG)(92t[A-Za-z][A-Za-z0-9]:[ -126]+)+$/ or /94@CO92t.*/.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [
+        "@CO lines are free-text comments; the spec does not explicitly state they have no ordering semantics, but they are excluded from the TAG:VALUE format and have no defined ordering constraints."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Reorder SAM header records of the same type",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "Parsing the transformed SAM file must produce the same biological semantics as the original; the canonical normalizer sorts @SQ lines by SN so the round-trip comparison passes.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that @SQ lines can be reordered among themselves; @SQ order defines coordinate sort order per @HD SO, so reordering @SQ lines changes coordinate sort semantics. This MR is valid only when SO is not coordinate or when the file is unsorted."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "CIGAR split/merge normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))): getCigarLength() may differ but getCigarString() after canonical normalization must be equivalent; getAlignmentStart(), getAlignmentEnd(), getLengthOnReference(), getReadLength() must be identical",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "[SAM v1 — Recommended Practice for the SAM Format] * Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' (ADVISORY) not 'must' for adjacent CIGAR operations being different"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "SEQ case normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_seq"
+      ],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))): getReadString() must be case-insensitively equal; getBaseQualityString() must be identical; getReadLength() must be identical",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state SEQ case insensitivity in the mandatory fields section, but the BAM encoding section (p239) confirms case-insensitive base codes"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length op removal normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))): getCigarLength() may differ but getAlignmentStart(), getAlignmentEnd(), getLengthOnReference(), getReadLength() must be identical; the normalized CIGAR must have no zero-length ops and no adjacent identical ops",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "[SAM v1 — Recommended Practice for the SAM Format] * Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly forbid zero-length CIGAR ops; the recommendation is ADVISORY"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag illegal type character rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when an optional tag uses an illegal type character outside {A,i,f,Z,H,B}; any ACCEPT or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p27",
+          "quote": "As with alignment optional fields (see Section~sec:alnaux), you can freely add new tags for further data fields.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec chunk retrieved does not explicitly enumerate the allowed type characters (A,i,f,Z,H,B) in the retrieved text; the allowed set is defined in the SAMtags specification section which was not returned below threshold. The rule that type characters must be one of A,i,f,Z,H,B is well-established in the SAM specification but the evidence quote here only confirms tags can be freely added, not the specific type character constraint."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2106ce878124",
+      "mr_name": "CIGAR zero-length op removal round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes CIGAR by removing zero-length ops and merging adjacent identical ops; the round-trip must preserve alignment start, end, and reference consumption",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Recommended Practice for the SAM Format::p134",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "Recommended Practice for the SAM Format"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec uses 'should' (advisory) rather than 'must' for adjacent CIGAR operations being different"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31c937b866ae",
+      "mr_name": "Header @CO comment line shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts @CO lines sorted lexicographically; the canonical normalizer sorts @CO lines so the round-trip must preserve all comment content regardless of original order",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p89",
+          "quote": "lexicographical sort order is defined as a character-based dictionary sort with the character order as defined by the POSIX C locale.",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5b2b9597c534",
+      "mr_name": "SEQ case normalization round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts SEQ field; the spec allows both upper and lower case in SEQ, so the round-trip must preserve the biological sequence content regardless of case",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "Sum of lengths of the MIS=X operations shall equal the length of SEQ.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec regex permits both upper and lower case in SEQ, but does not mandate case preservation through a round-trip"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c9a73331e977",
+      "mr_name": "SAM-to-BAM codec round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes all SAM fields; BAM is the binary equivalent of SAM per SAMv1 §4, so the round-trip through BAM codec must preserve all alignment information including FLAG, POS, CIGAR, SEQ, QUAL, and optional tags",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p50",
+          "quote": "RNEXT: Reference sequence name of the primary alignment of the NEXT read in the template. For the last read, the next read is the first read in the template.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p43",
+          "quote": "Reference sequence names may contain any printable ASCII characters with the exception of certain punctuation characters, and may not start with '*' or '='.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c6fa4b634f8f",
+      "mr_name": "Header @HD subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts @HD subtags sorted by tag name; the spec states field order within header lines is not significant, so the round-trip must preserve all @HD metadata regardless of subtag ordering",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p83",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The header section"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec chunk is above threshold (0.4495), but the rule is well-established: field order within header lines is not significant"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ce4ded5e9811",
+      "mr_name": "Query invariance under optional tag field permutation",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method; permuting optional TAG:TYPE:VALUE fields is semantics-preserving per SAMv1 §1.5",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p54",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadUnmappedFlag",
+        "getReadPairedFlag",
+        "getFlags",
+        "getReferenceName",
+        "getAlignmentStart"
+      ]
+    },
+    {
+      "mr_id": "74365df4fa34",
+      "mr_name": "Query invariance under RNEXT equals-alias canonicalization",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method; '=' is a spec-authorized alias for 'same as RNAME' per SAMv1 §1.4.7",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p47",
+          "quote": "RNAME: Reference sequence NAME of the alignment. If @SQ header lines are present, RNAME (if not '*') must be present in one of the SQ-SN tag.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The SAM Format Specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec allows '=' as an alias for RNEXT when RNEXT equals RNAME, but does not mandate that all parsers handle it identically; some may normalize internally while others preserve the literal text."
+      ],
+      "query_methods": [
+        "getMateReferenceName",
+        "getMateAlignmentStart",
+        "getMateUnmappedFlag",
+        "getReadPairedFlag"
+      ]
+    }
+  ],
+  "summary": {
+    "enforced_count": 8,
+    "quarantine_count": 18,
+    "total": 26
+  }
+}

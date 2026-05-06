@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::string_maps_mut -> &mut StringMaps with Box::leak(Box::new(Default::default()))
+@@ -501,17 +501,17 @@
+ 
+     #[doc(hidden)]
+     pub fn string_maps(&self) -> &StringMaps {
+         &self.string_maps
+     }
+ 
+     #[doc(hidden)]
+     pub fn string_maps_mut(&mut self) -> &mut StringMaps {
+-        &mut self.string_maps
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Default for Header {
+     fn default() -> Self {
+         Builder::default().build()
+     }
+ }

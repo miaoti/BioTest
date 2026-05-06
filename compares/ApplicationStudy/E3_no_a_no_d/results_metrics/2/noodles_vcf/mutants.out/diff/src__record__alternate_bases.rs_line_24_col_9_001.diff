@@ -1,0 +1,21 @@
+--- src/record/alternate_bases.rs
++++ replace <impl AsRef<str> for AlternateBases<'_>>::as_ref -> &str with "xyzzy"
+@@ -16,17 +16,17 @@
+ impl fmt::Debug for AlternateBases<'_> {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         f.debug_list().entries(self.iter()).finish()
+     }
+ }
+ 
+ impl AsRef<str> for AlternateBases<'_> {
+     fn as_ref(&self) -> &str {
+-        self.0
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::AlternateBases for AlternateBases<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 

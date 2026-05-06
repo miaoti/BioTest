@@ -1,0 +1,61 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=FAIL1,Description="Failed filter 1">
+##FILTER=<ID=FAIL2,Description="Failed filter 2">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Depth">
+##FORMAT=<ID=FAF,Number=A,Type=Float,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FAI,Number=A,Type=Integer,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FAS,Number=A,Type=String,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FGF,Number=G,Type=Float,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FGI,Number=G,Type=Integer,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FGS,Number=G,Type=String,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FRF,Number=R,Type=Float,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FRI,Number=R,Type=Integer,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FRS,Number=R,Type=String,Description="Test Number=AGR in FORMAT">
+##FORMAT=<ID=FSTR,Number=1,Type=String,Description="Test String in FORMAT">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled likelihood">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=ISTR,Number=1,Type=String,Description="Test String in INFO">
+##INFO=<ID=XAF,Number=A,Type=Float,Description="Test Number=AGR in INFO">
+##INFO=<ID=XAI,Number=A,Type=Integer,Description="Test Number=AGR in INFO">
+##INFO=<ID=XAS,Number=A,Type=String,Description="Test Number=AGR in INFO">
+##INFO=<ID=XGF,Number=G,Type=Float,Description="Test Number=AGR in INFO">
+##INFO=<ID=XGI,Number=G,Type=Integer,Description="Test Number=AGR in INFO">
+##INFO=<ID=XGS,Number=G,Type=String,Description="Test Number=AGR in INFO">
+##INFO=<ID=XRF,Number=R,Type=Float,Description="Test Number=AGR in INFO">
+##INFO=<ID=XRI,Number=R,Type=Integer,Description="Test Number=AGR in INFO">
+##INFO=<ID=XRS,Number=R,Type=String,Description="Test Number=AGR in INFO">
+##contig=<ID=1,length=2147483647>
+##contig=<ID=2,length=2147483647>
+##contig=<ID=20,length=2147483647>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	XY00001	XY00002
+1	105	.	TAAACCCTA	T	999	PASS	AC=2,99;AN=4;DP=19;INDEL;ISTR=SomeString;XAF=1e+06;XAI=1111;XAS=AAA;XGF=1e+06,2e+06,3e+06;XGI=1111,2222,3333;XGS=A,B,C;XRF=1e+06,2e+06;XRI=1111,2222;XRS=AAA,BBB	GT:PL:DP:FRF:FRI:FRS:FAF:FAI:FAS:FGF:FGI:FGS	1/0:1,2,3:1:1e+06,2e+06:1111,2222:AAAA,BBB:1e+06:1111:A:1e+06,2e+06,3e+06:1111,2222,3333:A,BB,CCC	1/0:1,2,3:1:1e+06,2e+06:1111,2222:AAAA,BBB:1e+06:1111:A:1e+06,2e+06,3e+06:1111,2222,3333:A,BB,CCC
+1	105	.	TA	T	999	PASS	AC=2;AN=4;DP=19;INDEL;ISTR=SomeString;XAF=500000;XAI=5555;XAS=DDD;XGF=1e+06,500000,9e+09;XGI=1111,5555,9999;XGS=A,E,F;XRF=1e+06,500000;XRI=1111,5555;XRS=AAA,DDD	GT:PL:DP:FRF:FRI:FRS:FAF:FAI:FAS:FGF:FGI:FGS	0/1:1,4,6:1:1e+06,500000:1111,5555:AAAA,CC:500000:5555:BB:1e+06,500000,9e+09:1111,5555,9999:A,EEEE,FFFFF	0/1:1,4,6:1:1e+06,500000:1111,5555:AAAA,CC:500000:5555:BB:1e+06,500000,9e+09:1111,5555,9999:A,EEEE,FFFFF
+2	1	.	GGGCGTCTCATAGCTGGAGCAATGGCGAGCGCCTGGACAAGGGAGGGGAAGGGGTTCTTATTACTGACGCGGGTAGCCCCTACTGCTGTGTGGTTCCCCTATTTTTTTTTTTTTCTTTTTGAGACGGAGTCTCGCTCTGTCACCCAGGCTGGAGTGCAGTGGCACAATCTCGGCTCACTGCAAGCTCCACC	ACG	999	PASS	AC=2;AN=4;INDEL	GT:DP	1/0:1	1/0:1
+2	101	.	A	ATT	999	PASS	AC=4;AN=4;INDEL	GT:DP	1/1:1	1/1:1
+2	114	.	T	TTC	999	FAIL1	AC=2;AN=4;INDEL	GT:DP:FGS	1/0:1:A,BB,CCC	1/0:1:AA,BB,CCC
+2	114	.	T	TT	999	PASS	AC=2;AN=4;INDEL	GT:DP:FGS	0/1:1:A,EEEE,FFFFF	0/1:1:AA,EEEE,FFFFF
+2	115	.	C	T	999	PASS	AC=4;AN=4;INDEL	GT:DP	1/1:1	1/1:1
+20	2	.	G	CT	999	PASS	AC=2;AN=4;INDEL	GT	0/1	0/1
+20	5	.	TG	CT	999	PASS	AC=2;AN=4;INDEL	GT	1/0	1/0
+20	6	.	GGG	AC	.	PASS	AC=2;AN=4;INDEL	GT:PL:DP	1/0:1,2,3:1	1/0:1,2,3:1
+20	5	id0001	TGG	T	.	PASS	AC=2;AN=4;INDEL	GT:PL:DP	0/1:1,4,6:1	0/1:1,4,6:1
+20	5	id0002	T	TG	.	PASS	AC=0;AN=4;INDEL	GT:PL:DP	0/0:1,7,10:1	0/0:1,7,10:1
+20	5	.	TGGG	AC	.	PASS	AC=0;AN=4;INDEL	GT:PL:DP	0/0:1,11,15:1	0/0:1,11,15:1
+20	59	id0003	AG	.	999	PASS	AN=4	GT:PL:DP	0/0:0:4	0/0:0:4
+20	84	.	G	T	999	PASS	AC=2;AN=4	GT:PL:DP	0/1:255,0,255:13	0/1:255,0,255:13
+20	81	.	A	C	999	PASS	AC=2;AN=4	GT:PL:DP	0/1:255,0,255:13	0/1:255,0,255:13
+20	95	.	T	A	999	PASS	AC=2;AN=4	GT:PL:DP	0/1:255,0,255:13	0/1:255,0,255:13
+20	95	.	TCACCG	AAAAAA	999	PASS	AC=2;AN=4	GT:PL:DP	0/1:255,0,255:13	0/1:255,0,255:13
+20	273	.	C	CAA	999	PASS	AC=2;AN=4;INDEL	GT:PL:DP	1/0:0,3,5:1	1/0:0,3,5:1
+20	273	.	C	CAAA	999	PASS	AC=2;AN=4;INDEL	GT:PL:DP	0/1:0,3,5:1	0/1:0,3,5:1
+20	273	.	A	AAAAAAAAAAA	999	PASS	AC=0;AN=0;INDEL	GT:PL:DP	./.:0,0,0:0	./.:0,0,0:0
+20	275	.	A	C	0	FAIL1	AC=0;AN=2;INDEL	GT:PL:DP:FGF:FGI:FGS:FSTR	0:0,0:0:1e+06,2e+06:1111,2222:A,BB:WORD	0:0,0:0:1e+06,2e+06:1111,2222:A,BB:WORD
+20	275	.	A	G	0	FAIL2	AC=2;AN=2;INDEL	GT:PL:DP:FGF:FGI:FGS:FSTR	1:0,0:0:1e+06,3e+06:1111,3333:A,CCC:WORD	1:0,0:0:1e+06,3e+06:1111,3333:A,CCC:WORD
+20	277	.	A	AAA	999	PASS	AC=0;AN=0;INDEL	GT:PL:DP	./.:0,0,0:0	./.:0,0,0:0
+20	300	.	A	C	998	PASS	AC=0;AN=0;INDEL	GT:PL:DP	./.:0,0,0:0	./.:0,0,0:0
+20	300	.	A	G	999	PASS	AC=0;AN=0;INDEL	GT:PL:DP	./.:0,0,0:0	./.:0,0,0:0

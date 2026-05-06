@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace <impl crate::variant::Record for Record>::quality_score -> Option<io::Result<f32>> with Some(Ok(0.0))
+@@ -123,17 +123,17 @@
+         Box::new(self.reference_bases())
+     }
+ 
+     fn alternate_bases(&self) -> Box<dyn crate::variant::record::AlternateBases + '_> {
+         Box::new(self.alternate_bases())
+     }
+ 
+     fn quality_score(&self) -> Option<io::Result<f32>> {
+-        self.quality_score()
++        Some(Ok(0.0)) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn filters(&self) -> Box<dyn crate::variant::record::Filters + '_> {
+         Box::new(self.filters())
+     }
+ 
+     fn info(&self) -> Box<dyn crate::variant::record::Info + '_> {
+         Box::new(self.info())

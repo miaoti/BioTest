@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::samples -> Samples<'_> with Default::default()
+@@ -68,17 +68,17 @@
+ 
+     /// Returns the info.
+     pub fn info(&self) -> Info<'_> {
+         self.0.info()
+     }
+ 
+     /// Returns the samples.
+     pub fn samples(&self) -> Samples<'_> {
+-        self.0.samples()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Debug for Record {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         f.debug_struct("Record")
+             .field("reference_sequence_name", &self.reference_sequence_name())
+             .field("variant_start", &self.variant_start())

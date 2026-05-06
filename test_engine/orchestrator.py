@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1023,6 +1024,66 @@ def _run_mr_static(
 # Public API
 # ---------------------------------------------------------------------------
 
+def scale_max_examples(
+    base: int,
+    fmt_corpus_size: int,
+    baseline_corpus_size: int = 33,
+    cap: Optional[int] = None,
+) -> int:
+    """Scale Hypothesis ``max_examples`` by ``sqrt(corpus_size / baseline)``.
+
+    Why this exists: as the cascade corpus grows, a fixed
+    ``max_examples`` gives Hypothesis fewer per-seed picks — well-known
+    high-coverage curated seeds get under-sampled and coverage drops
+    even though there's MORE material to test against. This is the
+    "cascade-dilution" effect we measured across run-1..run-4
+    (htsjdk_vcf rep 0 = 45.9%, reps 1-3 plateau at ~32-33%).
+
+    The sqrt scaling is sub-linear: each doubling of corpus size only
+    multiplies examples by sqrt(2)≈1.41. That's a deliberate compromise
+    between "keep per-seed budget constant" (linear, would explode wall
+    time) and "keep total budget constant" (no scaling, the bug we're
+    fixing). The user is free to override the formula by setting
+    ``baseline_corpus_size`` so ``base`` corresponds to their chosen
+    "comfortable corpus size".
+
+    Edge cases:
+      * ``fmt_corpus_size <= 0`` or ``baseline_corpus_size <= 0`` → return
+        ``base`` unchanged (defensive — orchestrator should not hit
+        these but a caller might).
+      * ``fmt_corpus_size <= baseline_corpus_size`` → return ``base``
+        unchanged (no shrinkage; small corpora keep their full budget).
+      * ``cap`` (when > 0) bounds the result from above. Defends
+        against runaway examples on cascade corpora that grew to
+        thousands of files.
+
+    Args:
+        base: Default per-MR example count. ``50`` matches the
+            historical hardcoded value.
+        fmt_corpus_size: Number of seeds available for the format being
+            tested (VCF or SAM).
+        baseline_corpus_size: Corpus size at which the formula returns
+            ``base``. Defaults to 33 — the curated VCF Tier-1+Tier-2
+            corpus size at the time of the run-4 measurements.
+        cap: Optional upper bound on the returned value.
+
+    Returns:
+        Scaled max_examples, never below ``base``, never above ``cap``
+        (when ``cap`` is provided).
+    """
+    if fmt_corpus_size <= 0 or baseline_corpus_size <= 0:
+        return base
+    if fmt_corpus_size <= baseline_corpus_size:
+        return base
+    scale = math.sqrt(fmt_corpus_size / baseline_corpus_size)
+    scaled = int(round(base * scale))
+    if cap is not None and cap > 0:
+        scaled = min(scaled, cap)
+    # `base` floor applied LAST so a misconfigured ``cap < base`` never
+    # violates the docstring's "never below base" promise.
+    return max(base, scaled)
+
+
 def run_test_suite(
     runners: list[ParserRunner],
     registry_path: Path = MR_REGISTRY_PATH,
@@ -1035,6 +1096,9 @@ def run_test_suite(
     consensus_quorum_fraction: float = 0.501,
     consensus_field_tolerance: bool = False,
     corpus_keeper: Optional[CorpusKeeper] = None,
+    max_examples_corpus_scaling: bool = False,
+    max_examples_baseline_corpus_size: int = 33,
+    max_examples_cap: Optional[int] = None,
 ) -> TestSuiteResult:
     """
     Run the full metamorphic + differential test suite.
@@ -1048,7 +1112,21 @@ def run_test_suite(
         use_hypothesis: If True, use Hypothesis-driven random exploration
                         with automatic shrinking. If False, use static
                         seed loop (deterministic, faster).
-        max_examples: Number of Hypothesis examples per MR (default 50).
+        max_examples: Base number of Hypothesis examples per MR (default
+                      50). When ``max_examples_corpus_scaling`` is True,
+                      this is the per-MR floor; the actual value is
+                      ``scale_max_examples(base, corpus_size, ...)``.
+        max_examples_corpus_scaling: When True (and use_hypothesis=True),
+                      multiply ``max_examples`` by
+                      ``sqrt(corpus_size / baseline)`` per MR so the
+                      per-seed sampling depth doesn't collapse as the
+                      cascade corpus grows. See ``scale_max_examples`` for
+                      rationale. No-op when ``use_hypothesis`` is False
+                      (static mode iterates every seed once regardless).
+        max_examples_baseline_corpus_size: Corpus size at which scaling
+                      factor = 1. Default 33 matches Tier-1+Tier-2 VCF
+                      curated size.
+        max_examples_cap: Hard upper bound after scaling. None = no cap.
 
     Returns:
         TestSuiteResult with counts and bug report paths.
@@ -1101,6 +1179,29 @@ def run_test_suite(
             continue
 
         if use_hypothesis:
+            # Per-MR scaling of Hypothesis budget to fight the cascade-
+            # dilution effect: as the corpus grows, a fixed
+            # max_examples=50 means each seed gets fewer picks, so
+            # high-coverage curated seeds get under-sampled and
+            # coverage drops. See scale_max_examples docstring.
+            if max_examples_corpus_scaling:
+                fmt_corpus_size = len(corpus.seeds_for_format(fmt))
+                this_mr_examples = scale_max_examples(
+                    base=max_examples,
+                    fmt_corpus_size=fmt_corpus_size,
+                    baseline_corpus_size=max_examples_baseline_corpus_size,
+                    cap=max_examples_cap,
+                )
+                if this_mr_examples != max_examples:
+                    logger.info(
+                        "  MR %s: scaled max_examples %d -> %d "
+                        "(%s corpus=%d, baseline=%d)",
+                        mr_id, max_examples, this_mr_examples,
+                        fmt, fmt_corpus_size,
+                        max_examples_baseline_corpus_size,
+                    )
+            else:
+                this_mr_examples = max_examples
             _run_mr_with_hypothesis(
                 mr_dict=mr_dict,
                 corpus=corpus,
@@ -1108,7 +1209,7 @@ def run_test_suite(
                 result=result,
                 output_dir=output_dir,
                 fmt=fmt,
-                max_examples=max_examples,
+                max_examples=this_mr_examples,
                 primary_target=primary_target,
                 consensus_quorum_fraction=consensus_quorum_fraction,
                 consensus_field_tolerance=consensus_field_tolerance,

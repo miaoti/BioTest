@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace + with - in <impl crate::variant::record::Info for Info<'_>>::len
+@@ -70,17 +70,17 @@
+         } else {
+             let n = self
+                 .0
+                 .as_bytes()
+                 .iter()
+                 .filter(|&&b| b == DELIMITER)
+                 .count();
+ 
+-            n + 1
++            n - /* ~ changed by cargo-mutants ~ */ 1
+         }
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'a>>>> {

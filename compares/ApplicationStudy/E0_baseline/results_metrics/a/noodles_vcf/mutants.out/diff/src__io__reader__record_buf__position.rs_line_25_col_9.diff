@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/position.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -17,20 +17,17 @@
+             Self::Empty => None,
+             Self::Invalid(e) => Some(e),
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-            Self::Invalid(_) => write!(f, "invalid input"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<num::ParseIntError> for ParseError {
+     fn from(e: num::ParseIntError) -> Self {
+         match e.kind() {
+             num::IntErrorKind::Empty => Self::Empty,
+             _ => Self::Invalid(e),

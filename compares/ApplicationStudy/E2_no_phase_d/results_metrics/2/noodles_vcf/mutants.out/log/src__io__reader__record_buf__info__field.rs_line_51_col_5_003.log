@@ -1,0 +1,146 @@
+
+*** src/io/reader/record_buf/info/field.rs:51:5: replace parse_field -> Result<(String, Option<Value>), ParseError> with Ok(("xyzzy".into(), Some(Default::default())))
+
+*** mutation diff:
+--- src/io/reader/record_buf/info/field.rs
++++ replace parse_field -> Result<(String, Option<Value>), ParseError> with Ok(("xyzzy".into(), Some(Default::default())))
+@@ -43,62 +43,17 @@
+         match self {
+             ParseError::MissingValue(_) => write!(f, "missing value"),
+             ParseError::InvalidValue(..) => write!(f, "invalid value"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_field(header: &Header, s: &str) -> Result<(String, Option<Value>), ParseError> {
+-    use crate::header::record::value::map::info::definition::definition;
+-
+-    const MAX_COMPONENTS: usize = 2;
+-    const SEPARATOR: char = '=';
+-
+-    let mut components = s.splitn(MAX_COMPONENTS, SEPARATOR);
+-
+-    let key = components.next().unwrap_or_default();
+-
+-    let definition = header
+-        .infos()
+-        .get(key)
+-        .map(|info| (info.number(), info.ty()))
+-        .or_else(|| definition(header.file_format(), key).map(|(n, t, _)| (n, t)));
+-
+-    let raw_value = components.next();
+-
+-    let value = if let Some((number, ty)) = definition {
+-        if matches!(ty, Type::Flag) {
+-            match raw_value.unwrap_or_default() {
+-                MISSING => None,
+-                t => parse_value(number, ty, t)
+-                    .map(Some)
+-                    .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            }
+-        } else if let Some(t) = raw_value {
+-            match t {
+-                MISSING => None,
+-                _ => parse_value(number, ty, t)
+-                    .map(Some)
+-                    .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            }
+-        } else {
+-            return Err(ParseError::MissingValue(key.into()));
+-        }
+-    } else {
+-        match raw_value {
+-            Some(MISSING) => None,
+-            Some(t) => parse_value(Number::Count(1), Type::String, t)
+-                .map(Some)
+-                .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            None => Some(Value::Flag),
+-        }
+-    };
+-
+-    Ok((key.into(), value))
++    Ok(("xyzzy".into(), Some(Default::default()))) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::info::field::key;
+ 
+     #[test]
+
+
+*** /root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo test --no-run --verbose --package=noodles-vcf@0.70.0
+       Fresh cfg-if v1.0.0
+       Fresh adler2 v2.0.0
+       Fresh crc32fast v1.4.2
+       Fresh crossbeam-utils v0.8.21
+       Fresh unicode-ident v1.0.14
+       Fresh memchr v2.7.4
+       Fresh bytes v1.9.0
+       Fresh byteorder v1.5.0
+       Fresh hashbrown v0.15.2
+       Fresh equivalent v1.0.1
+       Fresh bit-vec v0.8.0
+       Fresh percent-encoding v2.3.1
+       Fresh pin-project-lite v0.2.15
+       Fresh miniz_oxide v0.8.2
+       Fresh proc-macro2 v1.0.92
+       Fresh crossbeam-channel v0.5.14
+       Fresh bstr v1.11.1
+       Fresh indexmap v2.7.0
+       Fresh flate2 v1.0.35
+       Fresh noodles-core v0.15.0
+       Fresh quote v1.0.37
+       Fresh noodles-bgzf v0.34.0
+       Fresh syn v2.0.90
+       Fresh noodles-csi v0.41.0
+       Fresh tokio-macros v2.4.0
+       Fresh noodles-tabix v0.47.0
+       Fresh tokio v1.42.0
+       Dirty noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp): the file `src/io/reader/record_buf/info/field.rs` has changed (1778028272.837498393s, 2s after last build at 1778028270.029523213s)
+   Compiling noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp)
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=ce80f1facd87980e -C extra-filename=-c25326ed8f560d15 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e6456573256cb532 -C extra-filename=-846f3f957bfab11c --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rmeta --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rmeta --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rmeta --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rmeta --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rmeta --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rmeta --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rmeta`
+warning: unused import: `self::value::parse_value`
+ --> src/io/reader/record_buf/info/field.rs:5:5
+  |
+5 | use self::value::parse_value;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Number`, `Type`, and `io::reader::record_buf::MISSING`
+ --> src/io/reader/record_buf/info/field.rs:7:40
+  |
+7 |     header::record::value::map::info::{Number, Type},
+  |                                        ^^^^^^  ^^^^
+8 |     io::reader::record_buf::MISSING,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `variant::record_buf::info::field::value::Value: Default` is not satisfied
+  --> src/io/reader/record_buf/info/field.rs:51:30
+   |
+51 |     Ok(("xyzzy".into(), Some(Default::default()))) /* ~ changed by cargo-mutants ~ */
+   |                              ^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `Default` is not implemented for `variant::record_buf::info::field::value::Value`
+  --> src/variant/record_buf/info/field/value.rs:11:1
+   |
+11 | pub enum Value {
+   | ^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `noodles-vcf` (lib) generated 2 warnings
+error: could not compile `noodles-vcf` (lib) due to 1 previous error; 2 warnings emitted
+
+Caused by:
+  process didn't exit successfully: `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e6456573256cb532 -C extra-filename=-846f3f957bfab11c --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rmeta --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rmeta --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rmeta --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rmeta --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rmeta --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rmeta --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rmeta` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+warning: `noodles-vcf` (lib test) generated 2 warnings (2 duplicates)
+error: could not compile `noodles-vcf` (lib test) due to 1 previous error; 2 warnings emitted
+
+Caused by:
+  process didn't exit successfully: `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=ce80f1facd87980e -C extra-filename=-c25326ed8f560d15 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-bMGppG.tmp/target/debug/deps/libtokio-da68203304847442.rlib` (exit status: 1)
+
+*** result: Failure(101)

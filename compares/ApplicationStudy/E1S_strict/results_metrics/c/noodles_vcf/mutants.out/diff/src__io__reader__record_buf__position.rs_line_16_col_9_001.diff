@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/position.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -8,20 +8,17 @@
+     /// The input is empty.
+     Empty,
+     /// The input is invalid.
+     Invalid(position::ParseError),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::Empty => None,
+-            Self::Invalid(e) => Some(e),
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::Empty => write!(f, "empty input"),
+             Self::Invalid(_) => write!(f, "invalid input"),

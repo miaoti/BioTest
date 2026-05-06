@@ -130,6 +130,45 @@ phase_c:
   corpus_keeper:
     enabled: true                # default true; set false to disable
     max_files_per_format: 2000   # FIFO cap per (vcf, sam)
+    # Rank 8b (2026-04-30) — coverage-guided culling of files added to
+    # seeds/<fmt>/kept_* during this Phase C iteration. After Phase C
+    # ends, the keeper replays each new kept file through the primary
+    # SUT under coverage.py and deletes files whose lines are a subset
+    # of the existing corpus's coverage. Off by default; turn on to
+    # mitigate cascade-dilution (the corpus stops growing with
+    # zero-coverage-delta derivatives).
+    # MVP backend: Python SUTs (vcfpy, biopython). JaCoCo / gcovr /
+    # llvm-cov primaries skip the cull with a warning — see
+    # test_engine/feedback/coverage_culler.py.
+    coverage_guided_culling:
+      enabled: false                          # default off
+      measure_baseline_against_corpus: true   # measure pre-iteration
+                                              # corpus coverage as the
+                                              # baseline; set false to
+                                              # cull only against this
+                                              # iteration's accumulator
+                                              # (faster, less strict)
+
+  # Hypothesis-driven Phase C (2026-04-30 — cascade-dilution mitigation).
+  # When `enabled: false` (default), Phase C runs in static mode:
+  # iterate every seed once per MR — fast on small corpora, but each
+  # seed's per-MR sampling depth collapses as the cascade corpus grows
+  # past ~100 files. When `enabled: true`, Phase C uses Hypothesis
+  # @given with a bounded budget (max_examples per MR), independent of
+  # corpus size; pair with `max_examples_corpus_scaling.enabled` to
+  # auto-grow the budget as the cascade corpus expands.
+  hypothesis:
+    enabled: false               # default off — preserves static-mode
+                                 # reproducibility of historical runs
+    max_examples: 50             # base examples per MR (Hypothesis default)
+    max_examples_corpus_scaling:
+      # Scale max_examples by sqrt(corpus_size / baseline_corpus_size)
+      # per MR so per-seed sampling depth stays roughly constant as
+      # the cascade corpus grows. Sub-linear; cap defends against
+      # runaway examples on very large corpora.
+      enabled: false             # default off
+      baseline_corpus_size: 33   # corpus size at which scale = 1
+      cap: 400                   # hard upper bound (8x base by default)
 
   # ═══════════════════════════════════════════════════════════════════
   # ⭐  SINGLE SOURCE OF TRUTH — which format is this run targeting?  ⭐

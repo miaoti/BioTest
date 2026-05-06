@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace == with != in parse_sample
+@@ -141,17 +141,17 @@
+         }
+         None => {
+             let (buf, rest) = src.split_at(src.len());
+             *src = rest;
+             buf
+         }
+     };
+ 
+-    if buf == MISSING {
++    if buf != /* ~ changed by cargo-mutants ~ */ MISSING {
+         Sample::new("", keys)
+     } else {
+         Sample::new(buf, keys)
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {

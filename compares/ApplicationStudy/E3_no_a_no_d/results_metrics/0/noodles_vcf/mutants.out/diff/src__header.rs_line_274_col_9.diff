@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::alternative_alleles -> &AlternativeAlleles with Box::leak(Box::new(Default::default()))
+@@ -266,17 +266,17 @@
+     ///     .add_alternative_allele("DEL", alt.clone())
+     ///     .build();
+     ///
+     /// let alternative_alleles = header.alternative_alleles();
+     /// assert_eq!(alternative_alleles.len(), 1);
+     /// assert_eq!(&alternative_alleles[0], &alt);
+     /// ```
+     pub fn alternative_alleles(&self) -> &AlternativeAlleles {
+-        &self.alternative_alleles
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a map of symbolic alternate alleles (`ALT`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

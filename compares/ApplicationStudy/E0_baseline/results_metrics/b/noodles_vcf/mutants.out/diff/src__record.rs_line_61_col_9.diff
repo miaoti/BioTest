@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::quality_score -> Option<io::Result<f32>> with None
+@@ -53,17 +53,17 @@
+ 
+     /// Returns the alternate bases.
+     pub fn alternate_bases(&self) -> AlternateBases<'_> {
+         self.0.alternate_bases()
+     }
+ 
+     /// Returns the quality score.
+     pub fn quality_score(&self) -> Option<io::Result<f32>> {
+-        self.0.quality_score()
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the filters.
+     pub fn filters(&self) -> Filters<'_> {
+         self.0.filters()
+     }
+ 
+     /// Returns the info.

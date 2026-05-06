@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::filters -> Filters<'_> with Default::default()
+@@ -58,17 +58,17 @@
+ 
+     /// Returns the quality score.
+     pub fn quality_score(&self) -> Option<io::Result<f32>> {
+         self.0.quality_score()
+     }
+ 
+     /// Returns the filters.
+     pub fn filters(&self) -> Filters<'_> {
+-        self.0.filters()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the info.
+     pub fn info(&self) -> Info<'_> {
+         self.0.info()
+     }
+ 
+     /// Returns the samples.

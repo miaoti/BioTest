@@ -1,0 +1,30 @@
+--- src/io/reader/header.rs
++++ replace <impl Read for Reader<R>>::read -> io::Result<usize> with Ok(0)
+@@ -21,26 +21,17 @@
+     }
+ }
+ 
+ impl<R> Read for Reader<R>
+ where
+     R: BufRead,
+ {
+     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+-        let mut src = self.fill_buf()?;
+-        let amt = src.read(buf)?;
+-
+-        if !src.is_empty() {
+-            self.is_eol = false;
+-        }
+-
+-        self.consume(amt);
+-
+-        Ok(amt)
++        Ok(0) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl<R> BufRead for Reader<R>
+ where
+     R: BufRead,
+ {
+     fn fill_buf(&mut self) -> io::Result<&[u8]> {

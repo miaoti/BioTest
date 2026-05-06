@@ -1,0 +1,30 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -38,26 +38,17 @@
+             Self::InvalidGenotype(e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            ParseError::InvalidNumberForType(number, ty) => {
+-                write!(f, "invalid number {number:?} for type {ty:?}")
+-            }
+-            ParseError::InvalidInteger(_) => write!(f, "invalid integer"),
+-            ParseError::InvalidFloat(_) => write!(f, "invalid float"),
+-            ParseError::InvalidCharacter => write!(f, "invalid character"),
+-            ParseError::InvalidString(_) => write!(f, "invalid string"),
+-            ParseError::InvalidGenotype(_) => write!(f, "invalid genotype"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_value(number: Number, ty: Type, s: &str) -> Result<Value, ParseError> {
+     match (number, ty) {
+         (Number::Count(0), _) => Err(ParseError::InvalidNumberForType(number, ty)),
+         (Number::Count(1), Type::Integer) => parse_i32(s),
+         (Number::Count(1), Type::Float) => parse_f32(s),

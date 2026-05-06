@@ -1,0 +1,257 @@
+[harness_run/E1S] mode = E1S
+[harness_run/E1S] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E1S] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E1S] pre-import patch: engine.build_system_prompt: stub (minimal — no spec/chromadb/precondition hints)
+[harness_run/E1S] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E1S] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E1S] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E1S] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E1S] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E1S] config: compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\run_1\biotest_config.rep1.yaml
+[harness_run/E1S] phase_filter: D,E
+05:05:45 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: biopython (drives evolution)
+  Format context: SAM (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'pysam_runtime_reachable', 
+'samtools_available']
+  Discovered 12 query methods on primary biopython for Rank 5
+  Mining SAM / ordering_invariance...
+05:05:47 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:05:47 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+05:06:18 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:06:18 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/ordering_invariance — emitting empty MR array (no applicable evidence).
+05:06:18 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:06:18 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/ordering_invariance; terminating theme cleanly.
+    0 MRs for SAM/ordering_invariance: no relations returned
+  Mining SAM / semantics_preserving_permutation...
+05:06:18 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:06:18 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+05:06:53 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:06:53 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+05:06:53 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:06:53 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for SAM/semantics_preserving_permutation: no relations returned
+  Mining SAM / normalization_invariance...
+05:06:53 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:06:53 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+05:07:33 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:07:33 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/normalization_invariance — emitting empty MR array (no applicable evidence).
+05:07:33 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:07:33 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/normalization_invariance; terminating theme cleanly.
+    0 MRs for SAM/normalization_invariance: no relations returned
+  Mining SAM / rejection_invariance...
+05:07:33 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:07:33 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+05:08:15 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:08:15 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/rejection_invariance — emitting empty MR array (no applicable evidence).
+05:08:15 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:08:15 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/rejection_invariance; terminating theme cleanly.
+    0 MRs for SAM/rejection_invariance: no relations returned
+  Mining SAM / coordinate_indexing_invariance...
+05:08:15 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:08:15 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+05:10:16 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[19].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the sys
+05:10:16 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+05:10:41 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:10:41 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+05:10:41 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:10:41 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for SAM/coordinate_indexing_invariance: no relations returned
+  Mining SAM / round_trip_invariance...
+05:10:41 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:10:41 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+05:11:24 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:11:24 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/round_trip_invariance — emitting empty MR array (no applicable evidence).
+05:11:24 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:11:24 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/round_trip_invariance; terminating theme cleanly.
+    0 MRs for SAM/round_trip_invariance: no relations returned
+  Mining SAM / api_query_invariance...
+05:11:24 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:11:24 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+05:12:00 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:12:00 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/api_query_invariance — emitting empty MR array (no applicable evidence).
+05:12:00 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:12:00 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/api_query_invariance; terminating theme cleanly.
+    0 MRs for SAM/api_query_invariance: no relations returned
+05:12:00 [INFO] mr_engine.registry: Triage result: 0 enforced, 0 quarantine
+05:12:00 [INFO] mr_engine.registry: Merged 0 new MRs into C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+05:12:00 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+05:12:01 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 124 SAM seeds
+05:12:01 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 124 SAM seeds
+05:12:01 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+05:12:01 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+05:12:01 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+05:12:01 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+05:12:01 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 0, 'sam': 50}, 'canonical_buckets': {'vcf': 0, 'sam': 95}}
+05:12:01 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\det_report.json
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\coverage\inorout.py:561: CoverageWarning: Module Bio.AlignIO was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\coverage\inorout.py:561: CoverageWarning: Module Bio.SeqIO was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\coverage\control.py:958: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-no-data-collected
+  self._warn("No data was collected.", slug="no-data-collected")
+05:12:04 [INFO] biotest: Coverage-guided cull: 0/0 files removed (baseline_lines=0, final_lines=0)
+05:12:04 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+    C: FAIL (0 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> biopython=3.0% (18/598 lines)
+05:12:04 [INFO] test_engine.feedback.scc_tracker: SCC report exported to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\scc_report.json (0.0%)
+    SCC: 0.0% (0/137 rules)
+05:12:04 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.0%, coverage=3.0%, enforced=0, demoted=0
+05:12:04 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+05:12:47 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 43.1s
+05:50:35 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 137 | Injecting Top 5 into this ticket | 132 rules remaining in queue (0 cooling down).
+05:50:35 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['SAMv1.tex::The BAM Format Specification::p187', 'SAMv1.tex::Indexing BAM::p262', 'SAMv1.tex::The header section::p86', 'SAMv1.tex::The SAM Format Specification::p29', 'SAMv1.tex::The header section::p84']
+05:50:35 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'SAMv1.tex::The BAM Format Specification::p187', 'complexity': 6, 'proximity': 0.143, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'SAMv1.tex::Indexing BAM::p262', 'complexity': 6, 'proximity': 0.111, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'SAMv1.tex::The header section::p86', 'complexity': 3, 'proximity': 0.364, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::The SAM Format Specification::p29', 'complexity': 3, 'proximity': 0.333, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::The header section::p84', 'complexity': 3, 'proximity': 0.154, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+
+  --- Iteration 2 ---
+  Synthesizing seeds (SAM, Phase D Rank 1)...
+05:50:35 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:52:19 [INFO] mr_engine.agent.seed_synthesizer: seed_synth: no fenced blocks in LLM response (len=16427); discarding
+  Synthesizing via generator (SAM, Phase D Rank 1b SeedMind)...
+05:52:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:52:38 [INFO] mr_engine.agent.seed_synthesizer: seed_synth.generator: accepted 5 of 5 generated outputs (target=biopython, fmt=SAM, iter=2)
+    Gen: 5 generator outputs landed
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'pysam_runtime_reachable', 
+'samtools_available']
+  Discovered 12 query methods on primary biopython for Rank 5
+  Mining SAM / ordering_invariance...
+05:52:38 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:52:38 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+05:53:16 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:53:16 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/ordering_invariance — emitting empty MR array (no applicable evidence).
+05:53:16 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:53:16 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/ordering_invariance; terminating theme cleanly.
+    0 MRs for SAM/ordering_invariance: no relations returned
+  Mining SAM / semantics_preserving_permutation...
+05:53:16 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:53:16 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+05:53:55 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:53:55 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+05:53:55 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:53:55 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for SAM/semantics_preserving_permutation: no relations returned
+  Mining SAM / normalization_invariance...
+05:53:55 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:53:55 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+05:54:31 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:54:31 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/normalization_invariance — emitting empty MR array (no applicable evidence).
+05:54:31 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:54:31 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/normalization_invariance; terminating theme cleanly.
+    0 MRs for SAM/normalization_invariance: no relations returned
+  Mining SAM / rejection_invariance...
+05:54:31 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:54:31 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+05:55:09 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:55:09 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/rejection_invariance — emitting empty MR array (no applicable evidence).
+05:55:09 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:55:09 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/rejection_invariance; terminating theme cleanly.
+    0 MRs for SAM/rejection_invariance: no relations returned
+  Mining SAM / coordinate_indexing_invariance...
+05:55:09 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:55:09 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+05:55:53 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:55:53 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+05:55:53 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:55:53 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for SAM/coordinate_indexing_invariance: no relations returned
+  Mining SAM / round_trip_invariance...
+05:55:53 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:55:53 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+05:56:34 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:56:34 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/round_trip_invariance — emitting empty MR array (no applicable evidence).
+05:56:34 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:56:34 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/round_trip_invariance; terminating theme cleanly.
+    0 MRs for SAM/round_trip_invariance: no relations returned
+  Mining SAM / api_query_invariance...
+05:56:34 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+05:56:34 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+05:57:10 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+05:57:10 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/api_query_invariance — emitting empty MR array (no applicable evidence).
+05:57:10 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+05:57:10 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/api_query_invariance; terminating theme cleanly.
+    0 MRs for SAM/api_query_invariance: no relations returned
+05:57:10 [INFO] mr_engine.registry: Triage result: 0 enforced, 0 quarantine
+05:57:10 [INFO] mr_engine.registry: Merged 0 new MRs into C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+05:57:10 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+05:57:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 129 SAM seeds
+05:57:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 129 SAM seeds
+05:57:10 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+05:57:10 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+05:57:10 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+05:57:10 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+05:57:10 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 0, 'sam': 50}, 'canonical_buckets': {'vcf': 0, 'sam': 95}}
+05:57:10 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\det_report.json
+05:57:14 [INFO] biotest: Coverage-guided cull: 0/0 files removed (baseline_lines=0, final_lines=0)
+05:57:14 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+    C: FAIL (0 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> biopython=3.0% (18/598 lines)
+05:57:14 [INFO] test_engine.feedback.scc_tracker: SCC report exported to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\data\scc_report.json (0.0%)
+    Cooldown: 5 rule(s) stayed uncovered and entered backoff; 0 cleared.
+05:57:14 [INFO] biotest: Rule attempt outcomes: {'SAMv1.tex::The SAM Format Specification::p29': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'SAMv1.tex::The BAM Format Specification::p187': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'SAMv1.tex::The header section::p84': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'SAMv1.tex::Indexing BAM::p262': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'SAMv1.tex::The header section::p86': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}}
+    SCC: 0.0% (0/137 rules)
+05:57:14 [INFO] test_engine.feedback.loop_controller: Iteration 2: SCC=0.0%, coverage=3.0%, enforced=0, demoted=0
+06:33:56 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 137 | Injecting Top 5 into this ticket | 132 rules remaining in queue (5 cooling down).
+06:33:56 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['SAMv1.tex::The alignment section: mandatory fields::p121', 'SAMv1.tex::Recommended Practice for the SAM Format::p129', 'SAMv1.tex::The header section::p87', 'SAMv1.tex::The SAM Format Specification::p30', 'SAMv1.tex::The SAM Format Specification::p53']
+06:33:56 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'SAMv1.tex::The alignment section: mandatory fields::p121', 'complexity': 3, 'proximity': 0.111, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::Recommended Practice for the SAM Format::p129', 'complexity': 3, 'proximity': 0.091, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::The header section::p87', 'complexity': 3, 'proximity': 0.071, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::The SAM Format Specification::p30', 'complexity': 3, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'SAMv1.tex::The SAM Format Specification::p53', 'complexity': 3, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+  Phase D: OK  (88m 11s)
+06:33:56 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 163, 'rejected_invalid': 1, 'rejected_duplicate': 0, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_d\\biopython_sam\\work\\seeds\\vcf_struct', 'sut_validate': None}
+06:33:56 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 163 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\seeds\vcf_struct
+06:33:56 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 320, 'rejected_weak_gate': 0, 'rejected_duplicate': 0, 'rejected_size': 10, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_d\\biopython_sam\\work\\seeds\\vcf_rawfuzz'}
+06:33:56 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 320 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\seeds\vcf_rawfuzz
+06:33:56 [INFO] structural_diversifier: structural_diversifier result: {'sources': 79, 'max_per_seed': 200, 'kept': 99, 'rejected_invalid': 0, 'rejected_duplicate': 1, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_d\\biopython_sam\\work\\seeds\\sam_struct', 'sut_validate': None}
+06:33:56 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 99 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\seeds\sam_struct
+06:33:58 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 79, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 790, 'kept': 790, 'rejected_weak_gate': 0, 'rejected_duplicate': 0, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_d\\biopython_sam\\work\\seeds\\sam_rawfuzz'}
+06:33:58 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 790 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_d\biopython_sam\work\seeds\sam_rawfuzz
+  Phase E: OK  (2.4s, +1372 corpus files: VCF struct=163, rawfuzz=320; SAM 
+struct=99, rawfuzz=790)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                              │
+│ C: Execute   │   PASS   │        0ms │ 0 tests, 0 bugs found                │
+│ D: Feedback  │   PASS   │    88m 11s │ 2 iter, SCC=0.0%, stop: timeout      │
+│              │          │            │ (88min >= 60min)                     │
+│ E: Augment   │   PASS   │       2.4s │ +1372 corpus files (VCF: 163 struct  │
+│              │          │            │ + 320 rawfuzz; SAM: 99 struct + 790  │
+│              │          │            │ rawfuzz)                             │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+  Total Pipeline Duration:  88m 13s
+
+┌────────────────────────── Phase D: Feedback Loop ───────────────────────────┐
+│ SCC Progression: 0.0% -> 0.0%                                               │
+│ Final SCC: 0.0%                                                             │
+│ Termination: timeout (88min >= 60min)                                       │
+│ MRs Quarantined: 0                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────── Code Coverage ───────────────────────────────┐
+│ Primary SUT: biopython (Python)                                             │
+│ Coverage Progression: 3.0% -> 3.0%                                          │
+│ Final Coverage: 3.0% (18/598 format-scoped lines)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ALL CLEAR — No bugs detected across all parsers.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

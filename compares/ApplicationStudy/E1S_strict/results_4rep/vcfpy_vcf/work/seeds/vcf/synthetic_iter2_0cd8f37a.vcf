@@ -1,0 +1,26 @@
+##fileformat=VCFv4.3
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=CNV,Description="Copy number variation">
+##ALT=<ID=NON_REF,Description="Non-reference allele in gVCF block">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variant">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="Mate ID for breakend records">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##FORMAT=<ID=PGT,Number=1,Type=String,Description="Phased genotype">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Phasing ID">
+##contig=<ID=chr1>
+##contig=<ID=chr2>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	100	del1	A	<DEL>	50	PASS	SVTYPE=DEL;SVLEN=-50;END=150;IMPRECISE	GT	0/1
+chr1	200	dup1	T	<DUP>	60	PASS	SVTYPE=DUP;SVLEN=100;END=300;CIPOS=-5,5;CIEND=-5,5	GT	1/1
+chr1	300	ins1	G	<INS>	70	PASS	SVTYPE=INS;SVLEN=20;END=300	GT	0/0
+chr1	400	inv1	C	<INV>	80	PASS	SVTYPE=INV;SVLEN=200;END=600	GT	0/1
+chr1	500	cnv1	A	<CNV>	90	PASS	SVTYPE=CNV;SVLEN=150;END=650	GT	1/2

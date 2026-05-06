@@ -1,0 +1,33 @@
+--- src/io/reader/record_buf/alternate_bases.rs
++++ replace parse_alternate_bases -> Result<(), ParseError> with Ok(())
+@@ -18,29 +18,17 @@
+         }
+     }
+ }
+ 
+ pub(super) fn parse_alternate_bases(
+     s: &str,
+     alternate_bases: &mut AlternateBases,
+ ) -> Result<(), ParseError> {
+-    const DELIMITER: char = ',';
+-
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    }
+-
+-    let alleles = alternate_bases.as_mut();
+-
+-    for allele in s.split(DELIMITER) {
+-        alleles.push(allele.into());
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_alternate_bases() -> Result<(), ParseError> {

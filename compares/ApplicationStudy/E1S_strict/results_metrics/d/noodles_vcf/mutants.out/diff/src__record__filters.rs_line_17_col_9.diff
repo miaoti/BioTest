@@ -1,0 +1,21 @@
+--- src/record/filters.rs
++++ replace <impl AsRef<str> for Filters<'_>>::as_ref -> &str with ""
+@@ -9,17 +9,17 @@
+ impl<'r> Filters<'r> {
+     pub(super) fn new(buf: &'r str) -> Self {
+         Self(buf)
+     }
+ }
+ 
+ impl AsRef<str> for Filters<'_> {
+     fn as_ref(&self) -> &str {
+-        self.0
++        "" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::Filters for Filters<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 

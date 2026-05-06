@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::reference_sequence_name_range -> Range<usize> with Range::from(1)
+@@ -9,17 +9,17 @@
+     pub alternate_bases_end: usize,
+     pub quality_score_end: usize,
+     pub filters_end: usize,
+     pub info_end: usize,
+ }
+ 
+ impl Bounds {
+     pub fn reference_sequence_name_range(&self) -> Range<usize> {
+-        0..self.reference_sequence_name_end
++        Range::from(1) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn variant_start_range(&self) -> Range<usize> {
+         self.reference_sequence_name_end..self.variant_start_end
+     }
+ 
+     pub fn ids_range(&self) -> Range<usize> {
+         self.variant_start_end..self.ids_end

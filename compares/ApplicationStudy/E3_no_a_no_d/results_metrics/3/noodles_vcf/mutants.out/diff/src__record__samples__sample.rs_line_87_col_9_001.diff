@@ -1,0 +1,23 @@
+--- src/record/samples/sample.rs
++++ replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get_index -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(None))
+@@ -79,19 +79,17 @@
+         None
+     }
+ 
+     fn get_index<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         i: usize,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+-        self.iter(header)
+-            .nth(i)
+-            .map(|result| result.map(|(_, value)| value))
++        Some(Ok(None)) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>> + 'a> {
+         Box::new(self.iter(header))
+     }

@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::infos -> &Infos with Box::leak(Box::new(Default::default()))
+@@ -125,17 +125,17 @@
+     ///     .add_info(id, info.clone())
+     ///     .build();
+     ///
+     /// let infos = header.infos();
+     /// assert_eq!(infos.len(), 1);
+     /// assert_eq!(&infos[0], &info);
+     /// ```
+     pub fn infos(&self) -> &Infos {
+-        &self.infos
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a map of information records (`INFO`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

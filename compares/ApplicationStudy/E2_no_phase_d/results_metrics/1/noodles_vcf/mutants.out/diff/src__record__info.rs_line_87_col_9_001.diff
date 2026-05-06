@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace <impl crate::variant::record::Info for Info<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(None))
+@@ -79,17 +79,17 @@
+         }
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+-        self.get(header, key)
++        Some(Ok(None)) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>> + 'a> {
+         Box::new(self.iter(header))
+     }

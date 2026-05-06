@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf.rs
++++ replace != with == in parse_record_buf
+@@ -114,17 +114,17 @@
+     let field = next_field(&mut s);
+     match field {
+         MISSING => record.filters_mut().as_mut().clear(),
+         _ => parse_filters(field, record.filters_mut()).map_err(ParseError::InvalidFilters)?,
+     }
+ 
+     record.info_mut().clear();
+     let field = next_field(&mut s);
+-    if field != MISSING {
++    if field == /* ~ changed by cargo-mutants ~ */ MISSING {
+         parse_info(header, field, record.info_mut()).map_err(ParseError::InvalidInfo)?;
+     }
+ 
+     parse_samples(header, s, record.samples_mut()).map_err(ParseError::InvalidSamples)?;
+ 
+     Ok(())
+ }
+ 

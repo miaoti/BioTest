@@ -1,0 +1,133 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat_line_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected (fail to parse) because the fileformat line is malformed or missing",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The first line of a VCF file must be ##fileformat=VCFv4.5",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "gt_index_bounds_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected because GT allele indices exceed the number of alleles",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "GT values must be valid allele indices within the range of alleles defined for the record",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "info_number_a_cardinality_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected because INFO fields with Number=A have cardinality mismatching the number of alternate alleles",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "INFO fields with Number=A must have one value per alternate allele",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "required_fixed_columns_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected because required fixed columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER) are malformed or missing",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "VCF records must contain the eight required fixed columns in order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "alt_permutation_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected (or both accepted) because permuting ALT alleles and remapping GT indices preserves the biological meaning and validity status",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Permuting alternate alleles and remapping GT indices preserves variant semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "split_multi_allelic_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "Both original and transformed VCF should be rejected (or both accepted) because splitting multi-allelic sites into multiple records preserves the validity status",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Multi-allelic records can be split into multiple bi-allelic records preserving variant semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 6,
+    "total": 6
+  }
+}

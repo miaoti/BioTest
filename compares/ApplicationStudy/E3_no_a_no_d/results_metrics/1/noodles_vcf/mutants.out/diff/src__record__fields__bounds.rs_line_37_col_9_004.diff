@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::quality_score_range -> Range<usize> with Range::from_iter([1])
+@@ -29,17 +29,17 @@
+         self.ids_end..self.reference_bases_end
+     }
+ 
+     pub fn alternate_bases_range(&self) -> Range<usize> {
+         self.reference_bases_end..self.alternate_bases_end
+     }
+ 
+     pub fn quality_score_range(&self) -> Range<usize> {
+-        self.alternate_bases_end..self.quality_score_end
++        Range::from_iter([1]) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn filters_range(&self) -> Range<usize> {
+         self.quality_score_end..self.filters_end
+     }
+ 
+     pub fn info_range(&self) -> Range<usize> {
+         self.filters_end..self.info_end

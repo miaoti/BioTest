@@ -1,0 +1,21 @@
+--- src/record/samples/sample.rs
++++ replace == with != in <impl crate::variant::record::samples::Sample for Sample<'_>>::get
+@@ -63,17 +63,17 @@
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+         for result in self.iter(header) {
+             match result {
+                 Ok((k, v)) => {
+-                    if k == key {
++                    if k != /* ~ changed by cargo-mutants ~ */ key {
+                         return Some(Ok(v));
+                     }
+                 }
+                 Err(e) => return Some(Err(e)),
+             }
+         }
+ 
+         None

@@ -1,0 +1,370 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "607158396225",
+      "mr_name": "HD header VN minor version bump preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "After bumping the HD VN minor version, writing the SAM file and reading it back should produce the same alignment records and header metadata (excluding the VN tag value itself which may be normalized by the parser).",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:66-75 shows HD line writing with VN tag required first; bumping VN minor version exercises this code path.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Header record reordering preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "Reordering header records (e.g., swapping SQ and RG order) before writing should produce identical alignment data after a write-read round trip, as header record order is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:107-110 iterates over metadata items; reordering exercises this iteration path.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "HD subtag shuffling preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Shuffling the order of subtags within the HD header line (e.g., moving SO before VN) should produce identical data after a write-read round trip, as subtag order within a header line is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:66-75 writes HD fields with VN first then other keys; shuffling exercises the key ordering logic.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SQ record subtag shuffling preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "Shuffling the order of subtags within SQ header records (e.g., moving LN before SN) should produce identical data after a write-read round trip, as subtag order within SQ records is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:95-103 writes SQ fields with UR and description handling; shuffling exercises this code path.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "RG record subtag shuffling preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "Shuffling the order of subtags within RG header records should produce identical data after a write-read round trip, as subtag order within RG records is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:107-110 iterates over metadata items including RG; shuffling exercises this iteration path.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "PG record subtag shuffling preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Shuffling the order of subtags within PG header records should produce identical data after a write-read round trip, as subtag order within PG records is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "sam.py:107-110 iterates over metadata items including PG; shuffling exercises this iteration path.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Optional tag field permutation preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Permuting the order of optional tags on alignment records should produce identical data after a write-read round trip, as optional tag order within a record is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tag order is not semantically meaningful per SAM spec; permuting exercises the tag writing/reading code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "Sequence case normalization preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "Converting sequence bases to uppercase (or lowercase) should produce identical data after a write-read round trip, as SAM sequence case is conventionally uppercase but parsers should handle both.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Sequence case normalization exercises the sequence writing/reading code paths in the round trip.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "SAM to BAM to SAM round trip preserves data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "Converting a SAM file to BAM format and back to SAM should produce identical alignment records and header information (modulo format-specific normalization).",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BAM round trip exercises the binary encoding/decoding code paths which may differ from SAM text parsing.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "SAM to CRAM to SAM round trip preserves data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "Converting a SAM file to CRAM format and back to SAM should produce identical alignment records and header information (modulo format-specific normalization).",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CRAM round trip exercises the CRAM encoding/decoding code paths which may differ from SAM text parsing.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "CIGAR match operator canonicalization preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "Canonicalizing CIGAR match operators (= vs M) should produce identical alignment data after a write-read round trip, as = and M are semantically equivalent for matches.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR match operator canonicalization exercises the CIGAR parsing/writing code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "RNEXT alias canonicalization preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "Canonicalizing RNEXT field (= alias for same as RNAME) should produce identical data after a write-read round trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "RNEXT = canonicalization exercises the RNEXT field writing/reading code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Unmapped record field normalization preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "Normalizing fields of unmapped records (e.g., setting RNAME to *, MAPQ to 0) should produce identical data after a write-read round trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Unmapped record normalization exercises the flag and field handling code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length operation removal preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "Removing zero-length CIGAR operations should produce identical alignment data after a write-read round trip, as zero-length operations are semantically meaningless.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Zero-length CIGAR op removal exercises the CIGAR parsing/writing code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "Split or merge adjacent CIGAR ops preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "Splitting or merging adjacent CIGAR operations of the same type should produce identical alignment data after a write-read round trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR split/merge exercises the CIGAR normalization code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "Strip mate flags if unpaired preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "Stripping mate-pair flags from unpaired reads should produce identical data after a write-read round trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Mate flag stripping exercises the flag bit handling code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "Shuffle CO comments preserves round-trip data",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Shuffling the order of CO (comment) header lines should produce identical alignment data after a write-read round trip, as comment order is semantically irrelevant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CO comment shuffling exercises the comment header line handling code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "db1f4df6b38f",
+      "mr_name": "Toggle CIGAR hard/soft clipping preserves round-trip data",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "toggle_cigar_hard_soft_clipping"
+      ],
+      "oracle": "Converting between hard and soft clipping in CIGAR (with corresponding SEQ adjustment) should produce identical alignment data after a write-read round trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Hard/soft clip toggling exercises the CIGAR and SEQ handling code paths.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 18,
+    "total": 18
+  }
+}

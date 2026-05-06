@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::file_format_mut -> &mut FileFormat with Box::leak(Box::new(Default::default()))
+@@ -99,17 +99,17 @@
+     /// let mut header = vcf::Header::default();
+     ///
+     /// let file_format = FileFormat::new(4, 2);
+     /// *header.file_format_mut() = file_format;
+     ///
+     /// assert_eq!(header.file_format(), file_format);
+     /// ```
+     pub fn file_format_mut(&mut self) -> &mut FileFormat {
+-        &mut self.file_format
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a map of information records (`INFO`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

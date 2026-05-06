@@ -1,0 +1,26 @@
+--- src/record.rs
++++ replace <impl TryFrom<&[u8]> for Record>::try_from -> Result<Self, Self::Error> with Ok(Default::default())
+@@ -92,22 +92,17 @@
+             .finish()
+     }
+ }
+ 
+ impl TryFrom<&[u8]> for Record {
+     type Error = io::Error;
+ 
+     fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+-        use crate::io::Reader;
+-
+-        let mut reader = Reader::new(buf);
+-        let mut record = Self::default();
+-        reader.read_record(&mut record)?;
+-        Ok(record)
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::Record for Record {
+     fn reference_sequence_name<'a, 'h: 'a>(&'a self, _: &'h Header) -> io::Result<&'a str> {
+         Ok(self.reference_sequence_name())
+     }
+ 

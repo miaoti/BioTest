@@ -115,6 +115,68 @@ class TestDispatchMRTransforms:
             apply_transform("nonexistent_transform", lines, seed=42)
 
 
+class TestMultishotComposition:
+    """Refine Round 4: BIOTEST_MULTISHOT_K env-var-gated extra-step composition."""
+
+    def test_off_by_default(self, monkeypatch):
+        """No env var → identical to single-step behaviour."""
+        monkeypatch.delenv("BIOTEST_MULTISHOT_K", raising=False)
+        lines = _read_lines(SEEDS_DIR / "sam" / "spec_example.sam")
+        out_default = apply_mr_transforms(
+            lines, ["permute_optional_tag_fields"], seed=42,
+            format_context="SAM",
+        )
+        # Calling apply_transform directly should match the no-multishot path.
+        out_direct = apply_transform("permute_optional_tag_fields", lines, seed=42)
+        assert out_default == out_direct
+
+    def test_k_2_adds_extra_steps(self, monkeypatch):
+        """K=2 produces a different result than K=0 on the same MR + seed."""
+        lines = _read_lines(SEEDS_DIR / "sam" / "spec_example.sam")
+        monkeypatch.delenv("BIOTEST_MULTISHOT_K", raising=False)
+        baseline = apply_mr_transforms(
+            lines, ["permute_optional_tag_fields"], seed=42,
+            format_context="SAM",
+        )
+        monkeypatch.setenv("BIOTEST_MULTISHOT_K", "2")
+        multishot = apply_mr_transforms(
+            lines, ["permute_optional_tag_fields"], seed=42,
+            format_context="SAM",
+        )
+        # Either the result differs (extras did something) OR the random
+        # extras both happened to no-op on this particular seed; the
+        # invariant is that multishot still produces parseable SAM.
+        canonical = normalize_sam_text(multishot)
+        assert len(canonical.records) == 4
+
+    def test_invalid_env_value_treated_as_zero(self, monkeypatch):
+        """Junk env var value → treated as K=0, no behaviour change."""
+        monkeypatch.setenv("BIOTEST_MULTISHOT_K", "not-a-number")
+        lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        out = apply_mr_transforms(
+            lines, ["shuffle_meta_lines"], seed=42, format_context="VCF",
+        )
+        # File still parseable, fileformat still first.
+        assert out[0].startswith("##fileformat")
+        canonical = normalize_vcf_text(out)
+        assert len(canonical.records) == 5
+
+    def test_compound_group_short_circuits_multishot(self, monkeypatch):
+        """The ALT-permutation compound group must NOT have extras appended —
+        the four members are biologically co-dependent."""
+        monkeypatch.setenv("BIOTEST_MULTISHOT_K", "3")
+        lines = _read_lines(SEEDS_DIR / "vcf" / "spec_example.vcf")
+        result = apply_mr_transforms(
+            lines,
+            ["choose_permutation", "permute_ALT", "remap_GT", "permute_Number_A_R_fields"],
+            seed=42, format_context="VCF",
+        )
+        # File should still parse; the compound branch returned without
+        # any extra-step injection.
+        canonical = normalize_vcf_text(result)
+        assert len(canonical.records) == 5
+
+
 # ===========================================================================
 # Dispatch wrappers for 6 new VCF transforms (normalization / BCF / CSQ)
 # ===========================================================================

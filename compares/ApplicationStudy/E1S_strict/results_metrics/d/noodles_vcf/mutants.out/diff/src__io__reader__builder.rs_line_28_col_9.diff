@@ -1,0 +1,22 @@
+--- src/io/reader/builder.rs
++++ replace Builder::set_compression_method -> Self with Default::default()
+@@ -20,18 +20,17 @@
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::io::{reader::Builder, CompressionMethod};
+     /// let builder = Builder::default().set_compression_method(CompressionMethod::Bgzf);
+     /// ```
+     pub fn set_compression_method(mut self, compression_method: CompressionMethod) -> Self {
+-        self.compression_method = Some(compression_method);
+-        self
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Builds a VCF reader from a path.
+     ///
+     /// By default, the compression method will be autodetected. This can be overridden by using
+     /// [`Self::set_compression_method`].
+     ///
+     /// # Examples

@@ -1,0 +1,36 @@
+##fileformat=VCFv4.3
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Count">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="Mapping Quality">
+##INFO=<ID=H2,Number=0,Type=Flag,Description="H2 Flag">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depth">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled Likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1,length=116938138>
+##contig=<ID=chr2,length=150764259>
+##contig=<ID=chr3,length=87079290>
+##contig=<ID=chrX,length=105667611>
+##contig=<ID=chrY,length=166336747>
+##contig=<ID=chrM,length=97319419>
+##reference=file:///data/human_g1k_v37.fasta
+##phasing=partial
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O v -o output.vcf input.bcf
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2
+
+chr2	66089875	.	GCTCAGAT	ATAAA,TTCC	19.03	s50	DP=242;AF=0.4946,0.2391;AC=44,46;AN=635;NS=18;MQ=28.5	GT:GQ:DP:AD:ÐL	1/0:14:18:18,13:96,64,203	0/0:59:94:2,4:176,1,120
+chrX	924277922	.	AGTCATGGA	T	.	s50	DP=500;AF=0.3702;AC=76;AN=638;NS=87;MQ=42.4	GT:GQ:DP:AD:PL	0/0:24:49:24,15:181,44,243	1/0:61:81:14,47:86,116,195
+chrY	583138750	rs922038	GGGTAT	<DEL:266>	12.60	s50	DP=307;AF=0.4438;AC=17;AN=147;NS=22;MQ=22.7;H2	GT:GQ:DP:AD:PL	0/1:79:49:50,30:137,135,217	0/1:89:40:18,4:250,238,232
+chr2	73854Â140	.	ACC	<DEL:708>	23.74	PASS	DP=475;AF=0.0742;AC=4;AN=733;NS=47;MQ=41.5;H2	GT:GQ:DP:AD:PL	0/1:40:14:5,29:81,196,207	0/1:19:22:15,22:18,93,115
+chrM	893692205	.	GT	CGTAGGATAC,<INS:1000>,CCTTTGAGCC	.	PASS	DP=331;AF=0.8880,0.3688,0.3749;AC=61,47,87;AN=836;NS=63;MQ=20.4;H2	GT:GQ:DP:AD:PL	0/0:46:68:34,2:10,61,63	1/0:10:47:8,16:151,171,135
+chrX	546503974	.	TCCGACGCAC	AAT	89.93	PASS	DP=293;AF=0.8181;AC=91;AN=438;NS=15;MQ=13.0	GT:GQ:DP:AD:PL	1/1:80:90:4,40:~01,228,10	0/1:53:27:13,22:9495,114
+chrX	288803890	.	CAT	C,<DEL:796>	20.09	s50	DP=280;AF=0.5845,0.8909;AC=89,77;AN=186;NS=22;MQ=12.1	GT:GQ:DP:AD:PL	1/0:74:12:25,33:108,35,81	1/0:16:28:15,9:84,152,203

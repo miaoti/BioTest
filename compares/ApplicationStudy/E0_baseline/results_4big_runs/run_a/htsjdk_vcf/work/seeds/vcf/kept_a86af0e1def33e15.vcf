@@ -1,0 +1,18 @@
+##fileformat=VCFv4.1
+##FORMAT=<Description="Test type",Type=Float,ID=FFLT,Number=1>
+##FORMAT=<ID=FSTR,Type=String,Description="Test type",Number=1>
+##reference=file:///lustre/scratch105/projects/g1k/ref/main_project/human_g1k_v37.fasta
+##INFO=<ID=FLAG,Number=0,Description="Test type",Type=Flag>
+##INFO=<Number=1,Description="Test type",Type=String,ID=ISTR>
+##INFO=<Type=Integer,Description="Test type",Number=1,ID=IINT>
+##FORMAT=<Number=1,Type=Integer,Description="Test type",ID=FINT>
+##INFO=<ID=IFLT,Number=1,Description="Test type",Type=Float>
+##contig=<ID=1,length=249250621,assembly=b37>
+##FILTER=<ID=q11,Description="Quality below 10">
+##FORMAT=<Description="Genotype",Type=String,ID=GT,Number=1>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	A	B	C
+1	3000001	xx	C	T	11	PASS	FLAG;IINT=11;IFLT=1.1;ISTR=xxx	GT:FINT:FFLT:FSTR	0/0:11:1.1:xxx	0/0:11:1.1:x	0/0:11:1.1:x
+1	3000002	.	C	T	.	.	.	GT	.	.	.
+1	3000003	xx	C	T	11	q11	FLAG;IINT=.;IFLT=.;ISTR=.	GT:FINT:FFLT:FSTR	0/0:.:.:.	0/0:.:.:.	0/0:.:.:.
+1	3000004	xx	C	T	11	q11	FLAG;IINT=11;IFLT=1.1;ISTR=xxx	GT:FINT:FFLT:FSTR	0/0:11:1.1:x	0/0:11:1.1:xxx	0/0:11:1.1:xxx
+1	3000005	xx	C	T	11	q11	FLAG;IINT=1;IFLT=1;ISTR=..	GT:FINT:FFLT:FSTR	0/0:11:1.1:x	0/0:11:1.1:xxx	0/0:11:1.1:xxx

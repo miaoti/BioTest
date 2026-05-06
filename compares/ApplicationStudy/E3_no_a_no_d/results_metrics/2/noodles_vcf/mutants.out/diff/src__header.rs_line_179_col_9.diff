@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::filters -> &Filters with Box::leak(Box::new(Default::default()))
+@@ -171,17 +171,17 @@
+     ///     .add_filter("q10", filter.clone())
+     ///     .build();
+     ///
+     /// let filters = header.filters();
+     /// assert_eq!(filters.len(), 1);
+     /// assert_eq!(&filters[0], &filter);
+     /// ```
+     pub fn filters(&self) -> &Filters {
+-        &self.filters
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a map of filter records (`FILTER`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{self as vcf, header::record::value::{map::Filter, Map}};

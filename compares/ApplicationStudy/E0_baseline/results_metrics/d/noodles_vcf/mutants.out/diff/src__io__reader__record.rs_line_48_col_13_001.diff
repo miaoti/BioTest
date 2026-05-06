@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace += with *= in read_record
+@@ -40,17 +40,17 @@
+     len += read_required_field(reader, buf)?;
+     bounds.filters_end = buf.len();
+ 
+     let (n, is_eol) = read_last_required_field(reader, buf)?;
+     len += n;
+     bounds.info_end = buf.len();
+ 
+     if !is_eol {
+-        len += read_line(reader, buf)?;
++        len *= /* ~ changed by cargo-mutants ~ */ read_line(reader, buf)?;
+     }
+ 
+     Ok(len)
+ }
+ 
+ fn read_required_field<R>(reader: &mut R, dst: &mut String) -> io::Result<usize>
+ where
+     R: BufRead,

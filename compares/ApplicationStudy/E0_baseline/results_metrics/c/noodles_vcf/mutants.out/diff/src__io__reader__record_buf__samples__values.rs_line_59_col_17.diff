@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ replace == with != in parse_values
+@@ -51,17 +51,17 @@
+     values: &mut Vec<Option<Value>>,
+ ) -> Result<(), ParseError> {
+     use crate::header::record::value::map::format::definition::definition;
+ 
+     const DELIMITER: char = ':';
+ 
+     if s.is_empty() {
+         return Err(ParseError::Empty);
+-    } else if s == MISSING {
++    } else if s != /* ~ changed by cargo-mutants ~ */ MISSING {
+         return Ok(());
+     }
+ 
+     let mut raw_values = s.split(DELIMITER);
+ 
+     for (key, raw_value) in keys.as_ref().iter().zip(&mut raw_values) {
+         let value = match raw_value {
+             MISSING => None,

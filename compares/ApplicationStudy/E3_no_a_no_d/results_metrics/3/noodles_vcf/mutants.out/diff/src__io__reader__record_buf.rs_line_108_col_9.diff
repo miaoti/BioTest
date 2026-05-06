@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf.rs
++++ delete match arm MISSING in parse_record_buf
+@@ -100,17 +100,17 @@
+     let field = next_field(&mut s);
+     if field != MISSING {
+         parse_alternate_bases(field, record.alternate_bases_mut())
+             .map_err(ParseError::InvalidAlternateBases)?;
+     }
+ 
+     let field = next_field(&mut s);
+     *record.quality_score_mut() = match field {
+-        MISSING => None,
++         /* ~ changed by cargo-mutants ~ */
+         _ => parse_quality_score(field)
+             .map(Some)
+             .map_err(ParseError::InvalidQualityScore)?,
+     };
+ 
+     let field = next_field(&mut s);
+     match field {
+         MISSING => record.filters_mut().as_mut().clear(),

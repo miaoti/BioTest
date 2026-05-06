@@ -1,0 +1,33 @@
+--- src/record/fields.rs
++++ replace Fields::variant_start -> Option<io::Result<Position>> with Some(Ok(Default::default()))
+@@ -16,29 +16,17 @@
+ const MISSING: &str = ".";
+ 
+ impl Fields {
+     pub(super) fn reference_sequence_name(&self) -> &str {
+         &self.buf[self.bounds.reference_sequence_name_range()]
+     }
+ 
+     pub(super) fn variant_start(&self) -> Option<io::Result<Position>> {
+-        const TELOMERE_START: &str = "0";
+-
+-        match &self.buf[self.bounds.variant_start_range()] {
+-            TELOMERE_START => None,
+-            src => Some(
+-                src.parse::<usize>()
+-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+-                    .and_then(|n| {
+-                        Position::try_from(n)
+-                            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+-                    }),
+-            ),
+-        }
++        Some(Ok(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub(super) fn ids(&self) -> Ids<'_> {
+         let src = match &self.buf[self.bounds.ids_range()] {
+             MISSING => "",
+             buf => buf,
+         };
+ 

@@ -1,0 +1,31 @@
+--- src/io/reader/query.rs
++++ replace <impl Iterator for Query<'_, '_, R>>::next -> Option<Self::Item> with Some(Default::default())
+@@ -41,27 +41,17 @@
+ 
+ impl<R> Iterator for Query<'_, '_, R>
+ where
+     R: bgzf::io::BufRead + bgzf::io::Seek,
+ {
+     type Item = io::Result<Record>;
+ 
+     fn next(&mut self) -> Option<Self::Item> {
+-        match next_record(
+-            &mut self.reader,
+-            &mut self.record,
+-            self.header,
+-            &self.reference_sequence_name,
+-            self.interval,
+-        ) {
+-            Ok(0) => None,
+-            Ok(_) => Some(Ok(self.record.clone())),
+-            Err(e) => Some(Err(e)),
+-        }
++        Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(crate) fn intersects(
+     header: &Header,
+     record: &Record,
+     reference_sequence_name: &[u8],
+     region_interval: Interval,

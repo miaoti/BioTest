@@ -1,0 +1,66 @@
+--- src/io/reader/record_buf.rs
++++ replace parse_record_buf -> Result<(), ParseError> with Ok(())
+@@ -75,62 +75,17 @@
+     }
+ }
+ 
+ pub(crate) fn parse_record_buf(
+     mut s: &str,
+     header: &Header,
+     record: &mut RecordBuf,
+ ) -> Result<(), ParseError> {
+-    let field = next_field(&mut s);
+-    parse_reference_sequence_name(field, record.reference_sequence_name_mut());
+-
+-    let field = next_field(&mut s);
+-    *record.variant_start_mut() = parse_position(field).map_err(ParseError::InvalidPosition)?;
+-
+-    record.ids_mut().as_mut().clear();
+-    let field = next_field(&mut s);
+-    if field != MISSING {
+-        parse_ids(field, record.ids_mut()).map_err(ParseError::InvalidIds)?;
+-    }
+-
+-    let field = next_field(&mut s);
+-    parse_reference_bases(field, record.reference_bases_mut())
+-        .map_err(ParseError::InvalidReferenceBases)?;
+-
+-    record.alternate_bases_mut().as_mut().clear();
+-    let field = next_field(&mut s);
+-    if field != MISSING {
+-        parse_alternate_bases(field, record.alternate_bases_mut())
+-            .map_err(ParseError::InvalidAlternateBases)?;
+-    }
+-
+-    let field = next_field(&mut s);
+-    *record.quality_score_mut() = match field {
+-        MISSING => None,
+-        _ => parse_quality_score(field)
+-            .map(Some)
+-            .map_err(ParseError::InvalidQualityScore)?,
+-    };
+-
+-    let field = next_field(&mut s);
+-    match field {
+-        MISSING => record.filters_mut().as_mut().clear(),
+-        _ => parse_filters(field, record.filters_mut()).map_err(ParseError::InvalidFilters)?,
+-    }
+-
+-    record.info_mut().clear();
+-    let field = next_field(&mut s);
+-    if field != MISSING {
+-        parse_info(header, field, record.info_mut()).map_err(ParseError::InvalidInfo)?;
+-    }
+-
+-    parse_samples(header, s, record.samples_mut()).map_err(ParseError::InvalidSamples)?;
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn next_field<'a>(s: &mut &'a str) -> &'a str {
+     const DELIMITER: char = '\t';
+ 
+     let (field, rest) = s
+         .split_once(DELIMITER)
+         .unwrap_or_else(|| s.split_at(s.len()));

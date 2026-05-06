@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::other_records -> &OtherRecords with Box::leak(Box::new(Default::default()))
+@@ -396,17 +396,17 @@
+     /// let header = vcf::Header::builder()
+     ///     .insert("fileDate".parse()?, Value::from("20200709"))?
+     ///     .build();
+     ///
+     /// assert_eq!(header.other_records().len(), 1);
+     /// # Ok::<_, Box<dyn std::error::Error>>(())
+     /// ```
+     pub fn other_records(&self) -> &OtherRecords {
+-        &self.other_records
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a map of collections of records with nonstandard keys.
+     ///
+     /// This includes all records other than `fileformat`, `INFO`, `FILTER`, `FORMAT`, `ALT`, and
+     /// `contig`.
+     ///
+     /// To simply add an nonstandard record, consider using [`Self::insert`] instead.

@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/ids.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -22,21 +22,17 @@
+             Self::InvalidId(e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-            Self::InvalidId(_) => write!(f, "invalid ID"),
+-            Self::DuplicateId(id) => write!(f, "duplicate ID: {id}"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_ids(s: &str, ids: &mut Ids) -> Result<(), ParseError> {
+     const DELIMITER: char = ';';
+ 
+     if s.is_empty() {
+         return Err(ParseError::Empty);

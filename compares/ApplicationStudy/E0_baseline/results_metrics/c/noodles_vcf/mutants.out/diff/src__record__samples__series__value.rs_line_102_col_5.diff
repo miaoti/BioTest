@@ -1,0 +1,21 @@
+--- src/record/samples/series/value.rs
++++ replace parse_float_array_value -> Value<'_> with Default::default()
+@@ -94,17 +94,17 @@
+     Value::Genotype(Box::new(Genotype::new(src)))
+ }
+ 
+ fn parse_integer_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Integer(Box::new(src)))
+ }
+ 
+ fn parse_float_array_value(src: &str) -> Value<'_> {
+-    Value::Array(Array::Float(Box::new(src)))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_character_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Character(Box::new(src)))
+ }
+ 
+ fn parse_string_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::String(Box::new(src)))

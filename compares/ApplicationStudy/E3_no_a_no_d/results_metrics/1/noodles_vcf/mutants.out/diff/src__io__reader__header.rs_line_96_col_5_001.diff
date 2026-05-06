@@ -1,0 +1,39 @@
+--- src/io/reader/header.rs
++++ replace read_line -> io::Result<usize> with Ok(1)
+@@ -88,35 +88,17 @@
+         .finish()
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 
+ fn read_line<R>(reader: &mut R, dst: &mut Vec<u8>) -> io::Result<usize>
+ where
+     R: BufRead,
+ {
+-    const LINE_FEED: u8 = b'\n';
+-    const CARRIAGE_RETURN: u8 = b'\r';
+-
+-    dst.clear();
+-
+-    match reader.read_until(LINE_FEED, dst)? {
+-        0 => Ok(0),
+-        n => {
+-            if dst.ends_with(&[LINE_FEED]) {
+-                dst.pop();
+-
+-                if dst.ends_with(&[CARRIAGE_RETURN]) {
+-                    dst.pop();
+-                }
+-            }
+-
+-            Ok(n)
+-        }
+-    }
++    Ok(1) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_read_raw_header() -> io::Result<()> {

@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace <impl crate::variant::record::Samples for Samples<'_>>::len -> usize with 0
+@@ -82,17 +82,17 @@
+ }
+ 
+ impl crate::variant::record::Samples for Samples<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 
+     fn len(&self) -> usize {
+-        self.iter().count()
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn column_names<'a, 'h: 'a>(
+         &'a self,
+         _: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<&'a str>> + 'a> {
+         Box::new(self.keys().iter().map(Ok))
+     }

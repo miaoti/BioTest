@@ -19,10 +19,11 @@ implementations. The per-SUT user cost is the parse-and-emit shim
 that mainstream coverage-guided fuzzers already require, with a
 small canonicalization extension that emits canonical JSON.
 Across six $(\mathrm{SUT, format})$ configurations spanning four
-parser languages, \biotest{} sits within a single-digit
-mutation-adequacy deficit on five configurations, exceeds
-libFuzzer on seqan3/SAM, and trails Atheris by $32.5$\,pp on
-byte-content-lenient biopython/SAM. It attains the highest line
+parser languages, \biotest{} matches Atheris on vcfpy/VCF
+(parity within sample standard deviation), sits within a
+$0.4$--$4.2$\,pp mutation-adequacy deficit on three close-margin
+configurations, exceeds libFuzzer on seqan3/SAM, and trails
+Atheris by $32.5$\,pp on byte-content-lenient biopython/SAM. It attains the highest line
 coverage on every VCF SUT, and on a real-bug benchmark of
 $32$ historical parser bugs~\citep{hazimeh2020magma} detects $10$, spanning htsjdk
 (Java), vcfpy (Python), and noodles (Rust), where every

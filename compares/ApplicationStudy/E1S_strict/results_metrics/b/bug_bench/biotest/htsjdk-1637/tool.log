@@ -1,0 +1,76 @@
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.cell.yaml
+
+                                 Configuration                                 
+                                                                               
+ Spec Versions          VCF v4.5, SAM v1.6                                     
+ Test Format            VCF (cascades to B, C, D)                              
+ MR Themes              ordering_invariance, semantics_preserving_permutation, 
+                        normalization_invariance, rejection_invariance,        
+                        coordinate_indexing_invariance, round_trip_invariance, 
+                        api_query_invariance                                   
+ Active SUTs            htsjdk, biopython, seqan3, pysam, vcfpy, noodles,      
+                        htslib                                                 
+ Enabled Phases         A -> B -> C -> D                                       
+                                                                               
+
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.cell.yaml
+
+                                 Configuration                                 01:13:15 [INFO] test_engine.generators.seeds: Seed corpus loaded: 302 VCF seeds, 0 SAM seeds
+01:13:15 [INFO] test_engine.generators.seeds: Seed corpus loaded: 302 VCF seeds, 0 SAM seeds
+01:13:15 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+01:13:15 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'htslib', 'reference']
+01:13:15 [INFO] test_engine.orchestrator: Execution mode: static
+01:13:15 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+01:13:15 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 143, 'sam': 0}, 'canonical_buckets': {'vcf': 0, 'sam': 0}}
+01:13:15 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\tmp\biotest_bench_reports\cell_53a6f17c_det_report.json
+01:13:15 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (421ms)
+
+
+──────────────────�01:13:15 [INFO] test_engine.generators.seeds: Seed corpus loaded: 302 VCF seeds, 0 SAM seeds
+01:13:15 [INFO] test_engine.generators.seeds: Seed corpus loaded: 302 VCF seeds, 0 SAM seeds
+01:13:15 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+01:13:15 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'htslib', 'reference']
+01:13:15 [INFO] test_engine.orchestrator: Execution mode: static
+01:13:15 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+01:13:15 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 143, 'sam': 0}, 'canonical_buckets': {'vcf': 0, 'sam': 0}}
+01:13:15 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\tmp\biotest_bench_reports\cell_dce4d97e_det_report.json
+01:13:15 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (421ms)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                              │
+│ C: Execute   │   FAIL   │      421ms │ Phase C executed 0 tests — registry  │
+│              │          │            │ has no enforced MRs to run. Phase B  │
+│              │          │            │ probably produced no output (check   │
+│              │          │            │ LLM errors).                         │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+  Total Pipeline Duration:  641ms
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PIPELINE FAILED — Phase(s) C encountered errors.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,27 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace parse_string_array -> Result<Value, ParseError> with Ok(Default::default())
+@@ -140,23 +140,17 @@
+         .map_err(ParseError::InvalidString)
+ }
+ 
+ fn parse_string(s: &str) -> Result<Value, ParseError> {
+     parse_raw_string(s).map(Value::String)
+ }
+ 
+ fn parse_string_array(s: &str) -> Result<Value, ParseError> {
+-    s.split(DELIMITER)
+-        .map(|t| match t {
+-            MISSING => Ok(None),
+-            _ => parse_raw_string(t).map(Some),
+-        })
+-        .collect::<Result<_, _>>()
+-        .map(|values| Value::Array(Array::String(values)))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_value_with_integer() {

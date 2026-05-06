@@ -1,0 +1,22 @@
+--- src/record/filters.rs
++++ replace <impl crate::variant::record::Filters for Filters<'_>>::len -> usize with 1
+@@ -19,18 +19,17 @@
+ }
+ 
+ impl crate::variant::record::Filters for Filters<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 
+     fn len(&self) -> usize {
+-        let header = Header::default();
+-        self.iter(&header).count()
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         _: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<&'a str>> + 'a> {
+         const DELIMITER: char = ';';
+ 

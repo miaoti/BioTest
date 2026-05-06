@@ -1,0 +1,36 @@
+--- src/record/fields.rs
++++ replace Fields::samples -> Samples<'_> with Default::default()
+@@ -82,32 +82,17 @@
+             MISSING => "",
+             buf => buf,
+         };
+ 
+         Info::new(src)
+     }
+ 
+     pub(super) fn samples(&self) -> Samples<'_> {
+-        const DELIMITER: char = '\t';
+-
+-        let src = &self.buf[self.bounds.genotypes_range()];
+-
+-        let is_missing = || {
+-            src.split(DELIMITER)
+-                .next()
+-                .map(|s| s == MISSING)
+-                .unwrap_or_default()
+-        };
+-
+-        if src.is_empty() || is_missing() {
+-            Samples::new("")
+-        } else {
+-            Samples::new(src)
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Default for Fields {
+     fn default() -> Self {
+         Self {
+             buf: String::from("sq01.A...."),
+             bounds: Bounds::default(),

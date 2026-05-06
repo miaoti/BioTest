@@ -1,0 +1,21 @@
+--- src/record/info/field/value.rs
++++ replace parse_string_array_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -76,17 +76,17 @@
+     Ok(Value::Array(Array::Float(Box::new(src))))
+ }
+ 
+ fn parse_character_array_value(src: &str) -> io::Result<Value<'_>> {
+     Ok(Value::Array(Array::Character(Box::new(src))))
+ }
+ 
+ fn parse_string_array_value(src: &str) -> io::Result<Value<'_>> {
+-    Ok(Value::Array(Array::String(Box::new(src))))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_character_value() -> io::Result<()> {

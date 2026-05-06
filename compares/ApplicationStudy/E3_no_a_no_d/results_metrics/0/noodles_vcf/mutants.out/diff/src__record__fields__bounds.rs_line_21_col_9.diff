@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::variant_start_range -> Range<usize> with Range::new()
+@@ -13,17 +13,17 @@
+ }
+ 
+ impl Bounds {
+     pub fn reference_sequence_name_range(&self) -> Range<usize> {
+         0..self.reference_sequence_name_end
+     }
+ 
+     pub fn variant_start_range(&self) -> Range<usize> {
+-        self.reference_sequence_name_end..self.variant_start_end
++        Range::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn ids_range(&self) -> Range<usize> {
+         self.variant_start_end..self.ids_end
+     }
+ 
+     pub fn reference_bases_range(&self) -> Range<usize> {
+         self.ids_end..self.reference_bases_end

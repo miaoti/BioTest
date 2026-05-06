@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples.rs
++++ replace == with != in parse_samples
+@@ -44,17 +44,17 @@
+     header: &Header,
+     mut s: &str,
+     genotypes: &mut Samples,
+ ) -> Result<(), ParseError> {
+     genotypes.keys.as_mut().clear();
+ 
+     let sample_count = header.sample_names().len();
+ 
+-    if sample_count == 0 {
++    if sample_count != /* ~ changed by cargo-mutants ~ */ 0 {
+         genotypes.values.clear();
+ 
+         if s.is_empty() {
+             return Ok(());
+         } else {
+             return Err(ParseError::UnexpectedInput);
+         }
+     }

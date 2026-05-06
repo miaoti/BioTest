@@ -1,0 +1,18 @@
+--- src/record/info/field.rs
++++ replace == with != in parse_field
+@@ -44,14 +44,14 @@
+         return Ok((key, Some(Value::Flag)));
+     }
+ 
+     let (number, ty) = definition.unwrap_or_default();
+ 
+     let value = match raw_value {
+         Some(MISSING) => None,
+         Some(t) => parse_value(t, number, ty).map(Some)?,
+-        None if ty == Type::Flag => Some(Value::Flag),
++        None if ty != /* ~ changed by cargo-mutants ~ */ Type::Flag => Some(Value::Flag),
+         None => return Err(io::Error::new(io::ErrorKind::InvalidData, "missing value")),
+     };
+ 
+     Ok((key, value))
+ }

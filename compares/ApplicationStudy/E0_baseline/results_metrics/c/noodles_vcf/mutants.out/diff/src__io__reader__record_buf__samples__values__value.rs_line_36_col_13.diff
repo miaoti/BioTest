@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ delete match arm Self::InvalidFloat(e) in <impl error::Error for ParseError>::source
+@@ -28,17 +28,17 @@
+     /// The genotype value is invalid.
+     InvalidGenotype(genotype::ParseError),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+         match self {
+             Self::InvalidInteger(e) => Some(e),
+-            Self::InvalidFloat(e) => Some(e),
++             /* ~ changed by cargo-mutants ~ */
+             Self::InvalidString(e) => Some(e),
+             Self::InvalidGenotype(e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {

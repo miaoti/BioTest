@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info.rs
++++ delete match arm Self::InvalidField(e) in <impl error::Error for ParseError>::source
+@@ -14,17 +14,17 @@
+     InvalidField(field::ParseError),
+     /// A key is duplicated.
+     DuplicateKey(String),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+         match self {
+-            Self::InvalidField(e) => Some(e),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {

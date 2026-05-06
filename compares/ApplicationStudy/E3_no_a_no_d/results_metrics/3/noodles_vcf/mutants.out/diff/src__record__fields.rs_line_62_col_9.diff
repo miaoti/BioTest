@@ -1,0 +1,27 @@
+--- src/record/fields.rs
++++ replace Fields::quality_score -> Option<io::Result<f32>> with None
+@@ -54,23 +54,17 @@
+             MISSING => "",
+             buf => buf,
+         };
+ 
+         AlternateBases::new(src)
+     }
+ 
+     pub(super) fn quality_score(&self) -> Option<io::Result<f32>> {
+-        match &self.buf[self.bounds.quality_score_range()] {
+-            MISSING => None,
+-            src => Some(
+-                src.parse()
+-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e)),
+-            ),
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub(super) fn filters(&self) -> Filters<'_> {
+         let src = match &self.buf[self.bounds.filters_range()] {
+             MISSING => "",
+             buf => buf,
+         };
+ 

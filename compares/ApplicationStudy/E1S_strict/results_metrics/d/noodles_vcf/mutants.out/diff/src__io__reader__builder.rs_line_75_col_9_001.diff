@@ -1,0 +1,20 @@
+--- src/io/reader/builder.rs
++++ replace Builder::build_from_reader -> io::Result<Reader<Box<dyn BufRead +'r>>> with Ok(Reader::from_iter([Box::new(Default::default())]))
+@@ -67,16 +67,11 @@
+     /// use noodles_vcf::io::reader::Builder;
+     /// let reader = Builder::default().build_from_reader(io::empty())?;
+     /// # Ok::<_, io::Error>(())
+     /// ```
+     pub fn build_from_reader<'r, R>(self, reader: R) -> io::Result<Reader<Box<dyn BufRead + 'r>>>
+     where
+         R: Read + 'r,
+     {
+-        let inner: Box<dyn BufRead> = match self.compression_method {
+-            Some(CompressionMethod::Bgzf) => Box::new(bgzf::Reader::new(reader)),
+-            Some(CompressionMethod::None) | None => Box::new(BufReader::new(reader)),
+-        };
+-
+-        Ok(Reader::new(inner))
++        Ok(Reader::from_iter([Box::new(Default::default())])) /* ~ changed by cargo-mutants ~ */
+     }
+ }

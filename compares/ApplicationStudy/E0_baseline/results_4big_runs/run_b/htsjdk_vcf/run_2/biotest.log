@@ -1,0 +1,865 @@
+[harness_run/E0] mode = E0
+[harness_run/E0] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E0] config: compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\run_2\biotest_config.rep2.yaml
+[harness_run/E0] phase_filter: D,E
+21:25:28 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: htsjdk (drives evolution)
+  Format context: VCF (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 47 query methods on primary htsjdk for Rank 5
+  Mining VCF / ordering_invariance...
+21:25:34 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:25:34 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+21:32:03 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 388.7s
+21:32:03 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+21:32:34 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+21:32:34 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/ordering_invariance
+  Mining VCF / semantics_preserving_permutation...
+21:32:34 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:32:34 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+21:33:09 [INFO] mr_engine.dsl.compiler: Compiled 3 MRs successfully
+21:33:09 [INFO] mr_engine.agent.engine: Successfully compiled 3 MRs on attempt 1
+    OK mined 3 MR(s) for VCF/semantics_preserving_permutation
+  Mining VCF / normalization_invariance...
+21:33:09 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:33:09 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+21:33:47 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+21:33:47 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/normalization_invariance
+  Mining VCF / rejection_invariance...
+21:33:47 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:33:47 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+21:34:26 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+21:34:26 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for VCF/rejection_invariance
+  Mining VCF / coordinate_indexing_invariance...
+21:34:26 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:34:26 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+21:35:15 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[6].: Value error, `query_methods` is populated but `query_method_roundtrip` is not in transform_steps. Either drop query_methods or add query_method_roundtrip as the f
+21:35:15 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:37:03 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+21:37:03 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 2
+    OK mined 5 MR(s) for VCF/coordinate_indexing_invariance
+  Mining VCF / round_trip_invariance...
+21:37:04 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:37:04 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+21:37:49 [INFO] mr_engine.dsl.compiler: Compiled 10 MRs successfully
+21:37:49 [INFO] mr_engine.agent.engine: Successfully compiled 10 MRs on attempt 1
+    OK mined 10 MR(s) for VCF/round_trip_invariance
+  Mining VCF / api_query_invariance...
+21:37:49 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:37:49 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+21:38:20 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+21:38:20 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/api_query_invariance
+21:38:20 [INFO] mr_engine.registry: Dedup: skipped 13 duplicate MR(s)
+21:38:20 [INFO] mr_engine.registry: Triage result: 16 enforced, 8 quarantine
+21:38:20 [INFO] mr_engine.registry: Merged 24 new MRs into C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\data\mr_registry.json
+    B: OK (16 mined this round)
+  Running tests (Phase C)...
+21:38:21 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+21:38:22 [INFO] test_engine.generators.seeds: Seed corpus loaded: 375 VCF seeds, 74 SAM seeds
+21:38:22 [INFO] test_engine.generators.seeds: Seed corpus loaded: 375 VCF seeds, 74 SAM seeds
+21:38:22 [INFO] test_engine.orchestrator: Loaded 24 MRs from registry (enforced=16, quarantine=8)
+21:38:22 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+21:38:22 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+21:38:22 [INFO] test_engine.orchestrator: Testing MR ffbe4a62d130 (Meta-information line order invariance) -- scope=VCF.header, transforms=['shuffle_meta_lines']
+21:38:22 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+21:38:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+21:38:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213827_055101_1
+21:38:27 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:38:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_89356d6cde6c51ab.vcf (seed=0) -- 21 diffs
+21:38:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213831_290875_2
+21:38:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_89356d6cde6c51ab.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:38:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_89356d6cde6c51ab.vcf (seed=32976) -- 21 diffs
+21:38:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213836_277393_3
+21:38:36 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_89356d6cde6c51ab.vcf (seed=32976): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:38:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on real_world_bcftools_view.vcf (seed=0) -- 21 diffs
+21:38:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213841_061484_4
+21:38:41 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_view.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:38:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on real_world_bcftools_view.vcf (seed=2073147991) -- 21 diffs
+21:38:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213845_622906_5
+21:38:45 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_view.vcf (seed=2073147991): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:38:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_45776cd155086f98.vcf (seed=0) -- 1 diffs
+21:38:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213849_983292_6
+21:38:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_45776cd155086f98.vcf (seed=0) -- 21 diffs
+21:38:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213849_987704_7
+21:38:50 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_45776cd155086f98.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:38:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_45776cd155086f98.vcf (seed=42432) -- 1 diffs
+21:38:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213853_983006_8
+21:38:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_45776cd155086f98.vcf (seed=42432) -- 21 diffs
+21:38:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213853_989312_9
+21:38:54 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_45776cd155086f98.vcf (seed=42432): consensus=['reference', 'vcfpy'], dissent=['pysam']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+21:38:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_0e0a2d0b2069ef54.vcf (seed=46779) -- 1 diffs
+21:38:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213858_283110_10
+21:38:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_0e0a2d0b2069ef54.vcf (seed=46779) -- 10 diffs
+21:38:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213858_288414_11
+21:38:58 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_0e0a2d0b2069ef54.vcf (seed=46779): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_45776cd155086f98.vcf (seed=37201) -- 1 diffs
+21:39:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213902_697745_12
+21:39:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_45776cd155086f98.vcf (seed=37201) -- 21 diffs
+21:39:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213902_706538_13
+21:39:02 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_45776cd155086f98.vcf (seed=37201): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_0e0a2d0b2069ef54.vcf (seed=46779) -- 1 diffs
+21:39:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213906_888472_14
+21:39:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_0e0a2d0b2069ef54.vcf (seed=46779) -- 10 diffs
+21:39:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213906_896331_15
+21:39:06 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_0e0a2d0b2069ef54.vcf (seed=46779): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_0e0a2d0b2069ef54.vcf (seed=0) -- 1 diffs
+21:39:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213910_882205_16
+21:39:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_0e0a2d0b2069ef54.vcf (seed=0) -- 10 diffs
+21:39:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213910_890124_17
+21:39:10 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_0e0a2d0b2069ef54.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:39:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213915_609753_18
+21:39:15 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_dbsnp_135.b37.1000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Type=Integer,ID=CNL,Number=.>
+  warnings.warn(
+21:39:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_043e14f2c948d9fe.vcf (seed=0) -- 1 diffs
+21:39:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213920_402364_19
+21:39:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_043e14f2c948d9fe.vcf (seed=0) -- 21 diffs
+21:39:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213920_408373_20
+21:39:20 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_043e14f2c948d9fe.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_017448d541a43da3.vcf (seed=0) -- 1 diffs
+21:39:25 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213925_135173_21
+21:39:25 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_017448d541a43da3.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:39:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_01f510ae2b977b77.vcf (seed=0) -- 21 diffs
+21:39:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213929_582679_22
+21:39:29 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_01f510ae2b977b77.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:39:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:33 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213933_696340_23
+21:39:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:33 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213933_702159_24
+21:39:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:33 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213933_723220_25
+21:39:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:33 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213933_743252_26
+21:39:33 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_0261d79c01fb8d3c.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_01a6c973a044f66b.vcf (seed=0) -- 21 diffs
+21:39:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213938_361290_27
+21:39:38 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_01a6c973a044f66b.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:39:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_01f510ae2b977b77.vcf (seed=1) -- 21 diffs
+21:39:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213942_650379_28
+21:39:42 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_01f510ae2b977b77.vcf (seed=1): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:39:47 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:47 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213947_178159_29
+21:39:47 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:47 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213947_182679_30
+21:39:47 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:47 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213947_198038_31
+21:39:47 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_0261d79c01fb8d3c.vcf (seed=0) -- 1 diffs
+21:39:47 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213947_219864_32
+21:39:47 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_0261d79c01fb8d3c.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:47 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR ffbe4a62d130 (Meta-information line order invariance) to minimal failing case
+21:39:47 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: Hypothesis found and shrunk a failure
+21:39:47 [INFO] test_engine.orchestrator: Testing MR bc124d1e4573 (Structured meta-line key=value pair order invariance) -- scope=VCF.header, transforms=['permute_structured_kv_order']
+21:39:47 [INFO] test_engine.orchestrator:   MR bc124d1e4573: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+21:39:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+21:39:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213951_109941_33
+21:39:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+21:39:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213951_125509_34
+21:39:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+21:39:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213951_153666_35
+21:39:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+21:39:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213951_182109_36
+21:39:51 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:39:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_aef70281970316e5.vcf (seed=0) -- 1 diffs
+21:39:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213955_453084_37
+21:39:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_aef70281970316e5.vcf (seed=0) -- 10 diffs
+21:39:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213955_458345_38
+21:39:55 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_aef70281970316e5.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:39:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_aef70281970316e5.vcf (seed=462618461) -- 1 diffs
+21:39:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213959_453893_39
+21:39:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_aef70281970316e5.vcf (seed=462618461) -- 10 diffs
+21:39:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_213959_458667_40
+21:39:59 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_aef70281970316e5.vcf (seed=462618461): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:40:04 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_a8edd9396f138868.vcf (seed=55975) -- 1 diffs
+21:40:04 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214004_202057_41
+21:40:04 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_a8edd9396f138868.vcf (seed=55975) -- 1 diffs
+21:40:04 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214004_216411_42
+21:40:04 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_a8edd9396f138868.vcf (seed=55975) -- 1 diffs
+21:40:04 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214004_220359_43
+21:40:04 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_a8edd9396f138868.vcf (seed=55975) -- 1 diffs
+21:40:04 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214004_253236_44
+21:40:04 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_a8edd9396f138868.vcf (seed=55975): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Number=.,ID=HOMSEQ,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,Type=Integer,ID=CNL>
+  warnings.warn(
+21:40:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_82cf1f12e114bc05.vcf (seed=169) -- 1 diffs
+21:40:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214008_906981_45
+21:40:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_82cf1f12e114bc05.vcf (seed=169) -- 1 diffs
+21:40:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214008_917735_46
+21:40:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_82cf1f12e114bc05.vcf (seed=169) -- 1 diffs
+21:40:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214008_934965_47
+21:40:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_82cf1f12e114bc05.vcf (seed=169) -- 1 diffs
+21:40:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214008_946997_48
+21:40:08 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_82cf1f12e114bc05.vcf (seed=169): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:40:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_aef70281970316e5.vcf (seed=0) -- 1 diffs
+21:40:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214013_161511_49
+21:40:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_aef70281970316e5.vcf (seed=0) -- 10 diffs
+21:40:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214013_167241_50
+21:40:13 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_aef70281970316e5.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:40:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:40:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214017_878303_51
+21:40:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:40:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214017_909076_52
+21:40:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:40:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214017_913438_53
+21:40:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:40:18 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214017_976946_54
+21:40:18 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_dbsnp_135.b37.1000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:40:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_573ce6a2e7cc0c11.vcf (seed=0) -- 1 diffs
+21:40:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214022_528727_55
+21:40:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_573ce6a2e7cc0c11.vcf (seed=0) -- 1 diffs
+21:40:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214022_540674_56
+21:40:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_573ce6a2e7cc0c11.vcf (seed=0) -- 1 diffs
+21:40:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214022_557682_57
+21:40:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_573ce6a2e7cc0c11.vcf (seed=0) -- 1 diffs
+21:40:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214022_573451_58
+21:40:22 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_573ce6a2e7cc0c11.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:40:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_5c1dec37e80c9c81.vcf (seed=0) -- 1 diffs
+21:40:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214027_102807_59
+21:40:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_5c1dec37e80c9c81.vcf (seed=0) -- 1 diffs
+21:40:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214027_117573_60
+21:40:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_5c1dec37e80c9c81.vcf (seed=0) -- 1 diffs
+21:40:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214027_144843_61
+21:40:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_5c1dec37e80c9c81.vcf (seed=0) -- 1 diffs
+21:40:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214027_167585_62
+21:40:27 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_5c1dec37e80c9c81.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:40:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_acd03d162090c4c1.vcf (seed=0) -- 1 diffs
+21:40:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214031_903897_63
+21:40:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_acd03d162090c4c1.vcf (seed=0) -- 1 diffs
+21:40:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214031_914779_64
+21:40:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_acd03d162090c4c1.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=[]
+21:40:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_ab7ffab60c9b16e3.vcf (seed=0) -- 1 diffs
+21:40:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214037_095552_65
+21:40:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_ab7ffab60c9b16e3.vcf (seed=0) -- 21 diffs
+21:40:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214037_105862_66
+21:40:37 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_ab7ffab60c9b16e3.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:40:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_a8edd9396f138868.vcf (seed=0) -- 1 diffs
+21:40:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214041_804035_67
+21:40:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_a8edd9396f138868.vcf (seed=0) -- 1 diffs
+21:40:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214041_826696_68
+21:40:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_a8edd9396f138868.vcf (seed=0) -- 1 diffs
+21:40:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214041_833880_69
+21:40:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_a8edd9396f138868.vcf (seed=0) -- 1 diffs
+21:40:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214041_873082_70
+21:40:41 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_a8edd9396f138868.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:40:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_a9b979300f5e766b.vcf (seed=0) -- 1 diffs
+21:40:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214046_732766_71
+21:40:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_a9b979300f5e766b.vcf (seed=0) -- 21 diffs
+21:40:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214046_740281_72
+21:40:46 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_a9b979300f5e766b.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+21:40:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_5346f074241bca8f.vcf (seed=0) -- 1 diffs
+21:40:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214051_904503_73
+21:40:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_5346f074241bca8f.vcf (seed=0) -- 1 diffs
+21:40:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214051_908980_74
+21:40:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_5346f074241bca8f.vcf (seed=0) -- 1 diffs
+21:40:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214051_913091_75
+21:40:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_5346f074241bca8f.vcf (seed=0) -- 1 diffs
+21:40:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214051_916735_76
+21:40:51 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_5346f074241bca8f.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Type=String,Number=.,ID=HOMSEQ>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,ID=CNL,Type=Integer>
+  warnings.warn(
+21:41:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_5a57c99b11968f1d.vcf (seed=0) -- 1 diffs
+21:41:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214108_347106_77
+21:41:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on kept_5a57c99b11968f1d.vcf (seed=0) -- 21 diffs
+21:41:08 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214108_351854_78
+21:41:08 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_5a57c99b11968f1d.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:41:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_247dbf841ef27c8c.vcf (seed=0) -- 1 diffs
+21:41:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214123_139167_79
+21:41:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_247dbf841ef27c8c.vcf (seed=0) -- 1 diffs
+21:41:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214123_165830_80
+21:41:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_247dbf841ef27c8c.vcf (seed=0) -- 1 diffs
+21:41:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214123_169152_81
+21:41:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_247dbf841ef27c8c.vcf (seed=0) -- 1 diffs
+21:41:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214123_205301_82
+21:41:23 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_247dbf841ef27c8c.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:41:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_57567b1dd5e1066d.vcf (seed=0) -- 1 diffs
+21:41:39 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214139_207187_83
+21:41:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_57567b1dd5e1066d.vcf (seed=0) -- 1 diffs
+21:41:39 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214139_211293_84
+21:41:39 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_57567b1dd5e1066d.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=[]
+21:41:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_1f5e75cb79be1bfb.vcf (seed=0) -- 1 diffs
+21:41:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214155_070941_85
+21:41:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_1f5e75cb79be1bfb.vcf (seed=0) -- 1 diffs
+21:41:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214155_076154_86
+21:41:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_1f5e75cb79be1bfb.vcf (seed=0) -- 1 diffs
+21:41:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214155_100792_87
+21:41:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_1f5e75cb79be1bfb.vcf (seed=0) -- 1 diffs
+21:41:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214155_111184_88
+21:41:55 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_1f5e75cb79be1bfb.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_568ec16c067b1c55.vcf (seed=0) -- 1 diffs
+21:42:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214205_287994_89
+21:42:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_568ec16c067b1c55.vcf (seed=0) -- 1 diffs
+21:42:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214205_296960_90
+21:42:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_568ec16c067b1c55.vcf (seed=0) -- 1 diffs
+21:42:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214205_309887_91
+21:42:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_568ec16c067b1c55.vcf (seed=0) -- 1 diffs
+21:42:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214205_323674_92
+21:42:05 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_568ec16c067b1c55.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_573ce6a2e7cc0c11.vcf (seed=1) -- 1 diffs
+21:42:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214209_883601_93
+21:42:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_573ce6a2e7cc0c11.vcf (seed=1) -- 1 diffs
+21:42:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214209_890811_94
+21:42:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_573ce6a2e7cc0c11.vcf (seed=1) -- 1 diffs
+21:42:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214209_901442_95
+21:42:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_573ce6a2e7cc0c11.vcf (seed=1) -- 1 diffs
+21:42:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214209_915311_96
+21:42:09 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_573ce6a2e7cc0c11.vcf (seed=1): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_57567b1dd5e1066d.vcf (seed=0) -- 1 diffs
+21:42:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214214_349734_97
+21:42:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_57567b1dd5e1066d.vcf (seed=0) -- 1 diffs
+21:42:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214214_354673_98
+21:42:14 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_57567b1dd5e1066d.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=[]
+21:42:14 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR bc124d1e4573 (Structured meta-line key=value pair order invariance) to minimal failing case
+21:42:14 [INFO] test_engine.orchestrator:   MR bc124d1e4573: Hypothesis found and shrunk a failure
+21:42:14 [INFO] test_engine.orchestrator: Testing MR 21172f02daed (split_multi_allelic normalization invariance) -- scope=VCF.record, transforms=['split_multi_allelic']
+21:42:14 [INFO] test_engine.orchestrator:   MR 21172f02daed: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+21:42:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+21:42:18 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214218_383249_99
+21:42:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+21:42:18 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214218_408498_100
+21:42:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+21:42:18 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214218_447363_101
+21:42:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+21:42:18 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214218_473814_102
+21:42:18 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214222_605288_103
+21:42:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214222_613156_104
+21:42:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214222_638457_105
+21:42:22 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:22 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214222_664786_106
+21:42:22 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_561098f3e105f3bf.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:42:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_561098f3e105f3bf.vcf (seed=127) -- 1 diffs
+21:42:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214227_154254_107
+21:42:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_561098f3e105f3bf.vcf (seed=127) -- 1 diffs
+21:42:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214227_160806_108
+21:42:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_561098f3e105f3bf.vcf (seed=127) -- 1 diffs
+21:42:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214227_179998_109
+21:42:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_561098f3e105f3bf.vcf (seed=127) -- 1 diffs
+21:42:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214227_196394_110
+21:42:27 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_561098f3e105f3bf.vcf (seed=127): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:42:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_6234fa80d017e41b.vcf (seed=226) -- 1 diffs
+21:42:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214231_132224_111
+21:42:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_6234fa80d017e41b.vcf (seed=226) -- 1 diffs
+21:42:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214231_144297_112
+21:42:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_6234fa80d017e41b.vcf (seed=226) -- 1 diffs
+21:42:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214231_154075_113
+21:42:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_6234fa80d017e41b.vcf (seed=226) -- 1 diffs
+21:42:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214231_164754_114
+21:42:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_6234fa80d017e41b.vcf (seed=226): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_9232549d9247edbd.vcf (seed=58233) -- 1 diffs
+21:42:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214236_065175_115
+21:42:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_9232549d9247edbd.vcf (seed=58233) -- 1 diffs
+21:42:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214236_079557_116
+21:42:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_9232549d9247edbd.vcf (seed=58233) -- 1 diffs
+21:42:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214236_100664_117
+21:42:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_9232549d9247edbd.vcf (seed=58233) -- 1 diffs
+21:42:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214236_121110_118
+21:42:36 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_9232549d9247edbd.vcf (seed=58233): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214240_392122_119
+21:42:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214240_397638_120
+21:42:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214240_423996_121
+21:42:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_561098f3e105f3bf.vcf (seed=0) -- 1 diffs
+21:42:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214240_448677_122
+21:42:40 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_561098f3e105f3bf.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:42:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:42:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214245_490470_123
+21:42:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:42:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214245_550512_124
+21:42:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:42:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214245_555609_125
+21:42:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+21:42:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214245_635528_126
+21:42:45 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_dbsnp_135.b37.1000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:42:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_1e89b9b7f85d5333.vcf (seed=0) -- 1 diffs
+21:42:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214250_182106_127
+21:42:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_1e89b9b7f85d5333.vcf (seed=0) -- 1 diffs
+21:42:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214250_206530_128
+21:42:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_1e89b9b7f85d5333.vcf (seed=0) -- 1 diffs
+21:42:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214250_213726_129
+21:42:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_1e89b9b7f85d5333.vcf (seed=0) -- 1 diffs
+21:42:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214250_246238_130
+21:42:50 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_1e89b9b7f85d5333.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:42:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_23865b9aa9e00d2a.vcf (seed=0) -- 1 diffs
+21:42:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214254_383041_131
+21:42:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_23865b9aa9e00d2a.vcf (seed=0) -- 1 diffs
+21:42:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214254_393595_132
+21:42:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_23865b9aa9e00d2a.vcf (seed=0) -- 1 diffs
+21:42:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214254_406550_133
+21:42:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_23865b9aa9e00d2a.vcf (seed=0) -- 1 diffs
+21:42:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214254_419932_134
+21:42:54 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_23865b9aa9e00d2a.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+21:42:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:42:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214258_743791_135
+21:42:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:42:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214258_750655_136
+21:42:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:42:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214258_769226_137
+21:42:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:42:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214258_791213_138
+21:42:58 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_55685de10c73537c.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:43:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on kept_1e7c4b092646e742.vcf (seed=0) -- 1 diffs
+21:43:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214303_132802_139
+21:43:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_1e7c4b092646e742.vcf (seed=0) -- 1 diffs
+21:43:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214303_149130_140
+21:43:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_1e7c4b092646e742.vcf (seed=0) -- 1 diffs
+21:43:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214303_153671_141
+21:43:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_1e7c4b092646e742.vcf (seed=0) -- 1 diffs
+21:43:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214303_166620_142
+21:43:03 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_1e7c4b092646e742.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+21:43:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:43:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214307_612986_143
+21:43:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:43:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214307_621814_144
+21:43:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:43:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214307_644700_145
+21:43:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on kept_55685de10c73537c.vcf (seed=0) -- 1 diffs
+21:43:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\htsjdk_vcf\work\bug_reports\BUG-20260503_214307_665791_146
+21:43:07 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_55685de10c73537c.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=['pysam']
+21:43:07 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 21172f02daed (split_multi_allelic normalization invariance) to minimal failing case
+21:43:07 [INFO] test_engine.orchestrator:   MR 21172f02daed: Hypothesis found and shrunk a failure
+21:43:07 [INFO] test_engine.orchestrator: Testing MR 0258c3e904f0 (Fileformat first-line violation must be rejected) -- scope=VCF.header, transforms=['violate_fileformat_first_line']
+21:43:07 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+21:43:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d0f780fa7b52fbe1.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:43:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d0f780fa7b52fbe1.vcf (seed=190) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+21:43:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_57567b1dd5e1066d.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:43:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_57567b1dd5e1066d.vcf (seed=1457335645) — majority crash rejected, this parser voted accept
+21:44:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_c69ab676941da12b.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:44:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_c69ab676941da12b.vcf (seed=9) — majority crash rejected, this parser voted accept
+21:44:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_65e097c00641611d.vcf (seed=49950) — majority crash rejected, this parser voted accept
+21:44:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7c3309b189b8ecdd.vcf (seed=134) — majority crash rejected, this parser voted accept
+21:44:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_76e3d46d2e4afd70.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+21:44:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_64636cf205618521.vcf (seed=185) — majority crash rejected, this parser voted accept
+21:45:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_aef70281970316e5.vcf (seed=6689) — majority crash rejected, this parser voted accept
+21:45:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_b5c5139397e31fe2.vcf (seed=4180867011) — majority crash rejected, this parser voted accept
+21:45:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=65430) — majority crash rejected, this parser voted accept
+21:45:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_dbdf46b4a7f3f8c0.vcf (seed=474) — majority crash rejected, this parser voted accept
+21:45:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ac30e751f13f880c.vcf (seed=98) — majority crash rejected, this parser voted accept
+21:45:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_45776cd155086f98.vcf (seed=63664) — majority crash rejected, this parser voted accept
+21:45:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_16670033fb2ee20e.vcf (seed=3370460138) — majority crash rejected, this parser voted accept
+21:45:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_badf359c197d62df.vcf (seed=2494501137) — majority crash rejected, this parser voted accept
+21:46:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_26fd3e86780b8d37.vcf (seed=4708) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=3>
+  warnings.warn(
+21:46:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_noroundtrip.vcf (seed=213) — majority crash rejected, this parser voted accept
+21:46:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_f18a9bb85e840f9d.vcf (seed=208) — majority crash rejected, this parser voted accept
+21:46:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15577) — majority crash rejected, this parser voted accept
+21:46:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1b65a11ea763e8ab.vcf (seed=3504313938) — majority crash rejected, this parser voted accept
+21:47:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3c27e99d2f403f07.vcf (seed=236) — majority crash rejected, this parser voted accept
+21:47:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_727089e6f63c3b76.vcf (seed=30543) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Type=String,Number=.,ID=HOMSEQ>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,ID=CNL,Type=Integer>
+  warnings.warn(
+21:47:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_73e8167c09b937a7.vcf (seed=1815531244) — majority crash rejected, this parser voted accept
+21:47:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_c16e0216c7d81325.vcf (seed=244869971) — majority crash rejected, this parser voted accept
+21:47:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_82bc18ba80c5d042.vcf (seed=22587) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Type=Integer,ID=CNL,Number=.>
+  warnings.warn(
+21:48:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af35af882cc905b6.vcf (seed=3164344713) — majority crash rejected, this parser voted accept
+21:48:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e79911ddcb2d2729.vcf (seed=23363) — majority crash rejected, this parser voted accept
+21:48:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d7032a96acc97a41.vcf (seed=65535) — majority crash rejected, this parser voted accept
+21:48:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_26db1f49b0c54ece.vcf (seed=87635064) — majority crash rejected, this parser voted accept
+21:48:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_b7e56904077f2b3f.vcf (seed=4457) — majority crash rejected, this parser voted accept
+21:48:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_edf7af8d2abc9050.vcf (seed=6) — majority crash rejected, this parser voted accept
+21:48:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_83d9a5c272572e49.vcf (seed=12886) — majority crash rejected, this parser voted accept
+21:48:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_64636cf205618521.vcf (seed=137) — majority crash rejected, this parser voted accept
+21:48:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_83d9a5c272572e49.vcf (seed=234) — majority crash rejected, this parser voted accept
+21:49:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_342eb0fed0c22404.vcf (seed=1266692643) — majority crash rejected, this parser voted accept
+21:49:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_561098f3e105f3bf.vcf (seed=12485) — majority crash rejected, this parser voted accept
+21:49:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15578) — majority crash rejected, this parser voted accept
+21:49:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15580) — majority crash rejected, this parser voted accept
+21:49:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15583) — majority crash rejected, this parser voted accept
+21:49:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15587) — majority crash rejected, this parser voted accept
+21:49:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15592) — majority crash rejected, this parser voted accept
+21:49:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15602) — majority crash rejected, this parser voted accept
+21:49:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15622) — majority crash rejected, this parser voted accept
+21:49:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15662) — majority crash rejected, this parser voted accept
+21:50:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15742) — majority crash rejected, this parser voted accept
+21:50:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=15902) — majority crash rejected, this parser voted accept
+21:50:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=16222) — majority crash rejected, this parser voted accept
+21:50:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=16862) — majority crash rejected, this parser voted accept
+21:50:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=18142) — majority crash rejected, this parser voted accept
+21:50:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=20702) — majority crash rejected, this parser voted accept
+21:50:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=25822) — majority crash rejected, this parser voted accept
+21:50:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=36062) — majority crash rejected, this parser voted accept
+21:50:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=56542) — majority crash rejected, this parser voted accept
+21:50:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=97502) — majority crash rejected, this parser voted accept
+21:50:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=179422) — majority crash rejected, this parser voted accept
+21:50:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=343262) — majority crash rejected, this parser voted accept
+21:50:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=670942) — majority crash rejected, this parser voted accept
+21:51:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=1326302) — majority crash rejected, this parser voted accept
+21:51:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=2309342) — majority crash rejected, this parser voted accept
+21:51:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=3333342) — majority crash rejected, this parser voted accept
+21:51:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=4377822) — majority crash rejected, this parser voted accept
+21:51:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=5424862) — majority crash rejected, this parser voted accept
+21:51:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=6473182) — majority crash rejected, this parser voted accept
+21:51:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=7521662) — majority crash rejected, this parser voted accept
+21:51:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=8570222) — majority crash rejected, this parser voted accept
+21:51:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=9618792) — majority crash rejected, this parser voted accept
+21:51:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=10667367) — majority crash rejected, this parser voted accept
+21:51:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715943) — majority crash rejected, this parser voted accept
+21:51:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715942) — majority crash rejected, this parser voted accept
+21:51:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715940) — majority crash rejected, this parser voted accept
+21:52:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715937) — majority crash rejected, this parser voted accept
+21:52:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715933) — majority crash rejected, this parser voted accept
+21:52:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715928) — majority crash rejected, this parser voted accept
+21:52:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715918) — majority crash rejected, this parser voted accept
+21:52:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715898) — majority crash rejected, this parser voted accept
+21:52:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715858) — majority crash rejected, this parser voted accept
+21:52:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715778) — majority crash rejected, this parser voted accept
+21:52:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715618) — majority crash rejected, this parser voted accept
+21:52:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11715298) — majority crash rejected, this parser voted accept
+21:52:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11714658) — majority crash rejected, this parser voted accept
+21:52:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11713378) — majority crash rejected, this parser voted accept
+21:53:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11710818) — majority crash rejected, this parser voted accept
+21:53:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11705698) — majority crash rejected, this parser voted accept
+21:53:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11695458) — majority crash rejected, this parser voted accept
+21:53:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11674978) — majority crash rejected, this parser voted accept
+21:53:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11634018) — majority crash rejected, this parser voted accept
+21:53:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11552098) — majority crash rejected, this parser voted accept
+21:53:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11388258) — majority crash rejected, this parser voted accept
+21:53:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=11060578) — majority crash rejected, this parser voted accept
+21:53:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=10405218) — majority crash rejected, this parser voted accept
+21:53:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=9422178) — majority crash rejected, this parser voted accept
+21:53:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=8398178) — majority crash rejected, this parser voted accept
+21:53:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=7353698) — majority crash rejected, this parser voted accept
+21:54:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=6306658) — majority crash rejected, this parser voted accept
+21:54:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=5258338) — majority crash rejected, this parser voted accept
+21:54:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=4209858) — majority crash rejected, this parser voted accept
+21:54:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=3161298) — majority crash rejected, this parser voted accept
+21:54:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=2112728) — majority crash rejected, this parser voted accept
+21:54:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_15b5957765914ef4.vcf (seed=1064153) — majority crash rejected, this parser voted accept
+21:56:04 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: Hypothesis explored 169 examples — no failures
+21:56:04 [INFO] test_engine.orchestrator: Testing MR 978e560983f8 (Missing mandatory fixed column must be rejected) -- scope=VCF.record, transforms=['violate_required_fixed_columns']
+21:56:04 [INFO] test_engine.orchestrator:   MR 978e560983f8: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+21:57:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0e11432d69c9b3f0.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:57:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0e11432d69c9b3f0.vcf (seed=1) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+21:57:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_73e8167c09b937a7.vcf (seed=76) — majority crash rejected, this parser voted accept
+21:57:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_124cd539a82ea0c9.vcf (seed=87) — majority crash rejected, this parser voted accept
+21:58:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_665220954eeef1be.vcf (seed=4094101890) — majority crash rejected, this parser voted accept
+21:59:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ca9aa62743a0e96a.vcf (seed=1009701854) — majority crash rejected, this parser voted accept
+21:59:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_ad_bias.vcf (seed=198) — majority crash rejected, this parser voted accept
+21:59:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=144) — majority crash rejected, this parser voted accept
+22:00:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_def3f30ad88a51bb.vcf (seed=3518495561) — majority crash rejected, this parser voted accept
+22:01:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_29418c66bb504f86.vcf (seed=4004528744) — majority crash rejected, this parser voted accept
+22:02:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=76) — majority crash rejected, this parser voted accept
+22:02:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=77) — majority crash rejected, this parser voted accept
+22:02:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=79) — majority crash rejected, this parser voted accept
+22:02:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=82) — majority crash rejected, this parser voted accept
+22:02:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=86) — majority crash rejected, this parser voted accept
+22:03:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=91) — majority crash rejected, this parser voted accept
+22:03:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=101) — majority crash rejected, this parser voted accept
+22:03:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=121) — majority crash rejected, this parser voted accept
+22:03:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=161) — majority crash rejected, this parser voted accept
+22:03:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=241) — majority crash rejected, this parser voted accept
+22:03:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=401) — majority crash rejected, this parser voted accept
+22:03:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=721) — majority crash rejected, this parser voted accept
+22:03:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=1361) — majority crash rejected, this parser voted accept
+22:03:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=2641) — majority crash rejected, this parser voted accept
+22:03:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=5201) — majority crash rejected, this parser voted accept
+22:03:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=10321) — majority crash rejected, this parser voted accept
+22:03:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=20561) — majority crash rejected, this parser voted accept
+22:03:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=41041) — majority crash rejected, this parser voted accept
+22:03:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=82001) — majority crash rejected, this parser voted accept
+22:04:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=163921) — majority crash rejected, this parser voted accept
+22:04:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=327761) — majority crash rejected, this parser voted accept
+22:04:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=655441) — majority crash rejected, this parser voted accept
+22:04:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=1310801) — majority crash rejected, this parser voted accept
+22:04:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=2293841) — majority crash rejected, this parser voted accept
+22:04:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=3317841) — majority crash rejected, this parser voted accept
+22:04:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=4362321) — majority crash rejected, this parser voted accept
+22:04:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=5409361) — majority crash rejected, this parser voted accept
+22:04:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=6457681) — majority crash rejected, this parser voted accept
+22:04:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=7506161) — majority crash rejected, this parser voted accept
+22:04:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=8554721) — majority crash rejected, this parser voted accept
+22:04:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=9603291) — majority crash rejected, this parser voted accept
+22:04:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=10651866) — majority crash rejected, this parser voted accept
+22:04:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700442) — majority crash rejected, this parser voted accept
+22:04:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700441) — majority crash rejected, this parser voted accept
+22:05:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700439) — majority crash rejected, this parser voted accept
+22:05:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700436) — majority crash rejected, this parser voted accept
+22:05:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700432) — majority crash rejected, this parser voted accept
+22:05:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700427) — majority crash rejected, this parser voted accept
+22:05:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700417) — majority crash rejected, this parser voted accept
+22:05:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700397) — majority crash rejected, this parser voted accept
+22:05:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700357) — majority crash rejected, this parser voted accept
+22:05:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700277) — majority crash rejected, this parser voted accept
+22:05:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11700117) — majority crash rejected, this parser voted accept
+22:05:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11699797) — majority crash rejected, this parser voted accept
+22:05:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11699157) — majority crash rejected, this parser voted accept
+22:05:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11697877) — majority crash rejected, this parser voted accept
+22:05:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11695317) — majority crash rejected, this parser voted accept
+22:05:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11690197) — majority crash rejected, this parser voted accept
+22:05:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11679957) — majority crash rejected, this parser voted accept
+22:06:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11659477) — majority crash rejected, this parser voted accept
+22:06:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11618517) — majority crash rejected, this parser voted accept
+22:06:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11536597) — majority crash rejected, this parser voted accept
+22:06:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11372757) — majority crash rejected, this parser voted accept
+22:06:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=11045077) — majority crash rejected, this parser voted accept
+22:06:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=10389717) — majority crash rejected, this parser voted accept
+22:06:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=9406677) — majority crash rejected, this parser voted accept
+22:06:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=8382677) — majority crash rejected, this parser voted accept
+22:06:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=7338197) — majority crash rejected, this parser voted accept
+22:06:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=6291157) — majority crash rejected, this parser voted accept
+22:06:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=5242837) — majority crash rejected, this parser voted accept
+22:06:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=4194357) — majority crash rejected, this parser voted accept
+22:06:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=3145797) — majority crash rejected, this parser voted accept
+22:06:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=2097227) — majority crash rejected, this parser voted accept
+22:06:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=1048652) — majority crash rejected, this parser voted accept
+22:06:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08775fec2a01d253.vcf (seed=76) — majority crash rejected, this parser voted accept
+Exception in thread Thread-2958 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb2 in position 223: invalid start byte
+22:07:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08b26d66fc8b703c.vcf (seed=76) — majority crash rejected, this parser voted accept
+22:07:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0bb71aa06669061f.vcf (seed=76) — majority crash rejected, this parser voted accept
+22:07:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0e4db46020af878a.vcf (seed=76) — majority crash rejected, this parser voted accept
+22:07:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0e11432d69c9b3f0.vcf (seed=76) — majority crash rejected, this parser voted accept
+22:08:17 [INFO] test_engine.orchestrator:   MR 978e560983f8: Hypothesis explored 169 examples — no failures
+22:08:17 [INFO] test_engine.orchestrator: Testing MR 752c1e307098 (GT allele index out of bounds must be rejected) -- scope=VCF.record, transforms=['violate_gt_index_bounds']
+22:08:17 [INFO] test_engine.orchestrator:   MR 752c1e307098: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+22:09:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9d1b7cc5e2b24dd1.vcf (seed=30) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+22:13:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4dea4d1ad2569f40.vcf (seed=1641466666) — majority crash rejected, this parser voted accept
+22:13:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61539) — majority crash rejected, this parser voted accept
+22:13:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on kept_46b3e8b579004779.vcf (seed=7120) — majority crash rejected, this parser voted accept
+22:14:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a2e56cfafe02c6e3.vcf (seed=15989) — majority crash rejected, this parser voted accept
+22:14:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61540) — majority crash rejected, this parser voted accept
+22:14:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61542) — majority crash rejected, this parser voted accept
+22:14:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61545) — majority crash rejected, this parser voted accept
+22:14:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61549) — majority crash rejected, this parser voted accept
+22:14:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61554) — majority crash rejected, this parser voted accept
+22:14:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61564) — majority crash rejected, this parser voted accept
+22:14:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61584) — majority crash rejected, this parser voted accept
+22:14:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61624) — majority crash rejected, this parser voted accept
+22:14:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61704) — majority crash rejected, this parser voted accept
+22:14:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=61864) — majority crash rejected, this parser voted accept
+22:14:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=62184) — majority crash rejected, this parser voted accept
+22:15:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=62824) — majority crash rejected, this parser voted accept
+22:15:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=64104) — majority crash rejected, this parser voted accept
+22:15:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=66664) — majority crash rejected, this parser voted accept
+22:15:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=71784) — majority crash rejected, this parser voted accept
+22:15:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=82024) — majority crash rejected, this parser voted accept
+22:15:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=102504) — majority crash rejected, this parser voted accept
+22:15:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=143464) — majority crash rejected, this parser voted accept
+22:15:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=225384) — majority crash rejected, this parser voted accept
+22:15:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=389224) — majority crash rejected, this parser voted accept
+22:15:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=716904) — majority crash rejected, this parser voted accept
+22:15:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=1372264) — majority crash rejected, this parser voted accept
+22:15:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=2355304) — majority crash rejected, this parser voted accept
+22:15:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=3379304) — majority crash rejected, this parser voted accept
+22:15:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=4423784) — majority crash rejected, this parser voted accept
+22:16:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=5470824) — majority crash rejected, this parser voted accept
+22:16:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=6519144) — majority crash rejected, this parser voted accept
+22:16:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=7567624) — majority crash rejected, this parser voted accept
+22:16:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=8616184) — majority crash rejected, this parser voted accept
+22:16:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=9664754) — majority crash rejected, this parser voted accept
+22:16:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=10713329) — majority crash rejected, this parser voted accept
+22:16:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761905) — majority crash rejected, this parser voted accept
+22:16:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761904) — majority crash rejected, this parser voted accept
+22:16:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761902) — majority crash rejected, this parser voted accept
+22:16:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761899) — majority crash rejected, this parser voted accept
+22:16:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761895) — majority crash rejected, this parser voted accept
+22:16:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761890) — majority crash rejected, this parser voted accept
+22:16:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761880) — majority crash rejected, this parser voted accept
+22:16:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761860) — majority crash rejected, this parser voted accept
+22:16:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761820) — majority crash rejected, this parser voted accept
+22:17:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761740) — majority crash rejected, this parser voted accept
+22:17:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761580) — majority crash rejected, this parser voted accept
+22:17:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11761260) — majority crash rejected, this parser voted accept
+22:17:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11760620) — majority crash rejected, this parser voted accept
+22:17:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11759340) — majority crash rejected, this parser voted accept
+22:17:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11756780) — majority crash rejected, this parser voted accept
+22:17:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11751660) — majority crash rejected, this parser voted accept
+22:17:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11741420) — majority crash rejected, this parser voted accept
+22:17:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11720940) — majority crash rejected, this parser voted accept
+22:17:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11679980) — majority crash rejected, this parser voted accept
+22:17:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11598060) — majority crash rejected, this parser voted accept
+22:17:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11434220) — majority crash rejected, this parser voted accept
+22:17:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=11106540) — majority crash rejected, this parser voted accept
+22:17:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=10451180) — majority crash rejected, this parser voted accept
+22:17:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=9468140) — majority crash rejected, this parser voted accept
+22:17:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=8444140) — majority crash rejected, this parser voted accept
+22:18:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=7399660) — majority crash rejected, this parser voted accept
+22:18:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=6352620) — majority crash rejected, this parser voted accept
+22:18:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=5304300) — majority crash rejected, this parser voted accept
+22:18:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=4255820) — majority crash rejected, this parser voted accept
+22:18:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=3207260) — majority crash rejected, this parser voted accept
+22:18:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=2158690) — majority crash rejected, this parser voted accept
+22:18:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_19521ccb848ac399.vcf (seed=1110115) — majority crash rejected, this parser voted accept
+22:21:41 [INFO] test_engine.orchestrator:   MR 752c1e307098: Hypothesis explored 169 examples — no failures
+22:21:41 [INFO] test_engine.orchestrator: Testing MR 963423e1bf3c (INFO Number=A cardinality mismatch must be rejected) -- scope=VCF.record, transforms=['violate_info_number_a_cardinality']
+22:21:41 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+22:22:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=0) — majority crash rejected, this parser voted accept
+22:22:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=39771) — majority crash rejected, this parser voted accept
+22:26:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=1) — majority crash rejected, this parser voted accept
+22:26:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=3) — majority crash rejected, this parser voted accept
+22:27:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=6) — majority crash rejected, this parser voted accept
+22:27:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=10) — majority crash rejected, this parser voted accept
+22:27:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=15) — majority crash rejected, this parser voted accept
+22:27:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=25) — majority crash rejected, this parser voted accept
+22:27:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=45) — majority crash rejected, this parser voted accept
+22:27:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=85) — majority crash rejected, this parser voted accept
+22:27:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=165) — majority crash rejected, this parser voted accept
+22:27:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=325) — majority crash rejected, this parser voted accept
+22:27:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=645) — majority crash rejected, this parser voted accept
+22:27:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=1285) — majority crash rejected, this parser voted accept
+22:27:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=2565) — majority crash rejected, this parser voted accept
+22:27:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=5125) — majority crash rejected, this parser voted accept
+22:27:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=10245) — majority crash rejected, this parser voted accept
+22:27:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=20485) — majority crash rejected, this parser voted accept
+22:27:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=40965) — majority crash rejected, this parser voted accept
+22:28:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=81925) — majority crash rejected, this parser voted accept
+22:28:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=163845) — majority crash rejected, this parser voted accept
+22:28:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=327685) — majority crash rejected, this parser voted accept
+22:28:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=655365) — majority crash rejected, this parser voted accept
+22:28:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+22:28:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+22:28:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+22:28:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+22:28:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+22:28:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+22:28:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+22:28:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+22:28:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+22:28:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+22:28:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+22:28:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+22:29:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+22:29:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+22:29:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+22:29:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+22:29:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+22:30:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+22:30:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+22:30:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+22:30:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+22:30:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+22:30:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+22:30:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11697801) — majority crash rejected, this parser voted accept
+22:30:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11695241) — majority crash rejected, this parser voted accept
+22:30:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11690121) — majority crash rejected, this parser voted accept
+22:30:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11679881) — majority crash rejected, this parser voted accept
+22:31:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11659401) — majority crash rejected, this parser voted accept
+22:31:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11618441) — majority crash rejected, this parser voted accept
+22:31:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11536521) — majority crash rejected, this parser voted accept
+22:31:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11372681) — majority crash rejected, this parser voted accept
+22:31:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=11045001) — majority crash rejected, this parser voted accept
+22:31:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=10389641) — majority crash rejected, this parser voted accept
+22:31:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=9406601) — majority crash rejected, this parser voted accept
+22:31:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=8382601) — majority crash rejected, this parser voted accept
+22:31:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=7338121) — majority crash rejected, this parser voted accept
+22:31:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=6291081) — majority crash rejected, this parser voted accept
+22:31:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=5242761) — majority crash rejected, this parser voted accept
+22:31:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=4194281) — majority crash rejected, this parser voted accept
+22:31:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=3145721) — majority crash rejected, this parser voted accept
+22:31:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=2097151) — majority crash rejected, this parser voted accept
+22:31:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=1048576) — majority crash rejected, this parser voted accept
+22:32:58 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: Hypothesis explored 169 examples — no failures
+22:32:58 [INFO] test_engine.orchestrator: Testing MR b91069b2a280 (POS-END coordinate interval invariance under meta-line shuffle) -- scope=VCF.record, transforms=['shuffle_meta_lines', 'query_method_roundtrip']
+22:32:58 [INFO] test_engine.orchestrator:   MR b91069b2a280: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+22:44:48 [INFO] test_engine.orchestrator:   MR b91069b2a280: Hypothesis explored 169 examples — no failures
+22:44:48 [INFO] test_engine.orchestrator: Testing MR d2e70d8d4cb6 (POS-END coordinate interval invariance under sample column permutation) -- scope=VCF.record, transforms=['permute_sample_columns', 'query_method_roundtrip']
+22:44:48 [INFO] test_engine.orchestrator:   MR d2e70d8d4cb6: scaled max_examples 50 -> 169 (VCF corpus=375, baseline=33)
+22:46:08 [ERROR] test_engine.orchestrator: Transform failed on kept_ea50b8a3035917d4.vcf (seed=2158856032): list index out of range
+22:47:46 [ERROR] test_engine.orchestrator: Transform failed on kept_bd9bd4824292b847.vcf (seed=3946467124): list index out of range
+22:48:42 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37316): list index out of range
+22:48:46 [ERROR] test_engine.orchestrator: Transform failed on kept_fb463371087446a8.vcf (seed=15169): list index out of range
+22:50:24 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37317): list index out of range
+22:50:24 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37319): list index out of range
+22:50:36 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37318): list index out of range
+22:50:36 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37313): list index out of range
+22:51:31 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37401): list index out of range
+22:51:31 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=37481): list index out of range
+22:51:50 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=38601): list index out of range
+22:51:50 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=39881): list index out of range
+22:51:50 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=42441): list index out of range
+22:52:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=57801): list index out of range
+22:52:09 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=119241): list index out of range
+22:52:37 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=1348041): list index out of range
+22:52:37 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=2331081): list index out of range
+22:52:37 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=3355081): list index out of range
+22:53:04 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=7543401): list index out of range
+22:53:13 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=9640531): list index out of range
+22:53:13 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=10689106): list index out of range
+22:53:13 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737682): list index out of range
+22:53:41 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737672): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737637): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737597): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737517): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737357): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11737037): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11736397): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11735117): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11732557): list index out of range
+22:54:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11727437): list index out of range
+22:54:18 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11655757): list index out of range
+22:54:18 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11573837): list index out of range
+22:54:18 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=11409997): list index out of range
+22:54:28 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=10426957): list index out of range
+22:54:28 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=9443917): list index out of range
+22:54:39 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=7375437): list index out of range
+22:54:39 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=6328397): list index out of range
+22:54:39 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=5280077): list index out of range
+22:55:00 [ERROR] test_engine.orchestrator: Transform failed on kept_829f6a6342608c36.vcf (seed=2134467): list index out of range

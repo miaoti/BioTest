@@ -1,0 +1,637 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information line shuffle invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has at least 2 meta-information lines including ##fileformat"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all query methods; canonical JSON must be identical",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured meta-line key-value pair order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header contains at least one structured ##INFO, ##FORMAT, or ##FILTER line with multiple key=value pairs"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all query methods; canonical JSON must be identical",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key-value shuffle invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least one data record has an INFO field with 2+ key=value pairs"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all query methods; canonical JSON must be identical",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Semicolon-separated series of additional information fields, or the MISSING value '.' if none are present. Each subfield consists of a short key with optional values in the format: key[=value[,...]].",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that INFO key order is semantically insignificant, but no ordering semantics are defined"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "file has at least 2 sample columns"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after re-mapping sample IDs; per-sample genotype data must be preserved",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If genotype data is present in the file, these are followed by a FORMAT column header, then an arbitrary number of sample IDs.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Sample column order is conventionally meaningful for column-position-based access, but the spec defines sample identity by the column header ID, not position"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "19ff4ae6dea2",
+      "mr_name": "CSQ/ANN annotation record permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "INFO field contains CSQ or ANN key with at least 2 comma-separated annotation records"
+      ],
+      "transform_steps": [
+        "permute_csq_annotations"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all query methods; canonical JSON must be identical",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The Number entry is an Integer that describes the number of values that can be included with the INFO field. For example, if the INFO field contains a single number, then this value must be 1; if the INFO field describes a pair of numbers, then this value must be 2 and so on.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "CSQ/ANN record order is not explicitly addressed in the VCF v4.5 spec; the ordering semantics come from VEP/SnpEff documentation which states record order is not significant"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with consistent remapping of GT, Number=A, and Number=R fields",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2",
+        "record has at least one Number=A INFO or FORMAT field",
+        "record has at least one Number=R INFO or FORMAT field",
+        "record has GT FORMAT field"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles and consistently remapping GT indices, Number=A values, and Number=R values, the parsed variant semantics must be identical. GT allele indices are updated so that 0 still means REF and the new indices point to the correct permuted ALT alleles. Number=A values are reordered by the same permutation. Number=R values keep REF (index 0) fixed and reorder the ALT values by the permutation. The resulting VCF record represents the same set of variant haplotypes.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section data-lines).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "R: The field has one value for each possible allele, including the reference. The order of the values must be the reference allele first, then the alternate alleles as listed in the ALT column.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "Common-affix trimming invariance for biallelic records",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]"
+      ],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "The canonical normalized representation (parsimonious, left-anchored) of the variant must be identical between the original and trimmed forms. Parsing both forms and normalizing must yield the same REF, ALT, and POS.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "REF --- reference base(s): Each base must be one of A,C,G,T,N (case insensitive). Multiple bases are permitted. The value in the POS field refers to the position of the first base in the String.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "For simple insertions and deletions in which either the REF or one of the ALT alleles would otherwise be null/empty, the REF and ALT Strings must include the base before the variant (which must be reflected in the POS field), unless the variant occurs at position 1 on the contig in which case it must include the base after the variant; this padding base is not required (although it is permitted) e.g. for complex substitutions or other variants where all alleles have at least one base represented in their Strings.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says padding base is 'not required (although it is permitted)' for complex substitutions — this MAY/SHOULD ambiguity means both padded and unpadded forms are valid, making normalization invariance a testable MR."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "Multi-allelic split invariance with Number=A field synchronization",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2"
+      ],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "The set of variant alleles across the split records must be identical to the original multi-ALT record. Per-sample GT indices must be remapped to preserve REF (0) semantics. Number=A INFO/FORMAT values must be partitioned correctly across split records.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section data-lines).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "Left-alignment invariance for indels in homopolymer runs",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)!=len(ALT)",
+        "REF[0]==REF[-1]",
+        "pos>=2"
+      ],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "The left-shifted form must represent the same biological variant as the original. Parsing both forms and normalizing must yield equivalent REF, ALT, and POS. The first base of REF/ALT is preserved, POS decremented by 1.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "REF --- reference base(s): Each base must be one of A,C,G,T,N (case insensitive). Multiple bases are permitted. The value in the POS field refers to the position of the first base in the String.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "For simple insertions and deletions in which either the REF or one of the ALT alleles would otherwise be null/empty, the REF and ALT Strings must include the base before the variant (which must be reflected in the POS field), unless the variant occurs at position 1 on the contig in which case it must include the base after the variant; this padding base is not required (although it is permitted) e.g. for complex substitutions or other variants where all alleles have at least one base represented in their Strings.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly mandate left-alignment of indels in homopolymer runs; this is a best practice from Tan et al. 2015. The padding base rule permits but does not require the base-before-variant convention for complex substitutions."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "BCF round-trip invariance for VCF records",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Round-tripping VCF through BCF2 binary encoding and back must produce semantically identical output. Any difference in canonical JSON output exposes a codec bug in precision, string encoding, or dictionary remapping.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "VCF is a text file format (most likely stored in a compressed manner). It contains meta-information lines (prefixed with '##'), a header line (prefixed with '#'), and data lines each containing information about a position in the genome and genotype information on samples for each position (text fields separated by tabs).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly guarantee that VCF->BCF->VCF round-trip is lossless for all data types; some precision loss may occur for Float values or edge cases in string encoding."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "reject_violate_required_fixed_columns",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "A compliant VCF parser MUST reject (raise a validation error, crash, or refuse to emit) a data record with fewer than 8 fixed columns. Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The mandatory header line names the 8 fixed, mandatory columns. These columns are as follows: #CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "reject_violate_fileformat_first_line",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a file where ##fileformat is not the first line. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A single `fileformat' line is always required, must be the first line in the file, and details the VCF format version number.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "reject_violate_gt_index_bounds",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count=1",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a GT field containing an allele index that exceeds len(ALT). For a biallelic record (ALT has 1 allele), valid indices are 0 (REF) and 1 (first ALT). Index 2 is out of bounds and must be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "reject_violate_info_number_a_cardinality",
+      "scope": "VCF.record",
+      "preconditions": [
+        "header_has_info_number_a",
+        "alt_count=1"
+      ],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "A compliant VCF parser MUST reject an INFO field declared Number=A that contains more values than the number of ALT alleles. For a biallelic record (1 ALT), exactly 1 value is required; 2 values is a cardinality violation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section data-lines).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "Write roundtrip preserves POS and END coordinates",
+      "scope": "VCF.record",
+      "preconditions": [
+        "primary_sut_has_writer"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After parsing and re-serializing through the SUT's writer, the POS field and any END/SVLEN-derived coordinate fields must remain identical. The 1-based coordinate semantics must be preserved through the write cycle.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS --- position: The reference position, with the 1st base having position 1.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "1-based coordinate system: A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is [3,7]. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "b91069b2a280",
+      "mr_name": "Query method invariance under meta-line shuffle for coordinate methods",
+      "scope": "VCF.record",
+      "preconditions": [
+        "primary_sut_has_query_methods",
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method. Shuffling meta-information lines must not affect the parsed coordinate values (getStart, getEnd, getChr, getContig) or derived length calculations (getLengthOnReference).",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Meta-information lines are optional, but if they are present then they must be completely well-formed. Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS --- position: The reference position, with the 1st base having position 1.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getStart",
+        "getEnd",
+        "getChr",
+        "getContig",
+        "getLengthOnReference"
+      ]
+    },
+    {
+      "mr_id": "6cd9bfb18f53",
+      "mr_name": "Missing value injection in FORMAT fields is semantically neutral",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "inject_equivalent_missing_values"
+      ],
+      "oracle": "Appending a FORMAT field filled with '.' (missing values) to all samples must produce a semantically equivalent file. Parsing the original and transformed file must yield identical canonical content for all non-missing fields.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If any of the fields is missing, it is replaced with the MISSING value.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "In all cases, missing values are specified with a dot ('.').",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0340d2bf0c09",
+      "mr_name": "Meta-line shuffle invariance for record-level query methods",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method, where T shuffles ##meta-information lines (keeping ##fileformat first). The spec states meta lines other than ##fileformat may appear in any order, so record-level properties must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Meta-information lines are optional, but if they are present then they must be completely well-formed. Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "isSNP",
+        "isIndel",
+        "getStart"
+      ]
+    },
+    {
+      "mr_id": "f64872b0c184",
+      "mr_name": "Structured meta-line field order invariance for record query methods",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header_has_structured_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method, where T reorders key=value pairs inside structured ##INFO/##FORMAT/##FILTER meta-lines. The spec states implementations must not rely on field order within structured lines.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "isVariant",
+        "getType",
+        "hasGenotypes"
+      ]
+    },
+    {
+      "mr_id": "ad668b4509db",
+      "mr_name": "INFO field key-value shuffle invariance for record query methods",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_info_field_with_multiple_keys"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method, where T shuffles semicolon-separated key=value entries in the INFO column. The INFO field is a semicolon-separated series with no mandated order.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "INFO --- additional information: Semicolon-separated series of additional information fields, or the MISSING value '.' if none are present.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "isFiltered",
+        "isVariant",
+        "getStart"
+      ]
+    },
+    {
+      "mr_id": "d2e70d8d4cb6",
+      "mr_name": "Sample column permutation invariance for record query methods",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_multiple_samples"
+      ],
+      "transform_steps": [
+        "permute_sample_columns",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method, where T permutes sample column order consistently across header and data rows. Sample identity is preserved; only column ordering changes, so record-level properties must be invariant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If genotype data is present in the file, these are followed by a FORMAT column header, then an arbitrary number of sample IDs. Duplicate sample IDs are not allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that sample column order is semantically irrelevant, but the sample IDs uniquely identify each sample, implying column order is a presentation detail."
+      ],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "getNSamples",
+        "isVariant",
+        "getType"
+      ]
+    },
+    {
+      "mr_id": "484d535a76af",
+      "mr_name": "Common affix trimming invariance for record query methods",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]"
+      ],
+      "transform_steps": [
+        "trim_common_affixes",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed query method, where T trims shared prefix/suffix bases between REF and ALT to produce a left-anchored parsimonious representation. Per Tan 2015 normalization, the canonical variant is the same regardless of affix trimming.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "REF --- reference base(s): Each base must be one of A,C,G,T,N (case insensitive). Multiple bases are permitted. The value in the POS field refers to the position of the first base in the String.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The VCF spec does not explicitly mandate left-anchored normalization; this MR relies on the Tan 2015 canonical representation convention which is a widely accepted best practice but not a strict VCF spec requirement."
+      ],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "isSNP",
+        "isIndel",
+        "getStart",
+        "getEnd",
+        "getLengthOnReference"
+      ]
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 22,
+    "total": 22
+  }
+}

@@ -1,0 +1,22 @@
+--- src/record/samples/sample.rs
++++ replace Sample<'s>::values -> impl Iterator<Item = Option<io::Result<Value<'s>>>>+'_ with ::std::iter::empty()
+@@ -24,18 +24,17 @@
+         self.values(header).nth(i)
+     }
+ 
+     /// Returns an iterator over values.
+     pub fn values<'h: 's>(
+         &self,
+         header: &'h Header,
+     ) -> impl Iterator<Item = Option<io::Result<Value<'s>>>> + '_ {
+-        self.iter(header)
+-            .map(|result| result.map(|(_, value)| value).transpose())
++        ::std::iter::empty() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns an iterator over fields.
+     pub fn iter<'h: 's>(
+         &self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&str, Option<Value<'s>>)>> + '_> {
+         const DELIMITER: char = ':';

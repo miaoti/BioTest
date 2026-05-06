@@ -1,0 +1,23 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace parse_raw_string -> Result<String, ParseError> with Ok(String::new())
+@@ -131,19 +131,17 @@
+             MISSING => Ok(None),
+             _ => parse_raw_char(t).map(Some),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Character(values)))
+ }
+ 
+ fn parse_raw_string(s: &str) -> Result<String, ParseError> {
+-    value::percent_decode(s)
+-        .map(|t| t.into())
+-        .map_err(ParseError::InvalidString)
++    Ok(String::new()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string(s: &str) -> Result<Value, ParseError> {
+     parse_raw_string(s).map(Value::String)
+ }
+ 
+ fn parse_string_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)

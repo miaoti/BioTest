@@ -775,21 +775,101 @@ def run_phase_c(cfg: dict[str, Any]) -> PhaseCResult:
         from test_engine.feedback.corpus_keeper import from_config as _ck_from_cfg
         corpus_keeper = _ck_from_cfg(cfg, seeds_dir)
 
+        # Hypothesis-driven testing knobs (cascade-dilution mitigation,
+        # 2026-04-30). Defaults preserve historical static-mode behavior
+        # so existing runs remain reproducible — opt in by setting
+        # phase_c.hypothesis.enabled: true.
+        _hyp_cfg = phase_cfg.get("hypothesis", {}) or {}
+        _use_hypothesis = bool(_hyp_cfg.get("enabled", False))
+        _max_examples = int(_hyp_cfg.get("max_examples", 50))
+        _mes_cfg = _hyp_cfg.get("max_examples_corpus_scaling", {}) or {}
+        _mes_enabled = bool(_mes_cfg.get("enabled", False))
+        _mes_baseline = int(_mes_cfg.get("baseline_corpus_size", 33))
+        _mes_cap_raw = _mes_cfg.get("cap")
+        _mes_cap = int(_mes_cap_raw) if _mes_cap_raw is not None else None
+
         result = run_test_suite(
             runners=available,
             registry_path=registry_path,
             seeds_dir=seeds_dir,
             output_dir=output_dir,
             format_filter=format_filter,
+            use_hypothesis=_use_hypothesis,
+            max_examples=_max_examples,
             primary_target=primary_target_c,
             consensus_quorum_fraction=quorum,
             consensus_field_tolerance=field_tolerance,
             corpus_keeper=corpus_keeper,
+            max_examples_corpus_scaling=_mes_enabled,
+            max_examples_baseline_corpus_size=_mes_baseline,
+            max_examples_cap=_mes_cap,
         )
 
         # Export DET report
         det_report.parent.mkdir(parents=True, exist_ok=True)
         result.det_tracker.export(str(det_report))
+
+        # Rank 8b (2026-04-30) — coverage-guided culling of files
+        # added to seeds/<fmt>/kept_* during this Phase C iteration.
+        # Off by default. When enabled, replays each new kept_* file
+        # through the primary SUT under coverage.py to verify it
+        # contributes at least one previously-unseen line; otherwise
+        # deletes it. Currently MVP-supports Python primary targets
+        # (vcfpy, biopython) — see test_engine/feedback/coverage_culler.
+        _ck_cfg_block = phase_cfg.get("corpus_keeper", {}) or {}
+        _cull_cfg = _ck_cfg_block.get("coverage_guided_culling", {}) or {}
+        if (corpus_keeper is not None
+                and corpus_keeper.enabled
+                and _cull_cfg.get("enabled", False)):
+            _measure_baseline = bool(
+                _cull_cfg.get("measure_baseline_against_corpus", True)
+            )
+            try:
+                from test_engine.feedback.coverage_culler import (
+                    SUPPORTED_PYTHON_SUTS,
+                    build_python_measurer,
+                    measure_corpus_baseline,
+                )
+                if primary_target_c in SUPPORTED_PYTHON_SUTS:
+                    fmt_for_cull = (format_filter or "VCF").upper()
+                    measure = build_python_measurer(
+                        primary_target_c, fmt_for_cull,
+                    )
+                    baseline = None
+                    if _measure_baseline:
+                        # Baseline = coverage of every seed that existed
+                        # BEFORE this Phase C ran. The `corpus` snapshot
+                        # was taken above run_test_suite, so it includes
+                        # curated/external/synthetic AND any kept_* /
+                        # synthetic_ from prior iterations, but NOT this
+                        # iteration's new kept_* additions.
+                        baseline_seeds = list(
+                            corpus.seeds_for_format(fmt_for_cull)
+                        )
+                        baseline = measure_corpus_baseline(
+                            measure, baseline_seeds,
+                        )
+                    cull_stats = corpus_keeper.cull_by_coverage(
+                        measure, baseline_lines=baseline,
+                    )
+                    logger.info(
+                        "Coverage-guided cull: %d/%d files removed "
+                        "(baseline_lines=%d, final_lines=%d)",
+                        cull_stats['culled'], cull_stats['total'],
+                        cull_stats['baseline_size'],
+                        cull_stats['final_size'],
+                    )
+                else:
+                    logger.warning(
+                        "Coverage-guided cull skipped: primary target "
+                        "'%s' has no per-file measurer "
+                        "(Python SUTs only in MVP)",
+                        primary_target_c,
+                    )
+            except Exception:
+                logger.exception(
+                    "Coverage-guided cull failed; continuing without it",
+                )
 
         # Phase C PASSES when we actually ran tests. An empty registry
         # (0 enforced MRs) means Phase C had NOTHING to execute — that

@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ delete match arm MISSING in parse_i32_array
+@@ -73,17 +73,17 @@
+     s.parse()
+         .map(Value::Integer)
+         .map_err(ParseError::InvalidInteger)
+ }
+ 
+ fn parse_i32_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)
+         .map(|t| match t {
+-            MISSING => Ok(None),
++             /* ~ changed by cargo-mutants ~ */
+             _ => t.parse().map(Some).map_err(ParseError::InvalidInteger),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Integer(values)))
+ }
+ 
+ fn parse_f32(s: &str) -> Result<Value, ParseError> {
+     s.parse()

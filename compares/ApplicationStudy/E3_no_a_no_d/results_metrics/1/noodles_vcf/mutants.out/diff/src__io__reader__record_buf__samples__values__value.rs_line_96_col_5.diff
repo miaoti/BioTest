@@ -1,0 +1,23 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace parse_f32 -> Result<Value, ParseError> with Ok(Default::default())
+@@ -88,19 +88,17 @@
+             MISSING => Ok(None),
+             _ => t.parse().map(Some).map_err(ParseError::InvalidInteger),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Integer(values)))
+ }
+ 
+ fn parse_f32(s: &str) -> Result<Value, ParseError> {
+-    s.parse()
+-        .map(Value::Float)
+-        .map_err(ParseError::InvalidFloat)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_f32_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)
+         .map(|t| match t {
+             MISSING => Ok(None),
+             _ => t.parse().map(Some).map_err(ParseError::InvalidFloat),
+         })

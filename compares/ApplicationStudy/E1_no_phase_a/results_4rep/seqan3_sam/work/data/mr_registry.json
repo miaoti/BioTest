@@ -1,0 +1,495 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "Shuffle @HD header subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs inside the @HD header line, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "Shuffle @SQ header subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs inside each @SQ header line, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "Shuffle @RG header subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs inside each @RG header line, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "Shuffle @PG header subtag order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs inside each @PG header line, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "Shuffle @CO comment line order",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "After shuffling the order of @CO comment lines, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "@CO & One-line text comment. Unordered multiple @CO lines are allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Permute optional tag field order in alignment records",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "After permuting the order of optional TAG:TYPE:VALUE fields in alignment records, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Reorder @SQ header lines",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "After reordering @SQ header lines, the output file must be semantically equivalent to the original when parsed by a conformant SAM implementation, provided the alignment records' RNAME references are updated accordingly.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of @SQ lines defines the alignment sorting order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The @SQ order defines the coordinate sort order, so reordering changes the implied sort order. However, the SO tag in @HD may be 'unsorted' or 'unknown', in which case @SQ order is not semantically meaningful for data interpretation."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "canonicalize_rnext_equals_alias_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "Toggling RNEXT between the explicit RNAME and the '=' alias must produce semantically equivalent files. The spec states RNEXT 'is set as '=' if RNEXT is identical RNAME.'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "RNEXT: Reference sequence name of the primary alignment of the NEXT read in the template. ... This field is set as '*' when the information is unavailable, and set as '=' if RNEXT is identical RNAME.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "normalize_seq_case_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "Uppercasing the SEQ field must produce a semantically equivalent file. The spec states 'No assumptions can be made on the letter cases.'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SEQ: segment SEQuence. ... No assumptions can be made on the letter cases.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "cigar_zero_length_op_removal_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "Removing zero-length CIGAR ops and merging adjacent identical ops must produce a semantically equivalent alignment. The Recommended Practice states 'Adjacent CIGAR operations should be different.'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec uses 'should' (recommended practice, not mandatory), so some parsers may not enforce this."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "split_or_merge_adjacent_cigar_ops_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "Splitting one CIGAR op into two identical ops or merging adjacent identical ops must preserve the total query-consumed length and produce a semantically equivalent alignment.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec uses 'should' (recommended practice, not mandatory), so some parsers may not enforce this."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "normalize_unmapped_record_fields_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "Setting MAPQ to 255 for unmapped reads must produce a semantically equivalent file. The spec states 'A value 255 indicates that the mapping quality is not available.'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "MAPQ: MAPping Quality. ... A value 255 indicates that the mapping quality is not available.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "strip_mate_flags_if_unpaired_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "When FLAG bit 0x1 (multiple segments) is unset, clearing mate-context bits 0x2, 0x8, 0x20, 0x40, 0x80 must produce a semantically equivalent file. The spec states 'If 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80.'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "bump_hd_vn_minor_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_vn"
+      ],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "Toggling @HD VN between 1.5 and 1.6 must produce a semantically equivalent file since the changes between these versions are clarifications only and don't affect the data representation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "This specification is for version 1.6 of the SAM and BAM formats. Each SAM and BAM file may optionally specify the version being used via the @HD VN tag.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Some parsers may version-gate features and reject files with unexpected VN values."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "All SUTs must reject (error/crash) the malformed record where CIGAR query-consuming ops sum != len(SEQ). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Sum of lengths of the MIS=X operations shall equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Flag bit 0x4 set on mapped record must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "All SUTs must reject a record where FLAG 0x4 (unmapped) is set but RNAME != '*' and POS > 0, as this contradicts the spec's exclusivity rule. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Illegal optional tag type character must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "All SUTs must reject a record where an optional tag's TYPE character is not one of the allowed set {A, i, f, Z, H, B}. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "TYPE is a single case-sensitive letter which defines the format of VALUE: A, i, f, Z, H, B",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "All SUTs must reject paired-end records where both reads of a template have same-signed TLEN values, violating the opposite-signed pairing rule. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost, and the sign for any middle segment is undefined. If segments cover the same coordinates then the choice of which is leftmost and rightmost is arbitrary, but the two ends must still have differing signs.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "POS shift with SQ LN bound preservation",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_with_ln"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting POS by +shift and LN by +shift, every alignment record's POS + CIGAR reference-consuming length must be ≤ the new LN. Records with POS=0 or RNAME='*' are skipped. The shift preserves the relative position within the reference.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that 'consumes' a reference base. The first base in a reference sequence has coordinate 1. POS is set as 0 for an unmapped read without coordinate.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "LN*: Reference sequence length. Range: [1, 2^31-1]",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If POS plus the sum of lengths of M=XDN operations in CIGAR exceeds the length specified in the LN field of the @SQ header line (if exists) with an SN equal to RNAME, the alignment should be unmapped, unless the reference sequence is circular.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "96ca029635de",
+      "mr_name": "Header subtag ordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line",
+        "has_sq_line",
+        "has_rg_line",
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Parsing and re-serializing the SAM file must produce identical content regardless of the order of TAG:VALUE pairs within each header line, as the spec declares field order not significant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "db1f4df6b38f",
+      "mr_name": "CIGAR hard/soft clipping toggle invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "toggle_cigar_hard_soft_clipping"
+      ],
+      "oracle": "Converting between hard and soft clipping in CIGAR while synchronizing SEQ/QUAL must preserve the alignment semantics, as both representations are valid.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "S — soft clipping (clipped sequences present in SEQ); H — hard clipping (clipped sequences NOT present in SEQ)",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Hard clipping removes bases from SEQ while soft clipping retains them; round-trip equivalence depends on whether the parser preserves the distinction."
+      ],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 21,
+    "total": 21
+  }
+}

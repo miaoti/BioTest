@@ -1,0 +1,21 @@
+--- src/record/samples/sample.rs
++++ replace <impl crate::variant::record::samples::Sample for Sample<'_>>::iter -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>>+'a> with Box::new(Default::default())
+@@ -88,17 +88,17 @@
+             .nth(i)
+             .map(|result| result.map(|(_, value)| value))
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>> + 'a> {
+-        Box::new(self.iter(header))
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]

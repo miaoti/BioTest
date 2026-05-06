@@ -1,0 +1,21 @@
+--- src/record/samples/sample.rs
++++ replace Sample<'s>::get_index -> Option<Option<io::Result<Value<'s>>>> with None
+@@ -16,17 +16,17 @@
+     }
+ 
+     /// Returns the value at the given index.
+     pub fn get_index<'h: 's>(
+         &self,
+         header: &'h Header,
+         i: usize,
+     ) -> Option<Option<io::Result<Value<'s>>>> {
+-        self.values(header).nth(i)
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns an iterator over values.
+     pub fn values<'h: 's>(
+         &self,
+         header: &'h Header,
+     ) -> impl Iterator<Item = Option<io::Result<Value<'s>>>> + '_ {
+         self.iter(header)

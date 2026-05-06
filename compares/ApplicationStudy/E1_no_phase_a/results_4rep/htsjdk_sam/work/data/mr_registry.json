@@ -1,0 +1,1279 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "SAM @HD subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; header parsed fields deep-equal after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SAM @SQ subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; @SQ parsed fields deep-equal after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "SAM @RG subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; @RG parsed fields deep-equal after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "SAM @PG subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; @PG parsed fields deep-equal after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; @CO lines are free-text comments with no ordering semantics",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "@CO & One-line text comment. Unordered multiple @CO lines are allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "SAM optional tag field order invariance on alignment records",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; optional tag values deep-equal after canonical normalization",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "SAM @RG header line order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record; read-group associations preserved via RG tags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "@RG & Read group. Unordered multiple @RG lines are allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "canonicalize RNEXT equals alias preserves semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (RNEXT '=' expanded to explicit RNAME)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "This field is set as '*' when the information is unavailable, and set as '=' if RNEXT is identical RNAME.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "normalize SEQ case preserves semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_seq"
+      ],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after case-insensitive comparison of SEQ field",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No assumptions can be made on the letter cases.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "bump HD VN minor version preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_vn"
+      ],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) as VN 1.5 and 1.6 are backwards-compatible for files not using 1.6-only features",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "This specification is for version 1.6 of the SAM and BAM formats. Each SAM and BAM file may optionally specify the version being used via the @HD VN tag.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "VN field toggling between 1.5 and 1.6 is semantics-preserving only for files that don't use 1.6-only features; the spec says 1.5->1.6 added clarifications but kept backwards-compatibility"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "strip mate flags if unpaired preserves semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) as mate-context bits are meaningless when 0x1 is unset",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "CIGAR adjacent identical ops split/merge invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record's CIGAR reference-consumption length, query-consumption length, and alignment start/end",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should be different' (recommended practice, not mandatory), so parsers may or may not normalize adjacent identical ops"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length op removal invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record's CIGAR reference-consumption length, query-consumption length, and alignment start/end",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Zero-length CIGAR ops are not explicitly forbidden by the spec, but the recommended practice says adjacent ops should be different, implying zero-length ops should be removed"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Unmapped read MAPQ normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for all alignment fields except MAPQ which normalizes to 255",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "MAPQ: MAPping Quality. It equals $-10 log10 prob(mapping position is wrong)$, rounded to the nearest integer. A value 255 indicates that the mapping quality is not available.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says MAPQ 255 means 'not available' but doesn't mandate it for unmapped reads; this is a recommended practice"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "CIGAR M to =/X canonicalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_md_tag",
+        "has_cigar_m_ops"
+      ],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each alignment record's alignment start, end, and reference span",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR operations: M (0) alignment match (can be a sequence match or mismatch), = (7) sequence match, X (8) sequence mismatch.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "M is a combined match/mismatch op while = and X are split; the spec allows both representations but some tools may not support =/X"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH on the malformed record; silent acceptance or SILENT_SKIP is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Sum of lengths of the MIS=X operations shall equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "FLAG unmapped bit with mapped coordinates rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when FLAG 0x4 is set on a record with RNAME != '*' and POS > 0; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag illegal type character rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when an optional tag's TYPE character is not one of AifZHB; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "TYPE is a single case-sensitive letter which defines the format of VALUE: A, i, f, Z, H, B",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when paired-end reads have same-signed TLEN values; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The TLEN field is positive for the leftmost segment of the template, negative for the rightmost... the two ends must still have differing signs.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "POS shift with SQ LN bound invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_with_ln",
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting POS by +shift and increasing @SQ LN by the same shift, all alignment records' POS + CIGAR_ref_consume must still be <= the new LN. The mapping position semantics are preserved because the reference length is extended equivalently.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that 'consumes' a reference base. The first base in a reference sequence has coordinate 1.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "LN*: Reference sequence length. Range: [1, 2^31-1]",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If POS plus the sum of lengths of M=XDN operations in CIGAR exceeds the length specified in the LN field of the @SQ header line (if exists) with an SN equal to RNAME, the alignment should be unmapped, unless the reference sequence is circular.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The recommended practice says 'should be unmapped' rather than 'must be unmapped', leaving some implementation discretion for edge cases."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "BAM round-trip coordinate system invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After SAM→BAM→SAM round-trip, the POS field (1-based) must remain unchanged. The BAM binary format stores POS-1 (0-based), so the conversion must correctly add 1 back. Any off-by-one error would manifest as a ±1 shift in POS after round-trip.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "1-based coordinate system: A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is [3,7]. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "0-based coordinate system: A coordinate system where the first base of a sequence is zero. In this coordinate system, a region is specified by a half-closed-half-open interval. For example, the region between the 3rd and the 7th bases inclusive is [2,7). The BAM, BCFv2, BED, and PSL formats are using the 0-based coordinate system.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "pos: 0-based leftmost coordinate (= POS-1)",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "CRAM round-trip coordinate system invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available",
+        "cram_reference_available"
+      ],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "After SAM→CRAM→SAM round-trip, the POS field (1-based) must remain unchanged. CRAM uses a different coordinate encoding than BAM, so this exercises an alternative code path for the 1-based↔0-based conversion.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "1-based coordinate system: A coordinate system where the first base of a sequence is one. In this coordinate system, a region is specified by a closed interval. For example, the region between the 3rd and the 7th bases inclusive is [3,7]. The SAM, VCF, GFF and Wiggle formats are using the 1-based coordinate system.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "0-based coordinate system: A coordinate system where the first base of a sequence is zero. In this coordinate system, a region is specified by a half-closed-half-open interval. For example, the region between the 3rd and the 7th bases inclusive is [2,7). The BAM, BCFv2, BED, and PSL formats are using the 0-based coordinate system.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb2241bf6655",
+      "mr_name": "Unmapped record POS=0 invariance under header reordering",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "query_method_roundtrip"
+      ],
+      "oracle": "For unmapped reads (FLAG 0x4 set), POS must remain 0 and RNAME must remain '*' after reordering @SQ/@RG header lines. The getAlignmentStart() and getStart() methods should return 0, getReferenceName() should return '*', and getReadUnmappedFlag() should return true, all invariant under header reordering.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS: 1-based leftmost mapping POSition... POS is set as 0 for an unmapped read without coordinate. If POS is 0, no assumptions can be made about RNAME and CIGAR.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "RNAME: Reference sequence NAME of the alignment... An unmapped segment without coordinate has a '*' at this field.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'no assumptions can be made' about RNAME/POS when unmapped, meaning some implementations may not enforce POS=0/RNAME='*' for unmapped reads, though the recommended practice suggests they should be set that way."
+      ],
+      "query_methods": [
+        "getAlignmentStart",
+        "getStart",
+        "getReferenceName",
+        "getReadUnmappedFlag"
+      ]
+    },
+    {
+      "mr_id": "74365df4fa34",
+      "mr_name": "Mate coordinate invariance under RNEXT alias canonicalization",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Toggling RNEXT between '=' and explicit RNAME must not change the mate coordinate information. getMateAlignmentStart() (PNEXT), getMateReferenceName() (RNEXT semantics), getMateUnmappedFlag(), and getInferredInsertSize() (TLEN) must all remain invariant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "RNEXT: Reference sequence name of the primary alignment of the NEXT read in the template... This field is set as '*' when the information is unavailable, and set as '=' if RNEXT is identical RNAME.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "PNEXT: 1-based Position of the primary alignment of the NEXT read in the template. Set as 0 when the information is unavailable. This field equals POS at the primary line of the next read.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "TLEN: signed observed Template LENgth... the absolute value of TLEN equals the distance between the mapped end of the template and the mapped start of the template, inclusively (i.e., end-start+1).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "TLEN definition is noted as implementation-defined: 'there has been no clear consensus on the definitions of the template mapped start and end. Thus the exact definitions are implementation-defined.'"
+      ],
+      "query_methods": [
+        "getMateAlignmentStart",
+        "getMateReferenceName",
+        "getMateUnmappedFlag",
+        "getInferredInsertSize"
+      ]
+    },
+    {
+      "mr_id": "d32bc566b4b5",
+      "mr_name": "CIGAR reference-length consistency under split/merge operations",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "query_method_roundtrip"
+      ],
+      "oracle": "Splitting or merging adjacent identical CIGAR operations preserves the total reference-consuming length. getAlignmentStart() (POS), getAlignmentEnd() (POS + ref_consume - 1), and getLengthOnReference() must remain invariant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS: 1-based leftmost mapping POSition of the first CIGAR operation that 'consumes' a reference base.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR: CIGAR string... 'Consumes query' and 'consumes reference' indicate whether the CIGAR operation causes the alignment to step along the query sequence and the reference sequence respectively.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The recommended practice says 'should be different' not 'must be different', so adjacent identical ops are technically valid but not recommended."
+      ],
+      "query_methods": [
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getLengthOnReference",
+        "getCigarLength"
+      ]
+    },
+    {
+      "mr_id": "c6fa4b634f8f",
+      "mr_name": "SAM header subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes header subtag order; the spec states field order within header lines is not significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3536067649f8",
+      "mr_name": "SAM optional tag field permutation round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes optional field order; the spec states optional field order is not significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c9a73331e977",
+      "mr_name": "SAM BAM codec round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T converts SAM->BAM->SAM; BAM is the binary equivalent of SAM with identical information content",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BAM is compressed in the BGZF format. All multi-byte numbers in BAM are little-endian, regardless of the machine endianness.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "025d012b6b29",
+      "mr_name": "SAM RNEXT equals alias round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T toggles RNEXT between '=' and explicit RNAME; the spec allows '=' as a synonym for 'same as RNAME'",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "This field is set as '*' when the information is unavailable, and set as '=' if RNEXT is identical RNAME.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31c937b866ae",
+      "mr_name": "SAM @CO comment line shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P sorts @CO lines; the spec states @CO lines are unordered free-text comments",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "@CO — One-line text comment. Unordered multiple @CO lines are allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5b2b9597c534",
+      "mr_name": "SAM SEQ case normalization round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T uppercases SEQ; the spec states no assumptions can be made on letter cases",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No assumptions can be made on the letter cases.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2106ce878124",
+      "mr_name": "SAM CIGAR zero-length op removal round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T strips zero-length CIGAR ops; adjacent CIGAR operations should be different per recommended practice",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' (recommended practice), not 'must', so this is advisory rather than strictly normative"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f0d5f277f2b1",
+      "mr_name": "SAM unmapped record field normalization round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T normalizes MAPQ to 255 for unmapped reads; MAPQ 255 indicates mapping quality not available",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A value 255 indicates that the mapping quality is not available.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "b21cab2c909c",
+      "mr_name": "SAM @SQ record subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes @SQ subtag order; the spec states field order within header lines is not significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fbb06f43d03e",
+      "mr_name": "SAM @PG record subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes @PG subtag order; the spec states field order within header lines is not significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8504d219de57",
+      "mr_name": "SAM @RG record subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes @RG subtag order; the spec states field order within header lines is not significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2dc0ee17b8ae",
+      "mr_name": "SAM CIGAR split-or-merge adjacent ops round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T splits or merges adjacent identical CIGAR ops preserving total query-consumed length; adjacent CIGAR operations should be different per recommended practice",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' (recommended practice), not 'must', so this is advisory rather than strictly normative"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "36e9326e8b1e",
+      "mr_name": "SAM header @SQ reorder round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T shuffles @SQ lines; the order of @SQ lines defines alignment sorting order but the canonical normalizer preserves original order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of @SQ lines defines the alignment sorting order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Reordering @SQ lines changes the coordinate sort order, so this MR requires the oracle to account for the fact that @SQ order is semantically meaningful"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ca91c1984221",
+      "mr_name": "SAM CRAM codec round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available",
+        "cram_reference_available"
+      ],
+      "transform_steps": [
+        "sam_cram_round_trip",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T converts SAM->CRAM->SAM; CRAM is reference-compressed with lossy =/X distinction collapsed to M per Bonfield CRAM 3.1",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BAM is compressed in the BGZF format. All multi-byte numbers in BAM are little-endian, regardless of the machine endianness.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "CRAM collapses =/X to M by default, so the oracle must use cram_safe normalization mode"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3fe9540f02f6",
+      "mr_name": "SAM @HD VN version bump round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_vn"
+      ],
+      "transform_steps": [
+        "bump_hd_vn_minor",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T toggles @HD VN between 1.5 and 1.6; version changes are backwards-compatible per spec history",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "This specification is for version 1.6 of the SAM and BAM formats. Each SAM and BAM file may optionally specify the version being used via the @HD VN tag.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "60c951471ba4",
+      "mr_name": "SAM mate flag stripping for unpaired reads round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where T clears mate-context bits when 0x1 is unset; spec states if 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "If 0x1 is unset, no assumptions can be made about 0x2, 0x8, 0x20, 0x40 and 0x80.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ce4ded5e9811",
+      "mr_name": "Optional tag field permutation invariance under permute_optional_tag_fields",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getFlags, getMappingQuality, getReadUnmappedFlag, getReadPairedFlag, getCigarString must return identical values before and after shuffling optional tag field order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each alignment line, no TAG may appear more than once and the order in which the optional fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getFlags",
+        "getMappingQuality",
+        "getReadUnmappedFlag",
+        "getReadPairedFlag",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "a4eeeffccfb1",
+      "mr_name": "@SQ header subtag shuffle invariance under shuffle_sq_record_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReferenceName, getContig, getAlignmentStart, getAlignmentEnd must return identical values before and after shuffling @SQ subtag order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReferenceName",
+        "getContig",
+        "getAlignmentStart",
+        "getAlignmentEnd"
+      ]
+    },
+    {
+      "mr_id": "e9c878249218",
+      "mr_name": "@RG header subtag shuffle invariance under shuffle_rg_record_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReadPairedFlag, getFirstOfPairFlag, getSecondOfPairFlag, getReadName must return identical values before and after shuffling @RG subtag order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadPairedFlag",
+        "getFirstOfPairFlag",
+        "getSecondOfPairFlag",
+        "getReadName"
+      ]
+    },
+    {
+      "mr_id": "c109629a39d9",
+      "mr_name": "@CO comment line shuffle invariance under shuffle_co_comments",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReadName, getFlags, getCigarString, getMappingQuality must return identical values before and after shuffling @CO comment line order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "@CO One-line text comment. Unordered multiple @CO lines are allowed.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getCigarString",
+        "getMappingQuality"
+      ]
+    },
+    {
+      "mr_id": "07f8ae16e95e",
+      "mr_name": "SEQ case normalization invariance under normalize_seq_case",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_seq"
+      ],
+      "transform_steps": [
+        "normalize_seq_case",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReadString, getReadLength, getBaseQualityString, getCigarString must return identical values before and after uppercasing SEQ (SAMv1 §1.4.10 says no assumptions on letter cases)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SEQ: segment SEQuence. ... No assumptions can be made on the letter cases.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadString",
+        "getReadLength",
+        "getBaseQualityString",
+        "getCigarString"
+      ]
+    },
+    {
+      "mr_id": "f495e8a28521",
+      "mr_name": "CIGAR zero-length op removal invariance under cigar_zero_length_op_removal",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getCigarString, getCigarLength, getAlignmentStart, getAlignmentEnd, getLengthOnReference must return identical values before and after removing zero-length CIGAR ops",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations should be different.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'should' (recommended practice) rather than 'must', so some parsers may not normalize zero-length ops"
+      ],
+      "query_methods": [
+        "getCigarString",
+        "getCigarLength",
+        "getAlignmentStart",
+        "getAlignmentEnd",
+        "getLengthOnReference"
+      ]
+    },
+    {
+      "mr_id": "f6a2480d8170",
+      "mr_name": "Unmapped record MAPQ normalization invariance under normalize_unmapped_record_fields",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReadUnmappedFlag, getMappingQuality, getFlags, getReadPairedFlag must return identical values before and after normalizing MAPQ to 255 for unmapped reads",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "MAPQ: MAPping Quality. It equals $-10log_{10}$ prob{mapping position is wrong}, rounded to the nearest integer. A value 255 indicates that the mapping quality is not available.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Bit 0x4 is the only reliable place to tell whether the read is unmapped. If 0x4 is set, no assumptions can be made about RNAME, POS, CIGAR, MAPQ, and bits 0x2, 0x100, and 0x800.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "MAPQ=255 is 'not available' per spec, but the spec does not mandate 255 for unmapped reads — it says 'no assumptions can be made'"
+      ],
+      "query_methods": [
+        "getReadUnmappedFlag",
+        "getMappingQuality",
+        "getFlags",
+        "getReadPairedFlag"
+      ]
+    },
+    {
+      "mr_id": "7bbdedead457",
+      "mr_name": "Header @HD subtag shuffle invariance under shuffle_hd_subtags",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method: getReadName, getFlags, getReferenceName, getMappingQuality must return identical values before and after shuffling @HD subtag order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Within each (non-@CO) header line, no field tag may appear more than once and the order in which the fields appear is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "getReadName",
+        "getFlags",
+        "getReferenceName",
+        "getMappingQuality"
+      ]
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 49,
+    "total": 49
+  }
+}

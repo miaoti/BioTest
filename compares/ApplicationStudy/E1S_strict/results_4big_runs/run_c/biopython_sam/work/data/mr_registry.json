@@ -1,0 +1,310 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "CIGAR match operator canonicalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "RNEXT equals alias canonicalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length operation removal invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "SEQ case normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Unmapped record field normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Optional tag field permutation invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of optional tags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Header record reordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of header record types",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "HD subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of HD subtags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "PG record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of PG subtags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "RG record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of RG subtags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SQ record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of SQ subtags",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "CO comment shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "The output is semantically equivalent to the input regardless of the order of CO comments",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "Adjacent CIGAR operation split/merge invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "Mate flag stripping for unpaired reads invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "The normalized output is semantically equivalent to the input for unpaired reads; applying the transform twice yields the same result as applying it once (idempotence)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "db1f4df6b38f",
+      "mr_name": "Hard/soft clipping toggle invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "toggle_cigar_hard_soft_clipping"
+      ],
+      "oracle": "The output is semantically equivalent to the input; toggling twice returns to the original representation",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "No spec evidence available from database queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 15,
+    "total": 15
+  }
+}

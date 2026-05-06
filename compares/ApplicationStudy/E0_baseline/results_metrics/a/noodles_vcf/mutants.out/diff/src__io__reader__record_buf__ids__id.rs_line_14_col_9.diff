@@ -1,0 +1,23 @@
+--- src/io/reader/record_buf/ids/id.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -6,19 +6,17 @@
+     /// The input is empty.
+     Empty,
+ }
+ 
+ impl error::Error for ParseError {}
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_id(s: &str) -> Result<&str, ParseError> {
+     if s.is_empty() {
+         Err(ParseError::Empty)
+     } else {
+         Ok(s)

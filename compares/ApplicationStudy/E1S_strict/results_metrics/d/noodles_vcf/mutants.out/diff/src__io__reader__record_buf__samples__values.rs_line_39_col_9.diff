@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -31,21 +31,17 @@
+             Self::InvalidValue(e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => f.write_str("empty input"),
+-            Self::InvalidValue(_) => f.write_str("invalid value"),
+-            Self::UnexpectedValue => f.write_str("unexpected value"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_values(
+     header: &Header,
+     keys: &Keys,
+     s: &str,
+     values: &mut Vec<Option<Value>>,

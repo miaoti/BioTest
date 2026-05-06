@@ -1,0 +1,18 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##ALT=<ID=DEL,Description="Deletion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakend">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	10000	bnd1	A	A]chr2:20000]	50	PASS	SVTYPE=BND;MATEID=bnd2;CIPOS=0,5;CIEND=0,5	GT:GQ	0/1:99
+chr2	20000	bnd2	C	C]chr1:10000]	50	PASS	SVTYPE=BND;MATEID=bnd1;CIPOS=0,5;CIEND=0,5	GT:GQ	1/0:99
+chr1	11000	bnd3	G	[chr2:21000[G	60	PASS	SVTYPE=BND;MATEID=bnd4;CIPOS=0,3;CIEND=0,3	GT:GQ	0/1:80
+chr2	21000	bnd4	T	[chr1:11000[T	60	PASS	SVTYPE=BND;MATEID=bnd3;CIPOS=0,3;CIEND=0,3	GT:GQ	1/0:80

@@ -1,0 +1,271 @@
+#
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (malloc) failed to allocate 1048576 bytes for AllocateHeap
+# Possible reasons:
+#   The system is out of physical RAM or swap space
+#   The process is running with CompressedOops enabled, and the Java Heap may be blocking the growth of the native heap
+# Possible solutions:
+#   Reduce memory load on the system
+#   Increase physical memory or swap space
+#   Check if swap backing store is full
+#   Decrease Java heap size (-Xmx/-Xms)
+#   Decrease number of Java threads
+#   Decrease Java thread stack sizes (-Xss)
+#   Set larger code cache with -XX:ReservedCodeCacheSize=
+#   JVM is running with Unscaled Compressed Oops mode in which the Java heap is
+#     placed in the first 4GB address space. The Java Heap base address is the
+#     maximum limit for the native heap growth. Please use -XX:HeapBaseMinAddress
+#     to set the Java Heap base and to place the Java Heap above 4GB virtual address.
+# This output file may be truncated or incomplete.
+#
+#  Out of Memory Error (allocation.cpp:44), pid=72984, tid=93708
+#
+# JRE version:  (21.0.10+8) (build )
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (21.0.10+8-LTS-217, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -javaagent:C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\jacocoagent.jar=destfile=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\biopython_sam\work\coverage_artifacts\jacoco\jacoco.exec,append=true C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\harness.jar --mode parse_auto_invoke SAM C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\input.sam
+
+Host: Intel(R) Core(TM) Ultra 9 285K, 24 cores, 31G,  Windows 11 , 64 bit Build 26100 (10.0.26100.8246)
+Time: Tue May  5 12:51:41 2026 Central Daylight Time elapsed time: 1.032498 seconds (0d 0h 0m 1s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x000001ec44d75980):  JavaThread "Unknown thread" [_thread_in_vm, id=93708, stack(0x0000006d8fd00000,0x0000006d8fe00000) (1024K)]
+
+Stack: [0x0000006d8fd00000,0x0000006d8fe00000]
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x6d0b59]
+V  [jvm.dll+0x85fd56]
+V  [jvm.dll+0x86224e]
+V  [jvm.dll+0x862923]
+V  [jvm.dll+0x282a16]
+V  [jvm.dll+0xc11f7]
+V  [jvm.dll+0x32d585]
+V  [jvm.dll+0x829d02]
+V  [jvm.dll+0x3c19d1]
+V  [jvm.dll+0x812c0a]
+V  [jvm.dll+0x4543d1]
+V  [jvm.dll+0x455e21]
+C  [jli.dll+0x5310]
+C  [ucrtbase.dll+0x37b0]
+C  [KERNEL32.DLL+0x2e8d7]
+C  [ntdll.dll+0x8c3fc]
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00007ffb46148c88, length=0, elements={
+}
+
+Java Threads: ( => current thread )
+Total: 0
+
+Other Threads:
+
+=>0x000001ec44d75980 (exited) JavaThread "Unknown thread"    [_thread_in_vm, id=93708, stack(0x0000006d8fd00000,0x0000006d8fe00000) (1024K)]
+Total: 1
+
+Threads with active compile tasks:
+Total: 0
+
+VM state: not at safepoint (not fully initialized)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+Heap address: 0x0000000000000000, size: 0 MB, Compressed Oops mode: 32-bit
+
+CDS archive(s) mapped at: [0x0000000000000000-0x0000000000000000-0x0000000000000000), size 0, SharedBaseAddress: 0x0000000800000000, ArchiveRelocationMode: 1.
+Narrow klass base: 0x0000000000000000, Narrow klass shift: 0, Narrow klass range: 0x0
+
+GC Precious Log:
+ CardTable entry size: 512
+ Card Set container configuration: InlinePtr #cards 4 size 8 Array Of Cards #cards 32 size 80 Howl #buckets 8 coarsen threshold 7372 Howl Bitmap #cards 1024 size 144 coarsen threshold 921 Card regions per heap region 1 cards per card region 8192
+
+GC Heap History (0 events):
+No events
+
+Dll operation events (1 events):
+Event: 0.020 Loaded shared library C:\Program Files\Java\jdk-21.0.10\bin\java.dll
+
+Deoptimization events (0 events):
+No events
+
+Classes loaded (0 events):
+No events
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+ZGC Phase Switch (0 events):
+No events
+
+VM Operations (0 events):
+No events
+
+Events (0 events):
+No events
+
+
+Dynamic libraries:
+0x00007ff69c8c0000 - 0x00007ff69c8d0000 	C:\Program Files\Java\jdk-21.0.10\bin\java.exe
+0x00007ffc7f1c0000 - 0x00007ffc7f427000 	C:\windows\SYSTEM32\ntdll.dll
+0x00007ffc7ec30000 - 0x00007ffc7ecf9000 	C:\windows\System32\KERNEL32.DLL
+0x00007ffc7c550000 - 0x00007ffc7c944000 	C:\windows\System32\KERNELBASE.dll
+0x00007ffc7cd70000 - 0x00007ffc7cebb000 	C:\windows\System32\ucrtbase.dll
+0x00007ffc186f0000 - 0x00007ffc18709000 	C:\Program Files\Java\jdk-21.0.10\bin\jli.dll
+0x00007ffc186b0000 - 0x00007ffc186ce000 	C:\Program Files\Java\jdk-21.0.10\bin\VCRUNTIME140.dll
+0x00007ffc7d740000 - 0x00007ffc7d7f6000 	C:\windows\System32\ADVAPI32.dll
+0x00007ffc7f0d0000 - 0x00007ffc7f179000 	C:\windows\System32\msvcrt.dll
+0x00007ffc7d360000 - 0x00007ffc7d407000 	C:\windows\System32\sechost.dll
+0x00007ffc7d440000 - 0x00007ffc7d558000 	C:\windows\System32\RPCRT4.dll
+0x00007ffc7cfe0000 - 0x00007ffc7d1a5000 	C:\windows\System32\USER32.dll
+0x00007ffc7ba90000 - 0x00007ffc7bab7000 	C:\windows\System32\win32u.dll
+0x00007ffc5eb50000 - 0x00007ffc5ede3000 	C:\windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.8115_none_3e075c82e3354f9c\COMCTL32.dll
+0x00007ffc7ee10000 - 0x00007ffc7ee3b000 	C:\windows\System32\GDI32.dll
+0x00007ffc7c950000 - 0x00007ffc7ca7b000 	C:\windows\System32\gdi32full.dll
+0x00007ffc7c4a0000 - 0x00007ffc7c543000 	C:\windows\System32\msvcp_win.dll
+0x00007ffc73790000 - 0x00007ffc7379b000 	C:\windows\SYSTEM32\VERSION.dll
+0x00007ffc7f090000 - 0x00007ffc7f0c2000 	C:\windows\System32\IMM32.DLL
+0x00007ffc4c3f0000 - 0x00007ffc4c3fc000 	C:\Program Files\Java\jdk-21.0.10\bin\vcruntime140_1.dll
+0x00007ffc176f0000 - 0x00007ffc1777d000 	C:\Program Files\Java\jdk-21.0.10\bin\msvcp140.dll
+0x00007ffb45570000 - 0x00007ffb46297000 	C:\Program Files\Java\jdk-21.0.10\bin\server\jvm.dll
+0x00007ffc7f000000 - 0x00007ffc7f080000 	C:\windows\System32\WS2_32.dll
+0x00007ffc7a690000 - 0x00007ffc7a6ee000 	C:\windows\SYSTEM32\POWRPROF.dll
+0x00007ffc78ab0000 - 0x00007ffc78ae6000 	C:\windows\SYSTEM32\WINMM.dll
+0x00007ffc7a650000 - 0x00007ffc7a664000 	C:\windows\SYSTEM32\UMPDC.dll
+0x00007ffc7a940000 - 0x00007ffc7a95b000 	C:\windows\SYSTEM32\kernel.appcore.dll
+0x00007ffc40d20000 - 0x00007ffc40d2a000 	C:\Program Files\Java\jdk-21.0.10\bin\jimage.dll
+0x00007ffc79350000 - 0x00007ffc79592000 	C:\windows\SYSTEM32\DBGHELP.DLL
+0x00007ffc7d880000 - 0x00007ffc7dc02000 	C:\windows\System32\combase.dll
+0x00007ffc7eaf0000 - 0x00007ffc7ebc8000 	C:\windows\System32\OLEAUT32.dll
+0x00007ffc3ba40000 - 0x00007ffc3ba7b000 	C:\windows\SYSTEM32\dbgcore.DLL
+0x00007ffc7c3f0000 - 0x00007ffc7c495000 	C:\windows\System32\bcryptPrimitives.dll
+0x00007ffc3bbc0000 - 0x00007ffc3bbd0000 	C:\Program Files\Java\jdk-21.0.10\bin\instrument.dll
+0x00007ffc17b50000 - 0x00007ffc17b71000 	C:\Program Files\Java\jdk-21.0.10\bin\java.dll
+
+dbghelp: loaded successfully - version: 4.0.5 - missing functions: none
+symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\Program Files\Java\jdk-21.0.10\bin;C:\windows\SYSTEM32;C:\windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.8115_none_3e075c82e3354f9c;C:\Program Files\Java\jdk-21.0.10\bin\server
+
+VM Arguments:
+jvm_args: -javaagent:C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\jacocoagent.jar=destfile=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\biopython_sam\work\coverage_artifacts\jacoco\jacoco.exec,append=true 
+java_command: C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\harness.jar --mode parse_auto_invoke SAM C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\input.sam
+java_class_path (initial): C:\Users\miaot\AppData\Local\Temp\biotest_k19d7dyd\harness.jar
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     intx CICompilerCount                          = 12                                        {product} {ergonomic}
+     uint ConcGCThreads                            = 5                                         {product} {ergonomic}
+     uint G1ConcRefinementThreads                  = 18                                        {product} {ergonomic}
+   size_t G1HeapRegionSize                         = 4194304                                   {product} {ergonomic}
+    uintx GCDrainStackTargetSize                   = 64                                        {product} {ergonomic}
+   size_t InitialHeapSize                          = 532676608                                 {product} {ergonomic}
+   size_t MarkStackSize                            = 4194304                                   {product} {ergonomic}
+   size_t MaxHeapSize                              = 8514437120                                {product} {ergonomic}
+   size_t MinHeapDeltaBytes                        = 4194304                                   {product} {ergonomic}
+   size_t MinHeapSize                              = 8388608                                   {product} {ergonomic}
+    uintx NonNMethodCodeHeapSize                   = 7602480                                {pd product} {ergonomic}
+    uintx NonProfiledCodeHeapSize                  = 122027880                              {pd product} {ergonomic}
+    uintx ProfiledCodeHeapSize                     = 122027880                              {pd product} {ergonomic}
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 8514437120                             {manageable} {ergonomic}
+     bool UseCompressedOops                        = true                           {product lp64_product} {ergonomic}
+     bool UseG1GC                                  = true                                      {product} {ergonomic}
+     bool UseLargePagesIndividualAllocation        = false                                  {pd product} {ergonomic}
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags foldmultilines=false
+ #1: stderr all=off uptime,level,tags foldmultilines=false
+
+Environment Variables:
+PATH=C:\Users\miaot\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\local\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\usr\bin;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\miaot\bin;C:\Program Files\Java\jdk-21.0.10\bin;C:\windows\system32;C:\windows;C:\windows\System32\Wbem;C:\windows\System32\WindowsPowerShell\v1.0;C:\windows\System32\OpenSSH;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\dotnet;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\cursor\resources\app\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\nodejs;C:\msys64\ucrt64\bin;C:\Program Files\Git\cmd;C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.14\bin;C:\Users\miaot\AppData\Local\Programs\Python\Python312\Scripts;C:\Users\miaot\AppData\Local\Programs\Python\Python312;C:\Users\miaot\AppData\Local\Programs\Python\Python315\Scripts;C:\Users\miaot\AppData\Local\Programs\Python\Python315;C:\Users\miaot\AppData\Local\Programs\Trae\bin;C:\Users\miaot\AppData\Local\Microsoft\WindowsApps;C:\Users\miaot\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.2.6\bin;C:\Users\miaot\AppData\Local\Programs\Antigravity\bin;C:\Users\miaot\AppData\Roaming\npm;C:\Users\miaot\AppData\Local\GitHubDesktop\bin;C:\Users\miaot\AppData\Local\Python\bin;C:\Program Files\Git\usr\bin;C:\Users\miaot\.local\bin;C:\Users\miaot\AppData\Local\Programs\Ollama;C:\Program Files\Git\usr\bin\vendor_perl;C:\Program Files\Git\usr\bin\core_perl;C:\Users\miaot\.claude\plugins\cache\karpathy-skills\andrej-karpathy-skills\1.0.0\bin
+USERNAME=miaot
+SHELL=C:\Program Files\Git\usr\bin\bash.exe
+TERM=xterm-256color
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 198 Stepping 2, GenuineIntel
+TMP=C:\Users\miaot\AppData\Local\Temp
+TEMP=C:\Users\miaot\AppData\Local\Temp
+
+
+
+
+Periodic native trim disabled
+
+---------------  S Y S T E M  ---------------
+
+OS:
+ Windows 11 , 64 bit Build 26100 (10.0.26100.8246)
+OS uptime: 9 days 7:33 hours
+Hyper-V role detected
+
+CPU: total 24 (initial active 24) (24 cores per cpu, 1 threads per core) family 6 model 198 stepping 2 microcode 0x11b, cx8, cmov, fxsr, mmx, 3dnowpref, sse, sse2, sse3, ssse3, sse4.1, sse4.2, popcnt, lzcnt, tsc, tscinvbit, avx, avx2, aes, erms, clmul, bmi1, bmi2, adx, sha, fma, vzeroupper, clflush, clflushopt, clwb, hv, serialize, rdtscp, rdpid, fsrm, f16c, cet_ibt, cet_ss
+Processor Information for processor 0
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 1
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 2
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 3
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 4
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 5
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 6
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 7
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 8
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 9
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 10
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 11
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 12
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 13
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 14
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 15
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 16
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 17
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 18
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 19
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 20
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 21
+  Max Mhz: 3200, Current Mhz: 3200, Mhz Limit: 3200
+Processor Information for processor 22
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+Processor Information for processor 23
+  Max Mhz: 3700, Current Mhz: 3700, Mhz Limit: 3700
+
+Memory: 4k page, system-wide physical 32466M (8996M free)
+TotalPageFile size 130770M (AvailPageFile size 5M)
+current process WorkingSet (physical memory assigned to process): 12M, peak: 12M
+current process commit charge ("private bytes"): 11M, peak: 12M
+
+vm_info: Java HotSpot(TM) 64-Bit Server VM (21.0.10+8-LTS-217) for windows-amd64 JRE (21.0.10+8-LTS-217), built on 2025-12-18T14:59:28Z by "mach5run" with MS VC++ 17.13 (VS2022)
+
+END.

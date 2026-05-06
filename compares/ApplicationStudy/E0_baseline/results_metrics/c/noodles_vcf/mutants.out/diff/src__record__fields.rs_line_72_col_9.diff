@@ -1,0 +1,26 @@
+--- src/record/fields.rs
++++ replace Fields::filters -> Filters<'_> with Default::default()
+@@ -64,22 +64,17 @@
+             src => Some(
+                 src.parse()
+                     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e)),
+             ),
+         }
+     }
+ 
+     pub(super) fn filters(&self) -> Filters<'_> {
+-        let src = match &self.buf[self.bounds.filters_range()] {
+-            MISSING => "",
+-            buf => buf,
+-        };
+-
+-        Filters::new(src)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub(super) fn info(&self) -> Info<'_> {
+         let src = match &self.buf[self.bounds.info_range()] {
+             MISSING => "",
+             buf => buf,
+         };
+ 

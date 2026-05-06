@@ -1,0 +1,23 @@
+--- src/record/samples/series/value.rs
++++ replace parse_string_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -80,19 +80,17 @@
+ 
+     Err(io::Error::new(
+         io::ErrorKind::InvalidData,
+         "invalid character",
+     ))
+ }
+ 
+ fn parse_string_value(src: &str) -> io::Result<Value<'_>> {
+-    percent_decode(src)
+-        .map(Value::String)
+-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_genotype_value(src: &str) -> Value<'_> {
+     Value::Genotype(Box::new(Genotype::new(src)))
+ }
+ 
+ fn parse_integer_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Integer(Box::new(src)))

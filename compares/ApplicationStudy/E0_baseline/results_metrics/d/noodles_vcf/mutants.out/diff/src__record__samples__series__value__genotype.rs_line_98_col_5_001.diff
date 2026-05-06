@@ -1,0 +1,29 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace parse_position -> io::Result<Option<usize>> with Ok(Some(0))
+@@ -90,25 +90,17 @@
+         _ => Err(io::Error::new(
+             io::ErrorKind::InvalidData,
+             "invalid phasing indicator",
+         )),
+     }
+ }
+ 
+ fn parse_position(src: &str) -> io::Result<Option<usize>> {
+-    const MISSING: &str = ".";
+-
+-    match src {
+-        MISSING => Ok(None),
+-        _ => src
+-            .parse()
+-            .map(Some)
+-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e)),
+-    }
++    Ok(Some(0)) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::samples::series::value::Genotype as _;
+ 
+     #[test]

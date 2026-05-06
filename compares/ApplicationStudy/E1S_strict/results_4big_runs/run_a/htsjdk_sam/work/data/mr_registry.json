@@ -1,0 +1,495 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "CIGAR canonicalization preserves alignment semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, RNEXT, PNEXT, TLEN, SEQ, and all optional tags remain identical after canonicalizing CIGAR match operators (= vs M). The alignment position and mate information are unchanged.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR string uses M for alignment match/mismatch; = and X are equivalent to M for alignment position purposes. Canonicalizing = to M (or M to =) does not change the alignment semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length operation removal preserves alignment",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, RNEXT, PNEXT, TLEN, SEQ, and all optional tags remain identical. The alignment position and all semantic fields are unchanged.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Zero-length CIGAR operations (e.g., 0M) have no effect on alignment and can be removed without changing the alignment semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "CIGAR split/merge adjacent ops preserves alignment",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, RNEXT, PNEXT, TLEN, SEQ, and all optional tags remain identical. The alignment position is unchanged.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Adjacent CIGAR operations of the same type (e.g., 3M4M) can be merged (7M) or split without changing alignment semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "SEQ case normalization preserves record semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, and all optional tags remain identical. Only the case of SEQ bases changes.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SEQ bases can be represented in upper or lower case; the case does not affect alignment semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "RNEXT canonicalization preserves mate information",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, CIGAR, PNEXT, TLEN, SEQ, and all optional tags remain identical. RNEXT value '=' is equivalent to RNAME and the transformation preserves mate pairing semantics.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "In SAM format, RNEXT field can use '=' to denote the same reference as RNAME. Converting between '=' and the explicit reference name preserves mate information.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Optional tag permutation preserves record content",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, and SEQ remain identical. All optional tags are preserved with the same key-value pairs, only their order changes.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tags in SAM records have no defined order; reordering them does not change the record semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Header record reordering preserves SAM semantics",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "All header records and their tag values are preserved. The order of header record types (HD, SQ, RG, PG, etc.) and records within each type does not affect the interpretation of the SAM file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification does not mandate a specific order for header records; reordering them preserves the semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "HD subtag shuffling preserves header version info",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "All HD subtags (VN, SO, etc.) and their values are preserved. The order of subtags within the HD line does not affect the interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of key-value pairs within a SAM header line is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SQ record subtag shuffling preserves reference info",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "All SQ subtags (SN, LN, etc.) and their values are preserved. The order of subtags within each SQ line does not affect the interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of key-value pairs within a SAM SQ header line is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "RG record subtag shuffling preserves read group info",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "All RG subtags (ID, SM, LB, etc.) and their values are preserved. The order of subtags within each RG line does not affect the interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of key-value pairs within a SAM RG header line is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "PG record subtag shuffling preserves program info",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "All PG subtags (ID, PN, CL, PP, VN, etc.) and their values are preserved. The order of subtags within each PG line does not affect the interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The order of key-value pairs within a SAM PG header line is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "CO comment shuffling preserves header comments",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "All CO (comment) lines are preserved with their content unchanged. The order of comment lines does not affect the interpretation of the SAM file.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Comment lines (CO) in SAM headers are free-form text; their order is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "HD VN minor version bump preserves compatibility",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "All header records and all SAM record fields remain identical. Only the VN minor version in the HD line changes, which should not affect parsing of the file content.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Minor version bumps in the SAM format version indicate backward-compatible changes; the file structure and semantics are preserved.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Unmapped record field normalization preserves semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "For unmapped reads (flag bit 0x4 set), the RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, and TLEN fields are normalized to standard values (e.g., RNAME='*', POS=0, MAPQ=255, CIGAR='*'). The read name, flag, SEQ, and optional tags remain identical.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification states that for unmapped reads, RNAME should be '*' and POS should be 0. Normalizing these fields preserves the semantics of the unmapped record.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "db1f4df6b38f",
+      "mr_name": "Hard/soft clip CIGAR toggle preserves alignment",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "toggle_cigar_hard_soft_clipping"
+      ],
+      "oracle": "The read name, flag, RNAME, POS, MAPQ, RNEXT, PNEXT, TLEN, and all optional tags remain identical. The SEQ length changes appropriately (hard-clipped bases removed from SEQ, soft-clipped bases present in SEQ). The alignment position is unchanged.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Hard clipping (H) removes bases from SEQ while soft clipping (S) keeps them; converting between H and S preserves the alignment position but changes SEQ length accordingly.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "886e665457cc",
+      "mr_name": "paired_end_flag_consistency",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record is first of pair (flag 0x1 set, 0x40 set)"
+      ],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After round-trip, the first-of-pair flag (0x40) and second-of-pair flag (0x80) remain mutually exclusive and consistent with the read pair orientation",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "assertPairValid checks first/second-of-pair flag consistency",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "read_negative_strand_invariant",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record is paired and both ends are mapped"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "For a mapped paired-end read, the two ends must have opposite strand flags (0x10 XOR 0x20 = true)",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "assertPairValid checks that paired mapped reads have opposite strand flags",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "null_record_rejection",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input is a valid SAMRecord"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After write/read round-trip, the resulting SAMRecord must not be null and must pass assertReadValid sanity checks",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "assertReadValid throws IllegalArgumentException if SAMRecord is null",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "05df7439ad51",
+      "mr_name": "header_vn_minor_bump_roundtrip",
+      "scope": "SAM.header",
+      "preconditions": [
+        "Header has HD line with VN tag"
+      ],
+      "transform_steps": [
+        "bump_hd_vn_minor",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After bumping the minor version and round-tripping, the header still parses successfully and all records remain valid",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Header version changes should not break record parsing",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5df819c6b585",
+      "mr_name": "cigar_normalization_invariant",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record has CIGAR with match operators (= or X) or zero-length operations"
+      ],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators",
+        "cigar_zero_length_op_removal",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After CIGAR canonicalization and round-trip, the alignment position (POS), RNAME, and sequence remain unchanged",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR normalization preserves alignment semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5e368f4c73cc",
+      "mr_name": "optional_tag_permutation_invariant",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record has at least two optional tags"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After permuting optional tag order and round-tripping, all tag keys and values remain identical",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tag order is not semantically meaningful",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8c5e32844942",
+      "mr_name": "unmapped_record_normalization",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record has unmapped flag (0x4) set"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After normalizing unmapped fields and round-tripping, the record remains unmapped and the read unmapped flag stays set",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Unmapped records have standardized field values",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "afc2f32dbff8",
+      "mr_name": "header_subtag_shuffle_invariant",
+      "scope": "SAM.header",
+      "preconditions": [
+        "Header has at least one SQ, RG, or PG record with multiple subtags"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "shuffle_rg_record_subtags",
+        "shuffle_pg_record_subtags",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After shuffling subtag order within header records and round-tripping, all records still parse and align correctly",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Subtag order within header records is not semantically meaningful",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 23,
+    "total": 23
+  }
+}

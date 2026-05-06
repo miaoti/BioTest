@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::variant_start -> Option<io::Result<Position>> with None
+@@ -33,17 +33,17 @@
+ 
+     /// Returns the reference sequence name.
+     pub fn reference_sequence_name(&self) -> &str {
+         self.0.reference_sequence_name()
+     }
+ 
+     /// Returns the variant start position.
+     pub fn variant_start(&self) -> Option<io::Result<Position>> {
+-        self.0.variant_start()
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the IDs.
+     pub fn ids(&self) -> Ids<'_> {
+         self.0.ids()
+     }
+ 
+     /// Returns the reference bases.

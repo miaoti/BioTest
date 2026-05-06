@@ -1,0 +1,90 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat_violation_preserves_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "If the SUT rejects the original VCF due to an invalid fileformat line, then after violating the fileformat first line, the SUT must still reject the output.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "gt_index_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "If the SUT rejects the original VCF due to invalid GT indices, then after violating GT index bounds, the SUT must still reject the output.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "info_number_a_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "If the SUT rejects the original VCF due to invalid INFO Number=A cardinality, then after violating INFO Number=A cardinality, the SUT must still reject the output.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "required_columns_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "If the SUT rejects the original VCF due to missing required fixed columns, then after violating required fixed columns, the SUT must still reject the output.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 4,
+    "total": 4
+  }
+}

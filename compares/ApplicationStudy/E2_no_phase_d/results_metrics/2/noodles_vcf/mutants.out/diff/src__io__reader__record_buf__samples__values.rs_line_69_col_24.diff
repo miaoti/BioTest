@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ replace == with != in parse_values
+@@ -61,17 +61,17 @@
+     }
+ 
+     let mut raw_values = s.split(DELIMITER);
+ 
+     for (key, raw_value) in keys.as_ref().iter().zip(&mut raw_values) {
+         let value = match raw_value {
+             MISSING => None,
+             _ => {
+-                if key == key::GENOTYPE {
++                if key != /* ~ changed by cargo-mutants ~ */ key::GENOTYPE {
+                     parse_genotype_value(raw_value)
+                         .map(Some)
+                         .map_err(ParseError::InvalidValue)?
+                 } else {
+                     let (number, ty) = header
+                         .formats()
+                         .get(key)
+                         .map(|format| (format.number(), format.ty()))

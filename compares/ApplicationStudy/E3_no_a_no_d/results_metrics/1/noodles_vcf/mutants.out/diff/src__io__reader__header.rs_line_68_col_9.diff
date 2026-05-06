@@ -1,0 +1,21 @@
+--- src/io/reader/header.rs
++++ replace <impl BufRead for Reader<R>>::consume with ()
+@@ -60,17 +60,17 @@
+             self.is_eol = false;
+             src
+         };
+ 
+         Ok(buf)
+     }
+ 
+     fn consume(&mut self, amt: usize) {
+-        self.inner.consume(amt);
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn read_header<R>(reader: &mut R) -> io::Result<Header>
+ where
+     R: BufRead,
+ {
+     let mut reader = Reader::new(reader);

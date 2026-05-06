@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::ids -> Ids<'_> with Default::default()
+@@ -38,17 +38,17 @@
+ 
+     /// Returns the variant start position.
+     pub fn variant_start(&self) -> Option<io::Result<Position>> {
+         self.0.variant_start()
+     }
+ 
+     /// Returns the IDs.
+     pub fn ids(&self) -> Ids<'_> {
+-        self.0.ids()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the reference bases.
+     pub fn reference_bases(&self) -> &str {
+         self.0.reference_bases()
+     }
+ 
+     /// Returns the alternate bases.

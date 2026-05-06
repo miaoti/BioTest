@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::contigs -> &Contigs with Box::leak(Box::new(Default::default()))
+@@ -310,17 +310,17 @@
+     ///     .add_contig("sq0", contig.clone())
+     ///     .build();
+     ///
+     /// let contigs = header.contigs();
+     /// assert_eq!(contigs.len(), 1);
+     /// assert_eq!(&contigs[0], &contig);
+     /// ```
+     pub fn contigs(&self) -> &Contigs {
+-        &self.contigs
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a map of contig records (`contig`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{self as vcf, header::record::value::{map::Contig, Map}};

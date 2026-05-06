@@ -1,0 +1,34 @@
+--- src/record/info.rs
++++ replace <impl crate::variant::record::Info for Info<'_>>::len -> usize with 0
+@@ -58,30 +58,17 @@
+ }
+ 
+ impl crate::variant::record::Info for Info<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 
+     fn len(&self) -> usize {
+-        const DELIMITER: u8 = b';';
+-
+-        if self.is_empty() {
+-            0
+-        } else {
+-            let n = self
+-                .0
+-                .as_bytes()
+-                .iter()
+-                .filter(|&&b| b == DELIMITER)
+-                .count();
+-
+-            n + 1
+-        }
++        0 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+         self.get(header, key)

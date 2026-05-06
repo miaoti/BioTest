@@ -1,0 +1,27 @@
+--- src/io/reader/record_buf/position.rs
++++ replace parse_position -> Result<Option<Position>, ParseError> with Ok(None)
+@@ -34,23 +34,17 @@
+         match e.kind() {
+             num::IntErrorKind::Empty => Self::Empty,
+             _ => Self::Invalid(e),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_position(s: &str) -> Result<Option<Position>, ParseError> {
+-    const TELOMERE_START: &str = "0";
+-
+-    match s {
+-        "" => Err(ParseError::Empty),
+-        TELOMERE_START => Ok(None),
+-        _ => s.parse().map(Some).map_err(ParseError::Invalid),
+-    }
++    Ok(None) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_position() {

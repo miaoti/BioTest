@@ -1,0 +1,63 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ replace parse_values -> Result<(), ParseError> with Ok(())
+@@ -45,59 +45,17 @@
+ }
+ 
+ pub(super) fn parse_values(
+     header: &Header,
+     keys: &Keys,
+     s: &str,
+     values: &mut Vec<Option<Value>>,
+ ) -> Result<(), ParseError> {
+-    use crate::header::record::value::map::format::definition::definition;
+-
+-    const DELIMITER: char = ':';
+-
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    } else if s == MISSING {
+-        return Ok(());
+-    }
+-
+-    let mut raw_values = s.split(DELIMITER);
+-
+-    for (key, raw_value) in keys.as_ref().iter().zip(&mut raw_values) {
+-        let value = match raw_value {
+-            MISSING => None,
+-            _ => {
+-                if key == key::GENOTYPE {
+-                    parse_genotype_value(raw_value)
+-                        .map(Some)
+-                        .map_err(ParseError::InvalidValue)?
+-                } else {
+-                    let (number, ty) = header
+-                        .formats()
+-                        .get(key)
+-                        .map(|format| (format.number(), format.ty()))
+-                        .or_else(|| definition(header.file_format(), key).map(|(n, t, _)| (n, t)))
+-                        .unwrap_or_default();
+-
+-                    parse_value(number, ty, raw_value)
+-                        .map(Some)
+-                        .map_err(ParseError::InvalidValue)?
+-                }
+-            }
+-        };
+-
+-        values.push(value);
+-    }
+-
+-    if raw_values.next().is_some() {
+-        return Err(ParseError::UnexpectedValue);
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_values() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/samples/values.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -22,20 +22,17 @@
+     /// The value was unexpected.
+     ///
+     /// There are unexpectedly more values than keys.
+     UnexpectedValue,
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::InvalidValue(e) => Some(e),
+-            _ => None,
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::Empty => f.write_str("empty input"),
+             Self::InvalidValue(_) => f.write_str("invalid value"),

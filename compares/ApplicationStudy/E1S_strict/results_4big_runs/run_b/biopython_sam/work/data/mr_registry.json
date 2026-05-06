@@ -1,0 +1,231 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "Valid file remains valid after CIGAR canonicalization",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because canonicalizing CIGAR match operators (= vs M) does not change the semantics or validity of the alignment.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR operations M (alignment match) and = (sequence match) / X (sequence mismatch) are interchangeable in terms of validity; canonicalization preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "Valid file remains valid after removing zero-length CIGAR ops",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because zero-length CIGAR operations are semantically meaningless and their removal does not affect validity.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Zero-length CIGAR operations are redundant and can be removed without changing the alignment semantics or violating SAM validity rules.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "Valid file remains valid after normalizing sequence case",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because SEQ field case (upper/lower) does not affect SAM validity.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM SEQ field accepts both upper and lower case nucleotide characters; case normalization preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Valid file remains valid after normalizing unmapped record fields",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because normalizing fields of unmapped reads according to spec conventions preserves validity.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "For unmapped reads, certain fields (RNAME, POS, MAPQ, CIGAR) have conventional values; normalizing to these conventions preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "Valid file remains valid after canonicalizing RNEXT alias",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because RNEXT '=' and '==' are equivalent aliases for the same reference; canonicalizing between them preserves validity.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "In SAM, RNEXT field uses '=' as an alias for the same reference as RNAME; canonicalizing between '=' and '==' representations preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "Valid file remains valid after stripping mate flags if unpaired",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid",
+        "Records are unpaired (flag 0x1 not set)"
+      ],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because mate-pair flags on unpaired reads are meaningless and stripping them preserves validity.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Flags 0x40 (first in pair) and 0x80 (second in pair) are only meaningful when 0x1 (paired) is set; stripping them from unpaired reads preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Valid file remains valid after reordering header records",
+      "scope": "SAM.header",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because the SAM spec does not mandate a specific order for header record types beyond conventional ordering.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM header records (@HD, @SQ, @RG, @PG, etc.) have conventional but not strictly enforced ordering; reordering preserves validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Valid file remains valid after permuting optional tag fields",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file is valid"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "The output file must also be valid (not rejected), because the order of optional tags in a SAM record is not semantically significant.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tags in SAM records can appear in any order; permuting them does not affect validity.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Invalid file with bad flag bits remains rejected after round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file contains records with invalid flag bit combinations"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "The output file must also be rejected (or remain invalid), because violating flag bit exclusivity creates an invalid record that should be consistently rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Certain SAM flag bit combinations are mutually exclusive (e.g., 0x4 unmapped and 0x2 mapped); violating this exclusivity creates an invalid record.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Invalid file with bad optional tag type remains rejected after round-trip",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Input SAM file contains records with invalid optional tag type characters"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "The output file must also be rejected (or remain invalid), because violating the optional tag type character convention creates an invalid record that should be consistently rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tag type characters (A, i, f, Z, H, B) are defined by the SAM spec; using invalid type characters creates an invalid record.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 10,
+    "total": 10
+  }
+}

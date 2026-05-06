@@ -1,0 +1,25 @@
+--- src/record/alternate_bases.rs
++++ replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::len -> usize with 1
+@@ -26,21 +26,17 @@
+ }
+ 
+ impl crate::variant::record::AlternateBases for AlternateBases<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 
+     fn len(&self) -> usize {
+-        if self.is_empty() {
+-            0
+-        } else {
+-            self.iter().count()
+-        }
++        1 /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter(&self) -> Box<dyn Iterator<Item = io::Result<&str>> + '_> {
+         if self.is_empty() {
+             Box::new(iter::empty())
+         } else {
+             Box::new(self.0.split(DELIMITER).map(Ok))
+         }

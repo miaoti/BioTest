@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Project-local shim. phase3_jazzer_pit.sh calls `python3.12 <args>`
+# on the host; on Windows the only Python 3.12 binary is `python.exe`
+# under AppData\Local\Programs\Python\Python312, so we forward.
+exec "/c/Users/miaot/AppData/Local/Programs/Python/Python312/python.exe" "$@"

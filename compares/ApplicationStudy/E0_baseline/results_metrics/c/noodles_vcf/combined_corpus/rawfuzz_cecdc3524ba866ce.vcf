@@ -1,0 +1,46 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr3,length=198295559>
+##contig=<ID=chr4,length=190214555>
+##contig=<ID=chr5,length=181538259>
+##contig=<ID=chr6,length=170805979>
+##contig=<ID=chr7,length=159345973>
+##contig=<ID=chr8,length=145138636>
+##contig=<ID=chr9,length=138394717>
+##contig=<ID=chr10,length=133797422>
+##contig=<ID=chr11,length=135086622>
+##contig=<ID=chr12,length=133275309>
+##contig=<ID=chr13,length=114364328>
+##contig=<ID=chr14,length=107043718>
+##contig=<ID=chr15,length=101991189>
+##contig=<ID=chr16,length=90338345>
+##contig=<ID=chr17,length=83257441>
+##contig=<ID=chr18,length=80373285>
+##contig=<ID=chr19,length=58617616>
+##contig=<ID=chr20,length=64444167>
+##contig=<ID=chr21,length=46709983>
+##contig=<ID=chr22,length=50818468>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrY,length=57227415>
+##contig=<ID=chrM,length=16569>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=CNV,Description="Copy number variation">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from VEP">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	1000000	SV1	A	<DEL>	50	PASS	SVTYPE=DEL;SVLEN=-1000;END=1001000;IMPRECISE;CSQ=missense_variant|MODERATE|GENE1|ENST000001|A|T|rs123|1|0.01,stop_gained|HIGH|GENE2|ENST000002|C|G|rs456|2|0.001,downstream_gene_variant|MODIFIER|GENE3|ENST000003|T|A|rs789|3|0.1	GT:GQ:DP	1/1:99:40
+chr2	2000000	SV2	T	<DUP>	40	PASS	SVTYPE=DUP;SVLEN=500;END=2000500;IMPRECISE;CSQ=splice_acceptor_vFriant|HIGH|GENE4|ENST000004|G|A|rs012|4|0.0005,5_prime_UTR_variant|MODIFIER|GENE5|ENST000005|C|T|rs345|5|0.05	GT:GQ:DP	0/1:80:32
+chr0	3000000	SV3	G	<INV>	60	PASS	SVTYPE=INV;E^D=3000500;IMPRECISE;CSQ=synonymous_variant|LOW|GENE6|ENST000006|A|G|rs678|6|0.02,non_coding_transcript_exon_variant|MODIFIER|GENE7|ENST000007|T|C|rs901|7|0.2	GT:GQ:DP	1/0:90:35

@@ -1,0 +1,32 @@
+--- src/record/samples/sample.rs
++++ replace Sample<'s>::iter -> Box<dyn Iterator<Item = io::Result<(&str, Option<Value<'s>>)>>+'_> with Box::new(Default::default())
+@@ -33,28 +33,17 @@
+             .map(|result| result.map(|(_, value)| value).transpose())
+     }
+ 
+     /// Returns an iterator over fields.
+     pub fn iter<'h: 's>(
+         &self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&str, Option<Value<'s>>)>> + '_> {
+-        const DELIMITER: char = ':';
+-
+-        if self.as_ref().is_empty() {
+-            Box::new(iter::empty())
+-        } else {
+-            Box::new(
+-                self.keys
+-                    .iter()
+-                    .zip(self.src.split(DELIMITER))
+-                    .map(|(key, s)| parse_value(s, header, key).map(|value| (key, value))),
+-            )
+-        }
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl AsRef<str> for Sample<'_> {
+     fn as_ref(&self) -> &str {
+         self.src
+     }
+ }

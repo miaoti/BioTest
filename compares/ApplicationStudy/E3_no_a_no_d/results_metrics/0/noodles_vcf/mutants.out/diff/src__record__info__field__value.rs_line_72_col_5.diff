@@ -1,0 +1,21 @@
+--- src/record/info/field/value.rs
++++ replace parse_integer_array_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -64,17 +64,17 @@
+     use crate::io::reader::record_buf::value::percent_decode;
+ 
+     percent_decode(src)
+         .map(Value::String)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 
+ fn parse_integer_array_value(src: &str) -> io::Result<Value<'_>> {
+-    Ok(Value::Array(Array::Integer(Box::new(src))))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_float_array_value(src: &str) -> io::Result<Value<'_>> {
+     Ok(Value::Array(Array::Float(Box::new(src))))
+ }
+ 
+ fn parse_character_array_value(src: &str) -> io::Result<Value<'_>> {
+     Ok(Value::Array(Array::Character(Box::new(src))))

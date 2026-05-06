@@ -1,0 +1,21 @@
+--- src/io/reader/header.rs
++++ replace && with || in <impl BufRead for Reader<R>>::fill_buf
+@@ -46,17 +46,17 @@
+     fn fill_buf(&mut self) -> io::Result<&[u8]> {
+         use memchr::memchr;
+ 
+         const PREFIX: u8 = b'#';
+         const LINE_FEED: u8 = b'\n';
+ 
+         let src = self.inner.fill_buf()?;
+ 
+-        let buf = if self.is_eol && src.first().map(|&b| b != PREFIX).unwrap_or(true) {
++        let buf = if self.is_eol || /* ~ changed by cargo-mutants ~ */ src.first().map(|&b| b != PREFIX).unwrap_or(true) {
+             &[]
+         } else if let Some(i) = memchr(LINE_FEED, src) {
+             self.is_eol = true;
+             &src[..=i]
+         } else {
+             self.is_eol = false;
+             src
+         };

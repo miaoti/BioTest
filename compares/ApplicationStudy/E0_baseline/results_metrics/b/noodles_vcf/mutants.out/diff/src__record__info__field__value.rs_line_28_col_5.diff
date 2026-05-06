@@ -1,0 +1,23 @@
+--- src/record/info/field/value.rs
++++ replace parse_integer_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -20,19 +20,17 @@
+         (_, Type::Integer) => parse_integer_array_value(src),
+         (_, Type::Float) => parse_float_array_value(src),
+         (_, Type::Character) => parse_character_array_value(src),
+         (_, Type::String) => parse_string_array_value(src),
+     }
+ }
+ 
+ fn parse_integer_value(src: &str) -> io::Result<Value<'_>> {
+-    src.parse()
+-        .map(Value::Integer)
+-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_float_value(src: &str) -> io::Result<Value<'_>> {
+     src.parse()
+         .map(Value::Float)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 

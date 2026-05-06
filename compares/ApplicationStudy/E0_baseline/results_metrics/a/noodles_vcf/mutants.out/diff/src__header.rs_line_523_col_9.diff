@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace <impl FromStr for Header>::from_str -> Result<Self, Self::Err> with Ok(Default::default())
+@@ -515,17 +515,17 @@
+         Builder::default().build()
+     }
+ }
+ 
+ impl FromStr for Header {
+     type Err = ParseError;
+ 
+     fn from_str(s: &str) -> Result<Self, Self::Err> {
+-        Parser::default().parse(s)
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]

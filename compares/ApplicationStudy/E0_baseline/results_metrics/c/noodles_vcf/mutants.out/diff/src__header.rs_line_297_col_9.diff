@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::alternative_alleles_mut -> &mut AlternativeAlleles with Box::leak(Box::new(Default::default()))
+@@ -289,17 +289,17 @@
+     /// let alt = Map::<AlternativeAllele>::new("Deletion");
+     /// header.alternative_alleles_mut().insert(String::from("DEL"), alt.clone());
+     ///
+     /// let alternative_alleles = header.alternative_alleles();
+     /// assert_eq!(alternative_alleles.len(), 1);
+     /// assert_eq!(&alternative_alleles[0], &alt);
+     /// ```
+     pub fn alternative_alleles_mut(&mut self) -> &mut AlternativeAlleles {
+-        &mut self.alternative_alleles
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a map of contig records (`contig`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{self as vcf, header::record::value::{map::Contig, Map}};

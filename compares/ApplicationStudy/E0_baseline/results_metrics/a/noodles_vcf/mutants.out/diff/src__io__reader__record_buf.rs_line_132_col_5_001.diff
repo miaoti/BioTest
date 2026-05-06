@@ -1,0 +1,22 @@
+--- src/io/reader/record_buf.rs
++++ replace next_field -> &'a str with "xyzzy"
+@@ -124,18 +124,10 @@
+     }
+ 
+     parse_samples(header, s, record.samples_mut()).map_err(ParseError::InvalidSamples)?;
+ 
+     Ok(())
+ }
+ 
+ fn next_field<'a>(s: &mut &'a str) -> &'a str {
+-    const DELIMITER: char = '\t';
+-
+-    let (field, rest) = s
+-        .split_once(DELIMITER)
+-        .unwrap_or_else(|| s.split_at(s.len()));
+-
+-    *s = rest;
+-
+-    field
++    "xyzzy" /* ~ changed by cargo-mutants ~ */
+ }

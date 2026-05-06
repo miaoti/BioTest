@@ -1,0 +1,353 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat_line_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "The SUT must reject the input both before and after the transformation",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::VCF Header::p1",
+          "quote": "The first line of a VCF file must be ##fileformat=VCFv4.5",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "gt_index_bounds_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "The SUT must reject the input both before and after the transformation",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p1",
+          "quote": "GT values must be valid indices into the list of alleles",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "info_number_a_cardinality_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "The SUT must reject the input both before and after the transformation",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::p1",
+          "quote": "Number=A means one value for each alternate allele",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "required_fixed_columns_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "The SUT must reject the input both before and after the transformation",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p1",
+          "quote": "CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO are required fixed columns",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "alt_permutation_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "If the SUT rejects the original record, it must also reject the permuted record, and vice versa",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Allele specification::p1",
+          "quote": "ALT alleles are ordered and referenced by index in GT and Number=A fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "split_multi_allelic_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "If the SUT rejects the original multi-allelic record, it must also reject all split records, and vice versa",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Multi-allelic variants::p1",
+          "quote": "Multi-allelic records can be split into multiple biallelic records",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "vcf_bcf_roundtrip_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "The SUT must reject the input both before and after VCF-to-BCF-to-VCF round-trip conversion",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF format::p1",
+          "quote": "BCF is a binary representation of VCF",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "sut_write_roundtrip_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "The SUT must reject the input both before and after writing and re-reading via the SUT itself",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::VCF format::p1",
+          "quote": "VCF files must be well-formed",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "permute_sample_columns_preserves_genotypes",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "Permuting sample column order in the header and records preserves the per-sample GT values when mapped back to the original sample order",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "shuffle_meta_lines_preserves_records",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "Shuffling the order of meta-information lines in the VCF header does not change the interpretation of any record's fixed fields, INFO, or FORMAT values",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "left_align_indel_preserves_variant_identity",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "Left-aligning indels produces records that represent the same biological variants with equivalent ALT alleles and GT values",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "trim_common_affixes_preserves_variant",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "Trimming common prefix/suffix bases from REF and ALT alleles produces records representing the same variant with adjusted POS",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8ad741037a84",
+      "mr_name": "permute_structured_kv_order_preserves_info",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "Permuting the order of key-value pairs in structured INFO fields does not change the semantic content of the INFO data",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "shuffle_info_field_kv_preserves_semantics",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "Shuffling the order of INFO key-value pairs in a record preserves the semantic content of all INFO fields",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6cd9bfb18f53",
+      "mr_name": "inject_equivalent_missing_values_preserves_records",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "inject_equivalent_missing_values"
+      ],
+      "oracle": "Injecting equivalent missing value representations (e.g., '.' vs './.' for GT) preserves the biological interpretation of the variant call",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "permute_bcf_header_dictionary_preserves_data",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "Permuting the order of the BCF header dictionary preserves the mapping between dictionary IDs and their corresponding values in records",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "19ff4ae6dea2",
+      "mr_name": "permute_csq_annotations_preserves_annotation_set",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_csq_annotations"
+      ],
+      "oracle": "Permuting the order of CSQ (consequence) annotations within a record preserves the complete set of annotations",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 17,
+    "total": 17
+  }
+}

@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::filters_range -> Range<usize> with Range::new()
+@@ -33,17 +33,17 @@
+         self.reference_bases_end..self.alternate_bases_end
+     }
+ 
+     pub fn quality_score_range(&self) -> Range<usize> {
+         self.alternate_bases_end..self.quality_score_end
+     }
+ 
+     pub fn filters_range(&self) -> Range<usize> {
+-        self.quality_score_end..self.filters_end
++        Range::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn info_range(&self) -> Range<usize> {
+         self.filters_end..self.info_end
+     }
+ 
+     pub fn genotypes_range(&self) -> RangeFrom<usize> {
+         self.info_end..

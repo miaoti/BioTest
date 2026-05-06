@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace <impl crate::variant::Record for Record>::reference_bases -> Box<dyn crate::variant::record::ReferenceBases +'_> with Box::new(Default::default())
+@@ -115,17 +115,17 @@
+         self.variant_start()
+     }
+ 
+     fn ids(&self) -> Box<dyn crate::variant::record::Ids + '_> {
+         Box::new(self.ids())
+     }
+ 
+     fn reference_bases(&self) -> Box<dyn crate::variant::record::ReferenceBases + '_> {
+-        Box::new(self.reference_bases())
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn alternate_bases(&self) -> Box<dyn crate::variant::record::AlternateBases + '_> {
+         Box::new(self.alternate_bases())
+     }
+ 
+     fn quality_score(&self) -> Option<io::Result<f32>> {
+         self.quality_score()

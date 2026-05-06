@@ -1,0 +1,29 @@
+--- src/record/samples/keys.rs
++++ replace parse_key -> &'a str with "xyzzy"
+@@ -19,25 +19,17 @@
+             } else {
+                 Some(parse_key(&mut src))
+             }
+         })
+     }
+ }
+ 
+ fn parse_key<'a>(src: &mut &'a str) -> &'a str {
+-    const DELIMITER: char = ':';
+-
+-    let (buf, rest) = src
+-        .split_once(DELIMITER)
+-        .unwrap_or_else(|| src.split_at(src.len()));
+-
+-    *src = rest;
+-
+-    buf
++    "xyzzy" /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_iter() {

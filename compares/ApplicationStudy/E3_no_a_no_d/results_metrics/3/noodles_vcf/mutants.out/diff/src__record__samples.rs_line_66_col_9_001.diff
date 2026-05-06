@@ -1,0 +1,29 @@
+--- src/record/samples.rs
++++ replace Samples<'r>::iter -> impl Iterator<Item = Sample<'r>>+'_ with ::std::iter::once(Default::default())
+@@ -58,25 +58,17 @@
+         self.keys()
+             .iter()
+             .enumerate()
+             .map(|(i, key)| Series::new(key, self, i))
+     }
+ 
+     /// Returns an iterator over samples.
+     pub fn iter(&self) -> impl Iterator<Item = Sample<'r>> + '_ {
+-        let (_, mut src) = self.0.split_once(DELIMITER).unwrap_or_default();
+-
+-        iter::from_fn(move || {
+-            if src.is_empty() {
+-                None
+-            } else {
+-                Some(parse_sample(&mut src, self.keys()))
+-            }
+-        })
++        ::std::iter::once(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl AsRef<str> for Samples<'_> {
+     fn as_ref(&self) -> &str {
+         self.0
+     }
+ }

@@ -1,0 +1,365 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "header_sq_reorder_preserves_coordinates",
+      "scope": "SAM.header",
+      "preconditions": [
+        "Header contains at least 2 SQ records"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "After reordering SQ records in the header, all alignment records still reference the correct reference sequences by name (RNAME matches SN tag), and POS values remain valid with respect to the corresponding LN values.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification defines RNAME as the reference sequence name, which must match an SN tag in the SQ header records. The coordinate indexing is by name, not by position in the header.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "sam_bam_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "File is valid SAM"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After SAM→BAM→SAM round-trip conversion, the RNAME and POS fields of every record remain identical to their original values.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Round-trip conversion between SAM and BAM formats should preserve all data fields including the coordinate fields RNAME and POS.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "sam_cram_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "File is valid SAM"
+      ],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "After SAM→CRAM→SAM round-trip conversion, the RNAME and POS fields of every record remain identical to their original values.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Round-trip conversion between SAM and CRAM formats should preserve all data fields including the coordinate fields RNAME and POS.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "sut_write_roundtrip_preserves_coordinates",
+      "scope": "SAM.record",
+      "preconditions": [
+        "File is valid SAM"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After writing and re-reading the SAM file through the system under test, the RNAME and POS fields of every record remain identical to their original values.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A write round-trip through the SUT should preserve all record fields including coordinate information.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "pos_shift_within_bounds_preserves_indexing",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record is mapped (RNAME != '*' and POS != 0)",
+        "POS + delta <= LN for the referenced SQ record"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting POS by a valid delta (within sequence length bounds), the record remains correctly indexed on the same reference sequence with the new position.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "POS is the 1-based leftmost mapping position. Shifting this position within the valid range [1, LN] should maintain correct coordinate indexing on the reference sequence.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "sq_subtag_shuffle_preserves_coordinate_indexing",
+      "scope": "SAM.header",
+      "preconditions": [
+        "Header contains at least one SQ record with multiple subtags"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "After shuffling subtags within SQ records, the RNAME field in alignment records still correctly references the SQ records by SN, and POS values remain valid.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SQ records contain subtags like SN, LN, etc. The order of subtags within an SQ record does not affect the coordinate indexing, which relies on the SN tag value.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "unmapped_normalize_preserves_coordinate_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "Record is unmapped (flag bit 0x4 set)"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "After normalizing unmapped record fields (setting RNAME to '*' and POS to 0), the coordinate indexing semantics are preserved - the record is correctly identified as unmapped with no valid coordinate.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "For unmapped reads, the SAM specification states that RNAME should be '*' and POS should be 0 to indicate no coordinate.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "header_RG_record_order_invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "Query results remain identical after reordering @RG header records",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification states that the order of @RG header lines is arbitrary",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "header_PG_record_order_invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Query results remain identical after reordering @PG header records",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification states that the order of @PG header lines is arbitrary",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "header_HD_subtag_order_invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Query results remain identical after reordering subtags within the @HD header line",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification states that the order of tags within header lines is arbitrary",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "comment_order_invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Query results remain identical after reordering @CO comment lines in the header",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification states that @CO comment lines are free-form text and their order is not semantically meaningful",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "optional_tag_permutation_invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Query results (e.g., filtering by tag values) remain identical after permuting the order of optional tags on each record",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification states that the order of optional tags in a record is not semantically meaningful",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "sequence_case_normalization_invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "Query results remain identical after normalizing the case of sequence bases in records",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification allows both upper and lower case for sequence bases; query APIs should treat them equivalently",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "cigar_canonicalization_invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "Query results (e.g., query by alignment position or mate information) remain identical after canonicalizing CIGAR match operators",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification treats = and X CIGAR operators as equivalent to M for most query purposes",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "cigar_zero_length_op_removal_invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "Query results remain identical after removing zero-length CIGAR operations",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Zero-length CIGAR operations have no effect on alignment and should be semantically equivalent to their absence",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "rnext_equals_alias_invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "Query results remain identical after canonicalizing RNEXT field = alias",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The SAM specification defines = as an alias for the RNAME of the current record in the RNEXT field",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "header_version_bump_invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "Query results remain identical after bumping the minor version number in the @HD header",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Minor version bumps indicate backward-compatible changes and should not affect query semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 17,
+    "total": 17
+  }
+}

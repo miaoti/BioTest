@@ -1,0 +1,27 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace parse_char_array -> Result<Value, ParseError> with Ok(Default::default())
+@@ -120,23 +120,17 @@
+     Err(ParseError::InvalidCharacter)
+ }
+ 
+ fn parse_char(s: &str) -> Result<Value, ParseError> {
+     parse_raw_char(s).map(Value::Character)
+ }
+ 
+ fn parse_char_array(s: &str) -> Result<Value, ParseError> {
+-    s.split(DELIMITER)
+-        .map(|t| match t {
+-            MISSING => Ok(None),
+-            _ => parse_raw_char(t).map(Some),
+-        })
+-        .collect::<Result<_, _>>()
+-        .map(|values| Value::Array(Array::Character(values)))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_raw_string(s: &str) -> Result<String, ParseError> {
+     value::percent_decode(s)
+         .map(|t| t.into())
+         .map_err(ParseError::InvalidString)
+ }
+ 

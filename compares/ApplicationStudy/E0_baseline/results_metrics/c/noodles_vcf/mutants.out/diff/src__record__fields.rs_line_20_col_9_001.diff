@@ -1,0 +1,21 @@
+--- src/record/fields.rs
++++ replace Fields::reference_sequence_name -> &str with "xyzzy"
+@@ -12,17 +12,17 @@
+     pub(crate) buf: String,
+     pub(crate) bounds: Bounds,
+ }
+ 
+ const MISSING: &str = ".";
+ 
+ impl Fields {
+     pub(super) fn reference_sequence_name(&self) -> &str {
+-        &self.buf[self.bounds.reference_sequence_name_range()]
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub(super) fn variant_start(&self) -> Option<io::Result<Position>> {
+         const TELOMERE_START: &str = "0";
+ 
+         match &self.buf[self.bounds.variant_start_range()] {
+             TELOMERE_START => None,
+             src => Some(

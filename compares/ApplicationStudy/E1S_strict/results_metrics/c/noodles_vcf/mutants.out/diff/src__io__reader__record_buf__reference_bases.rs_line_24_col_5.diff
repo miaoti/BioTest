@@ -1,0 +1,28 @@
+--- src/io/reader/record_buf/reference_bases.rs
++++ replace parse_reference_bases -> Result<(), ParseError> with Ok(())
+@@ -16,24 +16,17 @@
+         }
+     }
+ }
+ 
+ pub(super) fn parse_reference_bases(
+     s: &str,
+     reference_bases: &mut String,
+ ) -> Result<(), ParseError> {
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    }
+-
+-    reference_bases.clear();
+-    reference_bases.push_str(s);
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_reference_bases() -> Result<(), Box<dyn std::error::Error>> {

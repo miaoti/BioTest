@@ -1,0 +1,26 @@
+##fileformat=VCFv4.3
+##FILTER=<Description="All filters passed",ID=PASS>
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<length=242193529,ID=chr2>
+##contig=<length=156040895,ID=chrX>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<Description="Duplication",ID=DUP>
+##ALT=<Description="Inversion",ID=INV>
+##INFO=<Number=1,ID=SVTYPE,Type=String,Description="Type of structural variant">
+##INFO=<Number=1,ID=SVLEN,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<Type=Integer,ID=END,Description="End position of the variant described in this record",Number=1>
+##INFO=<Description="Confidence interval around POS",ID=CIPOS,Number=2,Type=Integer>
+##INFO=<Type=Integer,ID=CIEND,Number=2,Description="Confidence interval around END">
+##INFO=<Type=Flag,Description="Imprecise structural variation",ID=IMPRECISE,Number=0>
+##INFO=<Description="ID of mate breakend",Type=String,Number=.,ID=MATEID>
+##FORMAT=<Type=String,Description="Genotype",Number=1,ID=GT>
+##FORMAT=<Description="Phase set identifier",Type=Integer,Number=1,ID=PS>
+##FORMAT=<Number=1,Description="Phased genotype",ID=PGT,Type=String>
+##FORMAT=<Description="Phasing ID",ID=PID,Type=String,Number=1>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	100	sv1	A	<DEL>	50	PASS	SVTYPE=DEL;SVLEN=-200;END=300;CIPOS=-5,5;CIEND=-5,5;IMPRECISE	GT	0/1
+chr2	500	sv2	T	<DUP>	40	PASS	SVTYPE=DUP;SVLEN=150;END=650;CIPOS=0,10;CIEND=0,10	GT	1/1
+chrX	1000	sv3	G	<INV>	60	PASS	SVTYPE=INV;SVLEN=0;END=1200;IMPRECISE	GT	0/0

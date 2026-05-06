@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::file_format -> FileFormat with Default::default()
+@@ -79,17 +79,17 @@
+     ///
+     /// let header = vcf::Header::builder()
+     ///     .set_file_format(FileFormat::default())
+     ///     .build();
+     ///
+     /// assert_eq!(header.file_format(), FileFormat::default());
+     /// ```
+     pub fn file_format(&self) -> FileFormat {
+-        self.file_format
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to the file format (`fileformat`) of the VCF.
+     ///
+     /// `fileformat` is a required meta record and is guaranteed to be set.
+     ///
+     /// # Examples
+     ///

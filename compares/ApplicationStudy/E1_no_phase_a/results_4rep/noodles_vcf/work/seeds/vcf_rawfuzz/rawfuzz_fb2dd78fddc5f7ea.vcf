@@ -1,0 +1,25 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=test_generator
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chrX,length=156040895>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variant">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="Mate record ID for breakend">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##FORMAT=<ID=PGT,Number=1,Type=String,Description="Phased genotype">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Phased identifier">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	1000	sv1	A	<DEL>	50	PASS	SVTYPE=DEL;SVLEN=-200;END=1200;CIPOS=-5,5;CIEND=-5,5LIMPRECISE	GT	0/1
+chr2	2000	sv0	T	<DUP>	60	PASs	SVTYPE=DUP;SVLEN=150;END=7150	GT	1/1
+chrX	3000	sv3	G	<INV>	70	PASS	SVTYPE=INV;SVLEN=500;END=3500	GT	0/0

@@ -1,0 +1,32 @@
+--- src/record/samples/sample.rs
++++ replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(Some(Default::default())))
+@@ -60,28 +60,17 @@
+ }
+ 
+ impl crate::variant::record::samples::Sample for Sample<'_> {
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+-        for result in self.iter(header) {
+-            match result {
+-                Ok((k, v)) => {
+-                    if k == key {
+-                        return Some(Ok(v));
+-                    }
+-                }
+-                Err(e) => return Some(Err(e)),
+-            }
+-        }
+-
+-        None
++        Some(Ok(Some(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn get_index<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         i: usize,
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+         self.iter(header)

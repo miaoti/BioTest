@@ -1,0 +1,110 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "SAM-BAM round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "Each record after SAM→BAM→SAM round-trip is semantically identical to the original record",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Format Specification::p1",
+          "quote": "SAM and BAM formats are interchangeable representations of the same data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Header record reordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "After reordering header records, the header remains semantically equivalent",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Format Specification::p1",
+          "quote": "Header records may appear in any order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Optional tag field permutation invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "After permuting optional tag fields, each record is semantically identical to the original",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Format Specification::p1",
+          "quote": "Optional fields may appear in any order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "CIGAR match operator canonicalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "After canonicalizing CIGAR match operators, the alignment semantics are unchanged",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Format Specification::p1",
+          "quote": "The CIGAR string represents alignment operations",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "Sequence case normalization invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "After normalizing sequence case, the biological sequence is unchanged",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::SAM Format Specification::p1",
+          "quote": "SEQ is the sequence of the read",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
+  }
+}

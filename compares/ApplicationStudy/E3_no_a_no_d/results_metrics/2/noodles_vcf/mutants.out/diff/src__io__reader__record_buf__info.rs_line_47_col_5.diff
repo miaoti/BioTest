@@ -1,0 +1,43 @@
+--- src/io/reader/record_buf/info.rs
++++ replace parse_info -> Result<(), ParseError> with Ok(())
+@@ -39,39 +39,17 @@
+                 Ok(())
+             }
+             ParseError::DuplicateKey(key) => write!(f, "duplicate key: {key}"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_info(header: &Header, s: &str, info: &mut Info) -> Result<(), ParseError> {
+-    use indexmap::map::Entry;
+-
+-    const DELIMITER: char = ';';
+-
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    }
+-
+-    for raw_field in s.split(DELIMITER) {
+-        let (key, value) = parse_field(header, raw_field).map_err(ParseError::InvalidField)?;
+-
+-        match info.as_mut().entry(key) {
+-            Entry::Vacant(entry) => {
+-                entry.insert(value);
+-            }
+-            Entry::Occupied(entry) => {
+-                let (k, _) = entry.swap_remove_entry();
+-                return Err(ParseError::DuplicateKey(k));
+-            }
+-        }
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_info() -> Result<(), ParseError> {

@@ -1,0 +1,21 @@
+--- src/record/samples/series/value.rs
++++ replace parse_integer_array_value -> Value<'_> with Default::default()
+@@ -90,17 +90,17 @@
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 
+ fn parse_genotype_value(src: &str) -> Value<'_> {
+     Value::Genotype(Box::new(Genotype::new(src)))
+ }
+ 
+ fn parse_integer_array_value(src: &str) -> Value<'_> {
+-    Value::Array(Array::Integer(Box::new(src)))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_float_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Float(Box::new(src)))
+ }
+ 
+ fn parse_character_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Character(Box::new(src)))

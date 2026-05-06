@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace <impl crate::variant::record::Samples for Samples<'_>>::is_empty -> bool with true
+@@ -78,17 +78,17 @@
+ impl AsRef<str> for Samples<'_> {
+     fn as_ref(&self) -> &str {
+         self.0
+     }
+ }
+ 
+ impl crate::variant::record::Samples for Samples<'_> {
+     fn is_empty(&self) -> bool {
+-        self.0.is_empty()
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn len(&self) -> usize {
+         self.iter().count()
+     }
+ 
+     fn column_names<'a, 'h: 'a>(
+         &'a self,

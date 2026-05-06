@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/quality_score.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None
+@@ -6,20 +6,17 @@
+     /// The input is empty.
+     Empty,
+     /// The input is invalid.
+     Invalid(num::ParseFloatError),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::Empty => None,
+-            Self::Invalid(e) => Some(e),
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::Empty => write!(f, "empty input"),
+             Self::Invalid(_) => write!(f, "invalid input"),

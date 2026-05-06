@@ -1,0 +1,33 @@
+--- src/io/reader/record_buf/info.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -22,29 +22,17 @@
+             Self::InvalidField(e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            ParseError::Empty => write!(f, "empty input"),
+-            ParseError::InvalidField(e) => {
+-                write!(f, "invalid field")?;
+-
+-                if let Some(key) = e.key() {
+-                    write!(f, ": {key}")?;
+-                }
+-
+-                Ok(())
+-            }
+-            ParseError::DuplicateKey(key) => write!(f, "duplicate key: {key}"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_info(header: &Header, s: &str, info: &mut Info) -> Result<(), ParseError> {
+     use indexmap::map::Entry;
+ 
+     const DELIMITER: char = ';';
+ 

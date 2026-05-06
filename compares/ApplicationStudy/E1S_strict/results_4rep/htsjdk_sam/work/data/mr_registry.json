@@ -1,0 +1,110 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "SAM-BAM round-trip preserves header and records",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After converting SAM→BAM→SAM, all header records and alignment records remain semantically equivalent",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM and BAM are equivalent representations of the same data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "SAM-CRAM round-trip preserves header and records",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "After converting SAM→CRAM→SAM, all header records and alignment records remain semantically equivalent",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM and CRAM are equivalent representations of the same data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "Header record reordering preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "Reordering header records does not change the semantic meaning of the SAM file",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Header records may be reordered without changing semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "Optional tag field permutation preserves record semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Permuting the order of optional tag fields in alignment records does not change their semantic meaning",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tag fields may appear in any order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "HD subtag shuffling preserves header semantics",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Shuffling subtags within @HD header lines does not change the semantic meaning",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Subtags within header lines may appear in any order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
+  }
+}

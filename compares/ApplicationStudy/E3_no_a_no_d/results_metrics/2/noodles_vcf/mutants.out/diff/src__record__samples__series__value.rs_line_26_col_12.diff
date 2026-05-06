@@ -1,0 +1,21 @@
+--- src/record/samples/series/value.rs
++++ replace == with != in parse_value
+@@ -18,17 +18,17 @@
+     src: &'a str,
+     header: &Header,
+     key: &str,
+ ) -> io::Result<Option<Value<'a>>> {
+     use crate::header::record::value::map::format::{definition::definition, Number, Type};
+ 
+     const MISSING: &str = ".";
+ 
+-    if src == MISSING {
++    if src != /* ~ changed by cargo-mutants ~ */ MISSING {
+         return Ok(None);
+     } else if key == key::GENOTYPE {
+         return Ok(Some(parse_genotype_value(src)));
+     }
+ 
+     let (number, ty) = header
+         .formats()
+         .get(key)

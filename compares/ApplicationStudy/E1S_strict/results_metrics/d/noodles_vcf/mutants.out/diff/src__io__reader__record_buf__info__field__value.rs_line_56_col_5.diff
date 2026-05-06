@@ -1,0 +1,34 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace parse_value -> Result<Value, ParseError> with Ok(Default::default())
+@@ -48,30 +48,17 @@
+             ParseError::InvalidFlag => write!(f, "invalid flag"),
+             ParseError::InvalidCharacter => write!(f, "invalid character"),
+             ParseError::InvalidString(_) => write!(f, "invalid string"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_value(number: Number, ty: Type, s: &str) -> Result<Value, ParseError> {
+-    match (number, ty) {
+-        (Number::Count(0), Type::Flag) => parse_flag(s),
+-        (Number::Count(0), _) | (_, Type::Flag) => {
+-            Err(ParseError::InvalidNumberForType(number, ty))
+-        }
+-        (Number::Count(1), Type::Integer) => parse_i32(s),
+-        (Number::Count(1), Type::Float) => parse_f32(s),
+-        (Number::Count(1), Type::Character) => parse_char(s),
+-        (Number::Count(1), Type::String) => parse_string(s),
+-        (_, Type::Integer) => parse_i32_array(s),
+-        (_, Type::Float) => parse_f32_array(s),
+-        (_, Type::Character) => parse_char_array(s),
+-        (_, Type::String) => parse_string_array(s),
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_i32(s: &str) -> Result<Value, ParseError> {
+     s.parse()
+         .map(Value::Integer)
+         .map_err(ParseError::InvalidInteger)
+ }
+ 

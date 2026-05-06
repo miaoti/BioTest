@@ -1,0 +1,19 @@
+--- src/record.rs
++++ replace <impl crate::variant::Record for Record>::info -> Box<dyn crate::variant::record::Info +'_> with Box::new(Default::default())
+@@ -131,15 +131,15 @@
+         self.quality_score()
+     }
+ 
+     fn filters(&self) -> Box<dyn crate::variant::record::Filters + '_> {
+         Box::new(self.filters())
+     }
+ 
+     fn info(&self) -> Box<dyn crate::variant::record::Info + '_> {
+-        Box::new(self.info())
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn samples(&self) -> io::Result<Box<dyn crate::variant::record::Samples + '_>> {
+         Ok(Box::new(self.samples()))
+     }
+ }

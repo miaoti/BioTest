@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace Samples<'r>::is_empty -> bool with true
+@@ -17,17 +17,17 @@
+ 
+ impl<'r> Samples<'r> {
+     pub(super) fn new(buf: &'r str) -> Self {
+         Self(buf)
+     }
+ 
+     /// Returns whether there may be any genotypes.
+     pub fn is_empty(&self) -> bool {
+-        self.0.is_empty()
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the keys.
+     pub fn keys(&self) -> Keys<'r> {
+         let (src, _) = self.0.split_once(DELIMITER).unwrap_or_default();
+         Keys::new(src)
+     }
+ 

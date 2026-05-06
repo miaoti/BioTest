@@ -1,0 +1,33 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace <impl crate::variant::record::samples::series::value::Genotype for Genotype<'_>>::iter -> Box<dyn Iterator<Item = io::Result<(Option<usize>, Phasing)>>+'_> with Box::new(Default::default())
+@@ -9,29 +9,17 @@
+ impl<'a> Genotype<'a> {
+     pub(crate) fn new(src: &'a str) -> Self {
+         Self(src)
+     }
+ }
+ 
+ impl crate::variant::record::samples::series::value::Genotype for Genotype<'_> {
+     fn iter(&self) -> Box<dyn Iterator<Item = io::Result<(Option<usize>, Phasing)>> + '_> {
+-        let mut src = self.0;
+-
+-        let first_allele_result = parse_first_allele(&mut src);
+-
+-        Box::new(
+-            iter::once(first_allele_result).chain(iter::from_fn(move || {
+-                if src.is_empty() {
+-                    None
+-                } else {
+-                    Some(parse_allele(&mut src))
+-                }
+-            })),
+-        )
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ fn parse_first_allele(src: &mut &str) -> io::Result<(Option<usize>, Phasing)> {
+     let mut buf = next_allele(src);
+ 
+     let phasing = if buf.starts_with(['|', '/']) {
+         let p = parse_phasing(&buf[..1])?;

@@ -1,0 +1,40 @@
+--- src/io/reader/record_buf/samples/keys.rs
++++ replace parse_keys -> Result<(), ParseError> with Ok(())
+@@ -18,36 +18,17 @@
+         match self {
+             Self::Empty => write!(f, "empty input"),
+             Self::DuplicateKey(key) => write!(f, "duplicate key: {key}"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_keys(header: &Header, s: &str, keys: &mut Keys) -> Result<(), ParseError> {
+-    const DELIMITER: char = ':';
+-
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    } else if s == MISSING {
+-        return Ok(());
+-    }
+-
+-    for raw_key in s.split(DELIMITER) {
+-        let key = match header.formats().get_full(raw_key) {
+-            Some((_, k, _)) => k.clone(),
+-            None => raw_key.into(),
+-        };
+-
+-        if let Some(key) = keys.as_mut().replace(key) {
+-            return Err(ParseError::DuplicateKey(key));
+-        }
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_keys() -> Result<(), Box<dyn std::error::Error>> {

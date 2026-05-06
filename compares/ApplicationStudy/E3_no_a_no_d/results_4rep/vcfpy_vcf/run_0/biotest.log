@@ -1,0 +1,133 @@
+[harness_run/E3] mode = E3
+[harness_run/E3] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E3] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E3] pre-import patch: engine.build_system_prompt: stub (minimal � no spec/chromadb/precondition hints)
+[harness_run/E3] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E3] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E3] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E3] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E3] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E3] phase_c patch: orchestrator.settings: wrapped: Phase.shrink stripped, deadline=5000ms
+[harness_run/E3] config: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\run_0\biotest_config.rep0.yaml
+[harness_run/E3] phase_filter: B,C,E
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 10 query methods on primary vcfpy for Rank 5
+  Mining VCF / ordering_invariance...
+20:58:05 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+20:58:05 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+20:58:45 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+20:58:45 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+20:58:45 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+20:58:45 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+20:58:45 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+20:58:45 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+20:59:21 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+20:59:21 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+20:59:21 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+20:59:21 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+20:59:21 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+20:59:21 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+21:00:21 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[3].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+21:00:21 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:01:02 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:01:02 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+21:01:02 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:01:02 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+21:01:02 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:01:02 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+21:01:55 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[4].: Value error, Compound-step violation for group 'alt_permutation': found ['choose_permutation'] but missing ['permute_ALT', 'permute_Number_A_R_fields', 'remap_GT'
+21:01:55 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:02:29 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:02:29 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/rejection_invariance — emitting empty MR array (no applicable evidence).
+21:02:29 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:02:29 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/rejection_invariance; terminating theme cleanly.
+    0 MRs for VCF/rejection_invariance: no relations returned
+  Mining VCF / coordinate_indexing_invariance...
+21:02:29 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:02:29 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+21:03:05 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:03:05 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+21:03:05 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:03:05 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+21:03:05 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:03:05 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+21:04:08 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[2].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the syst
+21:04:08 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:04:38 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:04:38 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+21:04:38 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:04:38 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+21:04:38 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:04:38 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+21:05:38 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[6].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+21:05:38 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:06:31 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:06:31 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+21:06:31 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:06:31 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+21:06:31 [INFO] mr_engine.registry: Triage result: 0 enforced, 0 quarantine
+21:06:31 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\data\mr_registry.json (0 MRs)
+  Phase B: OK  (8m 28s)
+21:06:31 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+21:06:32 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+21:06:32 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+21:06:32 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+21:06:32 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+21:06:32 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+21:06:32 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+21:06:32 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\data\det_report.json
+21:06:32 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (281ms)
+21:06:32 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 163, 'rejected_invalid': 1, 'rejected_duplicate': 0, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3_no_a_no_d\\results_4rep\\vcfpy_vcf\\work\\seeds\\vcf_struct', 'sut_validate': None}
+21:06:32 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 163 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\seeds\vcf_struct
+21:06:32 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 320, 'rejected_weak_gate': 0, 'rejected_duplicate': 0, 'rejected_size': 10, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3_no_a_no_d\\results_4rep\\vcfpy_vcf\\work\\seeds\\vcf_rawfuzz'}
+21:06:32 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 320 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\seeds\vcf_rawfuzz
+21:06:32 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 99, 'rejected_invalid': 0, 'rejected_duplicate': 1, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3_no_a_no_d\\results_4rep\\vcfpy_vcf\\work\\seeds\\sam_struct', 'sut_validate': None}
+21:06:32 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 99 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\seeds\sam_struct
+21:06:33 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 740, 'rejected_weak_gate': 0, 'rejected_duplicate': 0, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3_no_a_no_d\\results_4rep\\vcfpy_vcf\\work\\seeds\\sam_rawfuzz'}
+21:06:33 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 740 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3_no_a_no_d\results_4rep\vcfpy_vcf\work\seeds\sam_rawfuzz
+  Phase E: OK  (1.0s, +1322 corpus files: VCF struct=163, rawfuzz=320; SAM 
+struct=99, rawfuzz=740)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │     8m 28s │ skipped                              │
+│ C: Execute   │   FAIL   │      281ms │ Phase C executed 0 tests — registry  │
+│              │          │            │ has no enforced MRs to run. Phase B  │
+│              │          │            │ probably produced no output (check   │
+│              │          │            │ LLM errors).                         │
+│ E: Augment   │   PASS   │       1.0s │ +1322 corpus files (VCF: 163 struct  │
+│              │          │            │ + 320 rawfuzz; SAM: 99 struct + 740  │
+│              │          │            │ rawfuzz)                             │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+  Total Pipeline Duration:  8m 30s
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PIPELINE FAILED — Phase(s) C encountered errors.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,19 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##ALT=<ID=DEL,Description="Deletion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="Mate ID for BND records">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	500	BND1	A	N[chr2:1000[	30	PASS	SVTYPE=BND;MATEID=BND2	GT:GQ	0/1:85
+chr2	1000	BND2	T	]chr1:500]N	30	PASS	VVTYPE=BND;MATEID=BND1	ºGV:GQ	1/1:90
+chr1	600	BND3	G	[chrX:2000[N	25	PASS	SVTYPE=BND;MATEID=BND4	GT:GQ	0/0:75
+chrX	2000	BND4	C	N]chr1:600]	25	PASS	SV„YPE=BND;MATEID=BND3	GT:GQ	0/1:80

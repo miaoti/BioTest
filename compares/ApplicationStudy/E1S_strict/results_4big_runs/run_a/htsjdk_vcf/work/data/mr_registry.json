@@ -1,0 +1,213 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "normalization_invariance_alt_permutation",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "The VCF record after transformation should parse identically to the original record when interpreted as a variant call, because permuting ALT alleles and their corresponding Number=A/R fields and GT indices is a semantic-preserving reordering.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "ALT: alternate base(s); GT: genotype; Number=A indicates one value per alternate allele",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "normalization_invariance_trim_common_affixes",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "Trimming common prefix/suffix from REF and ALT alleles produces a normalized representation that should be semantically equivalent to the original record.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "REF: reference base(s); ALT: alternate base(s)",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "normalization_invariance_left_align_indel",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "Left-aligning indels produces a normalized representation that should be semantically equivalent to the original record.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "REF: reference base(s); ALT: alternate base(s)",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "normalization_invariance_split_multi_allelic",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "Splitting multi-allelic records into multiple biallelic records preserves the original variant semantics.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "ALT: alternate base(s); multiple alleles can be comma-separated",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5ea9b9ae0f5d",
+      "mr_name": "normalization_invariance_vcf_bcf_roundtrip",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Converting VCF to BCF and back should produce semantically equivalent output.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "VCF is a text format; BCF is its binary counterpart",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9a855fc04ccb",
+      "mr_name": "normalization_invariance_sut_write_roundtrip",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Writing and re-reading a VCF file should produce semantically equivalent output.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "VCF format supports round-tripping of variant data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "aae1913889e7",
+      "mr_name": "normalization_invariance_permute_sample_columns",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "Permuting sample columns in the VCF header and corresponding genotype fields preserves the variant semantics.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "FORMAT: sample genotype fields; multiple samples can be present",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "normalization_invariance_shuffle_meta_lines",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "Shuffling meta-information lines in the VCF header should not change the semantic interpretation of the file.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "Meta-information lines are key-value pairs describing the data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "normalization_invariance_permute_bcf_header_dictionary",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "Permuting the BCF header dictionary order should not change the semantic interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "BCF is the binary variant call format",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "normalization_invariance_shuffle_info_field_kv",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "Shuffling key-value pairs in the INFO field should not change the semantic interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant Call Format::p1",
+          "quote": "INFO: additional information key-value pairs",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 10,
+    "total": 10
+  }
+}

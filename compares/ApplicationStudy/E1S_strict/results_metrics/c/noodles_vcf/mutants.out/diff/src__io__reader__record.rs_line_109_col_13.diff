@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace += with -= in read_field
+@@ -101,17 +101,17 @@
+ 
+         if let [head @ .., CARRIAGE_RETURN] = buf {
+             buf = head;
+         }
+ 
+         let s = str::from_utf8(buf).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+         dst.push_str(s);
+ 
+-        len += n;
++        len -= /* ~ changed by cargo-mutants ~ */ n;
+ 
+         reader.consume(n);
+     }
+ 
+     let is_eol = matches!(r#match, Some(LINE_FEED));
+ 
+     Ok((len, is_eol))
+ }

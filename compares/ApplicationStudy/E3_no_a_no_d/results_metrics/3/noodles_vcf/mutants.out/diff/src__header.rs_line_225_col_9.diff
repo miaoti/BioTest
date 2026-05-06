@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::formats -> &Formats with Box::leak(Box::new(Default::default()))
+@@ -217,17 +217,17 @@
+     ///     .add_format(id, format.clone())
+     ///     .build();
+     ///
+     /// let formats = header.formats();
+     /// assert_eq!(formats.len(), 1);
+     /// assert_eq!(&formats[0], &format);
+     /// ```
+     pub fn formats(&self) -> &Formats {
+-        &self.formats
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a list of genotype format records (`FORMAT`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

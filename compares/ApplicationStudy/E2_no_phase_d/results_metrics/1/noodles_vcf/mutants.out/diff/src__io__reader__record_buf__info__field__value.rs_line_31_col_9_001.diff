@@ -1,0 +1,26 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -23,22 +23,17 @@
+     /// The character value is invalid.
+     InvalidCharacter,
+     /// The string value is invalid.
+     InvalidString(str::Utf8Error),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::InvalidInteger(e) => Some(e),
+-            Self::InvalidFloat(e) => Some(e),
+-            Self::InvalidString(e) => Some(e),
+-            _ => None,
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             ParseError::InvalidNumberForType(number, ty) => {
+                 write!(f, "invalid number {number:?} for type {ty:?}")

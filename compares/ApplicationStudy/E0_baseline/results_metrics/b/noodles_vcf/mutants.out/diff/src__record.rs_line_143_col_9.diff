@@ -1,0 +1,15 @@
+--- src/record.rs
++++ replace <impl crate::variant::Record for Record>::samples -> io::Result<Box<dyn crate::variant::record::Samples +'_>> with Ok(Box::new(Default::default()))
+@@ -135,11 +135,11 @@
+         Box::new(self.filters())
+     }
+ 
+     fn info(&self) -> Box<dyn crate::variant::record::Info + '_> {
+         Box::new(self.info())
+     }
+ 
+     fn samples(&self) -> io::Result<Box<dyn crate::variant::record::Samples + '_>> {
+-        Ok(Box::new(self.samples()))
++        Ok(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ }

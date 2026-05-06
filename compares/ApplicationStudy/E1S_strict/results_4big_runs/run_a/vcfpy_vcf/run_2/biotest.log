@@ -1,0 +1,546 @@
+[harness_run/E1S] mode = E1S
+[harness_run/E1S] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E1S] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E1S] pre-import patch: engine.build_system_prompt: stub (minimal — no spec/chromadb/precondition hints)
+[harness_run/E1S] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E1S] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E1S] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E1S] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E1S] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E1S] config: compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\run_2\biotest_config.rep2.yaml
+[harness_run/E1S] phase_filter: D,E
+16:37:17 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: vcfpy (drives evolution)
+  Format context: VCF (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 10 query methods on primary vcfpy for Rank 5
+  Mining VCF / ordering_invariance...
+16:37:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:37:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+16:38:06 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[1].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+16:38:06 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+16:38:41 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+16:38:41 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+16:38:41 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+16:38:41 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+16:38:41 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:38:41 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+16:39:12 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+16:39:12 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+16:39:12 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+16:39:12 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+16:39:12 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:39:12 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+16:40:03 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[3].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+16:40:03 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+16:41:06 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[13].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the sys
+16:41:06 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+16:41:57 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): Pydantic validation errors:
+  MR[5].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+16:41:57 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+16:42:47 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): Pydantic validation errors:
+  MR[10].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the sys
+    0 MRs for VCF/normalization_invariance: Pydantic validation errors:
+  MR[10].: Value error, MR uses transform `query_method_roundtrip` but 
+`query_methods` is em
+  Mining VCF / rejection_invariance...
+16:42:47 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:42:47 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+16:43:39 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[6].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+16:43:39 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+16:45:07 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): JSON parse error at position 56: Expecting ',' delimiter
+16:45:07 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+16:45:33 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+16:45:33 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 3
+    OK mined 4 MR(s) for VCF/rejection_invariance
+  Mining VCF / coordinate_indexing_invariance...
+16:45:33 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:45:33 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+16:46:04 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+16:46:04 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+16:46:04 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+16:46:04 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+16:46:04 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:46:04 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+16:46:39 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+16:46:39 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+16:46:39 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+16:46:39 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+16:46:39 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+16:46:39 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+16:47:25 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[4].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+16:47:25 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+16:48:02 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+16:48:02 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+16:48:02 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+16:48:02 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+16:48:02 [INFO] mr_engine.registry: Triage result: 0 enforced, 4 quarantine
+16:48:02 [INFO] mr_engine.registry: Merged 4 new MRs into C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\data\mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+16:48:02 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+16:48:03 [INFO] test_engine.generators.seeds: Seed corpus loaded: 103 VCF seeds, 74 SAM seeds
+16:48:03 [INFO] test_engine.generators.seeds: Seed corpus loaded: 103 VCF seeds, 74 SAM seeds
+16:48:03 [INFO] test_engine.orchestrator: Loaded 4 MRs from registry (enforced=0, quarantine=4)
+16:48:03 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+16:48:03 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+16:48:03 [INFO] test_engine.orchestrator: Testing MR 0258c3e904f0 (fileformat_first_line_rejection) -- scope=VCF.header, transforms=['violate_fileformat_first_line']
+16:48:03 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: scaled max_examples 50 -> 88 (VCF corpus=103, baseline=33)
+16:48:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_427717cef905cf1b.vcf (seed=0) — majority crash rejected, this parser voted accept
+16:48:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_427717cef905cf1b.vcf (seed=1218242405) — majority crash rejected, this parser voted accept
+16:48:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4c212da4fdcf81eb.vcf (seed=0) — majority crash rejected, this parser voted accept
+16:48:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4c212da4fdcf81eb.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr11>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr13>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr20>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr18>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:515: UnknownFilter: Filter not found in header: q10; problem in FILTER column
+  warnings.warn(
+16:48:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_427717cef905cf1b.vcf (seed=39916801) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=3>
+  warnings.warn(
+16:49:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_noroundtrip.vcf (seed=65036) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+16:49:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=0) — majority crash rejected, this parser voted accept
+16:49:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4c0c6cc8f45307e8.vcf (seed=4131724799) — majority crash rejected, this parser voted accept
+16:49:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_check.vcf (seed=119020262) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+16:49:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on real_world_htsjdk_test_withNanQual.vcf (seed=89) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr8>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr21>
+  warnings.warn(
+16:50:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9096194a80d115cc.vcf (seed=101802586) — majority crash rejected, this parser voted accept
+16:51:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_check.vcf (seed=51430) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr17>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr22>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr5>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr15>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen contig header more than once: chr5, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO DP not found using Integer/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+16:51:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6591365e1094ad0b.vcf (seed=3218045586) — majority crash rejected, this parser voted accept
+16:52:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_b0427670eeb0282e.vcf (seed=3308064731) — majority crash rejected, this parser voted accept
+16:52:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=1) — majority crash rejected, this parser voted accept
+16:52:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=3) — majority crash rejected, this parser voted accept
+16:52:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=6) — majority crash rejected, this parser voted accept
+16:52:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=10) — majority crash rejected, this parser voted accept
+16:52:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=15) — majority crash rejected, this parser voted accept
+16:52:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=25) — majority crash rejected, this parser voted accept
+16:52:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=45) — majority crash rejected, this parser voted accept
+16:52:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=85) — majority crash rejected, this parser voted accept
+16:53:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=165) — majority crash rejected, this parser voted accept
+16:53:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=325) — majority crash rejected, this parser voted accept
+16:53:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=645) — majority crash rejected, this parser voted accept
+16:53:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=1285) — majority crash rejected, this parser voted accept
+16:53:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=2565) — majority crash rejected, this parser voted accept
+16:53:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=5125) — majority crash rejected, this parser voted accept
+16:53:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=10245) — majority crash rejected, this parser voted accept
+16:53:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=20485) — majority crash rejected, this parser voted accept
+16:53:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=40965) — majority crash rejected, this parser voted accept
+16:53:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=81925) — majority crash rejected, this parser voted accept
+16:53:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=163845) — majority crash rejected, this parser voted accept
+16:54:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=327685) — majority crash rejected, this parser voted accept
+16:54:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=655365) — majority crash rejected, this parser voted accept
+16:54:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+16:54:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+16:54:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+16:54:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+16:54:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+16:54:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+16:54:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+16:54:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+16:54:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+16:55:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+16:56:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+16:57:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+16:59:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+17:00:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+17:01:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+17:01:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+17:01:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+17:02:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+17:02:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+17:02:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+17:02:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+17:02:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+17:02:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+17:02:21 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: Hypothesis explored 88 examples — no failures
+17:02:21 [INFO] test_engine.orchestrator: Testing MR 752c1e307098 (gt_index_bounds_rejection) -- scope=VCF.record, transforms=['violate_gt_index_bounds']
+17:02:21 [INFO] test_engine.orchestrator:   MR 752c1e307098: scaled max_examples 50 -> 88 (VCF corpus=103, baseline=33)
+17:02:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cd4316055db0ffeb.vcf (seed=0) — majority crash rejected, this parser voted accept
+17:02:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cd4316055db0ffeb.vcf (seed=30076) — majority crash rejected, this parser voted accept
+17:05:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7afc53e9cb98bc53.vcf (seed=0) — majority crash rejected, this parser voted accept
+17:05:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7afc53e9cb98bc53.vcf (seed=17476) — majority crash rejected, this parser voted accept
+17:06:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cb10ffc1fc8ff20c.vcf (seed=532450958) — majority crash rejected, this parser voted accept
+17:06:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_427717cef905cf1b.vcf (seed=3513812950) — majority crash rejected, this parser voted accept
+17:06:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1448629873d35ecc.vcf (seed=4294967294) — majority crash rejected, this parser voted accept
+17:06:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=53594) — majority crash rejected, this parser voted accept
+17:06:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=53594) — majority crash rejected, this parser voted accept
+17:06:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+17:06:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9096194a80d115cc.vcf (seed=0) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+17:07:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+17:07:13 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 752c1e307098 (gt_index_bounds_rejection) to minimal failing case
+17:07:13 [INFO] test_engine.orchestrator:   MR 752c1e307098: Hypothesis found and shrunk a failure
+17:07:13 [INFO] test_engine.orchestrator: Testing MR 963423e1bf3c (info_number_a_cardinality_rejection) -- scope=VCF.record, transforms=['violate_info_number_a_cardinality']
+17:07:13 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: scaled max_examples 50 -> 88 (VCF corpus=103, baseline=33)
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr17>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr5>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr15>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr22>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen contig header more than once: chr5, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO DP not found using Integer/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:515: UnknownFilter: Filter not found in header: q10; problem in FILTER column
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr18>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr11>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr13>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr20>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr19>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr16>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr12>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO AA not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO H2 not found using Flag/0 instead
+  warnings.warn(
+17:08:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=1) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr8>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr21>
+  warnings.warn(
+17:10:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=2) — majority crash rejected, this parser voted accept
+17:10:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=4) — majority crash rejected, this parser voted accept
+17:11:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=7) — majority crash rejected, this parser voted accept
+17:11:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11) — majority crash rejected, this parser voted accept
+17:11:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=16) — majority crash rejected, this parser voted accept
+17:11:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=26) — majority crash rejected, this parser voted accept
+17:11:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=46) — majority crash rejected, this parser voted accept
+17:11:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=86) — majority crash rejected, this parser voted accept
+17:11:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=166) — majority crash rejected, this parser voted accept
+17:11:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=326) — majority crash rejected, this parser voted accept
+17:11:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=646) — majority crash rejected, this parser voted accept
+17:11:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=1286) — majority crash rejected, this parser voted accept
+17:11:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=2566) — majority crash rejected, this parser voted accept
+17:11:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=5126) — majority crash rejected, this parser voted accept
+17:11:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=10246) — majority crash rejected, this parser voted accept
+17:12:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=20486) — majority crash rejected, this parser voted accept
+17:12:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=40966) — majority crash rejected, this parser voted accept
+17:12:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=81926) — majority crash rejected, this parser voted accept
+17:12:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=163846) — majority crash rejected, this parser voted accept
+17:12:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=327686) — majority crash rejected, this parser voted accept
+17:12:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=655366) — majority crash rejected, this parser voted accept
+17:12:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=1310726) — majority crash rejected, this parser voted accept
+17:12:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=2293766) — majority crash rejected, this parser voted accept
+17:12:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=3317766) — majority crash rejected, this parser voted accept
+17:12:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=4362246) — majority crash rejected, this parser voted accept
+17:12:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=5409286) — majority crash rejected, this parser voted accept
+17:12:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=6457606) — majority crash rejected, this parser voted accept
+17:12:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=7506086) — majority crash rejected, this parser voted accept
+17:12:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=8554646) — majority crash rejected, this parser voted accept
+17:13:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=9603216) — majority crash rejected, this parser voted accept
+17:13:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=10651791) — majority crash rejected, this parser voted accept
+17:13:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700367) — majority crash rejected, this parser voted accept
+17:13:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+17:13:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700364) — majority crash rejected, this parser voted accept
+17:13:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700361) — majority crash rejected, this parser voted accept
+17:13:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700357) — majority crash rejected, this parser voted accept
+17:13:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700352) — majority crash rejected, this parser voted accept
+17:13:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700342) — majority crash rejected, this parser voted accept
+17:13:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700322) — majority crash rejected, this parser voted accept
+17:13:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700282) — majority crash rejected, this parser voted accept
+17:13:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700202) — majority crash rejected, this parser voted accept
+17:13:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11700042) — majority crash rejected, this parser voted accept
+17:14:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11699722) — majority crash rejected, this parser voted accept
+17:14:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_af6b2b172b0dc878.vcf (seed=11699082) — majority crash rejected, this parser voted accept
+17:14:06 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: Hypothesis explored 88 examples — no failures
+17:14:06 [INFO] test_engine.orchestrator: Testing MR 978e560983f8 (required_fixed_columns_rejection) -- scope=VCF.record, transforms=['violate_required_fixed_columns']
+17:14:06 [INFO] test_engine.orchestrator:   MR 978e560983f8: scaled max_examples 50 -> 88 (VCF corpus=103, baseline=33)
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+17:15:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htslib_index.vcf (seed=25073) — majority crash rejected, this parser voted accept
+17:16:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3382eb0c57f3f2a7.vcf (seed=2557130920) — majority crash rejected, this parser voted accept
+17:16:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_csq.vcf (seed=140) — majority crash rejected, this parser voted accept
+17:16:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on synthetic_gen2_e9f76b31.vcf (seed=244) — majority crash rejected, this parser voted accept
+17:16:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6e4eb87a085b3fa9.vcf (seed=87) — majority crash rejected, this parser voted accept
+17:16:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cda4eb3277c2ec95.vcf (seed=48007) — majority crash rejected, this parser voted accept
+17:17:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=0) — majority crash rejected, this parser voted accept
+17:17:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1) — majority crash rejected, this parser voted accept
+17:17:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=3) — majority crash rejected, this parser voted accept
+17:17:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=6) — majority crash rejected, this parser voted accept
+17:17:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10) — majority crash rejected, this parser voted accept
+17:17:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=15) — majority crash rejected, this parser voted accept
+17:17:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=25) — majority crash rejected, this parser voted accept
+17:18:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=45) — majority crash rejected, this parser voted accept
+17:18:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=85) — majority crash rejected, this parser voted accept
+17:18:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=165) — majority crash rejected, this parser voted accept
+17:18:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=325) — majority crash rejected, this parser voted accept
+17:18:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=645) — majority crash rejected, this parser voted accept
+17:18:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1285) — majority crash rejected, this parser voted accept
+17:18:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=2565) — majority crash rejected, this parser voted accept
+17:18:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=5125) — majority crash rejected, this parser voted accept
+17:18:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10245) — majority crash rejected, this parser voted accept
+17:18:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=20485) — majority crash rejected, this parser voted accept
+17:18:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=40965) — majority crash rejected, this parser voted accept
+17:18:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=81925) — majority crash rejected, this parser voted accept
+17:18:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=163845) — majority crash rejected, this parser voted accept
+17:18:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=327685) — majority crash rejected, this parser voted accept
+17:19:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=655365) — majority crash rejected, this parser voted accept
+17:19:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+17:19:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+17:19:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+17:19:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+17:19:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+17:19:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+17:19:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+17:19:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+17:19:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+17:19:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+17:19:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+17:19:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+17:20:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+17:20:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+17:20:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+17:20:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+17:20:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+17:20:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+17:20:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+17:20:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+17:20:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+17:20:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+17:20:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+17:20:52 [INFO] test_engine.orchestrator:   MR 978e560983f8: Hypothesis explored 88 examples — no failures
+17:20:52 [INFO] test_engine.orchestrator: Test suite complete: 1164 tests, 166 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.1426
+17:20:52 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 57, 'skipped_duplicate': 56, 'skipped_ast_dup': 142, 'pool_size': {'vcf': 117, 'sam': 0}, 'canonical_buckets': {'vcf': 247, 'sam': 0}}
+17:20:52 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\data\det_report.json
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\coverage\inorout.py:577: CoverageWarning: Module vcfpy was previously imported, but not measured (module-not-measured); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-measured
+  self.warn(msg, slug="module-not-measured")
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=3>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_9ed3e0b1083e8396.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_45d28fe67595d930.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_794d0a5c2f3a1921.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_9e3e1e36e9681da7.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_3ac46cbcc4bbf52b.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_c9120c89a41c809c.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_987dc7b87f7eb528.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_0d98dc1341bdad66.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_57a20a19f6874d0b.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_c2c16258b6debc4b.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_2aac66d8a2c952a5.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_6b2ce45794f8009d.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_ab29831c74b8e021.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_76bcbf5bcc6042a0.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_1ef23e36ffc8eaf0.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_f4364f9c8d9c76fb.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_b691204280b0d6b3.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_236ed3289750d239.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_698a18cefa698f4f.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_46cfb4cb6eb49646.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_88b49cc8a5c118e9.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_87881cb46ba61355.vcf (0 new lines vs accumulated=458)
+17:20:57 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_f31a3b8b2f0909a3.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_73c31065214fde81.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_3959242ba9031532.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_8211b3743347b37e.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_67ba471516616800.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_b10802336b1ee8e6.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_be9faf3d629d2421.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_63b145112ef75d9a.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_9df01214754f3914.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_892fd52fd09928de.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_1e7c4b092646e742.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_d9815347810df9d7.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_acbc73a36685ad81.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_5d0a6ae528e137aa.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_7cdc5fc757fb6d17.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_49d6f788314f477d.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_a1d5cd0419385aab.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_a62fd264c7e154a1.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_7268554e54e9c49a.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_23009530c3982121.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_9417aae640770efc.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_23865b9aa9e00d2a.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_de0eed271de8017d.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_2040126eee94f6a7.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_4586d414aba0781b.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_f73c9ed4036d2a10.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_fbfe46b06a801f04.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_7088dade979aaaaa.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_759400ac125540ae.vcf (0 new lines vs accumulated=458)
+17:20:58 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_eafd211b615ac3c1.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_c51db86b01965e1b.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_164df01f0733641d.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_bae28176ff744e7d.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_bebca4f7c71313c9.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] test_engine.feedback.corpus_keeper: cull_by_coverage: deleted kept_a7f82be10db5a4de.vcf (0 new lines vs accumulated=458)
+17:20:59 [INFO] biotest: Coverage-guided cull: 57/57 files removed (baseline_lines=458, final_lines=458)
+17:20:59 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+    C: OK (1164 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> vcfpy=65.1% (765/1176 lines)
+17:20:59 [INFO] test_engine.feedback.scc_tracker: SCC report exported to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\data\scc_report.json (0.0%)
+    SCC: 0.0% (0/316 rules)
+17:20:59 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.0%, coverage=65.1%, enforced=0, demoted=0
+17:20:59 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+17:22:10 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 70.9s
+17:50:05 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (0 cooling down).
+17:50:05 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1297', 'VCFv4.5.tex::BCF specification::p1301', 'VCFv4.5.tex::Overall file organization::p1396', 'VCFv4.5.tex::Header::p1400', 'VCFv4.5.tex::BCF specification::p1292']
+17:50:05 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1297', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1301', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Overall file organization::p1396', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Header::p1400', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1292', 'complexity': 4, 'proximity': 0.071, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+  Stopping: timeout (73min >= 60min)
+  Phase D: OK  (72m 49s)
+17:50:05 [INFO] structural_diversifier: structural_diversifier result: {'sources': 43, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_a\\vcfpy_vcf\\work\\seeds\\vcf_struct', 'sut_validate': None}
+17:50:05 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\seeds\vcf_struct
+17:50:06 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 43, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 430, 'kept': 100, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_a\\vcfpy_vcf\\work\\seeds\\vcf_rawfuzz'}
+17:50:06 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 100 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\seeds\vcf_rawfuzz
+17:50:06 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_a\\vcfpy_vcf\\work\\seeds\\sam_struct', 'sut_validate': None}
+17:50:06 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\seeds\sam_struct
+17:50:06 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_a\\vcfpy_vcf\\work\\seeds\\sam_rawfuzz'}
+17:50:06 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a\vcfpy_vcf\work\seeds\sam_rawfuzz
+  Phase E: OK  (890ms, +100 corpus files: VCF struct=0, rawfuzz=100; SAM 
+struct=0, rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                              │
+│ C: Execute   │   PASS   │        0ms │ 0 tests, 0 bugs found                │
+│ D: Feedback  │   PASS   │    72m 49s │ 1 iter, SCC=0.0%, stop: timeout      │
+│              │          │            │ (73min >= 60min)                     │
+│ E: Augment   │   PASS   │      890ms │ +100 corpus files (VCF: 0 struct +   │
+│              │          │            │ 100 rawfuzz; SAM: 0 struct + 0       │
+│              │          │            │ rawfuzz)                             │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+  Total Pipeline Duration:  72m 50s
+
+┌────────────────────────── Phase D: Feedback Loop ───────────────────────────┐
+│ SCC Progression: 0.0%                                                       │
+│ Final SCC: 0.0%                                                             │
+│ Termination: timeout (73min >= 60min)                                       │
+│ MRs Quarantined: 0                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────── Code Coverage ───────────────────────────────┐
+│ Primary SUT: vcfpy (Python)                                                 │
+│ Coverage Progression: 65.1%                                                 │
+│ Final Coverage: 65.1% (765/1176 format-scoped lines)                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ALL CLEAR — No bugs detected across all parsers.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

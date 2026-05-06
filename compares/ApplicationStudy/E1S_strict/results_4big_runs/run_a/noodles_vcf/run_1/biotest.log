@@ -1,0 +1,902 @@
+[harness_run/E1S] mode = E1S
+[harness_run/E1S] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E1S] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E1S] pre-import patch: engine.build_system_prompt: stub (minimal — no spec/chromadb/precondition hints)
+[harness_run/E1S] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E1S] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E1S] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E1S] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E1S] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E1S] config: /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/run_1/biotest_config.rep1.yaml
+[harness_run/E1S] phase_filter: D,E
+15:10:04 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: noodles (drives evolution)
+  Format context: VCF (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_writer', 'pysam_runtime_reachable']
+  Mining VCF / ordering_invariance...
+15:10:05 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:10:05 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+15:10:52 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:10:52 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+15:10:52 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:10:52 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+15:10:52 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:10:52 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+15:11:30 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:11:30 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+15:11:30 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:11:30 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+15:11:30 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:11:30 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+15:12:25 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:12:25 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+15:12:25 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:12:25 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+15:12:25 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:12:25 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+15:13:13 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[4].: Value error, Compound-step violation for group 'alt_permutation': found ['choose_permutation', 'permute_ALT'] but missing ['permute_Number_A_R_fields', 'remap_GT'
+15:13:13 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+15:14:14 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:14:14 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/rejection_invariance — emitting empty MR array (no applicable evidence).
+15:14:14 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:14:14 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/rejection_invariance; terminating theme cleanly.
+    0 MRs for VCF/rejection_invariance: no relations returned
+  Mining VCF / coordinate_indexing_invariance...
+15:14:14 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:14:14 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+15:14:49 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:14:49 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+15:14:49 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:14:49 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+15:14:49 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:14:49 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+15:15:32 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:15:32 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+15:15:32 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:15:32 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+15:15:32 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:15:32 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+15:16:09 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:16:09 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+15:16:09 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:16:09 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+15:16:09 [INFO] mr_engine.registry: Triage result: 0 enforced, 0 quarantine
+15:16:09 [INFO] mr_engine.registry: Merged 0 new MRs into /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+15:16:09 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/Bio/Align', '/usr/local/lib/python3.12/dist-packages/vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+15:16:10 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+15:16:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 101 VCF seeds, 74 SAM seeds
+15:16:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 101 VCF seeds, 74 SAM seeds
+15:16:10 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+15:16:10 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+15:16:10 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+15:16:10 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+15:16:10 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 68, 'sam': 0}, 'canonical_buckets': {'vcf': 68, 'sam': 0}}
+15:16:10 [INFO] test_engine.oracles.det_tracker: DET report exported to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/det_report.json
+15:16:10 [WARNING] biotest: Coverage-guided cull skipped: primary target 'noodles' has no per-file measurer (Python SUTs only in MVP)
+15:16:10 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/coverage_artifacts/.coverage (14 files traced with >0 lines)
+    C: FAIL (0 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> noodles=36.2% (2742/7584 lines)
+15:16:11 [INFO] test_engine.feedback.scc_tracker: SCC report exported to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/scc_report.json (0.0%)
+    SCC: 0.0% (0/316 rules)
+15:16:11 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.0%, coverage=36.2%, enforced=0, demoted=0
+15:16:11 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+15:17:19 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 68.1s
+15:17:19 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (0 cooling down).
+15:17:19 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1297', 'VCFv4.5.tex::BCF specification::p1301', 'VCFv4.5.tex::Overall file organization::p1396', 'VCFv4.5.tex::Header::p1400', 'VCFv4.5.tex::BCF specification::p1292']
+15:17:19 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1297', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1301', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Overall file organization::p1396', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Header::p1400', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1292', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+
+  --- Iteration 2 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_writer', 'pysam_runtime_reachable']
+  Mining VCF / ordering_invariance...
+15:17:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:17:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+15:18:01 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:18:01 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+15:18:01 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:18:01 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+15:18:01 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:18:01 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+15:18:56 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:18:56 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+15:18:56 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:18:56 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+15:18:56 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:18:56 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+15:19:57 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[3].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+15:19:57 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+15:21:01 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[13].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the sys
+15:21:01 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+15:21:34 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 3; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:21:34 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+15:21:34 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:21:34 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+15:21:34 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:21:34 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+15:22:15 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+15:22:15 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for VCF/rejection_invariance
+  Mining VCF / coordinate_indexing_invariance...
+15:22:15 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:22:15 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+15:22:57 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:22:57 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+15:22:57 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:22:57 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+15:22:57 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:22:57 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+15:24:09 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[4].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+15:24:09 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+15:24:41 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:24:41 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+15:24:41 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:24:41 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+15:24:41 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+15:24:41 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+15:25:59 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+15:25:59 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+15:25:59 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+15:25:59 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+15:25:59 [INFO] mr_engine.registry: Triage result: 0 enforced, 4 quarantine
+15:25:59 [INFO] mr_engine.registry: Merged 4 new MRs into /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+15:25:59 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/Bio/Align', '/usr/local/lib/python3.12/dist-packages/vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+15:25:59 [INFO] test_engine.generators.seeds: Seed corpus loaded: 101 VCF seeds, 74 SAM seeds
+15:25:59 [INFO] test_engine.generators.seeds: Seed corpus loaded: 101 VCF seeds, 74 SAM seeds
+15:25:59 [INFO] test_engine.orchestrator: Loaded 4 MRs from registry (enforced=0, quarantine=4)
+15:25:59 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+15:25:59 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+15:25:59 [INFO] test_engine.orchestrator: Testing MR 0258c3e904f0 (fileformat_line_violation_preserves_rejection) -- scope=VCF.header, transforms=['violate_fileformat_first_line']
+15:25:59 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: scaled max_examples 50 -> 87 (VCF corpus=101, baseline=33)
+15:26:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:26:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_structuralvariants.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:26:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_structuralvariants.vcf (seed=45291) — majority crash rejected, this parser voted accept
+15:26:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_check.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:26:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_check.vcf (seed=17422) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Number=.,Type=String,ID=HOMSEQ>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,Type=Integer,ID=CNL>
+  warnings.warn(
+15:26:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f59291dfef00000.vcf (seed=0) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Number=.,Type=String,ID=HOMSEQ>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,Type=Integer,ID=CNL>
+  warnings.warn(
+15:26:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f59291dfef00000.vcf (seed=23225) — majority crash rejected, this parser voted accept
+15:26:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1dff82a21ace8278.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:26:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1dff82a21ace8278.vcf (seed=183) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+15:26:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9f70a5f78b7b3881.vcf (seed=152) — majority crash rejected, this parser voted accept
+15:26:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0b29253d9e083afe.vcf (seed=204098423) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:26:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=61787) — majority crash rejected, this parser voted accept
+15:26:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_075f7c23f39eb0a6.vcf (seed=171) — majority crash rejected, this parser voted accept
+15:26:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_352e67b165bcecba.vcf (seed=34118) — majority crash rejected, this parser voted accept
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+15:26:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_test_withGLandPL.vcf (seed=6756) — majority crash rejected, this parser voted accept
+15:26:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a0d07536e96a157c.vcf (seed=1058777657) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+15:26:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_81f53312d40fcb9f.vcf (seed=1435992917) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:26:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_2d678c29ffd7e8f8.vcf (seed=1513687274) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:26:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3b1af09aed0b4dd4.vcf (seed=4052522721) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+15:26:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=176) — majority crash rejected, this parser voted accept
+15:26:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_merge_2.vcf (seed=14505) — majority crash rejected, this parser voted accept
+15:26:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_norm_split.vcf (seed=248) — majority crash rejected, this parser voted accept
+15:26:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_99bf5bf48aee3ad6.vcf (seed=245) — majority crash rejected, this parser voted accept
+15:26:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_isec_1.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:26:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_norm_split.vcf (seed=35124) — majority crash rejected, this parser voted accept
+15:26:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_db10b199b048e34d.vcf (seed=209) — majority crash rejected, this parser voted accept
+15:26:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on minimal_multisample.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+15:26:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_annotate.vcf (seed=30389) — majority crash rejected, this parser voted accept
+15:26:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e843bc54f62b110.vcf (seed=3880595535) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:26:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0b30deee11f70422.vcf (seed=3906107491) — majority crash rejected, this parser voted accept
+15:26:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_352e67b165bcecba.vcf (seed=82) — majority crash rejected, this parser voted accept
+15:26:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e51b5cd6cb0d8b3.vcf (seed=36) — majority crash rejected, this parser voted accept
+15:26:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_query.vcf (seed=30087408) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+15:26:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1b821c03423a7a05.vcf (seed=164) — majority crash rejected, this parser voted accept
+15:26:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on spec_example.vcf (seed=6998) — majority crash rejected, this parser voted accept
+15:26:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_f12dd6dc8f013039.vcf (seed=17004) — majority crash rejected, this parser voted accept
+15:26:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_check.vcf (seed=182) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:26:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_8542a89933f43b27.vcf (seed=2053425985) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+15:26:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_38e66da70328e704.vcf (seed=58764) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:26:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_ex2.vcf (seed=245) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+15:26:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cbcb84e961476ce6.vcf (seed=23757) — majority crash rejected, this parser voted accept
+15:26:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_merge_1.vcf (seed=21427) — majority crash rejected, this parser voted accept
+15:26:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_plugin_setGT.vcf (seed=524288) — majority crash rejected, this parser voted accept
+15:26:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=1) — majority crash rejected, this parser voted accept
+15:26:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=3) — majority crash rejected, this parser voted accept
+15:26:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=6) — majority crash rejected, this parser voted accept
+15:26:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=10) — majority crash rejected, this parser voted accept
+15:26:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=15) — majority crash rejected, this parser voted accept
+15:26:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=25) — majority crash rejected, this parser voted accept
+15:26:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=45) — majority crash rejected, this parser voted accept
+15:26:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=85) — majority crash rejected, this parser voted accept
+15:26:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=165) — majority crash rejected, this parser voted accept
+15:26:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=325) — majority crash rejected, this parser voted accept
+15:26:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=645) — majority crash rejected, this parser voted accept
+15:26:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=1285) — majority crash rejected, this parser voted accept
+15:26:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=2565) — majority crash rejected, this parser voted accept
+15:27:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=5125) — majority crash rejected, this parser voted accept
+15:27:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=10245) — majority crash rejected, this parser voted accept
+15:27:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=20485) — majority crash rejected, this parser voted accept
+15:27:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=40965) — majority crash rejected, this parser voted accept
+15:27:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=81925) — majority crash rejected, this parser voted accept
+15:27:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=163845) — majority crash rejected, this parser voted accept
+15:27:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=327685) — majority crash rejected, this parser voted accept
+15:27:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=655365) — majority crash rejected, this parser voted accept
+15:27:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+15:27:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+15:27:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+15:27:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+15:27:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+15:27:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+15:27:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+15:27:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+15:27:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+15:27:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+15:27:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+15:27:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+15:27:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+15:27:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+15:27:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+15:27:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+15:27:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+15:27:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+15:27:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+15:27:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+15:27:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+15:27:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+15:27:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on bcftools_test.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+15:27:29 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: Hypothesis explored 87 examples — no failures
+15:27:29 [INFO] test_engine.orchestrator: Testing MR 752c1e307098 (gt_index_bounds_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_gt_index_bounds']
+15:27:29 [INFO] test_engine.orchestrator:   MR 752c1e307098: scaled max_examples 50 -> 87 (VCF corpus=101, baseline=33)
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:27:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on kept_17920f3269cdd954.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:27:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_17920f3269cdd954.vcf (seed=0) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:27:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on kept_17920f3269cdd954.vcf (seed=35468) — majority crash rejected, this parser voted accept
+15:27:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_17920f3269cdd954.vcf (seed=35468) — majority crash rejected, this parser voted accept
+15:27:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:27:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=52710) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:27:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on kept_fdc45849677b0006.vcf (seed=8192) — majority crash rejected, this parser voted accept
+15:27:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fdc45849677b0006.vcf (seed=8192) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:27:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on kept_fdc45849677b0006.vcf (seed=2051941264) — majority crash rejected, this parser voted accept
+15:27:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fdc45849677b0006.vcf (seed=2051941264) — majority crash rejected, this parser voted accept
+15:27:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_355687b78d02399c.vcf (seed=63264) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:27:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0b30deee11f70422.vcf (seed=671613600) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:28:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ba2e86021636c23d.vcf (seed=37000) — majority crash rejected, this parser voted accept
+15:28:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6f97ef055196ca3c.vcf (seed=4069696447) — majority crash rejected, this parser voted accept
+15:28:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7b4a7e3eea39f516.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] Extreme FORMAT/GQ value encountered and set to missing at chr1:1
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+15:28:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=24322) — majority crash rejected, this parser voted accept
+15:28:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_htsjdk_test_withNanQual.vcf (seed=24322) — majority crash rejected, this parser voted accept
+15:28:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d7112138dc19eb92.vcf (seed=59571) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+[W::vcf_parse_filter] FILTER 'NS=3' is not defined in the header
+[W::vcf_parse_filter] FILTER 'DP=14' is not defined in the header
+[W::vcf_parse_filter] FILTER 'AF=0.5,99' is not defined in the header
+[E::bcf_hdr_parse_line] Could not parse the header line: "##FILTER=<ID=AF=0.5,99,Description=\"Dummy\">"
+[E::vcf_parse_filter] Could not add dummy header for FILTER 'AF=0.5,99' at 20:14370
+[W::vcf_parse_filter] FILTER 'NS=3' is not defined in the header
+[W::vcf_parse_filter] FILTER 'DP=14' is not defined in the header
+[W::vcf_parse_filter] FILTER 'AF=0.5,99' is not defined in the header
+[E::bcf_hdr_parse_line] Could not parse the header line: "##FILTER=<ID=AF=0.5,99,Description=\"Dummy\">"
+[E::vcf_parse_filter] Could not add dummy header for FILTER 'AF=0.5,99' at 20:14370
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:28:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7d38768075e735b6.vcf (seed=27170) — majority crash rejected, this parser voted accept
+15:28:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d7112138dc19eb92.vcf (seed=1869177824) — majority crash rejected, this parser voted accept
+15:28:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a0d07536e96a157c.vcf (seed=2659797467) — majority crash rejected, this parser voted accept
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+15:28:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=24322) — majority crash rejected, this parser voted accept
+15:28:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_htsjdk_test_withNanQual.vcf (seed=24322) — majority crash rejected, this parser voted accept
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+15:28:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+15:28:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on htsjdk_HiSeq.10000.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_HiSeq.10000.vcf (seed=0) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:28:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a73409fc73395930.vcf (seed=0) — majority crash rejected, this parser voted accept
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+[W::vcf_parse_format] FORMAT 'GT' at chr1:1 is not defined in the header, assuming Type=String
+[E::vcf_parse_format] Invalid character 'N' in 'GQ' FORMAT field at chr1:1
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+15:28:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_htsjdk_test_withNanQual.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:31 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 752c1e307098 (gt_index_bounds_violation_preserves_rejection) to minimal failing case
+15:28:31 [INFO] test_engine.orchestrator:   MR 752c1e307098: Hypothesis found and shrunk a failure
+15:28:31 [INFO] test_engine.orchestrator: Testing MR 963423e1bf3c (info_number_a_cardinality_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_info_number_a_cardinality']
+15:28:31 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: scaled max_examples 50 -> 87 (VCF corpus=101, baseline=33)
+15:28:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ef06578dad31c4f4.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ef06578dad31c4f4.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+15:28:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_c9867f245587f111.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:28:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_c9867f245587f111.vcf (seed=493) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:28:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1dbe72731129bbcb.vcf (seed=63742) — majority crash rejected, this parser voted accept
+15:28:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d7112138dc19eb92.vcf (seed=50248) — majority crash rejected, this parser voted accept
+15:28:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e568390fc1e20b84.vcf (seed=52352) — majority crash rejected, this parser voted accept
+15:28:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bc2733fa74c731dd.vcf (seed=4224713765) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:28:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_398fc739e67bb8e7.vcf (seed=472997464) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse] Contig 'chr1' is not defined in the header. (Quick workaround: index the file with tabix.)
+[W::vcf_parse_info] INFO 'SOR' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'FractionInformativeReads' is not defined in the header, assuming Type=String
+[W::vcf_parse_info] INFO 'R2_5P_bias' is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'AF' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GL' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'GP' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'PRI' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'SB' at chr1:6870 is not defined in the header, assuming Type=String
+[W::vcf_parse_format] FORMAT 'MB' at chr1:6870 is not defined in the header, assuming Type=String
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+15:28:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e51b5cd6cb0d8b3.vcf (seed=224) — majority crash rejected, this parser voted accept
+15:28:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d2942a6b88c9491a.vcf (seed=1177938732) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Number=.,Type=String,ID=HOMSEQ>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,Type=Integer,ID=CNL>
+  warnings.warn(
+15:28:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6f97ef055196ca3c.vcf (seed=31) — majority crash rejected, this parser voted accept
+15:29:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_456db02ed8102ce6.vcf (seed=63352) — majority crash rejected, this parser voted accept
+15:29:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e843bc54f62b110.vcf (seed=28649) — majority crash rejected, this parser voted accept
+15:29:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53130) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:29:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1dbe72731129bbcb.vcf (seed=2810336524) — majority crash rejected, this parser voted accept
+15:29:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d271b67184cc7619.vcf (seed=67) — majority crash rejected, this parser voted accept
+15:29:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e568390fc1e20b84.vcf (seed=51541) — majority crash rejected, this parser voted accept
+15:29:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_44f95594d0198e4b.vcf (seed=18695) — majority crash rejected, this parser voted accept
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:29:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53131) — majority crash rejected, this parser voted accept
+15:29:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53133) — majority crash rejected, this parser voted accept
+15:29:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53136) — majority crash rejected, this parser voted accept
+15:29:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53140) — majority crash rejected, this parser voted accept
+15:29:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53145) — majority crash rejected, this parser voted accept
+15:29:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53155) — majority crash rejected, this parser voted accept
+15:29:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53175) — majority crash rejected, this parser voted accept
+15:29:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53215) — majority crash rejected, this parser voted accept
+15:29:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53295) — majority crash rejected, this parser voted accept
+15:29:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53455) — majority crash rejected, this parser voted accept
+15:29:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=53775) — majority crash rejected, this parser voted accept
+15:29:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=54415) — majority crash rejected, this parser voted accept
+15:29:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=55695) — majority crash rejected, this parser voted accept
+15:29:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=58255) — majority crash rejected, this parser voted accept
+15:29:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=63375) — majority crash rejected, this parser voted accept
+15:29:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=73615) — majority crash rejected, this parser voted accept
+15:29:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=94095) — majority crash rejected, this parser voted accept
+15:29:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=135055) — majority crash rejected, this parser voted accept
+15:29:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=216975) — majority crash rejected, this parser voted accept
+15:29:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=380815) — majority crash rejected, this parser voted accept
+15:29:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=708495) — majority crash rejected, this parser voted accept
+15:29:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=1363855) — majority crash rejected, this parser voted accept
+15:29:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=2346895) — majority crash rejected, this parser voted accept
+15:29:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=3370895) — majority crash rejected, this parser voted accept
+15:29:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=4415375) — majority crash rejected, this parser voted accept
+15:29:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=5462415) — majority crash rejected, this parser voted accept
+15:29:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=6510735) — majority crash rejected, this parser voted accept
+15:29:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=7559215) — majority crash rejected, this parser voted accept
+15:29:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=8607775) — majority crash rejected, this parser voted accept
+15:29:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=9656345) — majority crash rejected, this parser voted accept
+15:29:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=10704920) — majority crash rejected, this parser voted accept
+15:29:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753496) — majority crash rejected, this parser voted accept
+15:29:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753495) — majority crash rejected, this parser voted accept
+15:29:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753493) — majority crash rejected, this parser voted accept
+15:29:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753490) — majority crash rejected, this parser voted accept
+15:29:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753486) — majority crash rejected, this parser voted accept
+15:29:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753481) — majority crash rejected, this parser voted accept
+15:29:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753471) — majority crash rejected, this parser voted accept
+15:29:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753451) — majority crash rejected, this parser voted accept
+15:29:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753411) — majority crash rejected, this parser voted accept
+15:29:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753331) — majority crash rejected, this parser voted accept
+15:29:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11753171) — majority crash rejected, this parser voted accept
+15:29:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11752851) — majority crash rejected, this parser voted accept
+15:30:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_11572bc9cba1cd7a.vcf (seed=11752211) — majority crash rejected, this parser voted accept
+15:30:00 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: Hypothesis explored 87 examples — no failures
+15:30:00 [INFO] test_engine.orchestrator: Testing MR 978e560983f8 (required_fixed_columns_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_required_fixed_columns']
+15:30:00 [INFO] test_engine.orchestrator:   MR 978e560983f8: scaled max_examples 50 -> 87 (VCF corpus=101, baseline=33)
+[W::vcf_parse_filter] FILTER 'DP=100223' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:PL:DP:GQ' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:PL:DP:GQ"
+[W::vcf_parse_format] FORMAT '0/0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0/0"
+[W::vcf_parse_format] FORMAT '0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0"
+[W::vcf_parse_format] FORMAT '193' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "193"
+[W::vcf_parse_format] FORMAT '99' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "99"
+[E::vcf_parse_format] Number of columns at 11:2343543 does not match the number of samples (2 vs 3)
+15:30:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on bcftools_test.vcf (seed=0) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[W::vcf_parse_filter] FILTER 'NS=3' is not defined in the header
+[W::vcf_parse_filter] FILTER 'DP=14' is not defined in the header
+[W::vcf_parse_filter] FILTER 'AF=0.5' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:GQ:DP:HQ:CNL' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:GQ:DP:HQ:CNL"
+[W::vcf_parse_format] FORMAT '0|0' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0|0"
+[W::vcf_parse_format] FORMAT '48' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "48"
+[W::vcf_parse_format] FORMAT '1' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "1"
+[W::vcf_parse_format] FORMAT '25,30' at 20:14370 is not defined in the header, assuming Type=String
+[E::bcf_hdr_parse_line] Could not parse the header line: "##FORMAT=<ID=25,30,Number=1,Type=String,Description=\"Dummy\">"
+[E::vcf_parse_format] Could not add dummy header for FORMAT '25,30' at 20:14370
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+15:30:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7939fe56444d4f05.vcf (seed=2252350062) — majority crash rejected, this parser voted accept
+[W::vcf_parse_filter] FILTER 'NS=3' is not defined in the header
+[W::vcf_parse_filter] FILTER 'DP=14' is not defined in the header
+[W::vcf_parse_filter] FILTER 'AF=0.5' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:GQ:DP:HQ:CNL' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:GQ:DP:HQ:CNL"
+[W::vcf_parse_format] FORMAT '0|0' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0|0"
+[W::vcf_parse_format] FORMAT '48' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "48"
+[W::vcf_parse_format] FORMAT '1' at 20:14370 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "1"
+[W::vcf_parse_format] FORMAT '25,30' at 20:14370 is not defined in the header, assuming Type=String
+[E::bcf_hdr_parse_line] Could not parse the header line: "##FORMAT=<ID=25,30,Number=1,Type=String,Description=\"Dummy\">"
+[E::vcf_parse_format] Could not add dummy header for FORMAT '25,30' at 20:14370
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Number=.,Type=String,ID=HOMSEQ>
+  warnings.warn(
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,Type=Integer,ID=CNL>
+  warnings.warn(
+15:30:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f59291dfef00000.vcf (seed=31204) — majority crash rejected, this parser voted accept
+[W::vcf_parse_info] INFO 'GT:GQ' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:GQ"
+[W::vcf_parse_format] FORMAT './.' at 1:3000150 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "./."
+[W::vcf_parse_format] FORMAT '245' at 1:3000150 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "245"
+[E::vcf_parse_format] Number of columns at 1:3000150 does not match the number of samples (1 vs 2)
+15:30:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on kept_a8776d828b8409ec.vcf (seed=37887) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[W::vcf_parse_filter] FILTER 'DP=100223' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:PL:DP:GQ' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:PL:DP:GQ"
+[W::vcf_parse_format] FORMAT '0/0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0/0"
+[W::vcf_parse_format] FORMAT '0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0"
+[W::vcf_parse_format] FORMAT '193' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "193"
+[W::vcf_parse_format] FORMAT '99' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "99"
+[E::vcf_parse_format] Number of columns at 11:2343543 does not match the number of samples (2 vs 3)
+15:30:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_bcftools_view.vcf (seed=37459) — majority crash rejected, this parser voted accept
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+[W::vcf_parse_filter] FILTER 'DP=14' is not defined in the header
+[W::vcf_parse_filter] FILTER 'DP4=1,2,3,4' is not defined in the header
+[E::bcf_hdr_parse_line] Could not parse the header line: "##FILTER=<ID=DP4=1,2,3,4,Description=\"Dummy\">"
+[E::vcf_parse_filter] Could not add dummy header for FILTER 'DP4=1,2,3,4' at 1:3062915
+15:30:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on real_world_bcftools_isec_2.vcf (seed=211) — majority crash rejected, this parser voted accept
+[W::vcf_parse_filter] FILTER 'DP=100223' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:PL:DP:GQ' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:PL:DP:GQ"
+[W::vcf_parse_format] FORMAT '0/0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0/0"
+[W::vcf_parse_format] FORMAT '0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0"
+[W::vcf_parse_format] FORMAT '193' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "193"
+[W::vcf_parse_format] FORMAT '99' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "99"
+[E::vcf_parse_format] Number of columns at 11:2343543 does not match the number of samples (2 vs 3)
+15:30:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on bcftools_test.vcf (seed=0) — majority crash rejected, this parser voted accept
+[W::vcf_parse_filter] FILTER 'DP=100223' is not defined in the header
+[W::vcf_parse_info] INFO 'GT:PL:DP:GQ' is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "GT:PL:DP:GQ"
+[W::vcf_parse_format] FORMAT '0/0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0/0"
+[W::vcf_parse_format] FORMAT '0' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "0"
+[W::vcf_parse_format] FORMAT '193' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "193"
+[W::vcf_parse_format] FORMAT '99' at 11:2343543 is not defined in the header, assuming Type=String
+[W::bcf_hrec_check] Invalid tag name: "99"
+[E::vcf_parse_format] Number of columns at 11:2343543 does not match the number of samples (2 vs 3)
+15:30:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: noodles on bcftools_test.vcf (seed=0) — majority crash rejected, this parser voted accept
+15:30:14 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 978e560983f8 (required_fixed_columns_violation_preserves_rejection) to minimal failing case
+15:30:14 [INFO] test_engine.orchestrator:   MR 978e560983f8: Hypothesis found and shrunk a failure
+15:30:14 [INFO] test_engine.orchestrator: Test suite complete: 1150 tests, 188 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.1635
+15:30:14 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 47, 'skipped_duplicate': 121, 'skipped_ast_dup': 58, 'pool_size': {'vcf': 115, 'sam': 0}, 'canonical_buckets': {'vcf': 115, 'sam': 0}}
+15:30:14 [INFO] test_engine.oracles.det_tracker: DET report exported to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/det_report.json
+15:30:14 [WARNING] biotest: Coverage-guided cull skipped: primary target 'noodles' has no per-file measurer (Python SUTs only in MVP)
+15:30:14 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/coverage_artifacts/.coverage (14 files traced with >0 lines)
+    C: OK (1150 tests, 0 bugs)
+    Coverage: 1 SUT(s) collected -> noodles=36.2% (2742/7584 lines)
+15:30:14 [INFO] test_engine.feedback.scc_tracker: SCC report exported to /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/data/scc_report.json (0.0%)
+    Cooldown: 5 rule(s) stayed uncovered and entered backoff; 0 cleared.
+15:30:14 [INFO] biotest: Rule attempt outcomes: {'VCFv4.5.tex::BCF specification::p1301': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::BCF specification::p1297': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::Header::p1400': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::BCF specification::p1292': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::Overall file organization::p1396': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}}
+    SCC: 0.0% (0/316 rules)
+15:30:14 [INFO] test_engine.feedback.loop_controller: Iteration 2: SCC=0.0%, coverage=36.2%, enforced=0, demoted=0
+15:30:14 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (5 cooling down).
+15:30:14 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1304', 'VCFv4.5.tex::Dictionary of strings::p1410', 'VCFv4.5.tex::BCF specification::p1323', 'VCFv4.5.tex::BCF2 records::p1429', 'VCFv4.5.tex::BCF specification::p1296']
+15:30:14 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1304', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Dictionary of strings::p1410', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1323', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF2 records::p1429', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1296', 'complexity': 3, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+  Phase D: OK  (19m 37s)
+15:30:15 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/vcf_struct', 'sut_validate': None}
+15:30:15 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/vcf_struct
+15:30:15 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/vcf_rawfuzz'}
+15:30:15 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/vcf_rawfuzz
+15:30:15 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/sam_struct', 'sut_validate': None}
+15:30:15 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/sam_struct
+15:30:16 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/sam_rawfuzz'}
+15:30:16 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4big_runs/run_a/noodles_vcf/work/seeds/sam_rawfuzz
+  Phase E: OK  (1.2s, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                               │
+│ C: Execute   │   PASS   │        0ms │ 0 tests, 0 bugs found                 │
+│ D: Feedback  │   PASS   │    19m 37s │ 2 iter, SCC=0.0%, stop:               │
+│              │          │            │ budget_exhausted (iteration=2 >= 2)   │
+│ E: Augment   │   PASS   │       1.2s │ +0 corpus files (VCF: 0 struct + 0    │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)   │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+  Total Pipeline Duration:  19m 39s
+
+╭─────────────────────────── Phase D: Feedback Loop ───────────────────────────╮
+│ SCC Progression: 0.0% -> 0.0%                                                │
+│ Final SCC: 0.0%                                                              │
+│ Termination: budget_exhausted (iteration=2 >= 2)                             │
+│ MRs Quarantined: 0                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────── Code Coverage ────────────────────────────────╮
+│ Primary SUT: noodles (Rust)                                                  │
+│ Coverage Progression: 36.2% -> 36.2%                                         │
+│ Final Coverage: 36.2% (2742/7584 format-scoped lines)                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ALL CLEAR — No bugs detected across all parsers.                             │
+╰──────────────────────────────────────────────────────────────────────────────╯

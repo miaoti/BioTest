@@ -1,0 +1,21 @@
+##fileformat=VCFv4.3
+##fileDate=20250301
+##source=test_generator
+##reference=file:///ref/hg38.fa
+##ALT=<ID=DEL,Description="Deletion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="Mate ID for breakend records">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FILTER=<ID=PASS,Description="All filters passed">
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	100	bnd1	A	N[chr2:200[	50	PASS	SVTYPE=BND;MATEID=bnd2	GT	a/1
+chr2	200	bnd2	N	]chr1:100]N	50	PASS	SVTYPE=BND;MATEID=bnd1	GT	1/0
+chr1	300	bnd3	C	[chrX:400[N	60	PASS	SVTYPE=BND;MATEID=bnd4	GT	0/0
+chrX	400	bnd4	N	N]chr1:300]	60	PASS	SVTYPE=BND;MATEID=bnd3	GT	9/1
+chr2	507	bnd5	G	]chr1:600]G	70	PASS	SVTYPE=BND;MATEID=bnd6	GT	0/1
+chr1	600	bnd6	N	G[chr2:500[	70	PASS	SVTYPE=BND;MATEID=bnd5	GT	1/0

@@ -1,0 +1,41 @@
+--- src/record/samples.rs
++++ replace parse_sample -> Sample<'r> with Default::default()
+@@ -125,37 +125,17 @@
+         Box::new(
+             self.iter()
+                 .map(|sample| Box::new(sample) as Box<dyn crate::variant::record::samples::Sample>),
+         )
+     }
+ }
+ 
+ fn parse_sample<'r>(src: &mut &'r str, keys: Keys<'r>) -> Sample<'r> {
+-    const DELIMITER: u8 = b'\t';
+-    const MISSING: &str = ".";
+-
+-    let buf = match src.as_bytes().iter().position(|&b| b == DELIMITER) {
+-        Some(i) => {
+-            let (buf, rest) = src.split_at(i);
+-            *src = &rest[1..];
+-            buf
+-        }
+-        None => {
+-            let (buf, rest) = src.split_at(src.len());
+-            *src = rest;
+-            buf
+-        }
+-    };
+-
+-    if buf == MISSING {
+-        Sample::new("", keys)
+-    } else {
+-        Sample::new(buf, keys)
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_is_empty() {

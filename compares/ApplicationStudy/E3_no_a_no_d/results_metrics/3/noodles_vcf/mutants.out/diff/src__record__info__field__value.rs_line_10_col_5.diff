@@ -1,0 +1,35 @@
+--- src/record/info/field/value.rs
++++ replace parse_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -2,31 +2,17 @@
+ 
+ use crate::{
+     header::record::value::map::info::{Number, Type},
+     io::reader::record_buf::value::percent_decode,
+     variant::record::info::field::{value::Array, Value},
+ };
+ 
+ pub(super) fn parse_value(src: &str, number: Number, ty: Type) -> io::Result<Value<'_>> {
+-    match (number, ty) {
+-        (Number::Count(0), Type::Flag) => parse_flag_value(src),
+-        (Number::Count(0), _) | (_, Type::Flag) => Err(io::Error::new(
+-            io::ErrorKind::InvalidData,
+-            "invalid number for type",
+-        )),
+-        (Number::Count(1), Type::Integer) => parse_integer_value(src),
+-        (Number::Count(1), Type::Float) => parse_float_value(src),
+-        (Number::Count(1), Type::Character) => parse_character_value(src),
+-        (Number::Count(1), Type::String) => parse_string_value(src),
+-        (_, Type::Integer) => parse_integer_array_value(src),
+-        (_, Type::Float) => parse_float_array_value(src),
+-        (_, Type::Character) => parse_character_array_value(src),
+-        (_, Type::String) => parse_string_array_value(src),
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_integer_value(src: &str) -> io::Result<Value<'_>> {
+     src.parse()
+         .map(Value::Integer)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+ }
+ 

@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf.rs
++++ replace != with == in parse_record_buf
+@@ -93,17 +93,17 @@
+     }
+ 
+     let field = next_field(&mut s);
+     parse_reference_bases(field, record.reference_bases_mut())
+         .map_err(ParseError::InvalidReferenceBases)?;
+ 
+     record.alternate_bases_mut().as_mut().clear();
+     let field = next_field(&mut s);
+-    if field != MISSING {
++    if field == /* ~ changed by cargo-mutants ~ */ MISSING {
+         parse_alternate_bases(field, record.alternate_bases_mut())
+             .map_err(ParseError::InvalidAlternateBases)?;
+     }
+ 
+     let field = next_field(&mut s);
+     *record.quality_score_mut() = match field {
+         MISSING => None,
+         _ => parse_quality_score(field)

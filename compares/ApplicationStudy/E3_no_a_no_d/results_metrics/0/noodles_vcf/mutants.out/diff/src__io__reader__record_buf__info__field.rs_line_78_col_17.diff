@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field.rs
++++ delete match arm MISSING in parse_field
+@@ -70,17 +70,17 @@
+             match raw_value.unwrap_or_default() {
+                 MISSING => None,
+                 t => parse_value(number, ty, t)
+                     .map(Some)
+                     .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+             }
+         } else if let Some(t) = raw_value {
+             match t {
+-                MISSING => None,
++                 /* ~ changed by cargo-mutants ~ */
+                 _ => parse_value(number, ty, t)
+                     .map(Some)
+                     .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+             }
+         } else {
+             return Err(ParseError::MissingValue(key.into()));
+         }
+     } else {

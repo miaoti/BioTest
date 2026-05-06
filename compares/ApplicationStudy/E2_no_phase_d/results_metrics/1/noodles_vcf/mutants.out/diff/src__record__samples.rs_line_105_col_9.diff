@@ -1,0 +1,23 @@
+--- src/record/samples.rs
++++ replace <impl crate::variant::record::Samples for Samples<'_>>::select -> Option<io::Result<Box<dyn crate::variant::record::samples::Series +'a>>> with None
+@@ -97,19 +97,17 @@
+         Box::new(self.keys().iter().map(Ok))
+     }
+ 
+     fn select<'a, 'h: 'a>(
+         &'a self,
+         _: &'h Header,
+         column_name: &str,
+     ) -> Option<io::Result<Box<dyn crate::variant::record::samples::Series + 'a>>> {
+-        self.select(column_name)
+-            .map(|series| Box::new(series) as Box<dyn crate::variant::record::samples::Series>)
+-            .map(Ok)
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn series(
+         &self,
+     ) -> Box<
+         dyn Iterator<Item = io::Result<Box<dyn crate::variant::record::samples::Series + '_>>> + '_,
+     > {
+         Box::new(

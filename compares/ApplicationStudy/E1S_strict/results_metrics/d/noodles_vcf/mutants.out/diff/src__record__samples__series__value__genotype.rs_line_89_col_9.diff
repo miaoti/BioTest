@@ -1,0 +1,21 @@
+--- src/record/samples/series/value/genotype.rs
++++ delete match arm UNPHASED in parse_phasing
+@@ -81,17 +81,17 @@
+ }
+ 
+ fn parse_phasing(src: &str) -> io::Result<Phasing> {
+     const PHASED: &str = "|";
+     const UNPHASED: &str = "/";
+ 
+     match src {
+         PHASED => Ok(Phasing::Phased),
+-        UNPHASED => Ok(Phasing::Unphased),
++         /* ~ changed by cargo-mutants ~ */
+         _ => Err(io::Error::new(
+             io::ErrorKind::InvalidData,
+             "invalid phasing indicator",
+         )),
+     }
+ }
+ 
+ fn parse_position(src: &str) -> io::Result<Option<usize>> {

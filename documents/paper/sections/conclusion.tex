@@ -14,13 +14,14 @@ benchmark of $32$ verified historical parser bugs
 (\S\ref{sec:evaluation}).
 
 Across the three axes the result is a clean trade-off. \biotest{}
-sits within a small single-digit deficit of the strongest
-coverage-guided baseline on four mutation-adequacy configurations,
-trails by the margin Klees et al.\ and B\"ohme et
-al.~\cite{klees2018fuzz,boehme2020boosting} predict qualitatively
-on byte-content-lenient biopython, and exceeds the strongest
-baseline on seqan3/SAM through corpus-side retention of
-typed-exception inputs. On the real-bug benchmark the gap is
+matches Atheris on vcfpy/VCF (parity within sample standard
+deviation under the $n{=}10$ replication), sits within a
+$0.4$--$4.2$\,pp deficit of the strongest coverage-guided baseline
+on the three remaining close-margin configurations, trails by the
+margin Klees et al.\ and B\"ohme et al.~\cite{klees2018fuzz,
+boehme2020boosting} predict qualitatively on byte-content-lenient
+biopython, and exceeds the strongest baseline on seqan3/SAM through
+corpus-side retention of typed-exception inputs. On the real-bug benchmark the gap is
 structurally explained by the dominance of differential-disagreement
 signals in the manifest's parse-time bug shapes. A natural future
 direction is a per-SUT coverage-feedback extension on top of the

@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/quality_score.rs
++++ replace parse_quality_score -> Result<f32, ParseError> with Ok(0.0)
+@@ -23,21 +23,17 @@
+         match self {
+             Self::Empty => write!(f, "empty input"),
+             Self::Invalid(_) => write!(f, "invalid input"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_quality_score(s: &str) -> Result<f32, ParseError> {
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    }
+-
+-    s.parse().map_err(ParseError::Invalid)
++    Ok(0.0) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_position() {

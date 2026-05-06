@@ -136,15 +136,30 @@ def setup_initial_seeds(seeds_root: Path) -> tuple[int, int]:
     return vcf_n, sam_n
 
 
-def reset_data_and_coverage(work_dir: Path, cell: Cell, fh) -> None:
-    """Wipe data/ and coverage_artifacts/ between reps (but NOT seeds —
-    seeds CASCADE across reps within a cell)."""
+def reset_data_and_coverage(work_dir: Path, cell: Cell, fh, cumulative: bool = True) -> None:
+    """Wipe data/ and bug_reports/ between reps. Behavior of
+    coverage_artifacts/ depends on `cumulative`:
+
+      cumulative=True (default, Refine Round 4): preserve the directory
+        so JaCoCo `append=true` / coverage.py / gcovr `.gcda` counters
+        accumulate across reps. rep N's measurement = union of reps
+        0..N. Coverage monotonically non-decreasing.
+
+      cumulative=False: wipe coverage_artifacts/ each rep so every rep
+        is an independent trial. Std band across reps measures
+        per-trial variance (apples-to-apples vs published SOTA stats
+        which are also independent-trial means).
+
+    Seeds always cascade across reps regardless of this flag.
+    """
     data_dir = work_dir / "data"
     if data_dir.exists():
         shutil.rmtree(data_dir, ignore_errors=True)
     data_dir.mkdir(parents=True, exist_ok=True)
     cov_dir = work_dir / "coverage_artifacts"
-    if cov_dir.exists():
+    if not cumulative and cov_dir.exists():
+        # Independent-trial mode: wipe ALL prior counters so this rep
+        # gets a fresh measurement.
         shutil.rmtree(cov_dir, ignore_errors=True)
     cov_dir.mkdir(parents=True, exist_ok=True)
     (cov_dir / "jacoco").mkdir(parents=True, exist_ok=True)
@@ -154,7 +169,10 @@ def reset_data_and_coverage(work_dir: Path, cell: Cell, fh) -> None:
     if bug_dir.exists():
         shutil.rmtree(bug_dir, ignore_errors=True)
     bug_dir.mkdir(parents=True, exist_ok=True)
-    log(cell, "    reset data/ + coverage_artifacts/ (seeds unchanged)", fh)
+    if cumulative:
+        log(cell, "    reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)", fh)
+    else:
+        log(cell, "    reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)", fh)
 
 
 def snapshot_seeds_count(seeds_root: Path) -> dict[str, int]:
@@ -235,7 +253,34 @@ def write_temp_config(
     pc["seeds_dir"] = P(work_dir / "seeds")
     pc["output_dir"] = P(work_dir / "bug_reports")
     pc["det_report_path"] = P(work_dir / "data" / "det_report.json")
-    pc["corpus_keeper"] = {"enabled": True, "max_files_per_format": 2000}
+    pc["corpus_keeper"] = {
+        "enabled": True,
+        "max_files_per_format": 2000,
+        # Rank 8b (2026-04-30) — replay each newly-kept file under
+        # coverage.py and delete files that don't add new lines vs the
+        # pre-iteration corpus. MVP supports vcfpy/biopython primaries;
+        # the htsjdk and noodles cells skip with a logger.warning so
+        # this block is safe to enable for all cells.
+        "coverage_guided_culling": {
+            "enabled": True,
+            "measure_baseline_against_corpus": True,
+        },
+    }
+    # Hypothesis-driven Phase C with corpus-size-scaled budget
+    # (cascade-dilution mitigation, 2026-04-30). Replaces static-mode's
+    # "iterate every seed once per MR" with a bounded budget that
+    # auto-grows by sqrt(corpus/baseline). Without this, rep 0 covers
+    # more lines than reps 1-3 because each curated seed gets less
+    # Hypothesis sampling depth as the corpus dilutes with kept_*.
+    pc["hypothesis"] = {
+        "enabled": True,
+        "max_examples": 50,
+        "max_examples_corpus_scaling": {
+            "enabled": True,
+            "baseline_corpus_size": 33,
+            "cap": 400,
+        },
+    }
 
     # ----- Per-SUT path overrides for coverage instrumentation -----
     for sut_cfg in pc.get("suts", []):
@@ -337,11 +382,30 @@ def run_biotest_host(
     ]
     log(cell, f"    cmd: python biotest.py --config {cfg_path.name} --phase D", fh)
     log(cell, f"    budget: {budget_s}s (host)", fh)
+    # Refine Round 4 — two SUT-agnostic levers, both env-var-gated:
+    #   BIOTEST_MULTISHOT_K=2:
+    #     `apply_mr_transforms` composes K=2 extra semantics-preserving
+    #     transforms after each MR's own steps. Framework-internal,
+    #     SUT-agnostic.
+    #   BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (SAM only):
+    #     The Java harness routes parses through `--mode parse_auto_invoke`,
+    #     which reflectively invokes every PUBLIC NO-ARG non-mutator
+    #     instance method on each parsed record (no hardcoded names —
+    #     uses java.lang.Class.getMethods() with the same structural
+    #     filter as the existing query-method discovery). Adding a new
+    #     Java SUT's parsed-record class with public getters surfaces
+    #     them automatically; no per-SUT harness edit. C++ / Rust SUTs
+    #     ignore the env var (their runners don't dispatch on it).
+    env = os.environ.copy()
+    if cell.fmt == "SAM":
+        env["BIOTEST_MULTISHOT_K"] = "2"
+        env["BIOTEST_AUTO_INVOKE_PUBLIC_METHODS"] = "1"
+        log(cell, f"    env: BIOTEST_MULTISHOT_K=2  BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (refine round 4)", fh)
     started = time.time()
     with log_path.open("wb") as lf:
         proc = subprocess.Popen(
             cmd, stdout=lf, stderr=subprocess.STDOUT,
-            env=os.environ.copy(), cwd=str(REPO_ROOT),
+            env=env, cwd=str(REPO_ROOT),
         )
         try:
             proc.wait(timeout=budget_s)
@@ -371,10 +435,19 @@ def run_biotest_container(
     container_log = to_container_path(log_path)
     # Ensure log dir exists on host (== /work in container).
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    # Refine Round 4 — propagate BIOTEST_MULTISHOT_K=2 to SAM container
+    # cells (seqan3_sam, etc.). VCF cells unaffected.
+    multishot_export = (
+        "export BIOTEST_MULTISHOT_K=2; "
+        if cell.fmt == "SAM" else ""
+    )
+    if cell.fmt == "SAM":
+        log(cell, f"    env (container): BIOTEST_MULTISHOT_K=2 (refine round 4)", fh)
     cmd = [
         "docker", "exec",
         "biotest-bench-setup",
         "bash", "-lc",
+        f"{multishot_export}"
         f"timeout --kill-after=60 {budget_s} python3.12 /work/biotest.py "
         f"--config {container_cfg} --phase D --verbose "
         f"> {container_log} 2>&1 || true",
@@ -559,8 +632,12 @@ def ensure_container_cov_binaries(fh) -> None:
     (idempotent — skips if already built)."""
     setup_cmd = (
         "set -e; export PATH=/root/.cargo/bin:$PATH; "
-        # seqan3 cov harness
-        "if [ ! -x /work/harnesses/cpp/build/biotest_harness_cov_seqan3 ]; then "
+        # seqan3 cov harness — rebuild when missing OR when the harness
+        # source has been edited (refine round 4 added a second seqan3
+        # pre-pass; need the binary to pick up that source change).
+        "if [ ! -x /work/harnesses/cpp/build/biotest_harness_cov_seqan3 ] "
+        "   || [ /work/harnesses/cpp/biotest_harness.cpp -nt "
+        "        /work/harnesses/cpp/build/biotest_harness_cov_seqan3 ]; then "
         "  cd /work/harnesses/cpp; mkdir -p build; "
         "  rm -f build/*.gcda build/*.gcno; "
         "  clang++-18 -std=c++23 -O0 -g -DNDEBUG -DUSE_SEQAN3 "
@@ -568,10 +645,12 @@ def ensure_container_cov_binaries(fh) -> None:
         "    -fprofile-arcs -ftest-coverage biotest_harness.cpp "
         "    -o build/biotest_harness_cov_seqan3; "
         "fi; "
-        # noodles cov binary
+        # noodles cov binary — skip --locked so a stale Cargo.lock
+        # doesn't fail SAM-only runs that don't actually use noodles.
         "cd /work/harnesses/rust/noodles_harness; "
-        "RUSTFLAGS='-C instrument-coverage' cargo build --release --locked "
-        "  --manifest-path /work/harnesses/rust/noodles_harness/Cargo.toml; "
+        "RUSTFLAGS='-C instrument-coverage' cargo build --release "
+        "  --manifest-path /work/harnesses/rust/noodles_harness/Cargo.toml "
+        "  || echo 'noodles build skipped (cell-irrelevant if not VCF)'; "
         # Python 3.12 deps
         "python3.12 -c 'import yaml,rich,hypothesis,chromadb,gcovr' || "
         "  python3.12 -m pip install --quiet --no-warn-script-location "
@@ -601,6 +680,7 @@ def ensure_container_cov_binaries(fh) -> None:
 def run_cell_cascade(
     cell: Cell, out_root: Path, master_log: Path,
     vcf_budget_s: int, sam_budget_s: int, reps: int,
+    cumulative: bool = True,
 ) -> dict[str, Any]:
     cell_dir = out_root / cell.label
     cell_dir.mkdir(parents=True, exist_ok=True)
@@ -622,8 +702,10 @@ def run_cell_cascade(
         seeds_before = snapshot_seeds_count(work_dir / "seeds")
         log(cell, f"    seeds entering rep: {seeds_before}", fh)
 
-        # Reset data + coverage_artefacts (but keep seeds — they cascade).
-        reset_data_and_coverage(work_dir, cell, fh)
+        # Reset data + bug_reports; coverage_artifacts/ behavior depends
+        # on `cumulative`: True = preserve (Round 4 cumulative cascade),
+        # False = wipe (independent-trial mode for honest std-band).
+        reset_data_and_coverage(work_dir, cell, fh, cumulative=cumulative)
 
         # For seqan3, also reset the global .gcda files — only this cell
         # writes them, so safe to wipe between its own reps.
@@ -696,7 +778,18 @@ def main() -> int:
     ap.add_argument("--only", action="append", default=[],
                     help="Run only these cell labels (e.g. htsjdk_vcf).")
     ap.add_argument("--max-workers", type=int, default=6)
+    ap.add_argument(
+        "--cumulative", choices=("true", "false"), default="true",
+        help=(
+            "true (default): preserve coverage_artifacts/ across reps so "
+            "rep N's measurement = union of reps 0..N (monotonic, but "
+            "std collapses when a rep adds no new lines). false: wipe "
+            "coverage_artifacts/ each rep so every rep is an independent "
+            "trial (apples-to-apples std vs published SOTA stats)."
+        ),
+    )
     args = ap.parse_args()
+    args.cumulative_bool = (args.cumulative == "true")
 
     args.out_root.mkdir(parents=True, exist_ok=True)
     master_log = args.out_root / "master.log"
@@ -720,11 +813,14 @@ def main() -> int:
     mfh.write(f"[master] launching {len(cells)} cells in parallel...\n")
 
     workers = min(args.max_workers, len(cells))
+    print(f"[master] cumulative={args.cumulative_bool}", flush=True)
+    mfh.write(f"[master] cumulative={args.cumulative_bool}\n")
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futures = {
             ex.submit(
                 run_cell_cascade, cell, args.out_root, master_log,
                 args.vcf_budget_s, args.sam_budget_s, args.reps,
+                args.cumulative_bool,
             ): cell
             for cell in cells
         }

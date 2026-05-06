@@ -1,0 +1,21 @@
+--- src/record/ids.rs
++++ replace <impl AsRef<str> for Ids<'_>>::as_ref -> &str with ""
+@@ -7,17 +7,17 @@
+ impl<'a> Ids<'a> {
+     pub(super) fn new(buf: &'a str) -> Self {
+         Self(buf)
+     }
+ }
+ 
+ impl AsRef<str> for Ids<'_> {
+     fn as_ref(&self) -> &str {
+-        self.0
++        "" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::Ids for Ids<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 

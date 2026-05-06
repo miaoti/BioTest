@@ -20,6 +20,36 @@ from typing import Any, Optional
 from .base import ParserRunner, RunnerResult
 from ..config import HARNESSES_DIR, JAVA_CMD, SUBPROCESS_TIMEOUT_S
 
+
+# Refine Round 4 — generalized public-method auto-invocation.
+# When the env var below is set to "1", SAM parses route through the
+# harness's `--mode parse_auto_invoke`, which (per
+# `harnesses/java/BioTestHarness.java::parseAutoInvokeSam`) reflectively
+# invokes EVERY public no-arg non-mutator instance method on each
+# parsed record. The mechanism is not htsjdk-specific: discovery uses
+# `Class.getMethods()` with a structural filter (public + zero-param +
+# not a setter/mutator + not Object-noise), so any future Java SUT's
+# parsed-record class inherits the same coverage exercise for free.
+#
+# Coverage character: each invocation is wrapped in try/catch(Throwable)
+# in the Java side, so a method that throws on entry (e.g. NPE on a
+# malformed record) still counts as "method body entered up to the
+# throw point". The uplift is therefore "any-path" coverage, not
+# strictly "happy-path" — accepted because the same throw paths occur
+# in real applications calling those methods on real malformed inputs.
+#
+# VCF is currently NOT extended (the harness has parseAutoInvokeSam
+# but no parseAutoInvokeVcf yet). The mechanism would work identically
+# for VCF — `VariantContext` has many public no-arg getters — but
+# wiring it is left as a separate change. The env-var gate to SAM in
+# the cascade orchestrator and the format check below reflect that
+# scope, NOT a structural VCF incompatibility.
+#
+# The metamorphic oracle is robust to the extra `record_count` /
+# `invoked_methods_per_record` fields the new mode emits because both
+# compare-sides go through the same dispatch within a cell.
+_AUTO_INVOKE_ENV = "BIOTEST_AUTO_INVOKE_PUBLIC_METHODS"
+
 logger = logging.getLogger(__name__)
 
 # Expected location of the built harness JAR (fat JAR with HTSJDK bundled)
@@ -134,7 +164,26 @@ class HTSJDKRunner(ParserRunner):
             jvm_arg = jvm_arg.replace("{destfile}", str(tmp_exec))
             cmd.extend(jvm_arg.split())
             _cov_exec_tmp = tmp_exec
-        cmd.extend(["-jar", str(tmp_jar), format_type.upper(), str(tmp_input)])
+        # Refine Round 4 — when BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 is
+        # set AND the format is SAM, dispatch to the harness's
+        # `--mode parse_auto_invoke` instead of plain parse. The
+        # underlying Java reflection (`harnesses/java/BioTestHarness.java::
+        # parseAutoInvokeSam`) auto-discovers public no-arg methods on
+        # whatever class the iterator yields — no SUT-specific method
+        # names. VCF unaffected.
+        import os as _os
+        use_auto_invoke = (
+            format_type.upper() == "SAM"
+            and _os.environ.get(_AUTO_INVOKE_ENV, "0") == "1"
+        )
+        if use_auto_invoke:
+            cmd.extend([
+                "-jar", str(tmp_jar),
+                "--mode", "parse_auto_invoke",
+                format_type.upper(), str(tmp_input),
+            ])
+        else:
+            cmd.extend(["-jar", str(tmp_jar), format_type.upper(), str(tmp_input)])
 
         t0 = time.monotonic()
         try:

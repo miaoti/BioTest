@@ -1,0 +1,22 @@
+--- src/record/samples/series.rs
++++ replace <impl crate::variant::record::samples::Series for Series<'_>>::get -> Option<Option<io::Result<Value<'a>>>> with None
+@@ -25,18 +25,17 @@
+         Ok(self.name)
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         i: usize,
+     ) -> Option<Option<io::Result<Value<'a>>>> {
+-        let sample = self.samples.iter().nth(i)?;
+-        sample.get_index(header, self.i)
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<Option<Value<'a>>>> + 'a> {
+         Box::new(
+             self.samples

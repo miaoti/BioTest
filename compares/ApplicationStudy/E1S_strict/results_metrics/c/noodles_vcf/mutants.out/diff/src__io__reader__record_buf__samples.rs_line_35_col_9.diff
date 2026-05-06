@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/samples.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -27,21 +27,17 @@
+             Self::InvalidKeys(e) => Some(e),
+             Self::InvalidValues(e) => Some(e),
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            ParseError::UnexpectedInput => write!(f, "unexpected input"),
+-            ParseError::InvalidKeys(_) => write!(f, "invalid keys"),
+-            ParseError::InvalidValues(_) => write!(f, "invalid values"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_samples(
+     header: &Header,
+     mut s: &str,
+     genotypes: &mut Samples,
+ ) -> Result<(), ParseError> {

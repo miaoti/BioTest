@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::infos_mut -> &mut Infos with Box::leak(Box::new(Default::default()))
+@@ -150,17 +150,17 @@
+     /// let info = Map::<Info>::from(id);
+     /// header.infos_mut().insert(id.into(), info.clone());
+     ///
+     /// let infos = header.infos();
+     /// assert_eq!(infos.len(), 1);
+     /// assert_eq!(&infos[0], &info);
+     /// ```
+     pub fn infos_mut(&mut self) -> &mut Infos {
+-        &mut self.infos
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a map of filter records (`FILTER`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{self as vcf, header::record::value::{map::Filter, Map}};

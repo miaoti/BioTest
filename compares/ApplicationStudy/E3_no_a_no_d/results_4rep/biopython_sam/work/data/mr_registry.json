@@ -1,0 +1,350 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "header_reordering_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "Query results (e.g., number of records, record fields) are invariant under reordering of header records, as header record order is not semantically significant for data queries",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification does not prescribe a required order for header record types beyond convention; query results should be independent of header ordering",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "sam_bam_roundtrip_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "Query results are invariant under SAM-to-BAM-to-SAM round trip conversion, as the format conversion is lossless",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM and BAM are equivalent representations; round-trip conversion should preserve all data fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9543e77ef6d0",
+      "mr_name": "sam_cram_roundtrip_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_cram_round_trip"
+      ],
+      "oracle": "Query results are invariant under SAM-to-CRAM-to-SAM round trip conversion for losslessly representable data",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CRAM is a compressed representation of SAM data; round-trip conversion should preserve queryable fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "optional_tag_permutation_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Query results are invariant under permutation of optional tag fields, as tag order within a record is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Optional tags in SAM records are identified by their two-letter keys, not their positional order",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "43bbe1c7e37d",
+      "mr_name": "seq_case_normalization_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case"
+      ],
+      "oracle": "Query results are invariant under case normalization of the SEQ field, as case is not semantically significant in SAM sequences",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM SEQ field uses uppercase IUPAC characters; case normalization does not change the biological meaning",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "rnext_equals_alias_canonicalization_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "Query results are invariant under canonicalization of RNEXT '=' alias to the actual reference sequence name, as '=' is a shorthand notation",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "In SAM, RNEXT '=' is an alias for the RNAME of the current record; canonicalization preserves semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "unmapped_record_normalization_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "Query results are invariant under normalization of unmapped record fields, as unmapped records have defined default values for certain fields",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification defines specific field values for unmapped reads; normalization applies these conventions",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "cigar_operator_canonicalization_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "Query results are invariant under canonicalization of CIGAR match operators (= vs M), as both represent alignment matches",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CIGAR '=' and 'M' operators both denote alignment matches; canonicalization does not change alignment semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "hd_subtag_shuffling_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Query results are invariant under shuffling of HD header subtags, as subtag order within a header record is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Header record subtags are key-value pairs; their order within a header line is not semantically meaningful",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "sq_record_subtag_shuffling_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "Query results are invariant under shuffling of SQ header record subtags, as subtag order within SQ records is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SQ header record subtags are key-value pairs; their order is not semantically meaningful for queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "rg_record_subtag_shuffling_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "Query results are invariant under shuffling of RG header record subtags, as subtag order within RG records is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "RG header record subtags are key-value pairs; their order is not semantically meaningful for queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "pg_record_subtag_shuffling_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Query results are invariant under shuffling of PG header record subtags, as subtag order within PG records is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "PG header record subtags are key-value pairs; their order is not semantically meaningful for queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "co_comment_shuffling_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Query results are invariant under shuffling of CO comment lines, as comment order is not semantically significant",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CO header lines are comments; their order is not semantically meaningful for data queries",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "14be4e2cd78b",
+      "mr_name": "sut_write_roundtrip_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Query results are invariant under SUT write round trip, as writing and re-reading should preserve all data fields",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A write round-trip (serialize then deserialize) should preserve all semantically meaningful fields",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "minor_version_bump_preserves_query_results",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "Query results are invariant under a minor version bump in the HD header, as minor version changes indicate backward-compatible additions",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Minor version bumps in SAM indicate backward-compatible changes; query semantics should be preserved",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "cigar_zero_length_op_removal_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "Query results are invariant under removal of zero-length CIGAR operations, as they have no effect on alignment",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Zero-length CIGAR operations are no-ops; their removal does not change the alignment semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "mate_flag_stripping_for_unpaired_preserves_query_results",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "Query results are invariant under stripping of mate-pair flags when reads are unpaired, as mate flags are meaningless for unpaired reads",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Mate-pair flags (0x1, 0x2, 0x8, 0x20, 0x40, 0x80) are only meaningful for paired-end reads",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 17,
+    "total": 17
+  }
+}

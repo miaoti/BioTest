@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace + with * in read_field
+@@ -89,17 +89,17 @@
+ 
+         if r#match.is_some() || src.is_empty() {
+             break;
+         }
+ 
+         let (mut buf, n) = match memchr2(DELIMITER, LINE_FEED, src) {
+             Some(i) => {
+                 r#match = Some(src[i]);
+-                (&src[..i], i + 1)
++                (&src[..i], i * /* ~ changed by cargo-mutants ~ */ 1)
+             }
+             None => (src, src.len()),
+         };
+ 
+         if let [head @ .., CARRIAGE_RETURN] = buf {
+             buf = head;
+         }
+ 

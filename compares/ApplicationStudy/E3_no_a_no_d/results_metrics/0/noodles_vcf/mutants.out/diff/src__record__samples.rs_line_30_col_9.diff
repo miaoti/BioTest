@@ -1,0 +1,22 @@
+--- src/record/samples.rs
++++ replace Samples<'r>::keys -> Keys<'r> with Default::default()
+@@ -22,18 +22,17 @@
+ 
+     /// Returns whether there may be any genotypes.
+     pub fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 
+     /// Returns the keys.
+     pub fn keys(&self) -> Keys<'r> {
+-        let (src, _) = self.0.split_once(DELIMITER).unwrap_or_default();
+-        Keys::new(src)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the sample with the given sample name.
+     pub fn get(&self, header: &Header, sample_name: &str) -> Option<Sample<'r>> {
+         header
+             .sample_names()
+             .get_index_of(sample_name)
+             .and_then(|i| self.get_index(i))

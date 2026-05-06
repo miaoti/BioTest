@@ -1,0 +1,317 @@
+
+running 1 test
+test corpus_oracle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
+
+ing v2.3.1
+  Downloaded tokio-macros v2.4.0
+  Downloaded quote v1.0.37
+  Downloaded pin-project-lite v0.2.15
+  Downloaded unicode-ident v1.0.14
+  Downloaded crc32fast v1.4.2
+  Downloaded proc-macro2 v1.0.92
+  Downloaded bytes v1.9.0
+  Downloaded serde v1.0.216
+  Downloaded indexmap v2.7.0
+  Downloaded crossbeam-channel v0.5.14
+  Downloaded flate2 v1.0.35
+  Downloaded syn v2.0.90
+  Downloaded bstr v1.11.1
+  Downloaded tokio v1.42.0
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> src/record/fields.rs:52:35
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases {
+   |                                   ^^^^^     ^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                   |
+   |                                   the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases<'_> {
+   |                                                           ++++
+
+warning: `noodles-vcf` (lib) generated 1 warning (run `cargo fix --lib -p noodles-vcf` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 1.69s
+     Running tests/biotest_corpus_oracle.rs (target/release/deps/biotest_corpus_oracle-5f6759ddb9f74a3e)
+Found 483 mutants to test
+ok       Unmutated baseline in 6s build + 4s test
+MISSED   src/header.rs:68:9: replace Header::builder -> Builder with Default::default() in 0s build + 2s test
+MISSED   src/header.rs:87:9: replace Header::file_format -> FileFormat with Default::default() in 0s build + 2s test
+MISSED   src/header.rs:107:9: replace Header::file_format_mut -> &mut FileFormat with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:133:9: replace Header::infos -> &Infos with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:158:9: replace Header::infos_mut -> &mut Infos with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:179:9: replace Header::filters -> &Filters with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:199:9: replace Header::filters_mut -> &mut Filters with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:225:9: replace Header::formats -> &Formats with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:250:9: replace Header::formats_mut -> &mut Formats with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:274:9: replace Header::alternative_alleles -> &AlternativeAlleles with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:297:9: replace Header::alternative_alleles_mut -> &mut AlternativeAlleles with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:318:9: replace Header::contigs -> &Contigs with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:338:9: replace Header::contigs_mut -> &mut Contigs with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:383:9: replace Header::sample_names_mut -> &mut SampleNames with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:404:9: replace Header::other_records -> &OtherRecords with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:431:9: replace Header::other_records_mut -> &mut OtherRecords with Box::leak(Box::new(Default::default())) in 1s build + 2s test
+MISSED   src/header.rs:463:9: replace Header::get -> Option<&record::value::Collection> with None in 0s build + 2s test
+MISSED   src/header.rs:491:9: replace Header::insert -> Result<(), record::value::collection::AddError> with Ok(()) in 0s build + 2s test
+MISSED   src/header.rs:504:9: replace Header::string_maps -> &StringMaps with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:509:9: replace Header::string_maps_mut -> &mut StringMaps with Box::leak(Box::new(Default::default())) in 0s build + 2s test
+MISSED   src/header.rs:523:9: replace <impl FromStr for Header>::from_str -> Result<Self, Self::Err> with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/record.rs:31:9: replace Record::fields_mut -> &mut Fields with Box::leak(Box::new(Default::default())) in 1s build + 2s test
+MISSED   src/record.rs:36:9: replace Record::reference_sequence_name -> &str with "" in 0s build + 2s test
+MISSED   src/record.rs:36:9: replace Record::reference_sequence_name -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record.rs:41:9: replace Record::variant_start -> Option<io::Result<Position>> with None in 0s build + 2s test
+MISSED   src/record.rs:51:9: replace Record::reference_bases -> &str with "" in 0s build + 2s test
+MISSED   src/record.rs:51:9: replace Record::reference_bases -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record.rs:61:9: replace Record::quality_score -> Option<io::Result<f32>> with None in 0s build + 2s test
+MISSED   src/record.rs:61:9: replace Record::quality_score -> Option<io::Result<f32>> with Some(Ok(0.0)) in 0s build + 2s test
+MISSED   src/record.rs:61:9: replace Record::quality_score -> Option<io::Result<f32>> with Some(Ok(1.0)) in 0s build + 2s test
+MISSED   src/record.rs:61:9: replace Record::quality_score -> Option<io::Result<f32>> with Some(Ok(-1.0)) in 0s build + 2s test
+MISSED   src/record.rs:82:9: replace <impl fmt::Debug for Record>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/record.rs:100:9: replace <impl TryFrom<&[u8]> for Record>::try_from -> Result<Self, Self::Error> with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/record.rs:111:9: replace <impl crate::variant::Record for Record>::reference_sequence_name -> io::Result<&'a str> with Ok("") in 0s build + 2s test
+MISSED   src/record.rs:111:9: replace <impl crate::variant::Record for Record>::reference_sequence_name -> io::Result<&'a str> with Ok("xyzzy") in 0s build + 2s test
+MISSED   src/record.rs:115:9: replace <impl crate::variant::Record for Record>::variant_start -> Option<io::Result<Position>> with None in 0s build + 2s test
+MISSED   src/record.rs:131:9: replace <impl crate::variant::Record for Record>::quality_score -> Option<io::Result<f32>> with None in 0s build + 2s test
+MISSED   src/record.rs:131:9: replace <impl crate::variant::Record for Record>::quality_score -> Option<io::Result<f32>> with Some(Ok(0.0)) in 0s build + 2s test
+MISSED   src/record.rs:131:9: replace <impl crate::variant::Record for Record>::quality_score -> Option<io::Result<f32>> with Some(Ok(1.0)) in 0s build + 2s test
+MISSED   src/record.rs:131:9: replace <impl crate::variant::Record for Record>::quality_score -> Option<io::Result<f32>> with Some(Ok(-1.0)) in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:18:9: replace <impl fmt::Debug for AlternateBases<'_>>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:24:9: replace <impl AsRef<str> for AlternateBases<'_>>::as_ref -> &str with "" in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:24:9: replace <impl AsRef<str> for AlternateBases<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:30:9: replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:30:9: replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:34:9: replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::len -> usize with 0 in 0s build + 2s test
+MISSED   src/record/alternate_bases.rs:34:9: replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::len -> usize with 1 in 0s build + 2s test
+MISSED   src/record/fields.rs:20:9: replace Fields::reference_sequence_name -> &str with "" in 0s build + 2s test
+MISSED   src/record/fields.rs:20:9: replace Fields::reference_sequence_name -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/fields.rs:24:9: replace Fields::variant_start -> Option<io::Result<Position>> with None in 0s build + 2s test
+MISSED   src/record/fields.rs:49:9: replace Fields::reference_bases -> &str with "" in 0s build + 2s test
+MISSED   src/record/fields.rs:49:9: replace Fields::reference_bases -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/fields.rs:62:9: replace Fields::quality_score -> Option<io::Result<f32>> with None in 0s build + 2s test
+MISSED   src/record/fields.rs:62:9: replace Fields::quality_score -> Option<io::Result<f32>> with Some(Ok(0.0)) in 0s build + 2s test
+MISSED   src/record/fields.rs:62:9: replace Fields::quality_score -> Option<io::Result<f32>> with Some(Ok(1.0)) in 0s build + 2s test
+MISSED   src/record/fields.rs:62:9: replace Fields::quality_score -> Option<io::Result<f32>> with Some(Ok(-1.0)) in 0s build + 2s test
+MISSED   src/record/fields.rs:97:28: replace == with != in Fields::samples in 0s build + 2s test
+MISSED   src/record/fields.rs:101:27: replace || with && in Fields::samples in 0s build + 2s test
+MISSED   src/record/filters.rs:17:9: replace <impl AsRef<str> for Filters<'_>>::as_ref -> &str with "" in 0s build + 2s test
+MISSED   src/record/filters.rs:17:9: replace <impl AsRef<str> for Filters<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/filters.rs:23:9: replace <impl crate::variant::record::Filters for Filters<'_>>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/filters.rs:23:9: replace <impl crate::variant::record::Filters for Filters<'_>>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/filters.rs:27:9: replace <impl crate::variant::record::Filters for Filters<'_>>::len -> usize with 0 in 0s build + 2s test
+MISSED   src/record/filters.rs:27:9: replace <impl crate::variant::record::Filters for Filters<'_>>::len -> usize with 1 in 0s build + 2s test
+MISSED   src/record/ids.rs:15:9: replace <impl AsRef<str> for Ids<'_>>::as_ref -> &str with "" in 0s build + 2s test
+MISSED   src/record/ids.rs:15:9: replace <impl AsRef<str> for Ids<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/ids.rs:21:9: replace <impl crate::variant::record::Ids for Ids<'_>>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/ids.rs:21:9: replace <impl crate::variant::record::Ids for Ids<'_>>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/ids.rs:25:9: replace <impl crate::variant::record::Ids for Ids<'_>>::len -> usize with 0 in 0s build + 2s test
+MISSED   src/record/ids.rs:25:9: replace <impl crate::variant::record::Ids for Ids<'_>>::len -> usize with 1 in 0s build + 2s test
+MISSED   src/record/info.rs:23:9: replace Info<'r>::get -> Option<io::Result<Option<Value<'r>>>> with None in 0s build + 2s test
+MISSED   src/record/info.rs:23:9: replace Info<'r>::get -> Option<io::Result<Option<Value<'r>>>> with Some(Ok(None)) in 0s build + 2s test
+MISSED   src/record/info.rs:26:26: replace == with != in Info<'r>::get in 0s build + 2s test
+MISSED   src/record/info.rs:42:9: replace Info<'r>::iter -> impl Iterator<Item = io::Result<(&'r str, Option<Value<'r>>)>>+'r with ::std::iter::empty() in 1s build + 2s test
+MISSED   src/record/info.rs:42:9: replace Info<'r>::iter -> impl Iterator<Item = io::Result<(&'r str, Option<Value<'r>>)>>+'r with ::std::iter::once(Ok(("", None))) in 1s build + 2s test
+MISSED   src/record/info.rs:42:9: replace Info<'r>::iter -> impl Iterator<Item = io::Result<(&'r str, Option<Value<'r>>)>>+'r with ::std::iter::once(Ok(("xyzzy", None))) in 0s build + 2s test
+MISSED   src/record/info.rs:56:9: replace <impl AsRef<str> for Info<'_>>::as_ref -> &str with "" in 1s build + 2s test
+MISSED   src/record/info.rs:56:9: replace <impl AsRef<str> for Info<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/info.rs:62:9: replace <impl crate::variant::record::Info for Info<'_>>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/info.rs:62:9: replace <impl crate::variant::record::Info for Info<'_>>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/info.rs:66:9: replace <impl crate::variant::record::Info for Info<'_>>::len -> usize with 0 in 0s build + 2s test
+MISSED   src/record/info.rs:66:9: replace <impl crate::variant::record::Info for Info<'_>>::len -> usize with 1 in 0s build + 2s test
+MISSED   src/record/info.rs:75:33: replace == with != in <impl crate::variant::record::Info for Info<'_>>::len in 0s build + 2s test
+MISSED   src/record/info.rs:78:15: replace + with - in <impl crate::variant::record::Info for Info<'_>>::len in 0s build + 2s test
+MISSED   src/record/info.rs:78:15: replace + with * in <impl crate::variant::record::Info for Info<'_>>::len in 0s build + 2s test
+MISSED   src/record/info.rs:87:9: replace <impl crate::variant::record::Info for Info<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with None in 0s build + 2s test
+MISSED   src/record/info.rs:87:9: replace <impl crate::variant::record::Info for Info<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(None)) in 0s build + 2s test
+MISSED   src/record/samples.rs:25:9: replace Samples<'r>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/samples.rs:25:9: replace Samples<'r>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/samples.rs:36:9: replace Samples<'r>::get -> Option<Sample<'r>> with None in 0s build + 2s test
+MISSED   src/record/samples.rs:44:9: replace Samples<'r>::get_index -> Option<Sample<'r>> with None in 0s build + 2s test
+MISSED   src/record/samples.rs:49:9: replace Samples<'r>::select -> Option<Series<'r>> with None in 1s build + 2s test
+MISSED   src/record/samples.rs:52:35: replace == with != in Samples<'r>::select in 1s build + 2s test
+MISSED   src/record/samples.rs:58:9: replace Samples<'r>::series -> impl Iterator<Item = Series<'r>>+'r with ::std::iter::empty() in 0s build + 2s test
+MISSED   src/record/samples.rs:66:9: replace Samples<'r>::iter -> impl Iterator<Item = Sample<'r>>+'_ with ::std::iter::empty() in 1s build + 2s test
+MISSED   src/record/samples.rs:80:9: replace <impl AsRef<str> for Samples<'_>>::as_ref -> &str with "" in 1s build + 2s test
+MISSED   src/record/samples.rs:80:9: replace <impl AsRef<str> for Samples<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/samples.rs:86:9: replace <impl crate::variant::record::Samples for Samples<'_>>::is_empty -> bool with true in 0s build + 2s test
+MISSED   src/record/samples.rs:86:9: replace <impl crate::variant::record::Samples for Samples<'_>>::is_empty -> bool with false in 0s build + 2s test
+MISSED   src/record/samples.rs:90:9: replace <impl crate::variant::record::Samples for Samples<'_>>::len -> usize with 0 in 0s build + 2s test
+MISSED   src/record/samples.rs:90:9: replace <impl crate::variant::record::Samples for Samples<'_>>::len -> usize with 1 in 0s build + 2s test
+MISSED   src/record/samples.rs:105:9: replace <impl crate::variant::record::Samples for Samples<'_>>::select -> Option<io::Result<Box<dyn crate::variant::record::samples::Series +'a>>> with None in 0s build + 2s test
+MISSED   src/record/samples.rs:136:59: replace == with != in parse_sample in 0s build + 2s test
+MISSED   src/record/samples.rs:149:12: replace == with != in parse_sample in 0s build + 2s test
+MISSED   src/io/reader/builder.rs:28:9: replace Builder::set_compression_method -> Self with Default::default() in 0s build + 2s test
+MISSED   src/io/reader/builder.rs:52:17: delete match arm Some("gz" | "bgz") in Builder::build_from_path in 0s build + 2s test
+MISSED   src/io/reader/header.rs:29:9: replace <impl Read for Reader<R>>::read -> io::Result<usize> with Ok(0) in 0s build + 2s test
+MISSED   src/io/reader/header.rs:29:9: replace <impl Read for Reader<R>>::read -> io::Result<usize> with Ok(1) in 0s build + 2s test
+MISSED   src/io/reader/header.rs:32:12: delete ! in <impl Read for Reader<R>>::read in 1s build + 2s test
+MISSED   src/io/reader/query.rs:49:9: replace <impl Iterator for Query<'_, '_, R>>::next -> Option<Self::Item> with None in 1s build + 2s test
+MISSED   src/io/reader/query.rs:69:5: replace intersects -> io::Result<bool> with Ok(true) in 0s build + 2s test
+MISSED   src/io/reader/query.rs:69:5: replace intersects -> io::Result<bool> with Ok(false) in 0s build + 2s test
+MISSED   src/io/reader/query.rs:78:51: replace && with || in intersects in 0s build + 2s test
+MISSED   src/io/reader/query.rs:78:24: replace == with != in intersects in 0s build + 2s test
+MISSED   src/io/reader/query.rs:91:5: replace next_record -> io::Result<usize> with Ok(0) in 1s build + 2s test
+MISSED   src/io/reader/query.rs:91:5: replace next_record -> io::Result<usize> with Ok(1) in 0s build + 2s test
+TIMEOUT  src/io/reader/record.rs:13:5: replace read_record -> io::Result<usize> with Ok(1) in 0s build + 60s test
+MISSED   src/io/reader/record.rs:22:9: replace += with -= in read_record in 3s build + 8s test
+MISSED   src/io/reader/record.rs:22:9: replace += with *= in read_record in 2s build + 9s test
+MISSED   src/io/reader/record.rs:25:9: replace += with -= in read_record in 1s build + 5s test
+MISSED   src/io/reader/record.rs:25:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:28:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:28:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:31:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:31:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:34:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:34:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:37:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:37:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:40:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:40:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:44:9: replace += with -= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:44:9: replace += with *= in read_record in 0s build + 2s test
+MISSED   src/io/reader/record.rs:48:13: replace += with *= in read_record in 0s build + 2s test
+TIMEOUT  src/io/reader/record.rs:58:5: replace read_required_field -> io::Result<usize> with Ok(1) in 0s build + 60s test
+MISSED   src/io/reader/record.rs:71:5: replace read_last_required_field -> io::Result<(usize, bool)> with Ok((0, false)) in 0s build + 2s test
+TIMEOUT  src/io/reader/record.rs:71:5: replace read_last_required_field -> io::Result<(usize, bool)> with Ok((1, false)) in 0s build + 60s test
+TIMEOUT  src/io/reader/record.rs:78:5: replace read_field -> io::Result<(usize, bool)> with Ok((1, false)) in 0s build + 60s test
+MISSED   src/io/reader/record.rs:109:13: replace += with *= in read_field in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:50:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:65:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:83:5: replace parse_record_buf -> Result<(), ParseError> with Ok(()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf.rs:91:14: replace != with == in parse_record_buf in 1s build + 2s test
+MISSED   src/io/reader/record_buf.rs:101:14: replace != with == in parse_record_buf in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:108:9: delete match arm MISSING in parse_record_buf in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:116:9: delete match arm MISSING in parse_record_buf in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:122:14: replace != with == in parse_record_buf in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:132:5: replace next_field -> &'a str with "" in 0s build + 2s test
+MISSED   src/io/reader/record_buf.rs:132:5: replace next_field -> &'a str with "xyzzy" in 0s build + 2s test
+MISSED   src/io/reader/record_bufs.rs:35:9: replace <impl Iterator for RecordBufs<'_, '_, R>>::next -> Option<Self::Item> with None in 0s build + 2s test
+MISSED   src/record/info/field.rs:12:5: replace parse_field -> io::Result<(&'a str, Option<Value<'a>>)> with Ok(("", None)) in 1s build + 2s test
+MISSED   src/record/info/field.rs:12:5: replace parse_field -> io::Result<(&'a str, Option<Value<'a>>)> with Ok(("xyzzy", None)) in 0s build + 2s test
+MISSED   src/record/info/field.rs:43:29: replace && with || in parse_field in 1s build + 2s test
+MISSED   src/record/info/field.rs:52:17: replace match guard ty == Type::Flag with true in parse_field in 0s build + 2s test
+MISSED   src/record/info/field.rs:52:17: replace match guard ty == Type::Flag with false in parse_field in 0s build + 2s test
+MISSED   src/record/info/field.rs:52:20: replace == with != in parse_field in 0s build + 2s test
+MISSED   src/record/samples/keys.rs:14:9: replace Keys<'a>::iter -> impl Iterator<Item =&'a str>+'a with ::std::iter::empty() in 1s build + 2s test
+MISSED   src/record/samples/keys.rs:14:9: replace Keys<'a>::iter -> impl Iterator<Item =&'a str>+'a with ::std::iter::once("") in 1s build + 2s test
+MISSED   src/record/samples/keys.rs:14:9: replace Keys<'a>::iter -> impl Iterator<Item =&'a str>+'a with ::std::iter::once("xyzzy") in 0s build + 2s test
+MISSED   src/record/samples/keys.rs:27:5: replace parse_key -> &'a str with "" in 1s build + 2s test
+MISSED   src/record/samples/keys.rs:27:5: replace parse_key -> &'a str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:24:9: replace Sample<'s>::get_index -> Option<Option<io::Result<Value<'s>>>> with None in 1s build + 2s test
+MISSED   src/record/samples/sample.rs:24:9: replace Sample<'s>::get_index -> Option<Option<io::Result<Value<'s>>>> with Some(None) in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:32:9: replace Sample<'s>::values -> impl Iterator<Item = Option<io::Result<Value<'s>>>>+'_ with ::std::iter::empty() in 1s build + 2s test
+MISSED   src/record/samples/sample.rs:32:9: replace Sample<'s>::values -> impl Iterator<Item = Option<io::Result<Value<'s>>>>+'_ with ::std::iter::once(None) in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:58:9: replace <impl AsRef<str> for Sample<'_>>::as_ref -> &str with "" in 1s build + 2s test
+MISSED   src/record/samples/sample.rs:58:9: replace <impl AsRef<str> for Sample<'_>>::as_ref -> &str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:68:9: replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with None in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:68:9: replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(None)) in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:71:26: replace == with != in <impl crate::variant::record::samples::Sample for Sample<'_>>::get in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:87:9: replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get_index -> Option<io::Result<Option<Value<'a>>>> with None in 0s build + 2s test
+MISSED   src/record/samples/sample.rs:87:9: replace <impl crate::variant::record::samples::Sample for Sample<'_>>::get_index -> Option<io::Result<Option<Value<'a>>>> with Some(Ok(None)) in 0s build + 2s test
+MISSED   src/record/samples/series.rs:25:9: replace <impl crate::variant::record::samples::Series for Series<'_>>::name -> io::Result<&'a str> with Ok("") in 0s build + 2s test
+MISSED   src/record/samples/series.rs:25:9: replace <impl crate::variant::record::samples::Series for Series<'_>>::name -> io::Result<&'a str> with Ok("xyzzy") in 0s build + 2s test
+MISSED   src/record/samples/series.rs:33:9: replace <impl crate::variant::record::samples::Series for Series<'_>>::get -> Option<Option<io::Result<Value<'a>>>> with None in 1s build + 2s test
+MISSED   src/record/samples/series.rs:33:9: replace <impl crate::variant::record::samples::Series for Series<'_>>::get -> Option<Option<io::Result<Value<'a>>>> with Some(None) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/alternate_bases.rs:16:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/alternate_bases.rs:26:5: replace parse_alternate_bases -> Result<(), ParseError> with Ok(()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/filters.rs:18:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/filters.rs:26:5: replace parse_filters -> Result<(), ParseError> with Ok(()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/filters.rs:31:17: replace == with != in parse_filters in 0s build + 2s test
+MISSED   src/io/reader/record_buf/filters.rs:40:12: delete ! in parse_filters in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids.rs:21:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids.rs:22:13: delete match arm Self::InvalidId(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids.rs:30:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids.rs:39:5: replace parse_ids -> Result<(), ParseError> with Ok(()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/info.rs:21:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 1s build + 2s test
+MISSED   src/io/reader/record_buf/info.rs:22:13: delete match arm Self::InvalidField(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info.rs:30:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info.rs:47:5: replace parse_info -> Result<(), ParseError> with Ok(()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:16:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 1s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:25:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:35:13: delete match arm num::IntErrorKind::Empty in <impl From<num::ParseIntError> for ParseError>::from in 0s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:42:5: replace parse_position -> Result<Option<Position>, ParseError> with Ok(None) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:45:9: delete match arm "" in parse_position in 0s build + 2s test
+MISSED   src/io/reader/record_buf/position.rs:46:9: delete match arm TELOMERE_START in parse_position in 0s build + 2s test
+MISSED   src/io/reader/record_buf/quality_score.rs:14:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/quality_score.rs:23:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/quality_score.rs:31:5: replace parse_quality_score -> Result<f32, ParseError> with Ok(0.0) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/quality_score.rs:31:5: replace parse_quality_score -> Result<f32, ParseError> with Ok(1.0) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/quality_score.rs:31:5: replace parse_quality_score -> Result<f32, ParseError> with Ok(-1.0) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/reference_bases.rs:14:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/reference_bases.rs:24:5: replace parse_reference_bases -> Result<(), ParseError> with Ok(()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/reference_sequence_name.rs:2:5: replace parse_reference_sequence_name with () in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples.rs:25:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples.rs:35:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples.rs:48:5: replace parse_samples -> Result<(), ParseError> with Ok(()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/samples.rs:52:21: replace == with != in parse_samples in 1s build + 2s test
+MISSED   src/io/reader/record_buf/value.rs:6:5: replace percent_decode -> Result<Cow<'_, str>, str::Utf8Error> with Ok(Cow::Borrowed("")) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/value.rs:6:5: replace percent_decode -> Result<Cow<'_, str>, str::Utf8Error> with Ok(Cow::Owned("".to_owned())) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/value.rs:6:5: replace percent_decode -> Result<Cow<'_, str>, str::Utf8Error> with Ok(Cow::Borrowed("xyzzy")) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/value.rs:6:5: replace percent_decode -> Result<Cow<'_, str>, str::Utf8Error> with Ok(Cow::Owned("xyzzy".to_owned())) in 0s build + 2s test
+MISSED   src/record/samples/series/value.rs:22:5: replace parse_value -> io::Result<Option<Value<'a>>> with Ok(None) in 1s build + 2s test
+MISSED   src/record/samples/series/value.rs:26:12: replace == with != in parse_value in 1s build + 2s test
+MISSED   src/record/samples/series/value.rs:28:19: replace == with != in parse_value in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids/id.rs:14:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids/id.rs:21:5: replace parse_id -> Result<&str, ParseError> with Ok("") in 0s build + 2s test
+MISSED   src/io/reader/record_buf/ids/id.rs:21:5: replace parse_id -> Result<&str, ParseError> with Ok("xyzzy") in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:25:9: replace ParseError::key -> Option<&str> with None in 1s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:25:9: replace ParseError::key -> Option<&str> with Some("") in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:25:9: replace ParseError::key -> Option<&str> with Some("xyzzy") in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:34:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:35:13: delete match arm Self::InvalidValue(_, e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:43:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:51:5: replace parse_field -> Result<(String, Option<Value>), ParseError> with Ok((String::new(), None)) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:51:5: replace parse_field -> Result<(String, Option<Value>), ParseError> with Ok(("xyzzy".into(), None)) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field.rs:78:17: delete match arm MISSING in parse_field in 1s build + 2s test
+MISSED   src/io/reader/record_buf/samples/keys.rs:18:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/keys.rs:26:5: replace parse_keys -> Result<(), ParseError> with Ok(()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/keys.rs:30:17: replace == with != in parse_keys in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:30:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:31:13: delete match arm Self::InvalidValue(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:39:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:53:5: replace parse_values -> Result<(), ParseError> with Ok(()) in 1s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:59:17: replace == with != in parse_values in 1s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:67:13: delete match arm MISSING in parse_values in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values.rs:69:24: replace == with != in parse_values in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:44:21: replace == with != in parse_first_allele in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:66:5: replace next_allele -> &'a str with "" in 1s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:66:5: replace next_allele -> &'a str with "xyzzy" in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:67:35: replace + with - in next_allele in 1s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:67:35: replace + with * in next_allele in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:77:5: replace is_phasing_indicator -> bool with true in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:77:5: replace is_phasing_indicator -> bool with false in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:88:9: delete match arm PHASED in parse_phasing in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:89:9: delete match arm UNPHASED in parse_phasing in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:98:5: replace parse_position -> io::Result<Option<usize>> with Ok(None) in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:98:5: replace parse_position -> io::Result<Option<usize>> with Ok(Some(0)) in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:98:5: replace parse_position -> io::Result<Option<usize>> with Ok(Some(1)) in 0s build + 2s test
+MISSED   src/record/samples/series/value/genotype.rs:101:9: delete match arm MISSING in parse_position in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:31:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:32:13: delete match arm Self::InvalidInteger(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:33:13: delete match arm Self::InvalidFloat(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:34:13: delete match arm Self::InvalidString(e) in <impl error::Error for ParseError>::source in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:42:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:81:13: delete match arm MISSING in parse_i32_array in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:97:13: delete match arm MISSING in parse_f32_array in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:113:5: replace parse_raw_char -> Result<char, ParseError> with Ok(Default::default()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:131:13: delete match arm MISSING in parse_char_array in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:139:5: replace parse_raw_string -> Result<String, ParseError> with Ok(String::new()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:139:5: replace parse_raw_string -> Result<String, ParseError> with Ok("xyzzy".into()) in 0s build + 2s test
+MISSED   src/io/reader/record_buf/info/field/value.rs:151:13: delete match arm MISSING in parse_string_array in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:34:9: replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None in 0s build + 2s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:35:13: delete match arm Self::InvalidInteger(e) in <impl error::Error for ParseError>::source in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:36:13: delete match arm Self::InvalidFloat(e) in <impl error::Error for ParseError>::source in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:37:13: delete match arm Self::InvalidString(e) in <impl error::Error for ParseError>::source in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:38:13: delete match arm Self::InvalidGenotype(e) in <impl error::Error for ParseError>::source in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:46:9: replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default()) in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:88:13: delete match arm MISSING in parse_i32_array in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:104:13: delete match arm MISSING in parse_f32_array in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:112:5: replace parse_raw_char -> Result<char, ParseError> with Ok(Default::default()) in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:130:13: delete match arm MISSING in parse_char_array in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:138:5: replace parse_raw_string -> Result<String, ParseError> with Ok(String::new()) in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:138:5: replace parse_raw_string -> Result<String, ParseError> with Ok("xyzzy".into()) in 0s build + 1s test
+MISSED   src/io/reader/record_buf/samples/values/value.rs:150:13: delete match arm MISSING in parse_string_array in 0s build + 1s test
+483 mutants tested in 21m: 271 missed, 24 caught, 184 unviable, 4 timeouts

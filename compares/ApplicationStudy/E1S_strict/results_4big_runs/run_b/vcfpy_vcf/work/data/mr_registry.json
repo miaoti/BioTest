@@ -1,0 +1,113 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "permute_ALT_and_remap_GT",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "The semantics of the record are preserved: all allele indices in GT fields are remapped to match the permuted ALT order, and INFO/FORMAT fields with Number=A or Number=R are reordered accordingly.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Header line syntax::p1",
+          "quote": "The header line syntax defines meta-information lines.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "shuffle_meta_lines_preserves_semantics",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "The order of meta-information lines (## lines) does not affect the semantics of the VCF file; all records parse identically.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Header line syntax::p1",
+          "quote": "Meta-information lines are unordered.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "permute_sample_columns_preserves_genotypes",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "The set of genotype values per sample is preserved; only the column ordering changes.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Header line syntax::p1",
+          "quote": "Sample columns in the header define the order of genotype fields.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "vcf_bcf_roundtrip_preserves_records",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "All records are preserved after conversion from VCF to BCF and back to VCF.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Header line syntax::p1",
+          "quote": "BCF is a binary representation of VCF.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "sut_write_roundtrip_preserves_content",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Writing and re-reading a VCF file produces identical records.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Header line syntax::p1",
+          "quote": "VCF files can be read and written without loss of information.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
+  }
+}

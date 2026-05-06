@@ -1,0 +1,730 @@
+[harness_run/E1S] mode = E1S
+[harness_run/E1S] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E1S] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E1S] pre-import patch: engine.build_system_prompt: stub (minimal — no spec/chromadb/precondition hints)
+[harness_run/E1S] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E1S] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E1S] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E1S] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E1S] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E1S] config: compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\run_2\biotest_config.rep2.yaml
+[harness_run/E1S] phase_filter: D,E
+21:03:47 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: htsjdk (drives evolution)
+  Format context: VCF (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 47 query methods on primary htsjdk for Rank 5
+  Mining VCF / ordering_invariance...
+21:03:50 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:03:50 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+21:04:20 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:04:20 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+21:04:20 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:04:20 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+21:04:20 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:04:20 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+21:04:53 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:04:53 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+21:04:53 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:04:53 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+21:04:53 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:04:53 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+21:05:35 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[2].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT', 'permute_Number_A_R_fields'] but missing ['choose_permutation', 'remap_GT'
+21:05:35 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:06:42 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:06:42 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+21:06:42 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:06:42 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+21:06:42 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:06:42 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+21:07:20 [INFO] mr_engine.dsl.compiler: Compiled 6 MRs successfully
+21:07:20 [INFO] mr_engine.agent.engine: Successfully compiled 6 MRs on attempt 1
+    OK mined 6 MR(s) for VCF/rejection_invariance
+  Mining VCF / coordinate_indexing_invariance...
+21:07:20 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:07:20 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+21:07:53 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:07:53 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+21:07:53 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:07:53 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+21:07:53 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:07:53 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+21:08:38 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[2].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the syst
+21:08:38 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:09:15 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:09:15 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+21:09:15 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:09:15 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+21:09:15 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+21:09:15 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+21:10:11 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[5].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+21:10:11 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+21:10:48 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+21:10:48 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+21:10:48 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+21:10:48 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+21:10:48 [INFO] mr_engine.registry: Triage result: 0 enforced, 6 quarantine
+21:10:48 [INFO] mr_engine.registry: Merged 6 new MRs into C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\data\mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+21:10:50 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+21:10:51 [INFO] test_engine.generators.seeds: Seed corpus loaded: 320 VCF seeds, 74 SAM seeds
+21:10:51 [INFO] test_engine.generators.seeds: Seed corpus loaded: 320 VCF seeds, 74 SAM seeds
+21:10:51 [INFO] test_engine.orchestrator: Loaded 6 MRs from registry (enforced=0, quarantine=6)
+21:10:51 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+21:10:51 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+21:10:51 [INFO] test_engine.orchestrator: Testing MR 0258c3e904f0 (fileformat_violation_preserves_rejection) -- scope=VCF.header, transforms=['violate_fileformat_first_line']
+21:10:51 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+21:11:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d359924ea6842efe.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:11:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d359924ea6842efe.vcf (seed=34609) — majority crash rejected, this parser voted accept
+21:11:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_31bc37e7a2f50c59.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:12:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_31bc37e7a2f50c59.vcf (seed=242) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+21:12:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:12:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=3806557301) — majority crash rejected, this parser voted accept
+21:12:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_65c1ab000b78b0ab.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:12:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_65c1ab000b78b0ab.vcf (seed=4100708497) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr1>
+  warnings.warn(
+21:13:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3893b27042603545.vcf (seed=20326) — majority crash rejected, this parser voted accept
+21:13:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6a7e34677f606557.vcf (seed=180) — majority crash rejected, this parser voted accept
+21:13:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d9ed4390f8ca654b.vcf (seed=22474) — majority crash rejected, this parser voted accept
+21:13:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_86a2014984255ee5.vcf (seed=10) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT YY not found using String/'.' instead
+  warnings.warn(
+21:13:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ede99abbf652f7f8.vcf (seed=924119091) — majority crash rejected, this parser voted accept
+21:13:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_cd7401b6fa017519.vcf (seed=55586) — majority crash rejected, this parser voted accept
+21:14:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e2c39ac173db5c8d.vcf (seed=2601) — majority crash rejected, this parser voted accept
+21:14:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_5c7b21f4c0ac9332.vcf (seed=1181774809) — majority crash rejected, this parser voted accept
+21:14:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_5c7b21f4c0ac9332.vcf (seed=228) — majority crash rejected, this parser voted accept
+21:14:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4280f3187e509d05.vcf (seed=3359837660) — majority crash rejected, this parser voted accept
+21:14:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202151) — majority crash rejected, this parser voted accept
+21:14:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_25c3093c14af6f58.vcf (seed=3300587070) — majority crash rejected, this parser voted accept
+21:14:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_ae9c344a732c5478.vcf (seed=2515674930) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+21:14:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_315a1fed156ec8be.vcf (seed=3511291897) — majority crash rejected, this parser voted accept
+21:15:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a319b6c1e92bc908.vcf (seed=24904) — majority crash rejected, this parser voted accept
+21:15:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3e62818fd070d7af.vcf (seed=51045) — majority crash rejected, this parser voted accept
+21:15:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f77b140fd0b99fa.vcf (seed=13685) — majority crash rejected, this parser voted accept
+21:16:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_4280f3187e509d05.vcf (seed=3725719307) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+21:16:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=203) — majority crash rejected, this parser voted accept
+21:16:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9871b79e9a000c9b.vcf (seed=2474432950) — majority crash rejected, this parser voted accept
+21:17:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e7e02640d04ffc84.vcf (seed=163) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+21:17:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6a7e34677f606557.vcf (seed=3114857999) — majority crash rejected, this parser voted accept
+21:17:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_5abd2f38b2bd5333.vcf (seed=100) — majority crash rejected, this parser voted accept
+21:17:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_795306f3788acd7b.vcf (seed=40292) — majority crash rejected, this parser voted accept
+21:17:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_57567b1dd5e1066d.vcf (seed=57835) — majority crash rejected, this parser voted accept
+21:17:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_6a7e34677f606557.vcf (seed=4156129530) — majority crash rejected, this parser voted accept
+21:18:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7715e1cbf444e3b3.vcf (seed=45959) — majority crash rejected, this parser voted accept
+21:18:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_39ae1082170352cf.vcf (seed=20323) — majority crash rejected, this parser voted accept
+21:18:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202152) — majority crash rejected, this parser voted accept
+21:18:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202154) — majority crash rejected, this parser voted accept
+21:18:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202157) — majority crash rejected, this parser voted accept
+21:18:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202161) — majority crash rejected, this parser voted accept
+21:18:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202166) — majority crash rejected, this parser voted accept
+21:18:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202176) — majority crash rejected, this parser voted accept
+21:18:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202196) — majority crash rejected, this parser voted accept
+21:18:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202236) — majority crash rejected, this parser voted accept
+21:19:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202316) — majority crash rejected, this parser voted accept
+21:19:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202476) — majority crash rejected, this parser voted accept
+21:19:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596202796) — majority crash rejected, this parser voted accept
+21:19:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596203436) — majority crash rejected, this parser voted accept
+21:19:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596204716) — majority crash rejected, this parser voted accept
+21:19:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596207276) — majority crash rejected, this parser voted accept
+21:19:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596212396) — majority crash rejected, this parser voted accept
+21:19:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596222636) — majority crash rejected, this parser voted accept
+21:19:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596243116) — majority crash rejected, this parser voted accept
+21:19:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596284076) — majority crash rejected, this parser voted accept
+21:19:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596365996) — majority crash rejected, this parser voted accept
+21:19:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596529836) — majority crash rejected, this parser voted accept
+21:19:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=596857516) — majority crash rejected, this parser voted accept
+21:20:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=597512876) — majority crash rejected, this parser voted accept
+21:20:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=598495916) — majority crash rejected, this parser voted accept
+21:20:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=599519916) — majority crash rejected, this parser voted accept
+21:20:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=600564396) — majority crash rejected, this parser voted accept
+21:20:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=601611436) — majority crash rejected, this parser voted accept
+21:20:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=602659756) — majority crash rejected, this parser voted accept
+21:20:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=603708236) — majority crash rejected, this parser voted accept
+21:20:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=604756796) — majority crash rejected, this parser voted accept
+21:20:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=605805366) — majority crash rejected, this parser voted accept
+21:20:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=606853941) — majority crash rejected, this parser voted accept
+21:20:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902517) — majority crash rejected, this parser voted accept
+21:20:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902516) — majority crash rejected, this parser voted accept
+21:21:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902514) — majority crash rejected, this parser voted accept
+21:21:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902511) — majority crash rejected, this parser voted accept
+21:21:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902507) — majority crash rejected, this parser voted accept
+21:21:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902502) — majority crash rejected, this parser voted accept
+21:21:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902492) — majority crash rejected, this parser voted accept
+21:21:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902472) — majority crash rejected, this parser voted accept
+21:21:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902432) — majority crash rejected, this parser voted accept
+21:21:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902352) — majority crash rejected, this parser voted accept
+21:21:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607902192) — majority crash rejected, this parser voted accept
+21:21:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607901872) — majority crash rejected, this parser voted accept
+21:21:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607901232) — majority crash rejected, this parser voted accept
+21:21:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607899952) — majority crash rejected, this parser voted accept
+21:22:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607897392) — majority crash rejected, this parser voted accept
+21:22:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607892272) — majority crash rejected, this parser voted accept
+21:22:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607882032) — majority crash rejected, this parser voted accept
+21:22:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607861552) — majority crash rejected, this parser voted accept
+21:22:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607820592) — majority crash rejected, this parser voted accept
+21:22:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607738672) — majority crash rejected, this parser voted accept
+21:22:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607574832) — majority crash rejected, this parser voted accept
+21:22:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=607247152) — majority crash rejected, this parser voted accept
+21:22:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=606591792) — majority crash rejected, this parser voted accept
+21:22:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=605608752) — majority crash rejected, this parser voted accept
+21:22:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=604584752) — majority crash rejected, this parser voted accept
+21:22:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=603540272) — majority crash rejected, this parser voted accept
+21:23:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=602493232) — majority crash rejected, this parser voted accept
+21:23:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=601444912) — majority crash rejected, this parser voted accept
+21:23:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=600396432) — majority crash rejected, this parser voted accept
+21:23:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=599347872) — majority crash rejected, this parser voted accept
+21:23:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=598299302) — majority crash rejected, this parser voted accept
+21:23:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f20f01381987124.vcf (seed=597250727) — majority crash rejected, this parser voted accept
+21:23:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0f43d985742961d9.vcf (seed=596202151) — majority crash rejected, this parser voted accept
+21:23:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=204) — majority crash rejected, this parser voted accept
+21:23:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=206) — majority crash rejected, this parser voted accept
+21:24:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=209) — majority crash rejected, this parser voted accept
+21:24:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=213) — majority crash rejected, this parser voted accept
+21:24:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=218) — majority crash rejected, this parser voted accept
+21:24:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=228) — majority crash rejected, this parser voted accept
+21:24:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=248) — majority crash rejected, this parser voted accept
+21:24:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=288) — majority crash rejected, this parser voted accept
+21:25:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=368) — majority crash rejected, this parser voted accept
+21:25:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=528) — majority crash rejected, this parser voted accept
+21:25:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=848) — majority crash rejected, this parser voted accept
+21:25:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a7fad08bf0b52948.vcf (seed=1488) — majority crash rejected, this parser voted accept
+21:25:29 [INFO] test_engine.orchestrator:   MR 0258c3e904f0: Hypothesis explored 156 examples — no failures
+21:25:29 [INFO] test_engine.orchestrator: Testing MR 752c1e307098 (gt_index_bounds_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_gt_index_bounds']
+21:25:29 [INFO] test_engine.orchestrator:   MR 752c1e307098: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+21:27:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:28:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=18453) — majority crash rejected, this parser voted accept
+21:30:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:31:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=16566) — majority crash rejected, this parser voted accept
+21:32:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_2062d5dcf5cc5a58.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:32:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_2062d5dcf5cc5a58.vcf (seed=38212) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr3>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=3>
+  warnings.warn(
+21:33:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9480ac4099f24676.vcf (seed=4294967295) — majority crash rejected, this parser voted accept
+21:33:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_82b914362e340b79.vcf (seed=23354) — majority crash rejected, this parser voted accept
+21:34:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fc592753428e369e.vcf (seed=105) — majority crash rejected, this parser voted accept
+21:34:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_45d28fe67595d930.vcf (seed=39291) — majority crash rejected, this parser voted accept
+21:35:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_82b914362e340b79.vcf (seed=185965085) — majority crash rejected, this parser voted accept
+21:35:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=128) — majority crash rejected, this parser voted accept
+21:35:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7b0d5c3de84c95a9.vcf (seed=19245) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<Type=String,Number=.,ID=HOMSEQ>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<Number=.,ID=CNL,Type=Integer>
+  warnings.warn(
+21:36:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=1) — majority crash rejected, this parser voted accept
+21:36:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=3) — majority crash rejected, this parser voted accept
+21:36:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=6) — majority crash rejected, this parser voted accept
+21:36:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=10) — majority crash rejected, this parser voted accept
+21:36:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=15) — majority crash rejected, this parser voted accept
+21:36:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=25) — majority crash rejected, this parser voted accept
+21:36:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=45) — majority crash rejected, this parser voted accept
+21:36:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=85) — majority crash rejected, this parser voted accept
+21:36:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=165) — majority crash rejected, this parser voted accept
+21:36:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=325) — majority crash rejected, this parser voted accept
+21:37:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=645) — majority crash rejected, this parser voted accept
+21:37:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=1285) — majority crash rejected, this parser voted accept
+21:37:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=2565) — majority crash rejected, this parser voted accept
+21:37:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=5125) — majority crash rejected, this parser voted accept
+21:37:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=10245) — majority crash rejected, this parser voted accept
+21:37:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=20485) — majority crash rejected, this parser voted accept
+21:37:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=40965) — majority crash rejected, this parser voted accept
+21:37:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=81925) — majority crash rejected, this parser voted accept
+21:37:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=163845) — majority crash rejected, this parser voted accept
+21:37:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=327685) — majority crash rejected, this parser voted accept
+21:37:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=655365) — majority crash rejected, this parser voted accept
+21:37:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+21:37:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+21:37:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+21:38:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+21:38:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+21:38:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+21:38:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+21:38:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+21:38:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+21:38:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+21:38:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+21:38:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+21:38:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+21:38:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+21:38:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+21:38:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+21:38:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+21:39:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+21:39:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+21:39:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+21:39:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+21:39:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+21:39:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+21:39:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11697801) — majority crash rejected, this parser voted accept
+21:39:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11695241) — majority crash rejected, this parser voted accept
+21:39:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11690121) — majority crash rejected, this parser voted accept
+21:39:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11679881) — majority crash rejected, this parser voted accept
+21:39:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11659401) — majority crash rejected, this parser voted accept
+21:39:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11618441) — majority crash rejected, this parser voted accept
+21:39:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11536521) — majority crash rejected, this parser voted accept
+21:39:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11372681) — majority crash rejected, this parser voted accept
+21:40:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=11045001) — majority crash rejected, this parser voted accept
+21:40:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=10389641) — majority crash rejected, this parser voted accept
+21:40:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=9406601) — majority crash rejected, this parser voted accept
+21:40:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=8382601) — majority crash rejected, this parser voted accept
+21:40:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=7338121) — majority crash rejected, this parser voted accept
+21:40:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=6291081) — majority crash rejected, this parser voted accept
+21:40:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=5242761) — majority crash rejected, this parser voted accept
+21:40:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=4194281) — majority crash rejected, this parser voted accept
+21:40:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=3145721) — majority crash rejected, this parser voted accept
+21:40:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=2097151) — majority crash rejected, this parser voted accept
+21:40:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_05317c3e57c40529.vcf (seed=1048576) — majority crash rejected, this parser voted accept
+21:43:52 [INFO] test_engine.orchestrator:   MR 752c1e307098: Hypothesis explored 156 examples — no failures
+21:43:52 [INFO] test_engine.orchestrator: Testing MR 963423e1bf3c (info_number_a_cardinality_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_info_number_a_cardinality']
+21:43:52 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+21:44:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_71318c129fccc6af.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:44:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_71318c129fccc6af.vcf (seed=121) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT XX not found using String/'.' instead
+  warnings.warn(
+21:49:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25066) — majority crash rejected, this parser voted accept
+21:49:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bd9bd4824292b847.vcf (seed=503) — majority crash rejected, this parser voted accept
+21:49:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d21a822193e4c57b.vcf (seed=1965863246) — majority crash rejected, this parser voted accept
+21:49:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_e37e00c6e64d015a.vcf (seed=21753) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO SOR not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO FractionInformativeReads not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO R2_5P_bias not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT AF not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GL not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GP not found using Float/'G' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT PRI not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT SB not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT MB not found using String/'.' instead
+  warnings.warn(
+21:49:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25067) — majority crash rejected, this parser voted accept
+21:49:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25069) — majority crash rejected, this parser voted accept
+21:49:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25072) — majority crash rejected, this parser voted accept
+21:49:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25076) — majority crash rejected, this parser voted accept
+21:50:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25081) — majority crash rejected, this parser voted accept
+21:50:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25091) — majority crash rejected, this parser voted accept
+21:50:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25111) — majority crash rejected, this parser voted accept
+21:50:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25151) — majority crash rejected, this parser voted accept
+21:50:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25231) — majority crash rejected, this parser voted accept
+21:50:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25391) — majority crash rejected, this parser voted accept
+21:50:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=25711) — majority crash rejected, this parser voted accept
+21:50:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=26351) — majority crash rejected, this parser voted accept
+21:50:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=27631) — majority crash rejected, this parser voted accept
+21:50:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=30191) — majority crash rejected, this parser voted accept
+21:50:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=35311) — majority crash rejected, this parser voted accept
+21:50:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=45551) — majority crash rejected, this parser voted accept
+21:50:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=66031) — majority crash rejected, this parser voted accept
+21:51:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=106991) — majority crash rejected, this parser voted accept
+21:51:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=188911) — majority crash rejected, this parser voted accept
+21:51:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=352751) — majority crash rejected, this parser voted accept
+21:51:15 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=680431) — majority crash rejected, this parser voted accept
+21:51:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=1335791) — majority crash rejected, this parser voted accept
+21:51:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=2318831) — majority crash rejected, this parser voted accept
+21:51:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=3342831) — majority crash rejected, this parser voted accept
+21:51:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=4387311) — majority crash rejected, this parser voted accept
+21:51:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=5434351) — majority crash rejected, this parser voted accept
+21:51:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=6482671) — majority crash rejected, this parser voted accept
+21:51:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=7531151) — majority crash rejected, this parser voted accept
+21:51:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=8579711) — majority crash rejected, this parser voted accept
+21:51:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=9628281) — majority crash rejected, this parser voted accept
+21:52:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=10676856) — majority crash rejected, this parser voted accept
+21:52:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725432) — majority crash rejected, this parser voted accept
+21:52:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725431) — majority crash rejected, this parser voted accept
+21:52:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725429) — majority crash rejected, this parser voted accept
+21:52:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725426) — majority crash rejected, this parser voted accept
+21:52:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725422) — majority crash rejected, this parser voted accept
+21:52:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725417) — majority crash rejected, this parser voted accept
+21:52:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725407) — majority crash rejected, this parser voted accept
+21:52:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725387) — majority crash rejected, this parser voted accept
+21:52:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725347) — majority crash rejected, this parser voted accept
+21:52:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725267) — majority crash rejected, this parser voted accept
+21:53:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11725107) — majority crash rejected, this parser voted accept
+21:53:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11724787) — majority crash rejected, this parser voted accept
+21:53:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11724147) — majority crash rejected, this parser voted accept
+21:53:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11722867) — majority crash rejected, this parser voted accept
+21:53:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11720307) — majority crash rejected, this parser voted accept
+21:53:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11715187) — majority crash rejected, this parser voted accept
+21:53:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11704947) — majority crash rejected, this parser voted accept
+21:53:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11684467) — majority crash rejected, this parser voted accept
+21:53:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11643507) — majority crash rejected, this parser voted accept
+21:53:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11561587) — majority crash rejected, this parser voted accept
+21:53:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11397747) — majority crash rejected, this parser voted accept
+21:53:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=11070067) — majority crash rejected, this parser voted accept
+21:54:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=10414707) — majority crash rejected, this parser voted accept
+21:54:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=9431667) — majority crash rejected, this parser voted accept
+21:54:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=8407667) — majority crash rejected, this parser voted accept
+21:54:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=7363187) — majority crash rejected, this parser voted accept
+21:54:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=6316147) — majority crash rejected, this parser voted accept
+21:54:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=5267827) — majority crash rejected, this parser voted accept
+21:54:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=4219347) — majority crash rejected, this parser voted accept
+21:54:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=3170787) — majority crash rejected, this parser voted accept
+21:54:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=2122217) — majority crash rejected, this parser voted accept
+21:54:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=1073642) — majority crash rejected, this parser voted accept
+21:55:54 [INFO] test_engine.orchestrator:   MR 963423e1bf3c: Hypothesis explored 156 examples — no failures
+21:55:54 [INFO] test_engine.orchestrator: Testing MR 978e560983f8 (required_fixed_columns_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_required_fixed_columns']
+21:55:54 [INFO] test_engine.orchestrator:   MR 978e560983f8: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+21:56:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a319b6c1e92bc908.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:56:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a319b6c1e92bc908.vcf (seed=255) — majority crash rejected, this parser voted accept
+21:56:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_124cd539a82ea0c9.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:56:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_124cd539a82ea0c9.vcf (seed=1035754327) — majority crash rejected, this parser voted accept
+21:57:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_76dfa65112b4430d.vcf (seed=0) — majority crash rejected, this parser voted accept
+21:57:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_76dfa65112b4430d.vcf (seed=147) — majority crash rejected, this parser voted accept
+21:57:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d41332466cd98b5b.vcf (seed=69711342) — majority crash rejected, this parser voted accept
+21:58:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_csq.vcf (seed=2097966427) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr2>
+  warnings.warn(
+21:58:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_8462dbe575db4dd5.vcf (seed=595160767) — majority crash rejected, this parser voted accept
+21:58:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=251) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+21:59:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_7a9c8d89577063dd.vcf (seed=196) — majority crash rejected, this parser voted accept
+21:59:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_f6fadda401a87b74.vcf (seed=61052) — majority crash rejected, this parser voted accept
+22:00:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_124cd539a82ea0c9.vcf (seed=122721344) — majority crash rejected, this parser voted accept
+22:00:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_8462dbe575db4dd5.vcf (seed=49442) — majority crash rejected, this parser voted accept
+22:00:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_84fbbea648d13534.vcf (seed=40261) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:515: UnknownFilter: Filter not found in header: q25; problem in FILTER column
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: INFO AF not found using Float/'A' instead
+  warnings.warn(
+22:00:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_64636cf205618521.vcf (seed=12264) — majority crash rejected, this parser voted accept
+22:01:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fc44aa8184d64f72.vcf (seed=61240) — majority crash rejected, this parser voted accept
+22:01:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e4a291f6dfe5375.vcf (seed=104) — majority crash rejected, this parser voted accept
+22:01:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fc44aa8184d64f72.vcf (seed=247626133) — majority crash rejected, this parser voted accept
+22:01:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_117e689c3e6ae6d6.vcf (seed=36700) — majority crash rejected, this parser voted accept
+22:02:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=252) — majority crash rejected, this parser voted accept
+22:02:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=254) — majority crash rejected, this parser voted accept
+22:02:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=257) — majority crash rejected, this parser voted accept
+22:02:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=261) — majority crash rejected, this parser voted accept
+22:02:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=266) — majority crash rejected, this parser voted accept
+22:02:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=276) — majority crash rejected, this parser voted accept
+22:02:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=296) — majority crash rejected, this parser voted accept
+22:02:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=336) — majority crash rejected, this parser voted accept
+22:02:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=416) — majority crash rejected, this parser voted accept
+22:02:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=576) — majority crash rejected, this parser voted accept
+22:02:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=896) — majority crash rejected, this parser voted accept
+22:03:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=1536) — majority crash rejected, this parser voted accept
+22:03:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=2816) — majority crash rejected, this parser voted accept
+22:03:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=5376) — majority crash rejected, this parser voted accept
+22:03:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=10496) — majority crash rejected, this parser voted accept
+22:03:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=20736) — majority crash rejected, this parser voted accept
+22:03:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=41216) — majority crash rejected, this parser voted accept
+22:03:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=82176) — majority crash rejected, this parser voted accept
+22:03:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=164096) — majority crash rejected, this parser voted accept
+22:03:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=327936) — majority crash rejected, this parser voted accept
+22:03:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=655616) — majority crash rejected, this parser voted accept
+22:03:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=1310976) — majority crash rejected, this parser voted accept
+22:03:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=2294016) — majority crash rejected, this parser voted accept
+22:03:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=3318016) — majority crash rejected, this parser voted accept
+22:04:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=4362496) — majority crash rejected, this parser voted accept
+22:04:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=5409536) — majority crash rejected, this parser voted accept
+22:04:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=6457856) — majority crash rejected, this parser voted accept
+22:04:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=7506336) — majority crash rejected, this parser voted accept
+22:04:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=8554896) — majority crash rejected, this parser voted accept
+22:04:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=9603466) — majority crash rejected, this parser voted accept
+22:04:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=10652041) — majority crash rejected, this parser voted accept
+22:04:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700617) — majority crash rejected, this parser voted accept
+22:04:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700616) — majority crash rejected, this parser voted accept
+22:04:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700614) — majority crash rejected, this parser voted accept
+22:04:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700611) — majority crash rejected, this parser voted accept
+22:04:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700607) — majority crash rejected, this parser voted accept
+22:04:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700602) — majority crash rejected, this parser voted accept
+22:04:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700592) — majority crash rejected, this parser voted accept
+22:04:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700572) — majority crash rejected, this parser voted accept
+22:05:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700532) — majority crash rejected, this parser voted accept
+22:05:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700452) — majority crash rejected, this parser voted accept
+22:05:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11700292) — majority crash rejected, this parser voted accept
+22:05:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11699972) — majority crash rejected, this parser voted accept
+22:05:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11699332) — majority crash rejected, this parser voted accept
+22:05:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11698052) — majority crash rejected, this parser voted accept
+22:05:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11695492) — majority crash rejected, this parser voted accept
+22:05:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11690372) — majority crash rejected, this parser voted accept
+22:05:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11680132) — majority crash rejected, this parser voted accept
+22:05:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11659652) — majority crash rejected, this parser voted accept
+22:05:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11618692) — majority crash rejected, this parser voted accept
+22:05:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11536772) — majority crash rejected, this parser voted accept
+22:05:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11372932) — majority crash rejected, this parser voted accept
+22:05:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=11045252) — majority crash rejected, this parser voted accept
+22:05:58 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=10389892) — majority crash rejected, this parser voted accept
+22:06:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=9406852) — majority crash rejected, this parser voted accept
+22:06:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=8382852) — majority crash rejected, this parser voted accept
+22:06:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=7338372) — majority crash rejected, this parser voted accept
+22:06:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=6291332) — majority crash rejected, this parser voted accept
+22:06:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=5243012) — majority crash rejected, this parser voted accept
+22:06:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=4194532) — majority crash rejected, this parser voted accept
+22:06:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=3145972) — majority crash rejected, this parser voted accept
+22:06:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=2097402) — majority crash rejected, this parser voted accept
+22:06:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_041a10acd0c76459.vcf (seed=1048827) — majority crash rejected, this parser voted accept
+22:06:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_047b9b5266cbad6b.vcf (seed=251) — majority crash rejected, this parser voted accept
+22:06:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_0689484fafc18999.vcf (seed=251) — majority crash rejected, this parser voted accept
+22:06:43 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=251) — majority crash rejected, this parser voted accept
+22:07:52 [INFO] test_engine.orchestrator:   MR 978e560983f8: Hypothesis explored 156 examples — no failures
+22:07:52 [INFO] test_engine.orchestrator: Testing MR bfb59d3fa9b1 (compound_violation_preserves_rejection) -- scope=VCF.record, transforms=['violate_gt_index_bounds', 'violate_info_number_a_cardinality']
+22:07:52 [INFO] test_engine.orchestrator:   MR bfb59d3fa9b1: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+22:08:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d21a822193e4c57b.vcf (seed=0) — majority crash rejected, this parser voted accept
+22:08:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d21a822193e4c57b.vcf (seed=25143) — majority crash rejected, this parser voted accept
+22:09:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_3e62818fd070d7af.vcf (seed=2000) — majority crash rejected, this parser voted accept
+22:10:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=0) — majority crash rejected, this parser voted accept
+22:10:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_9480ac4099f24676.vcf (seed=4294967294) — majority crash rejected, this parser voted accept
+22:11:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_bf3282b96326afc3.vcf (seed=34619) — majority crash rejected, this parser voted accept
+22:11:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_418a0f764ececf0c.vcf (seed=4160826040) — majority crash rejected, this parser voted accept
+22:11:39 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=33218) — majority crash rejected, this parser voted accept
+22:13:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_278699f571a822ee.vcf (seed=711913642) — majority crash rejected, this parser voted accept
+22:13:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=1) — majority crash rejected, this parser voted accept
+22:13:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=3) — majority crash rejected, this parser voted accept
+22:13:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=6) — majority crash rejected, this parser voted accept
+22:13:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=10) — majority crash rejected, this parser voted accept
+22:13:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=15) — majority crash rejected, this parser voted accept
+22:13:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=25) — majority crash rejected, this parser voted accept
+22:13:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=45) — majority crash rejected, this parser voted accept
+22:13:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=85) — majority crash rejected, this parser voted accept
+22:13:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=165) — majority crash rejected, this parser voted accept
+22:13:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=325) — majority crash rejected, this parser voted accept
+22:13:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=645) — majority crash rejected, this parser voted accept
+22:14:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=1285) — majority crash rejected, this parser voted accept
+22:14:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=2565) — majority crash rejected, this parser voted accept
+22:14:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=5125) — majority crash rejected, this parser voted accept
+22:14:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=10245) — majority crash rejected, this parser voted accept
+22:14:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=20485) — majority crash rejected, this parser voted accept
+22:14:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=40965) — majority crash rejected, this parser voted accept
+22:14:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=81925) — majority crash rejected, this parser voted accept
+22:14:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=163845) — majority crash rejected, this parser voted accept
+22:14:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=327685) — majority crash rejected, this parser voted accept
+22:14:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=655365) — majority crash rejected, this parser voted accept
+22:14:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=1310725) — majority crash rejected, this parser voted accept
+22:14:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=2293765) — majority crash rejected, this parser voted accept
+22:14:56 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=3317765) — majority crash rejected, this parser voted accept
+22:15:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=4362245) — majority crash rejected, this parser voted accept
+22:15:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=5409285) — majority crash rejected, this parser voted accept
+22:15:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=6457605) — majority crash rejected, this parser voted accept
+22:15:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=7506085) — majority crash rejected, this parser voted accept
+22:15:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=8554645) — majority crash rejected, this parser voted accept
+22:15:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=9603215) — majority crash rejected, this parser voted accept
+22:15:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=10651790) — majority crash rejected, this parser voted accept
+22:15:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700366) — majority crash rejected, this parser voted accept
+22:15:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700365) — majority crash rejected, this parser voted accept
+22:15:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700363) — majority crash rejected, this parser voted accept
+22:15:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700360) — majority crash rejected, this parser voted accept
+22:15:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700356) — majority crash rejected, this parser voted accept
+22:15:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700351) — majority crash rejected, this parser voted accept
+22:15:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700341) — majority crash rejected, this parser voted accept
+22:15:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700321) — majority crash rejected, this parser voted accept
+22:16:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700281) — majority crash rejected, this parser voted accept
+22:16:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700201) — majority crash rejected, this parser voted accept
+22:16:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11700041) — majority crash rejected, this parser voted accept
+22:16:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11699721) — majority crash rejected, this parser voted accept
+22:16:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11699081) — majority crash rejected, this parser voted accept
+22:16:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11697801) — majority crash rejected, this parser voted accept
+22:16:26 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11695241) — majority crash rejected, this parser voted accept
+22:16:30 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11690121) — majority crash rejected, this parser voted accept
+22:16:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11679881) — majority crash rejected, this parser voted accept
+22:16:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11659401) — majority crash rejected, this parser voted accept
+22:16:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11618441) — majority crash rejected, this parser voted accept
+22:16:45 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11536521) — majority crash rejected, this parser voted accept
+22:16:49 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11372681) — majority crash rejected, this parser voted accept
+22:16:53 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=11045001) — majority crash rejected, this parser voted accept
+22:16:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=10389641) — majority crash rejected, this parser voted accept
+22:17:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=9406601) — majority crash rejected, this parser voted accept
+22:17:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=8382601) — majority crash rejected, this parser voted accept
+22:17:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=7338121) — majority crash rejected, this parser voted accept
+22:17:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=6291081) — majority crash rejected, this parser voted accept
+22:17:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=5242761) — majority crash rejected, this parser voted accept
+22:17:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=4194281) — majority crash rejected, this parser voted accept
+22:17:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=3145721) — majority crash rejected, this parser voted accept
+22:17:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=2097151) — majority crash rejected, this parser voted accept
+22:17:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20c75c9fd3343748.vcf (seed=1048576) — majority crash rejected, this parser voted accept
+22:17:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_20f2013406725b80.vcf (seed=0) — majority crash rejected, this parser voted accept
+22:18:36 [INFO] test_engine.orchestrator:   MR bfb59d3fa9b1: Hypothesis explored 156 examples — no failures
+22:18:36 [INFO] test_engine.orchestrator: Testing MR dbbc473d5f9b (header_and_record_violation_preserves_rejection) -- scope=VCF.header, transforms=['violate_fileformat_first_line', 'violate_required_fixed_columns']
+22:18:36 [INFO] test_engine.orchestrator:   MR dbbc473d5f9b: scaled max_examples 50 -> 156 (VCF corpus=320, baseline=33)
+22:19:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_fc592753428e369e.vcf (seed=31183) — majority crash rejected, this parser voted accept
+22:20:11 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_htsjdk_ex2.vcf (seed=35991) — majority crash rejected, this parser voted accept
+22:20:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on real_world_bcftools_ad_bias.vcf (seed=40666529) — majority crash rejected, this parser voted accept
+22:20:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_a319b6c1e92bc908.vcf (seed=2473) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=chr4>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:515: UnknownFilter: Filter not found in header: q16; problem in FILTER column
+  warnings.warn(
+22:20:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=113) — majority crash rejected, this parser voted accept
+22:21:21 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_1e4a291f6dfe5375.vcf (seed=749384595) — majority crash rejected, this parser voted accept
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:515: UnknownFilter: Filter not found in header: HighDepth; problem in FILTER column
+  warnings.warn(
+22:22:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_124cd539a82ea0c9.vcf (seed=0) — majority crash rejected, this parser voted accept
+22:22:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_d4f4a0c9fa445cbf.vcf (seed=140) — majority crash rejected, this parser voted accept
+22:22:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_84fbbea648d13534.vcf (seed=1802396480) — majority crash rejected, this parser voted accept
+22:23:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on kept_08436c5c61629a22.vcf (seed=1672134) — majority crash rejected, this parser voted accept
+22:23:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=114) — majority crash rejected, this parser voted accept
+22:23:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=116) — majority crash rejected, this parser voted accept
+22:23:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=119) — majority crash rejected, this parser voted accept
+22:23:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=123) — majority crash rejected, this parser voted accept
+22:23:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=128) — majority crash rejected, this parser voted accept
+22:23:48 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=138) — majority crash rejected, this parser voted accept
+22:23:52 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=158) — majority crash rejected, this parser voted accept
+22:23:55 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=198) — majority crash rejected, this parser voted accept
+22:23:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=278) — majority crash rejected, this parser voted accept
+22:24:03 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=438) — majority crash rejected, this parser voted accept
+22:24:06 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=758) — majority crash rejected, this parser voted accept
+22:24:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1398) — majority crash rejected, this parser voted accept
+22:24:13 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=2678) — majority crash rejected, this parser voted accept
+22:24:17 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=5238) — majority crash rejected, this parser voted accept
+22:24:20 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10358) — majority crash rejected, this parser voted accept
+22:24:24 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=20598) — majority crash rejected, this parser voted accept
+22:24:28 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=41078) — majority crash rejected, this parser voted accept
+22:24:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=82038) — majority crash rejected, this parser voted accept
+22:24:35 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=163958) — majority crash rejected, this parser voted accept
+22:24:38 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=327798) — majority crash rejected, this parser voted accept
+22:24:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=655478) — majority crash rejected, this parser voted accept
+22:24:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1310838) — majority crash rejected, this parser voted accept
+22:24:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=2293878) — majority crash rejected, this parser voted accept
+22:24:51 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=3317878) — majority crash rejected, this parser voted accept
+22:24:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=4362358) — majority crash rejected, this parser voted accept
+22:24:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=5409398) — majority crash rejected, this parser voted accept
+22:25:01 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=6457718) — majority crash rejected, this parser voted accept
+22:25:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=7506198) — majority crash rejected, this parser voted accept
+22:25:08 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=8554758) — majority crash rejected, this parser voted accept
+22:25:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=9603328) — majority crash rejected, this parser voted accept
+22:25:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10651903) — majority crash rejected, this parser voted accept
+22:25:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700479) — majority crash rejected, this parser voted accept
+22:25:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700478) — majority crash rejected, this parser voted accept
+22:25:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700476) — majority crash rejected, this parser voted accept
+22:25:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700473) — majority crash rejected, this parser voted accept
+22:25:34 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700469) — majority crash rejected, this parser voted accept
+22:25:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700464) — majority crash rejected, this parser voted accept
+22:25:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700454) — majority crash rejected, this parser voted accept
+22:25:44 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700434) — majority crash rejected, this parser voted accept
+22:25:47 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700394) — majority crash rejected, this parser voted accept
+22:25:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700314) — majority crash rejected, this parser voted accept
+22:25:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11700154) — majority crash rejected, this parser voted accept
+22:25:57 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11699834) — majority crash rejected, this parser voted accept
+22:26:00 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11699194) — majority crash rejected, this parser voted accept
+22:26:04 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11697914) — majority crash rejected, this parser voted accept
+22:26:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11695354) — majority crash rejected, this parser voted accept
+22:26:10 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11690234) — majority crash rejected, this parser voted accept
+22:26:14 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11679994) — majority crash rejected, this parser voted accept
+22:26:18 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11659514) — majority crash rejected, this parser voted accept
+22:26:22 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11618554) — majority crash rejected, this parser voted accept
+22:26:25 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11536634) — majority crash rejected, this parser voted accept
+22:26:29 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11372794) — majority crash rejected, this parser voted accept
+22:26:33 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=11045114) — majority crash rejected, this parser voted accept
+22:26:37 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=10389754) — majority crash rejected, this parser voted accept
+22:26:42 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=9406714) — majority crash rejected, this parser voted accept
+22:26:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=8382714) — majority crash rejected, this parser voted accept
+22:26:50 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=7338234) — majority crash rejected, this parser voted accept
+22:26:54 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=6291194) — majority crash rejected, this parser voted accept
+22:26:59 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=5242874) — majority crash rejected, this parser voted accept
+22:27:02 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=4194394) — majority crash rejected, this parser voted accept
+22:27:07 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=3145834) — majority crash rejected, this parser voted accept
+22:27:12 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=2097264) — majority crash rejected, this parser voted accept
+22:27:16 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on htsjdk_ex2.vcf (seed=1048689) — majority crash rejected, this parser voted accept
+22:29:02 [INFO] test_engine.orchestrator:   MR dbbc473d5f9b: Hypothesis explored 156 examples — no failures
+22:29:02 [INFO] test_engine.orchestrator: Test suite complete: 3744 tests, 489 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.1306
+22:29:02 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 193, 'skipped_duplicate': 382, 'skipped_ast_dup': 208, 'pool_size': {'vcf': 460, 'sam': 0}, 'canonical_buckets': {'vcf': 460, 'sam': 0}}
+22:29:02 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\data\det_report.json
+22:29:02 [WARNING] biotest: Coverage-guided cull skipped: primary target 'htsjdk' has no per-file measurer (Python SUTs only in MVP)
+22:29:02 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+    C: OK (3744 tests, 0 bugs)
+22:29:05 [INFO] test_engine.feedback.coverage_collector: Generated JaCoCo XML report: compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\coverage_artifacts\jacoco\jacoco.xml
+    Coverage: 1 SUT(s) collected -> htsjdk=0.0% (0/3760 lines)
+22:29:05 [INFO] test_engine.feedback.scc_tracker: SCC report exported to compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\data\scc_report.json (0.0%)
+    SCC: 0.0% (0/316 rules)
+22:29:05 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.0%, coverage=0.0%, enforced=0, demoted=0
+22:29:05 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+22:30:23 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 78.2s
+22:30:23 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (0 cooling down).
+22:30:23 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1297', 'VCFv4.5.tex::BCF specification::p1301', 'VCFv4.5.tex::Overall file organization::p1396', 'VCFv4.5.tex::Header::p1400', 'VCFv4.5.tex::BCF specification::p1292']
+22:30:23 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1297', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1301', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Overall file organization::p1396', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Header::p1400', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1292', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+  Stopping: timeout (87min >= 60min)
+  Phase D: OK  (86m 36s)
+22:30:23 [INFO] structural_diversifier: structural_diversifier result: {'sources': 53, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_b\\htsjdk_vcf\\work\\seeds\\vcf_struct', 'sut_validate': None}
+22:30:23 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\seeds\vcf_struct
+22:30:24 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 53, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 530, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 520, 'rejected_size': 10, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_b\\htsjdk_vcf\\work\\seeds\\vcf_rawfuzz'}
+22:30:24 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\seeds\vcf_rawfuzz
+22:30:24 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_b\\htsjdk_vcf\\work\\seeds\\sam_struct', 'sut_validate': None}
+22:30:24 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\seeds\sam_struct
+22:30:24 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': 'compares\\ApplicationStudy\\E1S_strict\\results_4big_runs\\run_b\\htsjdk_vcf\\work\\seeds\\sam_rawfuzz'}
+22:30:24 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in compares\ApplicationStudy\E1S_strict\results_4big_runs\run_b\htsjdk_vcf\work\seeds\sam_rawfuzz
+  Phase E: OK  (1.2s, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                              │
+│ C: Execute   │   PASS   │        0ms │ 0 tests, 0 bugs found                │
+│ D: Feedback  │   PASS   │    86m 36s │ 1 iter, SCC=0.0%, stop: timeout      │
+│              │          │            │ (87min >= 60min)                     │
+│ E: Augment   │   PASS   │       1.2s │ +0 corpus files (VCF: 0 struct + 0   │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)  │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+  Total Pipeline Duration:  86m 38s
+
+┌────────────────────────── Phase D: Feedback Loop ───────────────────────────┐
+│ SCC Progression: 0.0%                                                       │
+│ Final SCC: 0.0%                                                             │
+│ Termination: timeout (87min >= 60min)                                       │
+│ MRs Quarantined: 0                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────── Code Coverage ───────────────────────────────┐
+│ Primary SUT: htsjdk (Java)                                                  │
+│ Coverage Progression: 0.0%                                                  │
+│ Final Coverage: 0.0% (0/3760 format-scoped lines)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ALL CLEAR — No bugs detected across all parsers.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

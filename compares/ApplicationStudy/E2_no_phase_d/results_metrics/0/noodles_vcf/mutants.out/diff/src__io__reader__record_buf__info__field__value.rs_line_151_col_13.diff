@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ delete match arm MISSING in parse_string_array
+@@ -143,17 +143,17 @@
+ 
+ fn parse_string(s: &str) -> Result<Value, ParseError> {
+     parse_raw_string(s).map(Value::String)
+ }
+ 
+ fn parse_string_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)
+         .map(|t| match t {
+-            MISSING => Ok(None),
++             /* ~ changed by cargo-mutants ~ */
+             _ => parse_raw_string(t).map(Some),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::String(values)))
+ }
+ 
+ #[cfg(test)]
+ mod tests {

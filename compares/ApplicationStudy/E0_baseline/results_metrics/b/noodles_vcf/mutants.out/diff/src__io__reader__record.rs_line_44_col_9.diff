@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace += with -= in read_record
+@@ -36,17 +36,17 @@
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.quality_score_end = buf.len();
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.filters_end = buf.len();
+ 
+     let (n, is_eol) = read_last_required_field(reader, buf)?;
+-    len += n;
++    len -= /* ~ changed by cargo-mutants ~ */ n;
+     bounds.info_end = buf.len();
+ 
+     if !is_eol {
+         len += read_line(reader, buf)?;
+     }
+ 
+     Ok(len)
+ }

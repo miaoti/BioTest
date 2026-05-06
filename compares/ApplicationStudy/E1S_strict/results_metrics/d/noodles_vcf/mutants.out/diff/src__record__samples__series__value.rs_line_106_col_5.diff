@@ -1,0 +1,21 @@
+--- src/record/samples/series/value.rs
++++ replace parse_character_array_value -> Value<'_> with Default::default()
+@@ -98,17 +98,17 @@
+     Value::Array(Array::Integer(Box::new(src)))
+ }
+ 
+ fn parse_float_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::Float(Box::new(src)))
+ }
+ 
+ fn parse_character_array_value(src: &str) -> Value<'_> {
+-    Value::Array(Array::Character(Box::new(src)))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string_array_value(src: &str) -> Value<'_> {
+     Value::Array(Array::String(Box::new(src)))
+ }
+ 
+ #[cfg(test)]
+ mod tests {

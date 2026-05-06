@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::fields_mut -> &mut Fields with Box::leak(Box::new(Default::default()))
+@@ -23,17 +23,17 @@
+ 
+ impl Record {
+     #[cfg(test)]
+     pub(crate) fn fields(&self) -> &Fields {
+         &self.0
+     }
+ 
+     pub(crate) fn fields_mut(&mut self) -> &mut Fields {
+-        &mut self.0
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the reference sequence name.
+     pub fn reference_sequence_name(&self) -> &str {
+         self.0.reference_sequence_name()
+     }
+ 
+     /// Returns the variant start position.

@@ -52,7 +52,7 @@ import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,11 @@ class CorpusKeeper:
     _kept_this_session: int = 0
     _skipped_duplicate: int = 0
     _skipped_ast_dup: int = 0
+    # Coverage-guided culling support (Rank 8b, 2026-04-30): track the
+    # files kept since the last `reset_iteration_tracking()` so the
+    # post-Phase-C culler can measure each one's per-file coverage and
+    # delete those that didn't add new lines vs the prior corpus.
+    _kept_paths_this_iteration: list[Path] = field(default_factory=list, repr=False)
 
     def __post_init__(self) -> None:
         if not self.enabled:
@@ -211,6 +216,7 @@ class CorpusKeeper:
             if canonical_json_hash:
                 self._seen_canonical[fmt_l].add(canonical_json_hash)
             self._kept_this_session += 1
+            self._kept_paths_this_iteration.append(dest)
             self._append_manifest(fmt_dir, {
                 "sha": sha8,
                 "path": dest.name,
@@ -221,6 +227,155 @@ class CorpusKeeper:
                 "canonical_hash": canonical_json_hash,
             })
             return KeepDecision(kept=True, path=dest, dedup_hash=sha8, reason="new")
+
+    # ----- coverage-guided culling (Rank 8b, 2026-04-30) -------------------
+
+    def reset_iteration_tracking(self) -> None:
+        """Forget the per-iteration kept-file list.
+
+        Call at the start of each Phase D iteration so
+        ``cull_by_coverage`` only sees this iteration's additions, not
+        cumulative since process start.
+        """
+        with self._lock:
+            self._kept_paths_this_iteration = []
+
+    def get_kept_this_iteration(self) -> list[Path]:
+        """Snapshot of files kept since the last reset (for tests/diagnostics)."""
+        with self._lock:
+            return list(self._kept_paths_this_iteration)
+
+    def cull_by_coverage(
+        self,
+        measure_lines: Callable[[Path], frozenset[tuple[str, int]]],
+        baseline_lines: Optional[frozenset[tuple[str, int]]] = None,
+        log_decisions: bool = True,
+    ) -> dict:
+        """Delete kept files that didn't add new coverage lines.
+
+        For each file kept since the last ``reset_iteration_tracking()``:
+          1. call ``measure_lines(path)`` to get the (file, line) tuples
+             the primary SUT executed when parsing it;
+          2. compute ``new = lines - accumulated``;
+          3. if ``new`` is empty, ``unlink`` the file from disk and
+             remove it from the keeper's dedup state;
+          4. otherwise, fold ``new`` into ``accumulated`` and keep it.
+
+        Why this is the "Zest-style filter" the README hints at: the
+        plain ``maybe_keep`` retains a file whenever **at least one
+        runner accepted** it, which keeps a lot of byte-distinct
+        derivatives that hit the same code paths as their parents. This
+        method retroactively removes those duplicates by replaying each
+        kept file through the primary SUT under coverage tracking and
+        only retaining files that contribute at least one previously-
+        unseen line.
+
+        Args:
+            measure_lines: Callback that runs the primary SUT on a single
+                file and returns a frozenset of (source_file, line_number)
+                tuples. The frozenset shape lets tests inject mock
+                coverage easily; production callers build it via
+                ``test_engine.feedback.coverage_culler``.
+            baseline_lines: Optional coverage that already existed
+                BEFORE this iteration's kept-file additions (e.g. from
+                the curated + previously-kept corpus). Files that only
+                cover a subset of this set are culled. ``None`` =
+                empty — order-dependent culling within the iteration's
+                additions only.
+            log_decisions: emit one ``logger.info`` per file with the
+                kept/culled outcome. Off when called from tight test
+                loops that don't want log noise.
+
+        Returns:
+            ``{"total": int, "kept": int, "culled": int,
+              "baseline_size": int, "final_size": int}``.
+
+        Thread-safety: snapshots the kept-list under the keeper's lock,
+        then releases it for the (potentially slow) ``measure_lines``
+        calls. State mutations after that re-acquire the lock.
+        """
+        with self._lock:
+            paths = list(self._kept_paths_this_iteration)
+            self._kept_paths_this_iteration = []
+
+        accum: set[tuple[str, int]] = (
+            set(baseline_lines) if baseline_lines is not None else set()
+        )
+        baseline_size = len(accum)
+        kept: list[Path] = []
+        culled: list[Path] = []
+
+        for p in paths:
+            if not p.exists():
+                # Already gone (e.g. FIFO eviction during the iteration).
+                continue
+            try:
+                hit = measure_lines(p)
+            except Exception as e:
+                # Defensive: a measurement failure must NOT delete a
+                # file. Keep it and log; the next iteration may succeed.
+                logger.warning(
+                    "cull_by_coverage: measure_lines failed for %s "
+                    "(%s); keeping the file",
+                    p.name, e,
+                )
+                kept.append(p)
+                continue
+
+            new = hit - accum
+            if not new:
+                # No new coverage — cull.
+                self._delete_kept_file(p)
+                culled.append(p)
+                if log_decisions:
+                    logger.info(
+                        "cull_by_coverage: deleted %s "
+                        "(0 new lines vs accumulated=%d)",
+                        p.name, len(accum),
+                    )
+            else:
+                accum |= new
+                kept.append(p)
+                if log_decisions:
+                    logger.info(
+                        "cull_by_coverage: kept %s "
+                        "(+%d lines; accumulated=%d)",
+                        p.name, len(new), len(accum),
+                    )
+
+        return {
+            "total": len(paths),
+            "kept": len(kept),
+            "culled": len(culled),
+            "baseline_size": baseline_size,
+            "final_size": len(accum),
+        }
+
+    def _delete_kept_file(self, path: Path) -> None:
+        """Remove a kept file from disk AND from the dedup state.
+
+        Order is deliberate: drop the dedup hash UNDER the lock FIRST,
+        then ``unlink`` outside the lock. The opposite order would open
+        a TOCTOU window where the file is gone but the byte-hash is
+        still present, so a concurrent ``maybe_keep`` of identical
+        bytes would skip writing thinking the dup was already on disk.
+
+        Best-effort — a missing file or stale state must not raise. The
+        canonical-hash set is NOT touched: we kept the file because its
+        canonical AST was novel; the byte-distinct dedup is what we
+        invalidate so a future identical bytes input can be re-tried.
+        """
+        fmt_l = path.parent.name  # "vcf" or "sam" by directory layout
+        sha8: Optional[str] = None
+        if path.stem.startswith(_FILENAME_PREFIX):
+            sha8 = path.stem[len(_FILENAME_PREFIX):]
+        if sha8 is not None:
+            with self._lock:
+                self._seen_hashes.get(fmt_l, set()).discard(sha8)
+        try:
+            path.unlink()
+        except OSError:
+            pass
 
     # ----- introspection ---------------------------------------------------
 

@@ -1,0 +1,21 @@
+--- src/record.rs
++++ replace Record::info -> Info<'_> with Default::default()
+@@ -63,17 +63,17 @@
+ 
+     /// Returns the filters.
+     pub fn filters(&self) -> Filters<'_> {
+         self.0.filters()
+     }
+ 
+     /// Returns the info.
+     pub fn info(&self) -> Info<'_> {
+-        self.0.info()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the samples.
+     pub fn samples(&self) -> Samples<'_> {
+         self.0.samples()
+     }
+ }
+ 

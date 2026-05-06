@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace == with != in <impl crate::variant::record::Info for Info<'_>>::len
+@@ -67,17 +67,17 @@
+ 
+         if self.is_empty() {
+             0
+         } else {
+             let n = self
+                 .0
+                 .as_bytes()
+                 .iter()
+-                .filter(|&&b| b == DELIMITER)
++                .filter(|&&b| b != /* ~ changed by cargo-mutants ~ */ DELIMITER)
+                 .count();
+ 
+             n + 1
+         }
+     }
+ 
+     fn get<'a, 'h: 'a>(
+         &'a self,

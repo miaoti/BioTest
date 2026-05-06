@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace parse_string -> Result<Value, ParseError> with Ok(Default::default())
+@@ -137,17 +137,17 @@
+ 
+ fn parse_raw_string(s: &str) -> Result<String, ParseError> {
+     value::percent_decode(s)
+         .map(|t| t.into())
+         .map_err(ParseError::InvalidString)
+ }
+ 
+ fn parse_string(s: &str) -> Result<Value, ParseError> {
+-    parse_raw_string(s).map(Value::String)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)
+         .map(|t| match t {
+             MISSING => Ok(None),
+             _ => parse_raw_string(t).map(Some),
+         })

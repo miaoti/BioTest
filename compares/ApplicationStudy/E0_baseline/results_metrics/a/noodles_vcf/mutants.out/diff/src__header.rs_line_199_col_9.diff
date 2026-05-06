@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::filters_mut -> &mut Filters with Box::leak(Box::new(Default::default()))
+@@ -191,17 +191,17 @@
+     /// let filter = Map::<Filter>::new("Quality below 10");
+     /// header.filters_mut().insert(String::from("q10"), filter.clone());
+     ///
+     /// let filters = header.filters();
+     /// assert_eq!(filters.len(), 1);
+     /// assert_eq!(&filters[0], &filter);
+     /// ```
+     pub fn filters_mut(&mut self) -> &mut Filters {
+-        &mut self.filters
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a list of genotype format records (`FORMAT`).
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf::{

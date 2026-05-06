@@ -1,0 +1,27 @@
+--- src/record/filters.rs
++++ replace <impl crate::variant::record::Filters for Filters<'_>>::iter -> Box<dyn Iterator<Item = io::Result<&'a str>>+'a> with Box::new(Default::default())
+@@ -27,23 +27,17 @@
+         let header = Header::default();
+         self.iter(&header).count()
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         _: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<&'a str>> + 'a> {
+-        const DELIMITER: char = ';';
+-
+-        if self.is_empty() {
+-            Box::new(iter::empty())
+-        } else {
+-            Box::new(self.0.split(DELIMITER).map(Ok))
+-        }
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::Filters as _;
+ 

@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace == with != in parse_sample
+@@ -128,17 +128,17 @@
+         )
+     }
+ }
+ 
+ fn parse_sample<'r>(src: &mut &'r str, keys: Keys<'r>) -> Sample<'r> {
+     const DELIMITER: u8 = b'\t';
+     const MISSING: &str = ".";
+ 
+-    let buf = match src.as_bytes().iter().position(|&b| b == DELIMITER) {
++    let buf = match src.as_bytes().iter().position(|&b| b != /* ~ changed by cargo-mutants ~ */ DELIMITER) {
+         Some(i) => {
+             let (buf, rest) = src.split_at(i);
+             *src = &rest[1..];
+             buf
+         }
+         None => {
+             let (buf, rest) = src.split_at(src.len());
+             *src = rest;

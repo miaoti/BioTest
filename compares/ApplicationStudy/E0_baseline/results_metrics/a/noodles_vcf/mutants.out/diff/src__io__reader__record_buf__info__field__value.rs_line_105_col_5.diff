@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ replace parse_flag -> Result<Value, ParseError> with Ok(Default::default())
+@@ -97,21 +97,17 @@
+             MISSING => Ok(None),
+             _ => t.parse().map(Some).map_err(ParseError::InvalidFloat),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Float(values)))
+ }
+ 
+ fn parse_flag(s: &str) -> Result<Value, ParseError> {
+-    if s.is_empty() {
+-        Ok(Value::Flag)
+-    } else {
+-        Err(ParseError::InvalidFlag)
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_raw_char(s: &str) -> Result<char, ParseError> {
+     let mut chars = s.chars();
+ 
+     if let Some(c) = chars.next() {
+         if chars.next().is_none() {
+             return Ok(c);

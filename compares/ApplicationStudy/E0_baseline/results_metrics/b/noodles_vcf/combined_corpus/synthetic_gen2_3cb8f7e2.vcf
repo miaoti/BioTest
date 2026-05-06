@@ -1,0 +1,32 @@
+##fileformat=VCFv4.3
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Number">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">
+##INFO=<ID=H2,Number=0,Type=Flag,Description="HapMap2 membership">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depths">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled Genotype Likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1,length=116938138>
+##contig=<ID=chr2,length=150764259>
+##contig=<ID=chr3,length=87079290>
+##contig=<ID=chrX,length=105667611>
+##contig=<ID=chrY,length=166336747>
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O b -o output.bcf input.vcf
+##reference=file:///path/to/reference.fasta
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2
+chr2	64541	.	GCTC	ATG	26.5	PASS	DP=916;AF=0.3955;AC=4;AN=452;NS=1	GT:GQ:DP:AD:PL	1/0:76:53:15,38:97,4,151	0/0:88:91:45,66:71,189,154
+chrX	629832	.	CAA	CC	74.3	PASS	DP=885;AF=0.4212;AC=90;AN=145;NS=1	GT:GQ:DP:AD:PL	0/1:91:120:67,14:158,242,80	0:62:145:91,139:165,2,87
+chr3	440921	rs888013	TAGGG	AGTCC	34.7	PASS	DP=579;AF=0.4776;AC=88;AN=904;NS=1	GT:GQ:DP:AD:PL	1:16:107:107,102:113,86,116	1|0:99:97:41,35:174,219,9
+chrX	934049	rs667785	GC	TCC	17.2	PASS	DP=647;AF=0.1929;AC=8;AN=595;NS=2	GT:GQ:DP:AD:PL	1:79:113:14,59:142,151,34	1|1:65:121:22,88:120,81,25
+chr2	670570	.	AG	CA,A,GGCGA	87.0	PASS	DP=481;AF=0.2651,0.1924,0.4969;AC=63,10,98;AN=241;NS=1;H2	GT:GQ:DP:AD:PL	1:95:148:20,94,124,84:124,182,223,31,186,162,32,228,63,100	0|1:28:178:143,103,102,105:183,39,133,77,98,2,239,38,188,191
+chrX	492255	.	CAGA	C,TAA,A,CAG	25.5	q10	DP=353;AF=0.3456,0.1326,0.1899,0.4748;AC=75,49,94,26;AN=779;NS=1;H2	GT:GQ:DP:AD:PL	0/1:15:19:1,4,18,2,2:202,221,157,23,169,56,30,115,169,144,36,201,228,10,69	1/1:45:52:11,14,30,17,21:82,103,50,219,203,237,95,5,113,102,17,129,99,43,84
+chr1	197606	.	G	T,CACGC,C,CC	29.8	q10	DP=624;AF=0.2207,0.2575,0.2358,0.3953;AC=67,46,88,67;AN=321;NS=2;DB	GT:GQ:DP:AD:PL	1/1:4:196:104,189,81,102,41:156,222,13,84,189,150,223,165,95,50,140,140,233,115,176	4:97:12:2,12,12,4,4:156,255,125,238,207,214,22,231,216,168,59,234,24,204,210

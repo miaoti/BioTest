@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/info/field.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with Some(Box::leak(Box::new(Default::default())))
+@@ -26,20 +26,17 @@
+             Self::MissingValue(key) => Some(key),
+             Self::InvalidValue(key, _) => Some(key),
+         }
+     }
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::InvalidValue(_, e) => Some(e),
+-            _ => None,
+-        }
++        Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             ParseError::MissingValue(_) => write!(f, "missing value"),
+             ParseError::InvalidValue(..) => write!(f, "invalid value"),

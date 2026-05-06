@@ -1,0 +1,31 @@
+--- src/io/reader/builder.rs
++++ replace Builder::build_from_path -> io::Result<Reader<Box<dyn BufRead>>> with Ok(Reader::new(Box::new(Default::default())))
+@@ -40,27 +40,17 @@
+     /// use noodles_vcf::io::reader::Builder;
+     /// let reader = Builder::default().build_from_path("sample.vcf")?;
+     /// # Ok::<_, std::io::Error>(())
+     /// ```
+     pub fn build_from_path<P>(mut self, src: P) -> io::Result<Reader<Box<dyn BufRead>>>
+     where
+         P: AsRef<Path>,
+     {
+-        let src = src.as_ref();
+-
+-        if self.compression_method.is_none() {
+-            self.compression_method = match src.extension().and_then(|ext| ext.to_str()) {
+-                Some("gz" | "bgz") => Some(CompressionMethod::Bgzf),
+-                _ => Some(CompressionMethod::None),
+-            };
+-        }
+-
+-        let reader = File::open(src)?;
+-        self.build_from_reader(reader)
++        Ok(Reader::new(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Builds a VCF reader from a reader.
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// # use std::io;

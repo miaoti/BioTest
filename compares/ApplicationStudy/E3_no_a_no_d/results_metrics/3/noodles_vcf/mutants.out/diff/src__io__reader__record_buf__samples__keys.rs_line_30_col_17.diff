@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/samples/keys.rs
++++ replace == with != in parse_keys
+@@ -22,17 +22,17 @@
+     }
+ }
+ 
+ pub(super) fn parse_keys(header: &Header, s: &str, keys: &mut Keys) -> Result<(), ParseError> {
+     const DELIMITER: char = ':';
+ 
+     if s.is_empty() {
+         return Err(ParseError::Empty);
+-    } else if s == MISSING {
++    } else if s != /* ~ changed by cargo-mutants ~ */ MISSING {
+         return Ok(());
+     }
+ 
+     for raw_key in s.split(DELIMITER) {
+         let key = match header.formats().get_full(raw_key) {
+             Some((_, k, _)) => k.clone(),
+             None => raw_key.into(),
+         };

@@ -1,0 +1,41 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=test,Description="Testing filter">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=GL,Number=G,Type=Float,Description="Genotype Likelihood">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=TT,Number=A,Type=Integer,Description="Testing Tag, with commas and \"escapes\" and escaped escapes combined with \"quotes\\"">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=STR,Number=1,Type=String,Description="Test string type">
+##INFO=<ID=TEST,Number=1,Type=Integer,Description="Testing Tag">
+##contig=<ID=1,length=249250621,assembly=b37>
+##contig=<ID=2,length=249250621,assembly=b37>
+##contig=<ID=3,length=198022430,assembly=b37>
+##contig=<ID=4,length=191154276,assembly=b37>
+##readme=AAAAAA
+##readme=BBBBBB
+##reference=file:///lustre/scratch105/projects/g1k/ref/main_project/human_g1k_v37.fasta
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	A	B
+1	3000150	.	C	T	59.20	PASS	AC=2,99;AN=4	GT:GQ	0/1:245	0/1:245
+1	3000151	.	C	T	59.20	PASS	AC=2;AN=4	GT:DP:GQ	0/1:32:245	0/1:32:245
+1	3062915	id3D	GTTT	G	12.90	q10	AC=2;AN=4;DP4=1,2,3,4;INDEL;STR=test	GT:GQ:DP:GL	0/1:409:35:-20,-5,-20	0/1:409:35:-20,-5,-20
+1	3062915	idSNP	G	T	12.60	test	AC=1;AN=3;DP4=1,2,3,4;TEST=5	GT:TT:GQ:DP:GL	0/1:0:409:35:.	.:0:409:35:.
+1	3062915	idSNP	G	C	12.60	test	AC=1;AN=3;DP4=1,2,3,4;TEST=5	GT:TT:GQ:DP:GL	0/.:1:409:35:.	1:1:409:35:.
+1	3106154	.	CAAA	C	342	PASS	AC=2;AN=4	GT:GQ:DP	0/1:245:32	0/1:245:32
+1	3106154	.	C	CT	59.20	PASS	AC=2;AN=4	GT:GQ:DP	0/1:245:32	0/1:245:32
+1	3157410	.	GA	G	90.60	q10	AC=4;AN=4	GT:GQ:DP	1/1:21:21	1/1:21:21
+1	3162006	.	GAA	G	60.20	PASS	AC=2;AN=4	GT:GQ:DP	0/1:212:22	0/1:212:22
+1	3177144	.	G	T	45	PASS	AC=2;AN=4	GT:GQ:DP	0/0:150:30	1/1:150:30
+1	3177144	.	G	.	45	PASS	AC=0;AN=4	GT:GQ:DP	0/0:150:30	0/0:150:30
+1	3184885	.	TAAAA	TA	61.50	PASS	AC=2;AN=4	GT:GQ:DP	1/.:12:10	1/.:12:10
+1	3184885	.	TAAAA	T	61.50	PASS	AC=2;AN=4	GT:GQ:DP	./1:12:10	./1:12:10
+2	3199812	.	G	GTT	82.70	PASS	AC=2;AN=4	GT:GQ:DP	1/.:322:26	1/.:322:26
+2	3199812	.	G	GT	82.70	PASS	AC=2;AN=4	GT:GQ:DP	./1:322:26	./1:322:26
+3	3212016	.	CTT	C	79	PASS	AC=2;AN=4	GT:GQ:DP	1/.:91:26	1/.:91:26
+3	3212016	.	CTT	CT	79	PASS	AC=2;AN=4	GT:GQ:DP	./1:91:26	./1:91:26
+4	3258448	.	TACACACAC	T	.	PASS	AC=2;AN=4	GT:GQ:DP	0/1:325:31	0/1:325:31

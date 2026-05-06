@@ -1,0 +1,26 @@
+--- src/record/fields.rs
++++ replace Fields::info -> Info<'_> with Default::default()
+@@ -73,22 +73,17 @@
+             MISSING => "",
+             buf => buf,
+         };
+ 
+         Filters::new(src)
+     }
+ 
+     pub(super) fn info(&self) -> Info<'_> {
+-        let src = match &self.buf[self.bounds.info_range()] {
+-            MISSING => "",
+-            buf => buf,
+-        };
+-
+-        Info::new(src)
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub(super) fn samples(&self) -> Samples<'_> {
+         const DELIMITER: char = '\t';
+ 
+         let src = &self.buf[self.bounds.genotypes_range()];
+ 
+         let is_missing = || {

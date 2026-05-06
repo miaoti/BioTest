@@ -1,0 +1,28 @@
+##fileformat=VCFv4.3
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Number">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">
+##INFO=<ID=H2,Number=0,Type=Flag,Description="HapMap2 membership">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depths">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled Genotype Likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1,length=91209933>
+##contig=<ID=chr2,length=147931859>
+##contig=<ID=chr3,length=63009430>
+##contig=<ID=chrX,length=173449036>
+##contig=<ID=chrY,length=202825806>
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O b -o output.bcf input.vcf
+##reference=file:///path/to/reference.fasta
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2	SAMPLE3
+
+chr3	3006 rs973273	TTA	<DUP>	.	PASS	DP=788;AF=0.2472;AC=65;AN=140;NS=2;DB	GT:GQ:DP:AD:PL	0/0:17:145:8,70;143,206,58	0/1:17:126:26,24:76,54,185	0/1:16:50:4,5:5,214,106
+chr1	899396	.	TA	CGCAT,A	21.1	PASS	4P=88;AF=0.2985,0.438;AC=39,8;AN=265;NS=2	GT:GQ:DP:AD:PL	1/0:57:40:18,14,37:237,57,218,5,8,245	1:29:118:18,53,46:122,101,167,188,15,180	2/0:89:165:77,124,112:148,148,55,45,226,159

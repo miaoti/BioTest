@@ -1,0 +1,24 @@
+--- src/record/samples.rs
++++ replace Samples<'r>::series -> impl Iterator<Item = Series<'r>>+'r with ::std::iter::once(Default::default())
+@@ -50,20 +50,17 @@
+             .iter()
+             .enumerate()
+             .find(|(_, key)| *key == column_name)
+             .map(|(i, key)| Series::new(key, self, i))
+     }
+ 
+     /// Returns an iterator over series.
+     pub fn series(&'r self) -> impl Iterator<Item = Series<'r>> + 'r {
+-        self.keys()
+-            .iter()
+-            .enumerate()
+-            .map(|(i, key)| Series::new(key, self, i))
++        ::std::iter::once(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns an iterator over samples.
+     pub fn iter(&self) -> impl Iterator<Item = Sample<'r>> + '_ {
+         let (_, mut src) = self.0.split_once(DELIMITER).unwrap_or_default();
+ 
+         iter::from_fn(move || {
+             if src.is_empty() {

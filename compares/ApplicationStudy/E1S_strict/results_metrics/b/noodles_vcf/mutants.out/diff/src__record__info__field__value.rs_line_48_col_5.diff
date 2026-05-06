@@ -1,0 +1,33 @@
+--- src/record/info/field/value.rs
++++ replace parse_character_value -> io::Result<Value<'_>> with Ok(Default::default())
+@@ -40,29 +40,17 @@
+     if src.is_empty() {
+         Ok(Value::Flag)
+     } else {
+         Err(io::Error::new(io::ErrorKind::InvalidData, "invalid flag"))
+     }
+ }
+ 
+ fn parse_character_value(src: &str) -> io::Result<Value<'_>> {
+-    let s = percent_decode(src).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+-    let mut chars = s.chars();
+-
+-    if let Some(c) = chars.next() {
+-        if chars.next().is_none() {
+-            return Ok(Value::Character(c));
+-        }
+-    }
+-
+-    Err(io::Error::new(
+-        io::ErrorKind::InvalidData,
+-        "invalid character",
+-    ))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string_value(src: &str) -> io::Result<Value<'_>> {
+     use crate::io::reader::record_buf::value::percent_decode;
+ 
+     percent_decode(src)
+         .map(Value::String)
+         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))

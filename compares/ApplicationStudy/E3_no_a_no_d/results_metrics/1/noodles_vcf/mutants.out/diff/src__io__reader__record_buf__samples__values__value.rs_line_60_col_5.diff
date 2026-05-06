@@ -1,0 +1,31 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace parse_value -> Result<Value, ParseError> with Ok(Default::default())
+@@ -52,27 +52,17 @@
+             ParseError::InvalidCharacter => write!(f, "invalid character"),
+             ParseError::InvalidString(_) => write!(f, "invalid string"),
+             ParseError::InvalidGenotype(_) => write!(f, "invalid genotype"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_value(number: Number, ty: Type, s: &str) -> Result<Value, ParseError> {
+-    match (number, ty) {
+-        (Number::Count(0), _) => Err(ParseError::InvalidNumberForType(number, ty)),
+-        (Number::Count(1), Type::Integer) => parse_i32(s),
+-        (Number::Count(1), Type::Float) => parse_f32(s),
+-        (Number::Count(1), Type::Character) => parse_char(s),
+-        (Number::Count(1), Type::String) => parse_string(s),
+-        (_, Type::Integer) => parse_i32_array(s),
+-        (_, Type::Float) => parse_f32_array(s),
+-        (_, Type::Character) => parse_char_array(s),
+-        (_, Type::String) => parse_string_array(s),
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub(super) fn parse_genotype_value(s: &str) -> Result<Value, ParseError> {
+     s.parse()
+         .map(Value::Genotype)
+         .map_err(ParseError::InvalidGenotype)
+ }
+ 

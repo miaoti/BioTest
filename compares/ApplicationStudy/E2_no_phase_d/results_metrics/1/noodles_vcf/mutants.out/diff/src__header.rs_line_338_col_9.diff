@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::contigs_mut -> &mut Contigs with Box::leak(Box::new(Default::default()))
+@@ -330,17 +330,17 @@
+     /// let contig = Map::<Contig>::new();
+     /// header.contigs_mut().insert(String::from("sq0"), contig.clone());
+     ///
+     /// let contigs = header.contigs();
+     /// assert_eq!(contigs.len(), 1);
+     /// assert_eq!(&contigs[0], &contig);
+     /// ```
+     pub fn contigs_mut(&mut self) -> &mut Contigs {
+-        &mut self.contigs
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a list of sample names that come after the FORMAT column in the header record.
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use indexmap::IndexSet;

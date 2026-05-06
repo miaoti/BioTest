@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field.rs
++++ delete match arm Self::InvalidValue(_, e) in <impl error::Error for ParseError>::source
+@@ -27,17 +27,17 @@
+             Self::InvalidValue(key, _) => Some(key),
+         }
+     }
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+         match self {
+-            Self::InvalidValue(_, e) => Some(e),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {

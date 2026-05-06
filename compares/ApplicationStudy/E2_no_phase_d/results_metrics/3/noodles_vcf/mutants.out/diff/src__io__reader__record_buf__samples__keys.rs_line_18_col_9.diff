@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/samples/keys.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -10,20 +10,17 @@
+     /// A key is duplicated.
+     DuplicateKey(String),
+ }
+ 
+ impl error::Error for ParseError {}
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-            Self::DuplicateKey(key) => write!(f, "duplicate key: {key}"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_keys(header: &Header, s: &str, keys: &mut Keys) -> Result<(), ParseError> {
+     const DELIMITER: char = ':';
+ 
+     if s.is_empty() {
+         return Err(ParseError::Empty);

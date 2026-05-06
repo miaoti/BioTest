@@ -1,0 +1,21 @@
+--- src/record/alternate_bases.rs
++++ replace <impl crate::variant::record::AlternateBases for AlternateBases<'_>>::is_empty -> bool with true
+@@ -22,17 +22,17 @@
+ impl AsRef<str> for AlternateBases<'_> {
+     fn as_ref(&self) -> &str {
+         self.0
+     }
+ }
+ 
+ impl crate::variant::record::AlternateBases for AlternateBases<'_> {
+     fn is_empty(&self) -> bool {
+-        self.0.is_empty()
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn len(&self) -> usize {
+         if self.is_empty() {
+             0
+         } else {
+             self.iter().count()
+         }

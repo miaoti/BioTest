@@ -1,0 +1,66 @@
+--- src/io/reader/record_buf/info/field.rs
++++ replace parse_field -> Result<(String, Option<Value>), ParseError> with Ok(("xyzzy".into(), None))
+@@ -43,62 +43,17 @@
+         match self {
+             ParseError::MissingValue(_) => write!(f, "missing value"),
+             ParseError::InvalidValue(..) => write!(f, "invalid value"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_field(header: &Header, s: &str) -> Result<(String, Option<Value>), ParseError> {
+-    use crate::header::record::value::map::info::definition::definition;
+-
+-    const MAX_COMPONENTS: usize = 2;
+-    const SEPARATOR: char = '=';
+-
+-    let mut components = s.splitn(MAX_COMPONENTS, SEPARATOR);
+-
+-    let key = components.next().unwrap_or_default();
+-
+-    let definition = header
+-        .infos()
+-        .get(key)
+-        .map(|info| (info.number(), info.ty()))
+-        .or_else(|| definition(header.file_format(), key).map(|(n, t, _)| (n, t)));
+-
+-    let raw_value = components.next();
+-
+-    let value = if let Some((number, ty)) = definition {
+-        if matches!(ty, Type::Flag) {
+-            match raw_value.unwrap_or_default() {
+-                MISSING => None,
+-                t => parse_value(number, ty, t)
+-                    .map(Some)
+-                    .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            }
+-        } else if let Some(t) = raw_value {
+-            match t {
+-                MISSING => None,
+-                _ => parse_value(number, ty, t)
+-                    .map(Some)
+-                    .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            }
+-        } else {
+-            return Err(ParseError::MissingValue(key.into()));
+-        }
+-    } else {
+-        match raw_value {
+-            Some(MISSING) => None,
+-            Some(t) => parse_value(Number::Count(1), Type::String, t)
+-                .map(Some)
+-                .map_err(|e| ParseError::InvalidValue(key.into(), e))?,
+-            None => Some(Value::Flag),
+-        }
+-    };
+-
+-    Ok((key.into(), value))
++    Ok(("xyzzy".into(), None)) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::info::field::key;
+ 
+     #[test]

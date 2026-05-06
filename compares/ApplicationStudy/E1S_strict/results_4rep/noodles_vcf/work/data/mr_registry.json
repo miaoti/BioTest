@@ -1,0 +1,421 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat_line_violation_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), the transformed file must also be rejected. If the original file is accepted (valid), the transformed file must be rejected because the fileformat line is corrupted.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires the first line to be '##fileformat=VCFv4.X'. Violating this makes the file invalid and must be rejected.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "gt_index_bounds_violation_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), the transformed file must also be rejected. If the original file is accepted (valid), the transformed file must be rejected because GT allele indices reference non-existent alleles.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires GT allele indices to be within the range of defined alleles (0 for REF, 1..N for ALT alleles). Out-of-bounds indices make the file invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "info_number_a_cardinality_violation_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), the transformed file must also be rejected. If the original file is accepted (valid), the transformed file must be rejected because INFO fields with Number=A have incorrect cardinality.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires INFO fields with Number=A to have one value per ALT allele. Violating this cardinality makes the file invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "required_fixed_columns_violation_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), the transformed file must also be rejected. If the original file is accepted (valid), the transformed file must be rejected because required fixed columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO) are corrupted or missing.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires the eight fixed columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO) to be present and correctly formatted in every record. Violating this makes the file invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bfb59d3fa9b1",
+      "mr_name": "double_violation_rejection_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds",
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), applying multiple violations must still result in rejection. The file remains invalid regardless of how many violations are introduced.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A VCF file with any validation error should be rejected. Multiple simultaneous violations do not cancel out or make the file valid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "dbbc473d5f9b",
+      "mr_name": "fileformat_and_columns_violation_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line",
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), applying violations to both header and records must still result in rejection. The file remains invalid.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "A VCF file with any validation error at the header or record level should be rejected. Multiple violations across different scopes do not make the file valid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "alt_allele_permutation_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "After permuting ALT alleles and remapping GT indices and Number=A/R fields accordingly, all query results must be identical to the original record",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "ALT alleles are an unordered set; permuting them with corresponding GT and INFO field remapping preserves variant semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "split_multi_allelic_roundtrip",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "Splitting a multi-allelic record into multiple bi-allelic records and then querying should yield equivalent results for per-allele queries",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Multi-allelic sites can be decomposed into bi-allelic records without loss of information",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "left_align_indel_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "Left-aligning indels and trimming common affixes must produce records that represent the same variant and yield identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Indels should be left-aligned and parsimonious to ensure consistent representation",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5ea9b9ae0f5d",
+      "mr_name": "vcf_bcf_roundtrip_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Converting VCF to BCF and back must produce a semantically equivalent file with identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BCF is a binary encoding of VCF; round-trip conversion must preserve all information",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8974c64955cf",
+      "mr_name": "query_method_roundtrip_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "query_method_roundtrip"
+      ],
+      "oracle": "Query methods (isBiallelic, getNAlleles, isStructural, isSNP, isIndel) must return identical results before and after the transform",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "VCF query API methods provide invariant access to variant properties",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "isBiallelic",
+        "getNAlleles",
+        "isStructural",
+        "isSNP",
+        "isIndel"
+      ]
+    },
+    {
+      "mr_id": "aae1913889e7",
+      "mr_name": "sample_column_permutation",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "Permuting sample columns in the header and all records must yield identical query results for any per-sample query",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Sample columns in VCF are an unordered set; permuting them preserves variant semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "meta_line_shuffle_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "Shuffling meta-information lines (## lines) in the header must produce a valid VCF with identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Meta-information lines in VCF header are order-independent except for fileformat line",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "info_field_kv_shuffle",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "Shuffling key-value pairs within the INFO field must produce identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "INFO field key-value pairs are order-independent",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "19ff4ae6dea2",
+      "mr_name": "csq_annotation_permutation",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_csq_annotations"
+      ],
+      "oracle": "Permuting CSQ (consequence) annotations within a record must yield identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CSQ annotations are an unordered list of consequences",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8ad741037a84",
+      "mr_name": "structured_kv_order_permutation",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "Permuting the order of structured key-value pairs in FORMAT fields must yield identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Structured key-value pairs in FORMAT fields are order-independent",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "bcf_header_dictionary_permutation",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "Permuting the BCF header dictionary must produce an equivalent file with identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BCF header dictionary entries are order-independent",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6cd9bfb18f53",
+      "mr_name": "inject_missing_values_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "inject_equivalent_missing_values"
+      ],
+      "oracle": "Injecting equivalent missing values (e.g., '.' vs './.' for GT) must yield identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Missing values in VCF have multiple equivalent representations",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "trim_common_affixes_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "Trimming common prefix/suffix bases from REF and ALT alleles must produce records representing the same variant with identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Common prefix and suffix bases can be trimmed from REF and ALT alleles without changing variant semantics",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9a855fc04ccb",
+      "mr_name": "sut_write_roundtrip_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Writing and re-reading a VCF file through the SUT must produce a semantically equivalent file with identical query results",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "VCF files must survive a write/read round-trip without information loss",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 20,
+    "total": 20
+  }
+}

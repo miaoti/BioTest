@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/info/field/value.rs
++++ delete match arm MISSING in parse_f32_array
+@@ -89,17 +89,17 @@
+     s.parse()
+         .map(Value::Float)
+         .map_err(ParseError::InvalidFloat)
+ }
+ 
+ fn parse_f32_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)
+         .map(|t| match t {
+-            MISSING => Ok(None),
++             /* ~ changed by cargo-mutants ~ */
+             _ => t.parse().map(Some).map_err(ParseError::InvalidFloat),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Float(values)))
+ }
+ 
+ fn parse_flag(s: &str) -> Result<Value, ParseError> {
+     if s.is_empty() {

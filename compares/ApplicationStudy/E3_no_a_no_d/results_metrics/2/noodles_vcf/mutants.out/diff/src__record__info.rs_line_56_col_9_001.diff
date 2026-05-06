@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace <impl AsRef<str> for Info<'_>>::as_ref -> &str with "xyzzy"
+@@ -48,17 +48,17 @@
+                 Some(parse_field(&mut src, header))
+             }
+         })
+     }
+ }
+ 
+ impl AsRef<str> for Info<'_> {
+     fn as_ref(&self) -> &str {
+-        self.0
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::Info for Info<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 

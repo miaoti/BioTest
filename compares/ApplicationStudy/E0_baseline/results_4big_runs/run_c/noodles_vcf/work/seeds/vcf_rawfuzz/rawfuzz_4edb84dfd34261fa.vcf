@@ -1,0 +1,24 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=INS,Description="Insertion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="ID of mate breakend">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	50000	BND1	A	N[chr2:12345[	30	PASS	SVTYPE=BND;MATEID=BND2;IMPRECISE	GT:GQ:DP	1/1:70:20
+chr2	12345	BND2	T	]chr1:50000]N	30	PASS	SVTYPE=BND;MATEID=BND1;IMPRECISE	GT:GQ:DP	1/1:70:20
+chr1	60000	BND3	C	[ch¡X:40000[N	25	PASS	SVTYPE=BND;MATEID=BND4;IMPRECISE	GT:GQ:DP	0/1:60:15
+chrX	40000	BND4 G	N\chr1:60000]	2‡	PASS	SVTYPE=BND;MATEID=BND3;IMPRECISE	GT:GQ:DP	0/1:60:15

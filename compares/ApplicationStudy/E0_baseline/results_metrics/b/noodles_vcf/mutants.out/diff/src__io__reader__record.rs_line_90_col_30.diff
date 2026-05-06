@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace || with && in read_field
+@@ -82,17 +82,17 @@
+     const CARRIAGE_RETURN: u8 = b'\r';
+ 
+     let mut r#match = None;
+     let mut len = 0;
+ 
+     loop {
+         let src = reader.fill_buf()?;
+ 
+-        if r#match.is_some() || src.is_empty() {
++        if r#match.is_some() && /* ~ changed by cargo-mutants ~ */ src.is_empty() {
+             break;
+         }
+ 
+         let (mut buf, n) = match memchr2(DELIMITER, LINE_FEED, src) {
+             Some(i) => {
+                 r#match = Some(src[i]);
+                 (&src[..i], i + 1)
+             }

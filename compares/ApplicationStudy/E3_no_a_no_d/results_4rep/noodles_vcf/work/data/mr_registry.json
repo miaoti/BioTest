@@ -1,0 +1,132 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "fileformat_violation_preserves_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after violating the fileformat first line, the output should also be rejected. If the original file is valid, then after violating the fileformat first line, the output should be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires the first line of a VCF file to be '##fileformat=VCFv4.5' (or appropriate version). Violating this makes the file invalid and must be rejected.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "gt_index_bounds_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after violating GT index bounds, the output should also be rejected. If the original file is valid, then after violating GT index bounds, the output should be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires GT allele indices to be within the range of defined alleles (0 for REF, 1..N for ALT). Out-of-bounds indices make the record invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "info_number_a_cardinality_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after violating INFO Number=A cardinality, the output should also be rejected. If the original file is valid, then after violating INFO Number=A cardinality, the output should be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires that INFO fields declared with Number=A must have exactly one value per ALT allele. Violating this cardinality makes the record invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "required_fixed_columns_violation_preserves_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after violating required fixed columns, the output should also be rejected. If the original file is valid, then after violating required fixed columns, the output should be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "The VCF specification requires each record to have the fixed columns: CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO. Violating these required columns makes the record invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bfb59d3fa9b1",
+      "mr_name": "multiple_violations_preserve_rejection",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_gt_index_bounds",
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after applying multiple violations (GT index bounds and INFO Number=A cardinality), the output should also be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Multiple specification violations in a VCF file should still result in rejection, as each violation independently makes the file invalid.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "dbbc473d5f9b",
+      "mr_name": "header_and_record_violations_preserve_rejection",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "violate_fileformat_first_line",
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "If the original VCF file is rejected (invalid), then after violating both the fileformat first line and required fixed columns, the output should also be rejected.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Both header-level and record-level violations independently make a VCF file invalid, so combining them should still result in rejection.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 6,
+    "total": 6
+  }
+}

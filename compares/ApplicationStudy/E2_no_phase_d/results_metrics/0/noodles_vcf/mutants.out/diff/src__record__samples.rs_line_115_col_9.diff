@@ -1,0 +1,25 @@
+--- src/record/samples.rs
++++ replace <impl crate::variant::record::Samples for Samples<'_>>::series -> Box<dyn Iterator<Item = io::Result<Box<dyn crate::variant::record::samples::Series +'_>>>+'_, > with Box::new(Default::default())
+@@ -107,21 +107,17 @@
+             .map(Ok)
+     }
+ 
+     fn series(
+         &self,
+     ) -> Box<
+         dyn Iterator<Item = io::Result<Box<dyn crate::variant::record::samples::Series + '_>>> + '_,
+     > {
+-        Box::new(
+-            self.series()
+-                .map(|series| Box::new(series) as Box<dyn crate::variant::record::samples::Series>)
+-                .map(Ok),
+-        )
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn iter(
+         &self,
+     ) -> Box<dyn Iterator<Item = Box<dyn crate::variant::record::samples::Sample + '_>> + '_> {
+         Box::new(
+             self.iter()
+                 .map(|sample| Box::new(sample) as Box<dyn crate::variant::record::samples::Sample>),

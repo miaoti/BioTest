@@ -1,0 +1,32 @@
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##fileformat=VCFv4.3
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Number">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="Mapping Quality">
+##INFO=<ID=STR,Number=0,Type=Flag,Description="Variant is a short tandem repeat">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depth">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled Genotype Likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr3,length=200384167>
+##contig=<ID=chr10,length=126370336>
+##contig=<ID=chr13,length=80055945>
+##contig=<ID=chr9,length=195910978>
+##SAMPLE=<ID=NA12878,Description="Reference sample",GenomeBuild=GRCh38>
+##SAMPLE=<ID=NA12891,Description="Father",GenomeBuild=GRCh38>
+##SAMPLE=<ID=NA12892,Description="Mother",GenomeBuild=GRCh38>
+##INFO=<ID=H2,Number=0,Type=Flag,Description="HapMap2 membership">
+##INFO=<ID=H3,Number=0,Type=Flag,Description="HapMap3 membership">
+##bcftools_viewVersion=1.19+htslib-1.19
+##bcftools_viewCommand=view -O b -o output.bcf input.vcf.gz
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	NA12891	NA12878	NA12892
+chr3	878786	.	TTTTTGATT	ATG,AT,TCTGACGTC	12.69	PASS	DP=250;AF=0.0450,0.6247,0.9385;AC=22,34,22;NS=3;AN=1;MQ=45.8;STR;H2	GT:GQ:DP:AD:PL	0/0:14:182:38,5,70,63:11,101,26,228,62,121,126,252,51,255	2/2:53:31:50,12,53,80:227,213,125,127,164,237,99,140,102,45	2/2:98:124:84,100,83,98:139,44,54,245,54,67,189,138,0,183
+chr10	703742	.	AGGATGGG	TCTAC	25.67	PASS	DP=297;AF=0.2375,9;AC=37;NS=2;AN=2;MQ=5.0	GT:GQ:DP:AD:PL	0/1:59:138:45,77:217,95,255	0/0:60:95:82,8:64,172,37	./.:33:116:93,4:229,149,16
+chr10	840679	rs8051246	GGA	GCGG,CGTATGC	14.33	PASS	DP=344;AF=0.7649,0.2454;AC=71,72;NS=3;AN=2;MQ=52.9	GT:GQ:DP:AD:PL	0/0:93:128:0,47,55:105,118,17,195,41,20	1/1:7:0:49,83,48:197,215,129,204,155,209	./.:64:3:16,72,16:191,51,142,240,92,197
+chr9	644464	.	GTCTTAT	GCTGTTCGA,TGTGGA,CTT,TGCACA	.	q10	DP=71;AF=0.3493,0.6058,0.2660,0.1590;AC=26,26,48,57;NS=1;AN=3;MQ=17.8	GT:GQ:DP:AD:PL	0/3:18:46:39,65,83,53,90:229,160,14,158,238,153,207,155,235,195,210,202,82,53,232	0/1:18:111:43,20,15,0,3:80,111,198,44,5,202,21,56,119,89,163,146,140,32,174	3/3:45:159:38,3,70,42,57:178,248,65,32,18,247,147,48,101,236,52,143,200,82,43

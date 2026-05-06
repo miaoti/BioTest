@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::builder -> Builder with Default::default()
+@@ -60,17 +60,17 @@
+     ///
+     /// # Examples
+     ///
+     /// ```
+     /// use noodles_vcf as vcf;
+     /// let builder = vcf::Header::builder();
+     /// ```
+     pub fn builder() -> Builder {
+-        Builder::default()
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns the file format (`fileformat`) of the VCF.
+     ///
+     /// `fileformat` is a required meta record and is guaranteed to be set.
+     ///
+     /// # Examples
+     ///

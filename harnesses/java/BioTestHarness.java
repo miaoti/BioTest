@@ -244,6 +244,47 @@ public class BioTestHarness {
                 return;
             }
 
+            if ("parse_auto_invoke".equals(mode)) {
+                // Coverage-mode: reflectively invokes every PUBLIC NO-ARG
+                // non-mutator method on each parsed record after parsing.
+                // No SUT-specific method names are hardcoded — discovery
+                // uses java.lang.Class.getMethods() with the same filter
+                // pattern as discoverMethodsJson() above (which is the
+                // pre-existing query-method introspection contract). New
+                // SUTs in Java inherit this for free.
+                //
+                // The metamorphic oracle is NOT affected: each invocation
+                // is wrapped in try/catch(Throwable), the return value is
+                // discarded, and the JSON output shape is identical to
+                // parseSam plus a single bookkeeping integer
+                // ("invoked_method_count_per_record").
+                if (positional.size() < 2) {
+                    System.err.println(
+                        "--mode parse_auto_invoke requires <SAM> <file_path>");
+                    System.exit(1);
+                }
+                String aiFormat = positional.get(0).toUpperCase();
+                String aiPath = positional.get(1);
+                if (!"SAM".equals(aiFormat)) {
+                    System.err.println(
+                        "--mode parse_auto_invoke only supports SAM, got "
+                        + aiFormat);
+                    System.exit(1);
+                }
+                String json;
+                try {
+                    json = parseAutoInvokeSam(aiPath);
+                } catch (Throwable t) {
+                    System.err.println(
+                        "parse_auto_invoke error: "
+                        + t.getClass().getSimpleName() + ": " + t.getMessage());
+                    System.exit(1);
+                    return;
+                }
+                System.out.println(json);
+                return;
+            }
+
             // Default: parse mode. Expects <format> <file_path>.
             if (positional.size() < 2) {
                 System.err.println("Usage: BioTestHarness VCF|SAM <file_path>");
@@ -635,6 +676,164 @@ public class BioTestHarness {
                 sb.append(samRecordToJson(rec));
             }
             sb.append("]}");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    // -----------------------------------------------------------------------
+    // SAM parse + reflection-based public-method invocation.
+    //
+    // GENERALIZATION CONTRACT — this function is intentionally written
+    // without naming a single htsjdk-specific method. It uses standard
+    // java.lang.Class reflection to enumerate all public, zero-parameter,
+    // non-mutator instance methods on whatever class the iterator yields,
+    // then invokes each one in a try/catch and discards the return value.
+    //
+    // Why this is "exercise the public API surface" rather than
+    // SUT-specific instrumentation:
+    //   * Discovery is `record.getClass().getMethods()` — the same
+    //     reflection contract `discoverMethodsJson` already uses for
+    //     query-method introspection.
+    //   * Filter is structural (public, instance, no params, not a
+    //     setter/mutator, not Object-noise) — no method names are
+    //     hardcoded.
+    //   * Adding a new public no-arg getter to any future Java SUT's
+    //     parsed-record class causes that method to be invoked
+    //     automatically — no harness edit required.
+    //
+    // The methods invoked are exactly the same set a Java application
+    // calling the SUT could invoke without any documentation; we are
+    // not reaching into private internals or test-only seams.
+    // -----------------------------------------------------------------------
+    // Threading note: the harness is invoked as a fresh JVM process
+    // per parse, so this static cache sees exactly one writer. If the
+    // harness ever becomes a daemon serving concurrent parse requests,
+    // the cache write below must be guarded by a synchronized block
+    // (or replaced with ConcurrentHashMap).
+    private static List<Method> _PUBLIC_NOARG_METHOD_CACHE = null;
+    private static Class<?> _PUBLIC_NOARG_METHOD_CACHE_KEY = null;
+
+    private static List<Method> discoverPublicNoArgMethods(Class<?> cls) {
+        if (cls == _PUBLIC_NOARG_METHOD_CACHE_KEY
+                && _PUBLIC_NOARG_METHOD_CACHE != null) {
+            return _PUBLIC_NOARG_METHOD_CACHE;
+        }
+        // Mirror the existing discoverMethodsJson filter pattern, with
+        // the scalar-return restriction LIFTED — methods that return
+        // List/Map/Object are eligible here because we discard the
+        // return value (no comparison happens).
+        Set<String> mutatorPrefixes = new HashSet<>(Arrays.asList(
+            "set", "add", "remove", "clear", "init", "destroy", "close"
+        ));
+        Set<String> objectNoise = new HashSet<>(Arrays.asList(
+            "hashCode", "toString", "getClass", "wait", "notify",
+            "notifyAll", "equals", "clone"
+        ));
+        List<Method> chosen = new ArrayList<>();
+        Set<String> seenNames = new HashSet<>();
+        Method[] methods = cls.getMethods();
+        Arrays.sort(methods, Comparator.comparing(Method::getName));
+        for (Method m : methods) {
+            if (m.getParameterCount() != 0) continue;
+            int mods = m.getModifiers();
+            if ((mods & java.lang.reflect.Modifier.PUBLIC) == 0) continue;
+            if ((mods & java.lang.reflect.Modifier.STATIC) != 0) continue;
+            String name = m.getName();
+            if (objectNoise.contains(name)) continue;
+            if (seenNames.contains(name)) continue;
+            String lower = name.toLowerCase(Locale.ROOT);
+            boolean isMutator = false;
+            for (String pfx : mutatorPrefixes) {
+                if (lower.startsWith(pfx)) { isMutator = true; break; }
+            }
+            if (isMutator) continue;
+            if (m.getReturnType().equals(void.class)) continue;
+            seenNames.add(name);
+            chosen.add(m);
+        }
+        _PUBLIC_NOARG_METHOD_CACHE_KEY = cls;
+        _PUBLIC_NOARG_METHOD_CACHE = chosen;
+        return chosen;
+    }
+
+    private static String parseAutoInvokeSam(String path) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"format\":\"SAM\",\"mode\":\"parse_auto_invoke\",");
+
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(Path.of(path))) {
+
+            SAMFileHeader header = reader.getFileHeader();
+
+            // Header — same JSON shape as parseSam.
+            sb.append("\"header\":{");
+            String version = header.getVersion();
+            String sortOrder = header.getSortOrder() != null ? header.getSortOrder().name() : null;
+            if (version != null) {
+                sb.append("\"HD\":{\"VN\":").append(jsonStr(version));
+                if (sortOrder != null) sb.append(",\"SO\":").append(jsonStr(sortOrder.toLowerCase()));
+                sb.append("}");
+            } else {
+                sb.append("\"HD\":null");
+            }
+            sb.append(",\"SQ\":[");
+            sb.append(header.getSequenceDictionary().getSequences().stream()
+                .map(sq -> "{\"SN\":" + jsonStr(sq.getSequenceName())
+                    + ",\"LN\":\"" + sq.getSequenceLength() + "\"}")
+                .collect(Collectors.joining(",")));
+            sb.append("]");
+            sb.append(",\"RG\":[");
+            sb.append(header.getReadGroups().stream()
+                .map(rg -> readGroupToJson(rg))
+                .collect(Collectors.joining(",")));
+            sb.append("]");
+            sb.append(",\"PG\":[");
+            sb.append(header.getProgramRecords().stream()
+                .map(pg -> programRecordToJson(pg))
+                .collect(Collectors.joining(",")));
+            sb.append("]");
+            sb.append(",\"CO\":[");
+            sb.append(header.getComments().stream().sorted()
+                .map(BioTestHarness::jsonStr)
+                .collect(Collectors.joining(",")));
+            sb.append("]");
+            sb.append("},");
+
+            sb.append("\"records\":[");
+            boolean first = true;
+            int recordCount = 0;
+            int discoveredMethodCount = -1;
+            for (SAMRecord rec : reader) {
+                if (!first) sb.append(",");
+                first = false;
+                sb.append(samRecordToJson(rec));
+
+                // Discover public no-arg methods on the FIRST record only;
+                // cache so subsequent records use the same Method[] array
+                // (zero allocation on the hot path).
+                List<Method> exercise =
+                    discoverPublicNoArgMethods(rec.getClass());
+                if (discoveredMethodCount < 0) {
+                    discoveredMethodCount = exercise.size();
+                }
+                for (Method m : exercise) {
+                    try {
+                        m.invoke(rec);
+                    } catch (Throwable ignored) {
+                        // Per-method failures must NOT abort iteration.
+                        // Coverage of the throw path itself is welcome
+                        // signal.
+                    }
+                }
+                recordCount++;
+            }
+            sb.append("],\"record_count\":").append(recordCount);
+            sb.append(",\"invoked_methods_per_record\":")
+                .append(Math.max(0, discoveredMethodCount));
+            sb.append("}");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

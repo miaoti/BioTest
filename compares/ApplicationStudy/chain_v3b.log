@@ -1,0 +1,134 @@
+[chain v3b] starting at Mon May  4 08:34:45 CDT 2026 (with biotest.log touch fix)
+[chain v3] starting parallel rerun → mutation → bug_bench → aggregate at Mon May  4 08:34:51 CDT 2026
+[chain v3] === RERUN-FAILED-PARALLEL (max-passes=2, max-workers-per-group=3) at Mon May  4 08:34:51 CDT 2026 ===
+[08:34:51] [INFO] prewarming container cov binaries (one-time)...
+[08:34:52] [INFO] prewarm done
+[08:34:52] [INFO] pass 1: 25 failed (config, run_id, cell)s
+[08:34:52] [INFO]   FAIL ('E0', 'a', 'seqan3_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'b', 'vcfpy_vcf'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'b', 'biopython_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'c', 'vcfpy_vcf'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'c', 'biopython_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'd', 'vcfpy_vcf'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E0', 'd', 'biopython_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'a', 'htsjdk_vcf'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'a', 'noodles_vcf'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'a', 'seqan3_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'b', 'htsjdk_sam'): only 2/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'd', 'htsjdk_vcf'): only 2/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E1S', 'd', 'htsjdk_sam'): only 0/3 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 0, 'vcfpy_vcf'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 0, 'biopython_sam'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 0, 'seqan3_sam'): only 1/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 1, 'vcfpy_vcf'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 1, 'biopython_sam'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 1, 'seqan3_sam'): only 1/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 2, 'vcfpy_vcf'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 2, 'biopython_sam'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 2, 'seqan3_sam'): only 1/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 3, 'vcfpy_vcf'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 3, 'biopython_sam'): only 0/4 reps with status=ok
+[08:34:52] [INFO]   FAIL ('E2', 3, 'seqan3_sam'): only 1/4 reps with status=ok
+[08:34:52] [  E0] strand start: 4 group(s)
+[08:34:52] [  E0] === group E0/a cells=['seqan3_sam'] ===
+[08:34:52] [ E1S] strand start: 3 group(s)
+[08:34:52] [ E1S] === group E1S/a cells=['htsjdk_vcf', 'noodles_vcf', 'seqan3_sam'] ===
+[08:34:52] [  E0] waiting for SEQAN3_LOCK (E0/a)
+[08:34:52] [  E2] strand start: 4 group(s)
+[08:34:52] [  E0] acquired SEQAN3_LOCK
+[08:34:52] [ E1S] waiting for SEQAN3_LOCK (E1S/a)
+[08:34:52] [  E2] === group E2/0 cells=['biopython_sam', 'seqan3_sam', 'vcfpy_vcf'] ===
+[08:34:52] [  E0] rerun cmd: C:\Users\miaot\AppData\Local\Programs\Python\Python312\python.exe C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\run_4rep.py --mode E0 --reps 3 --cumulative true --max-workers 3 --out-root C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_a --only seqan3_sam
+[08:34:52] [  E2] nuking C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\biopython_sam
+[08:34:52] [  E2] nuking C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\seqan3_sam
+[master] cells: ['seqan3_sam']
+[master] vcf_budget_s=5400  sam_budget_s=5400  reps=3
+[setup] preparing container cov binaries...
+[08:34:52] [  E2] nuking C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E2_no_phase_d\results_4rep\vcfpy_vcf
+[08:34:52] [  E2] waiting for SEQAN3_LOCK (E2/0)
+[setup] container cov binaries ready
+[master] launching 1 cells in parallel...
+[master] cumulative=True
+[08:34:54] [seqan3_sam    ] === cascade start (container, max_iter=2) ===
+[08:34:54] [seqan3_sam    ]     initial seeds: VCF=33  SAM=74
+[08:34:54] [seqan3_sam    ] --- rep 0 ---
+[08:34:54] [seqan3_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[08:34:54] [seqan3_sam    ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[08:34:54] [seqan3_sam    ]     env (container): BIOTEST_MULTISHOT_K=2 (refine round 4)
+[08:34:54] [seqan3_sam    ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E0 ...
+[08:34:54] [seqan3_sam    ]     budget: 5400s (container)
+[09:23:44] [  E0] rerun done rc=4294967295 elapsed=48.9min
+[09:23:44] [  E0] released SEQAN3_LOCK
+[09:23:44] [  E0] === group E0/b cells=['biopython_sam', 'vcfpy_vcf'] ===
+[09:23:44] [ E1S] acquired SEQAN3_LOCK
+[09:23:44] [ E1S] rerun cmd: C:\Users\miaot\AppData\Local\Programs\Python\Python312\python.exe C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\run_4rep.py --mode E1S --reps 3 --cumulative true --max-workers 3 --out-root C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E1S_strict\results_4big_runs\run_a --only htsjdk_vcf --only noodles_vcf --only seqan3_sam
+[09:23:44] [  E0] nuking C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E0_baseline\results_4big_runs\run_b\biopython_sam
+[master] cells: ['htsjdk_vcf', 'noodles_vcf', 'seqan3_sam']
+[master] vcf_budget_s=5400  sam_budget_s=5400  reps=3
+[setup] preparing container cov [09:23:44] [m[setup] container cov binaries ready
+[master] launching 3 cells in parallel...
+[master] cumulative=True
+[09:23:48] [htsjdk_vcf    ] === cascade start (host, max_iter=2) ===
+[09:23:48] [noodles_vcf   ] === cascade start (container, max_iter=2) ===
+[09:23:48] [seqan3_sam    ] === cascade start (container, max_iter=2) ===
+[09:23:48] [htsjdk_vcf    ]     initial seeds: VCF=33  SAM=74
+[09:23:48] [htsjdk_vcf [09:53:46] [metrics_4rep] E0[a] biopython_sam: done — {'tool': 'atheris', 'sut': 'biopython', 'format': 'SAM', 'phase': 'mutation', 'target': '/opt/atheris-venv/lib/python3.11/site-packages/Bio/Align/sam.py', 'corpus_dir': '/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/biopython_sam/combined_corpus', 'python_bin': '/opt/atheris-venv/bin/python', 'budget_s': 1800, 'per_mutant_timeout_s': 60, 'max_mutants': 0, 'shuffle_seed': 42, 'started_at': 1777904626.137853, 'ended_at': 1777906426.2471614, 'duration_s': 1800.11, 'baseline': {'total_files': 1701, 'parse_success': 128, 'parse_fail': 1573}, 'mutation_score': {'killed': 110, 'survived': 291, 'reachable': 401, 'score': 0.2743}, 'untested': 122, 'total_generated': 523, 'tested_operators': {'const_int': {'killed': 39, 'survived': 71}, 'cmp_swap': {'killed': 34, 'survived': 55}, 'const_NoneType': {'killed': 5, 'survived': 16}, 'const_str': {'killed': 29, 'survived': 101}, 'unary_not': {'killed': 1, 'survived': 1}, 'arith_swap': {'killed': 1, 'survived': 42}, 'const_bool': {'killed': 1, 'survived': 5}}}
+[09:53:48] [metrics_4rep] E0[a] seqan3_sam: launching (3001 files, budget 1800s)
+[10:02:52] [metrics_4rep] E0[a] seqan3_sam: done — {'tool': 'biotest', 'sut': 'seqan3', 'format': 'SAM', 'phase': 'mutation', 'status': 'ok', 'mutator': 'mull-substitute-v1', 'mutator_note': "Mull 0.33 ships as a 24.04 deb (glibc 2.39); biotest-bench is 22.04 (glibc 2.35) so mull-runner-18/mull-ir-frontend-18 fail at load time. This driver applies the same ROR / AOR / LOR operator families mull's --mutators=default emits, scoped to the same seqan3 SAM source paths, and uses the same DESIGN §3.3 kill [10:09:51] [noodles_vcf   ]     rep 0 exit=0 elapsed=2763s
+[10:09:59] [noodles_vcf   ]     -> line=36.20% covered=2742/7584 status=ok seeds_after={'vcf_total': 101, 'vcf_kept': 68, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:09:59] [noodles_vcf   ] --- rep 1 ---
+[10:09:59] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 101, 'vcf_kept': 68, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:10:02] [noodles_vcf   ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[10:10:02] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E1S ...
+[10:10:02] [noodles_vcf   ]     budget: 5400s (container)
+[10:17:07] [htsjdk_vcf    ]     rep 0 exit=0 elapsed=3199s
+[10:17:10] [htsjdk_vcf    ]     -> line=29.30% covered=1100/3760 status=ok seeds_after={'vcf_total': 193, 'vcf_kept': 150, 'vcf_synthetic': 10, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:17:10] [htsjdk_vcf    ] --- rep 1 ---
+[10:17:10] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 193, 'vcf_kept': 150, 'vcf_synthetic': 10, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:17:10] [htsjdk_vcf    ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[10:17:10] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E1S --config biotest_config.rep1.yaml --phase D,E
+[10:17:10] [htsjdk_vcf    ]     budget: 5400s (host)
+[10:30:16] [noodles_vcf   ]     rep 1 exit=0 elapsed=1214s
+[10:30:25] [noodles_vcf   ]     -> line=36.20% covered=2746/7584 status=ok seeds_after={'vcf_total': 148, 'vcf_kept': 115, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:30:25] [noodles_vcf   ] --- rep 2 ---
+[10:30:25] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 148, 'vcf_kept': 115, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[10:30:25] [noodles_vcf   ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[10:30:25] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E1S ...
+[10:30:25] [noodles_vcf   ]     budget: 5400s (container)
+[10:50:48] [seqan3_sam    ]     rep 0 exit=0 elapsed=5219s
+[10:50:52] [seqan3_sam    ]     -> line=94.20% covered=758/805 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 1079, 'sam_kept': 1005, 'sam_synthetic': 0}
+[10:50:52] [seqan3_sam    ] --- rep 1 ---
+[10:50:52] [seqan3_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 1079, 'sam_kept': 1005, 'sam_synthetic': 0}
+[10:51:21] [seqan3_sam    ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[10:51:21] [seqan3_sam    ]     env (container): BIOTEST_MULTISHOT_K=2 (refine round 4)
+[10:51:21] [seqan3_sam    ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E1S ...
+[10:51:21] [seqan3_sam    ]     budget: 5400s (container)
+[11:22:38] [noodles_vcf   ]     rep 2 exit=0 elapsed=3133s
+[11:22:54] [noodles_vcf   ]     -> line=36.30% covered=2755/7584 status=ok seeds_after={'vcf_total': 344, 'vcf_kept': 311, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[11:22:54] [noodles_vcf   ] === cascade complete (3 reps) ===
+[master] [noodles_vcf] CASCADE OK
+[11:45:16] [htsjdk_vcf    ]     rep 1 exit=0 elapsed=5286s
+[11:45:18] [htsjdk_vcf    ]     -> line=41.30% covered=1554/3760 status=ok seeds_after={'vcf_total': 520, 'vcf_kept': 467, 'vcf_synthetic': 20, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[11:45:18] [htsjdk_vcf    ] --- rep 2 ---
+[11:45:18] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 520, 'vcf_kept': 467, 'vcf_synthetic': 20, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[11:45:18] [htsjdk_vcf    ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[11:45:18] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E1S --config biotest_config.rep2.yaml --phase D,E
+[11:45:18] [htsjdk_vcf    ]     budget: 5400s (host)
+[12:09:42] [htsjdk_vcf    ]     rep 2 exit=0 elapsed=1464s
+[12:09:45] [htsjdk_vcf    ]     -> line=41.50% covered=1562/3760 status=ok seeds_after={'vcf_total': 557, 'vcf_kept': 494, 'vcf_synthetic': 30, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:09:45] [htsjdk_vcf    ] === cascade complete (3 reps) ===
+[master] [htsjdk_vcf] CASCADE OK
+[12:14:26] [seqan3_sam    ]     rep 1 exit=0 elapsed=4985s
+[12:14:29] [seqan3_sam    ]     -> line=93.40% covered=752/805 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 2074, 'sam_kept': 2000, 'sam_synthetic': 0}
+[12:14:29] [seqan3_sam    ] --- rep 2 ---
+[12:14:29] [seqan3_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 2074, 'sam_kept': 2000, 'sam_synthetic': 0}
+[12:14:48] [seqan3_sam    ]     reset data/ + bug_reports/ (seeds + coverage_artifacts preserved — cumulative cascade)
+[12:14:48] [seqan3_sam    ]     env (container): BIOTEST_MULTISHOT_K=2 (refine round 4)
+[12:14:48] [seqan3_sam    ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E1S ...
+[12:14:48] [seqan3_sam    ]     budget: 5400s (container)
+[12:27:16] [seqan3_sam    ]     rep 2 exit=0 elapsed=748s
+[12:27:20] [seqan3_sam    ]     -> line=0.00% covered=0/805 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 2074, 'sam_kept': 2000, 'sam_synthetic': 0}
+[12:27:20] [seqan3_sam    ] === cascade complete (3 reps) ===
+[master] [seqan3_sam] CASCADE OK
+
+[master] all cells complete in 183.5 min

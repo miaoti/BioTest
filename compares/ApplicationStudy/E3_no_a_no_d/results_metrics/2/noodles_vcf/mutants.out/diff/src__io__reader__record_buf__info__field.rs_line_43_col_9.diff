@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/info/field.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -35,20 +35,17 @@
+             Self::InvalidValue(_, e) => Some(e),
+             _ => None,
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            ParseError::MissingValue(_) => write!(f, "missing value"),
+-            ParseError::InvalidValue(..) => write!(f, "invalid value"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_field(header: &Header, s: &str) -> Result<(String, Option<Value>), ParseError> {
+     use crate::header::record::value::map::info::definition::definition;
+ 
+     const MAX_COMPONENTS: usize = 2;
+     const SEPARATOR: char = '=';

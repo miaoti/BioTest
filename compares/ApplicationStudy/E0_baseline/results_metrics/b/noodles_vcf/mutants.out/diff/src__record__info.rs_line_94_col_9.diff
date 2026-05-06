@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace <impl crate::variant::record::Info for Info<'_>>::iter -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>>+'a> with Box::new(Default::default())
+@@ -86,17 +86,17 @@
+     ) -> Option<io::Result<Option<Value<'a>>>> {
+         self.get(header, key)
+     }
+ 
+     fn iter<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+     ) -> Box<dyn Iterator<Item = io::Result<(&'a str, Option<Value<'a>>)>> + 'a> {
+-        Box::new(self.iter(header))
++        Box::new(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+     use crate::variant::record::Info as _;
+ 

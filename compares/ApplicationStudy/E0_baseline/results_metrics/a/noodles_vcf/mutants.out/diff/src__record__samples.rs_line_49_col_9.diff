@@ -1,0 +1,25 @@
+--- src/record/samples.rs
++++ replace Samples<'r>::select -> Option<Series<'r>> with None
+@@ -41,21 +41,17 @@
+ 
+     /// Returns the sample at the given index.
+     pub fn get_index(&self, i: usize) -> Option<Sample<'r>> {
+         self.iter().nth(i)
+     }
+ 
+     /// Returns the series with the given column name.
+     pub fn select(&'r self, column_name: &str) -> Option<Series<'r>> {
+-        self.keys()
+-            .iter()
+-            .enumerate()
+-            .find(|(_, key)| *key == column_name)
+-            .map(|(i, key)| Series::new(key, self, i))
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns an iterator over series.
+     pub fn series(&'r self) -> impl Iterator<Item = Series<'r>> + 'r {
+         self.keys()
+             .iter()
+             .enumerate()
+             .map(|(i, key)| Series::new(key, self, i))

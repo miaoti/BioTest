@@ -180,6 +180,53 @@ def apply_transform(
     return _DISPATCH[name](file_lines, seed)
 
 
+def _multishot_extra_steps(
+    base_steps: list[str],
+    format_context: Optional[str],
+    seed: Optional[int],
+    k: int,
+) -> list[str]:
+    """Pick k semantics-preserving transforms from the same-format whitelist
+    to compose AFTER the MR's own steps.
+
+    Filters out:
+      - transforms already in `base_steps` (no duplicates)
+      - format mismatches
+      - runner-hook transforms (need a primary SUT runner injected)
+      - format-context transforms (currently sut_write_roundtrip)
+      - the four compound ALT-permutation members (must run as a group)
+      - malformed/REJECTION transforms (their job is to break parses,
+        which would defeat the metamorphic oracle when stacked)
+
+    Returns up to k names; deterministic for a given seed.
+    """
+    if k <= 0:
+        return []
+    fmt = (format_context or "").upper()
+    base_set = set(base_steps)
+    compound_members = {
+        "choose_permutation", "permute_ALT", "remap_GT", "permute_Number_A_R_fields",
+    }
+    candidates: list[str] = []
+    for name, meta in TRANSFORM_REGISTRY.items():
+        if name in base_set:
+            continue
+        if name in _DISPATCH_NEEDS_HOOK or name in _DISPATCH_NEEDS_FORMAT:
+            continue
+        if name in compound_members:
+            continue
+        if name.startswith("violate_"):
+            continue
+        meta_fmt = meta.format.upper()
+        if meta_fmt == "VCF/SAM" or meta_fmt == fmt:
+            candidates.append(name)
+    if not candidates:
+        return []
+    rng = random.Random(seed)
+    rng.shuffle(candidates)
+    return candidates[:k]
+
+
 def apply_mr_transforms(
     file_lines: list[str],
     transform_steps: list[str],
@@ -193,6 +240,12 @@ def apply_mr_transforms(
 
     Handles the compound ALT permutation group specially: when all four
     members are present, they share a single permutation array.
+
+    Refine Round 4 (env-var-gated multi-shot composition): when the
+    env var BIOTEST_MULTISHOT_K is set to a positive integer, append
+    that many extra semantics-preserving transforms (drawn from the
+    same-format whitelist) after the MR's own steps. Off by default
+    (env var unset → exact prior behaviour).
 
     Args:
         file_lines: Input file lines.
@@ -209,14 +262,25 @@ def apply_mr_transforms(
     Returns:
         Transformed file lines.
     """
+    import os as _os
+
     # Check for compound ALT permutation group
     compound = {"choose_permutation", "permute_ALT", "remap_GT", "permute_Number_A_R_fields"}
     if compound.issubset(set(transform_steps)):
         return _apply_compound_alt_permutation(file_lines, seed)
 
+    steps = list(transform_steps)
+    try:
+        multishot_k = int(_os.environ.get("BIOTEST_MULTISHOT_K", "0"))
+    except ValueError:
+        multishot_k = 0
+    if multishot_k > 0:
+        extras = _multishot_extra_steps(steps, format_context, seed, multishot_k)
+        steps.extend(extras)
+
     # Sequential application of independent transforms
     result = list(file_lines)
-    for step_name in transform_steps:
+    for step_name in steps:
         result = apply_transform(
             step_name, result, seed,
             runner_hook=runner_hook,

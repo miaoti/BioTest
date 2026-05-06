@@ -1,0 +1,23 @@
+--- src/io/reader/query.rs
++++ replace next_record -> io::Result<usize> with Ok(1)
+@@ -83,19 +83,10 @@
+     record: &mut Record,
+     header: &Header,
+     reference_sequence_name: &[u8],
+     interval: Interval,
+ ) -> io::Result<usize>
+ where
+     R: bgzf::io::BufRead + bgzf::io::Seek,
+ {
+-    loop {
+-        match reader.read_record(record)? {
+-            0 => return Ok(0),
+-            n => {
+-                if intersects(header, record, reference_sequence_name, interval)? {
+-                    return Ok(n);
+-                }
+-            }
+-        }
+-    }
++    Ok(1) /* ~ changed by cargo-mutants ~ */
+ }

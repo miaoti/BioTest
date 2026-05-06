@@ -1,0 +1,297 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "header_meta_line_shuffle_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "The set of meta-information lines (excluding fileformat) is identical after sorting; the fileformat line remains first.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p1",
+          "quote": "The first line in a VCF file must be '##fileformat=VCFv4.5'.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "header_dictionary_permutation_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "The header dictionary order does not affect the interpretation of the VCF data.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p2",
+          "quote": "Meta-information lines can appear in any order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "aae1913889e7",
+      "mr_name": "sample_column_permutation_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "Sample genotype data is correctly reordered to match the permuted column headers.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p1",
+          "quote": "The FORMAT column specifies the format of the genotype fields.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "info_field_kv_shuffle_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "The set of INFO key-value pairs remains identical after sorting.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::p1",
+          "quote": "INFO fields are encoded as semicolon-separated key=value pairs.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "alt_allele_permutation_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "permute_Number_A_R_fields",
+        "remap_GT"
+      ],
+      "oracle": "After permuting ALT alleles, the INFO fields with Number=A or Number=R are correspondingly permuted, and GT fields are remapped to reflect the new allele ordering, preserving the biological interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Allele fields::p1",
+          "quote": "ALT is a comma-separated list of alternate alleles.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "left_align_indel_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "The variant representation is left-aligned and parsimonious, but the biological variant is equivalent.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Variant representation::p1",
+          "quote": "Left-alignment ensures that the same variant is represented consistently.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "split_multi_allelic_roundtrip",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "Each multi-allelic record is split into multiple bi-allelic records with equivalent total information.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Multi-allelic variants::p1",
+          "quote": "Multi-allelic records can be decomposed into bi-allelic records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5ea9b9ae0f5d",
+      "mr_name": "vcf_bcf_roundtrip_invariance",
+      "scope": "VCF.header",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Converting VCF to BCF and back preserves all data fields and header information.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF format::p1",
+          "quote": "BCF is a binary representation of VCF.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8974c64955cf",
+      "mr_name": "query_method_roundtrip_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "query_method_roundtrip"
+      ],
+      "oracle": "Query methods return identical results before and after the roundtrip transformation.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Query API::p1",
+          "quote": "Query methods provide access to VCF record properties.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "isStructural",
+        "getNAlleles",
+        "isBiallelic"
+      ]
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "trim_common_affixes_invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "Trimming common prefix/suffix from REF and ALT alleles produces a parsimonious but equivalent variant representation.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Parsimony::p1",
+          "quote": "REF and ALT alleles should be trimmed to remove common prefix and suffix bases.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "vcf_bcf_roundtrip_preserves_content",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "All records are semantically equivalent after VCF→BCF→VCF round-trip conversion",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "BCF is a binary representation of VCF; round-trip conversion should preserve all variant information",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "sut_write_roundtrip_preserves_records",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "All records are semantically equivalent after write-then-read-back cycle",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Writing and reading back a VCF file should produce identical variant data",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "permute_sample_columns_preserves_genotypes",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "Each sample's genotype and field values are preserved after column permutation",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Sample columns in VCF are independent; permuting them with their header definitions preserves per-sample data integrity",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "19ff4ae6dea2",
+      "mr_name": "permute_csq_annotations_preserves_info",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_csq_annotations"
+      ],
+      "oracle": "The set of CSQ annotations is preserved regardless of their order within the INFO field",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "CSQ annotations are a list; their order does not affect the biological interpretation",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 14,
+    "total": 14
+  }
+}

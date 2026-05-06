@@ -1,231 +1,276 @@
-% Mutation-adequacy radar.
-%
-% Design rationale: a tabular layout displays per-cell deltas one
-% number at a time and reads as six independent comparisons, which
-% under-sells \biotest's distinguishing property -- a single
-% framework spanning all six (SUT, format) cells. The radar makes
-% that property visual: \biotest{} is a closed hexagon, and each
-% coverage-guided baseline is a single point on its single
-% applicable axis. Per-cell scores are printed at every vertex so
-% no rigour is lost relative to the prior table.
+% Mutation-adequacy radar -- single-column.
 %
 % Visual layers, back to front:
-%   1. concentric percentage rings (25/50/75/100)
-%   2. six radial spokes (one per axis)
-%   3. Pure-Random polygon (grey, dashed)        -- floor reference
-%   4. \biotest{} polygon (blue, semi-transparent fill)
-%   5. strongest-baseline markers (orange dots)  -- one per axis
-%   6. star marker on the seqan3/SAM \biotest{} vertex
-%      (the only axis where \biotest{} exceeds every baseline)
-%   7. per-axis labels at the perimeter (compact, two lines)
-%   8. inline legend at the upper-left of the radar bounding box
+%   1. concentric rings (25/50/75/100), six radial spokes
+%   2. Pure-Random polygon (grey, dashed)
+%   3. each baseline polygon collapsed onto its single applicable axis
+%      (Atheris/Jazzer/cargo-fuzz/libFuzzer/AFL++), one colour each
+%   4. \biotest{} polygon spanning all six axes
+%   5. per-axis SUT/format labels at the perimeter
+%   6. score labels coloured to match each polygon
+%   7. compact 3-row legend below the radar
 %
-% Unit convention: \R is a cm-unitless number. TikZ polar
-% coordinates of the form (angle:{\R*frac}) resolve to cm by
-% default, which gives the intended radius in cm.
+% Width is sized for IEEEtran's single column (~88mm). The bounding
+% box (-4.3, -4.85) rectangle (4.3, 2.75) is ~8.6 cm wide.
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
 \centering
 \begin{tikzpicture}
 
-% Radius at 100% kill rate, in cm. 2.0 keeps the figure compact;
-% perimeter labels extend ~30 mm beyond the rings.
-\pgfmathsetmacro{\R}{2.0}
+\colorlet{btblue}{blue!60!black}
+\colorlet{atherisclr}{orange!85!red}
+\colorlet{jazzerclr}{red!80!black}
+\colorlet{cargoclr}{violet!85!black}
+\colorlet{libfclr}{green!55!black}
+\colorlet{aflclr}{cyan!60!black}
+\colorlet{prclr}{black!55}
 
-% ---- (1) concentric percentage rings -----------------------------
-\foreach \pct in {25, 50, 75, 100}{%
-  \draw[draw=black!18, line width=0.30pt]
+\pgfmathsetmacro{\R}{2.0}
+\useasboundingbox (-4.3,-4.85) rectangle (4.3,2.75);
+
+% ---- (1) rings + spokes -----------------------------------------
+\foreach \pct in {25,50,75,100}{%
+  \draw[draw=black!16, line width=0.30pt]
         (0,0) circle ({\R*\pct/100});
 }
-% ring percentage labels along the +x direction, between vcfpy and
-% noodles spokes so they do not collide with the polygons
-\foreach \pct in {25, 50, 75, 100}{%
-  \node[font=\fontsize{5.5}{6}\selectfont, text=black!50,
+\foreach \pct in {25,50,75}{%
+  \node[font=\fontsize{5}{5.5}\selectfont, text=black!50,
         anchor=south west, inner sep=0.3pt]
         at (62:{\R*\pct/100}) {\pct};
 }
-
-% ---- (2) six radial spokes --------------------------------------
-\foreach \ang in {90, 30, -30, -90, -150, 150}{%
-  \draw[draw=black!25, line width=0.30pt] (0,0) -- (\ang:\R);
+\foreach \ang in {90,30,-30,-90,-150,150}{%
+  \draw[draw=black!22, line width=0.30pt] (0,0) -- (\ang:\R);
 }
 
-% ---- (3) Pure-Random polygon ------------------------------------
-% values: vcfpy 0.89, noodles 0.00, seqan3 7.19, biopython 0.24,
-%         htsjdk-SAM 1.20, htsjdk-VCF 0.00
-\filldraw[fill=black!10, fill opacity=0.50,
-          draw=black!55, line width=0.45pt,
+% ---- (2) Pure-Random floor (grey, dashed) -----------------------
+\filldraw[fill=prclr, fill opacity=0.45,
+          draw=prclr, line width=0.7pt, line join=round,
           dash pattern=on 1.4pt off 1.0pt]
-   (90:{\R*0.0089})
--- (30:{\R*0.0000})
--- (-30:{\R*0.0719})
--- (-90:{\R*0.0024})
--- (-150:{\R*0.0120})
--- (150:{\R*0.0000})
--- cycle;
+   (90:{\R*0.0089}) -- (30:0) -- (-30:{\R*0.0719})
+-- (-90:{\R*0.0024}) -- (-150:{\R*0.0120}) -- (150:0) -- cycle;
+
+% ---- (3) per-baseline polygons (one axis each) ------------------
+\filldraw[fill=aflclr, fill opacity=0.20,
+          draw=aflclr, line width=1.6pt, line join=round]
+   (90:0) -- (30:0) -- (-30:{\R*0.7322})
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=libfclr, fill opacity=0.20,
+          draw=libfclr, line width=1.6pt, line join=round]
+   (90:0) -- (30:0) -- (-30:{\R*0.9057})
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=cargoclr, fill opacity=0.22,
+          draw=cargoclr, line width=2.0pt, line join=round]
+   (90:0) -- (30:{\R*0.0874}) -- (-30:0)
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=atherisclr, fill opacity=0.20,
+          draw=atherisclr, line width=1.6pt, line join=round]
+   (90:{\R*0.8737}) -- (30:0) -- (-30:0)
+-- (-90:{\R*0.5800}) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=jazzerclr, fill opacity=0.22,
+          draw=jazzerclr, line width=1.4pt, line join=round]
+   (90:0) -- (30:0) -- (-30:0)
+-- (-90:0) -- (-150:{\R*0.2361}) -- (150:{\R*0.3659}) -- cycle;
 
 % ---- (4) \biotest{} polygon -------------------------------------
-% values: vcfpy 85.66, noodles 8.10, seqan3 97.44, biopython 25.48,
-%         htsjdk-SAM 21.14, htsjdk-VCF 32.40
-\filldraw[fill=blue!58!black, fill opacity=0.18,
-          draw=blue!58!black, line width=1.0pt, line join=round]
-   (90:{\R*0.8566})
--- (30:{\R*0.0810})
--- (-30:{\R*0.9744})
--- (-90:{\R*0.2548})
--- (-150:{\R*0.2114})
--- (150:{\R*0.3240})
+\filldraw[fill=btblue, fill opacity=0.22,
+          draw=btblue, line width=1.3pt, line join=round]
+   (90:{\R*0.8566}) -- (30:{\R*0.0810}) -- (-30:{\R*0.9744})
+-- (-90:{\R*0.2548}) -- (-150:{\R*0.2114}) -- (150:{\R*0.3240})
 -- cycle;
 
-% ---- (5) strongest-baseline markers (one per axis) --------------
-% strongest applicable baseline per axis:
-%   vcfpy   - Atheris    87.37
-%   noodles - cargo-fuzz  8.74
-%   seqan3  - libFuzzer  90.57
-%   biopython - Atheris  58.00
-%   htsjdk-SAM - Jazzer  23.61
-%   htsjdk-VCF - Jazzer  36.59
-\foreach \ang/\val in {%
-  90/0.8737, 30/0.0874, -30/0.9057,
-  -90/0.5800, -150/0.2361, 150/0.3659%
-}{%
-  \fill[orange!82!red] (\ang:{\R*\val}) circle (1.6pt);
-  \draw[orange!72!red, line width=0.4pt] (\ang:{\R*\val}) circle (1.6pt);
+% \biotest{} vertex dots
+\foreach \ang/\val in {90/0.8566, 30/0.0810, -30/0.9744,
+  -90/0.2548, -150/0.2114, 150/0.3240}{%
+  \fill[btblue] (\ang:{\R*\val}) circle (2.1pt);
+}
+% baseline vertex markers (distinct shape per tool)
+\foreach \ang/\val in {90/0.8737, -90/0.5800}{%
+  \node[regular polygon, regular polygon sides=3,
+        fill=atherisclr, draw=atherisclr,
+        inner sep=0pt, minimum size=5.5pt]
+        at (\ang:{\R*\val}) {};
+}
+\foreach \ang/\val in {150/0.3659, -150/0.2361}{%
+  \node[fill=jazzerclr, draw=jazzerclr,
+        shape=rectangle, inner sep=0pt, minimum size=4.6pt]
+        at (\ang:{\R*\val}) {};
+}
+\node[diamond, fill=cargoclr, draw=cargoclr,
+      inner sep=0pt, minimum size=5.8pt]
+      at (30:{\R*0.0874}) {};
+\node[regular polygon, regular polygon sides=5,
+      fill=libfclr, draw=libfclr,
+      inner sep=0pt, minimum size=5.5pt]
+      at (-30:{\R*0.9057}) {};
+\node[regular polygon, regular polygon sides=6,
+      fill=aflclr, draw=aflclr,
+      inner sep=0pt, minimum size=5.8pt]
+      at (-30:{\R*0.7322}) {};
+\foreach \ang/\val in {90/0.0089, -30/0.0719,
+  -90/0.0024, -150/0.0120}{%
+  \fill[prclr] (\ang:{\R*\val}) circle (1.0pt);
 }
 
-% ---- (6) \biotest{} vertex dots ---------------------------------
-% all axes get a small blue dot, except seqan3 (replaced by star)
-\foreach \ang/\val in {%
-  90/0.8566, 30/0.0810,
-  -90/0.2548, -150/0.2114, 150/0.3240%
-}{%
-  \fill[blue!58!black] (\ang:{\R*\val}) circle (1.3pt);
-}
-% star at seqan3/SAM \biotest{} vertex marks the win
-\node[star, star points=5, star point ratio=2.4,
-      draw=orange!72!red, fill=yellow!88!orange,
-      line width=0.45pt, inner sep=0pt, minimum size=5.0pt]
-      at (-30:{\R*0.9744}) {};
+% ---- (5) per-axis SUT/format labels -----------------------------
+\node[anchor=south, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (90:{\R + 0.30}) {vcfpy / VCF};
+\node[anchor=south west, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (30:{\R + 0.30}) {noodles / VCF};
+\node[anchor=west, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-30:{\R + 0.30}) {seqan3 / SAM};
+\node[anchor=north, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-90:{\R + 0.30}) {biopython / SAM};
+\node[anchor=north east, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-150:{\R + 0.30}) {htsjdk / SAM};
+\node[anchor=south east, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (150:{\R + 0.30}) {htsjdk / VCF};
 
-% ---- (7) per-axis perimeter labels (compact, 2-line) ------------
-% Each label block: SUT/format - language (combined, bold + italic)
-%                 + BT score / baseline score (one line)
-%
-% Outer radius: \R + 0.30 cm (3 mm beyond the 100% ring).
-% Anchors are chosen so labels read away from the radar centre.
+% ---- (6) score labels in matching colour ------------------------
+% \biotest{} scores (blue, bold)
+\node[anchor=east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(90:{\R*0.8566}) + (-1mm,0)$) {85.7};
+\node[anchor=west, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(30:{\R*0.0810}) + (1.5mm,0)$) {8.1};
+\node[anchor=south east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-30:{\R*0.9744}) + (60:2mm)$) {97.4};
+\node[anchor=west, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-90:{\R*0.2548}) + (2mm,0)$) {25.5};
+\node[anchor=north, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-150:{\R*0.2114}) + (0,-3mm)$) {21.1};
+\node[anchor=east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at (150:{\R*0.50}) {32.4};
 
-% --- vcfpy / VCF (top) ---
-\node[anchor=south, align=center, inner sep=1pt]
-     at (90:{\R + 0.30}) {%
-  {\scriptsize\textbf{vcfpy / VCF}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Python)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   \textbf{\color{blue!58!black}BT 85.7}\;\;
-   {\color{orange!72!red}Atheris 87.4}}%
-};
+% baseline scores
+\node[anchor=west, font=\fontsize{6.0}{6.3}\selectfont,
+      text=atherisclr, inner sep=0.3pt]
+      at ($(90:{\R*0.8737}) + (1mm,0)$) {87.4};
+\node[anchor=west, font=\fontsize{6.0}{6.3}\selectfont,
+      text=atherisclr, inner sep=0.3pt]
+      at ($(-90:{\R*0.5800}) + (1mm,0)$) {58.0};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=jazzerclr, inner sep=0.3pt]
+      at ($(150:{\R*0.3659}) + (-120:2mm)$) {36.6};
+\node[anchor=east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=jazzerclr, inner sep=0.3pt]
+      at (-150:{\R*0.50}) {23.6};
+\node[anchor=west, font=\fontsize{6.2}{6.5}\selectfont\bfseries,
+      text=cargoclr, inner sep=0.3pt]
+      at (30:{\R*0.32}) {8.7};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=libfclr, inner sep=0.3pt]
+      at ($(-30:{\R*0.9057}) + (-120:2mm)$) {90.6};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=aflclr, inner sep=0.3pt]
+      at ($(-30:{\R*0.7322}) + (-120:2mm)$) {73.2};
 
-% --- noodles / VCF (upper right) ---
-\node[anchor=south west, align=left, inner sep=1pt]
-     at (30:{\R + 0.30}) {%
-  {\scriptsize\textbf{noodles / VCF}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Rust)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   \textbf{\color{blue!58!black}BT 8.1}\;\;
-   {\color{orange!72!red}cargo-fuzz 8.7}}%
-};
+% ---- (7) compact 3-row legend below the radar -------------------
+\begin{scope}[shift={(0,-3.10)}]
+  \filldraw[fill=btblue, fill opacity=0.22,
+            draw=btblue, line width=1.0pt]
+            (-39mm,-1mm) rectangle (-34mm,1mm);
+  \fill[btblue] (-36.5mm,0) circle (1.7pt);
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-33mm, 0)
+        {\textsc{BioTest} (6/6)};
 
-% --- seqan3 / SAM (lower right) -- the WIN ---
-\node[anchor=west, align=left, inner sep=1pt]
-     at (-30:{\R + 0.30}) {%
-  {\scriptsize\textbf{seqan3 / SAM}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(C++)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   \textbf{\color{blue!58!black}BT 97.4\,$\bigstar$}\;\;
-   {\color{orange!72!red}libFuzzer 90.6}}%
-};
-
-% --- biopython / SAM (bottom) ---
-\node[anchor=north, align=center, inner sep=1pt]
-     at (-90:{\R + 0.30}) {%
-  {\scriptsize\textbf{biopython / SAM}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Python)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   \textbf{\color{blue!58!black}BT 25.5}\;\;
-   {\color{orange!72!red}Atheris 58.0}}%
-};
-
-% --- htsjdk / SAM (lower left) ---
-\node[anchor=north east, align=right, inner sep=1pt]
-     at (-150:{\R + 0.30}) {%
-  {\scriptsize\textbf{htsjdk / SAM}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Java)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   {\color{orange!72!red}Jazzer 23.6}\;\;
-   \textbf{\color{blue!58!black}BT 21.1}}%
-};
-
-% --- htsjdk / VCF (upper left) ---
-\node[anchor=south east, align=right, inner sep=1pt]
-     at (150:{\R + 0.30}) {%
-  {\scriptsize\textbf{htsjdk / VCF}\,
-   \fontsize{6}{6.5}\selectfont\itshape\color{black!60}(Java)}\\[-0.4mm]
-  {\fontsize{7}{7.5}\selectfont
-   {\color{orange!72!red}Jazzer 36.6}\;\;
-   \textbf{\color{blue!58!black}BT 32.4}}%
-};
-
-% ---- (8) compact 2-row legend below the radar -------------------
-% Two rows of swatches, narrow enough to fit single-column width.
-\begin{scope}[shift={(0, {-\R - 1.35})}]
-  % row 1: BioTest swatch + label, baseline marker + label
-  \filldraw[fill=blue!58!black, fill opacity=0.18,
-            draw=blue!58!black, line width=0.9pt]
-            (-37mm,-0.8mm) rectangle (-33mm,0.8mm);
-  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
-        inner sep=1pt] at (-32.5mm, 0)
-        {\textsc{BioTest} (6/6 cells)};
-
-  \fill[orange!82!red] (4mm, 0) circle (1.6pt);
-  \draw[orange!72!red, line width=0.4pt] (4mm, 0) circle (1.6pt);
-  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
-        inner sep=1pt] at (5.5mm, 0)
-        {strongest baseline (1 cell each)};
-
-  % row 2: Pure-Random swatch + label, win-star + label
-  \filldraw[fill=black!10, fill opacity=0.50,
-            draw=black!55, line width=0.45pt,
+  \filldraw[fill=prclr, fill opacity=0.45,
+            draw=prclr, line width=0.7pt,
             dash pattern=on 1.4pt off 1.0pt]
-            (-37mm,-3.6mm) rectangle (-33mm,-2.0mm);
-  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
-        inner sep=1pt] at (-32.5mm, -2.8mm)
-        {Pure-Random floor};
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \fill[prclr] (-9.5mm, 0) circle (1.0pt);
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {Pure-Random};
 
-  \node[star, star points=5, star point ratio=2.4,
-        draw=orange!72!red, fill=yellow!88!orange,
-        line width=0.45pt, inner sep=0pt, minimum size=4.8pt]
-        at (4mm, -2.8mm) {};
-  \node[anchor=west, font=\fontsize{6.5}{7}\selectfont,
-        inner sep=1pt] at (5.5mm, -2.8mm)
-        {\textsc{BioTest} leads every baseline};
+  \filldraw[fill=atherisclr, fill opacity=0.20,
+            draw=atherisclr, line width=1.0pt]
+            (16mm,-1mm) rectangle (21mm,1mm);
+  \node[regular polygon, regular polygon sides=3,
+        fill=atherisclr, draw=atherisclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (18.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (22mm, 0)
+        {Atheris (Py)};
+\end{scope}
+
+\begin{scope}[shift={(0,-3.50)}]
+  \filldraw[fill=jazzerclr, fill opacity=0.22,
+            draw=jazzerclr, line width=1.0pt]
+            (-39mm,-1mm) rectangle (-34mm,1mm);
+  \node[fill=jazzerclr, draw=jazzerclr,
+        shape=rectangle, inner sep=0pt, minimum size=4pt]
+        at (-36.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-33mm, 0)
+        {Jazzer (Java)};
+
+  \filldraw[fill=cargoclr, fill opacity=0.22,
+            draw=cargoclr, line width=1.0pt]
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \node[diamond, fill=cargoclr, draw=cargoclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (-9.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {cargo-fuzz (Rs)};
+
+  \filldraw[fill=libfclr, fill opacity=0.20,
+            draw=libfclr, line width=1.0pt]
+            (16mm,-1mm) rectangle (21mm,1mm);
+  \node[regular polygon, regular polygon sides=5,
+        fill=libfclr, draw=libfclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (18.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (22mm, 0)
+        {libFuzzer (C++)};
+\end{scope}
+
+\begin{scope}[shift={(0,-3.85)}]
+  \filldraw[fill=aflclr, fill opacity=0.20,
+            draw=aflclr, line width=1.0pt]
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \node[regular polygon, regular polygon sides=6,
+        fill=aflclr, draw=aflclr,
+        inner sep=0pt, minimum size=4.7pt]
+        at (-9.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {AFL++ (C++)};
 \end{scope}
 
 \end{tikzpicture}
 
 \caption{Mutation kill rate (\%) per (SUT, format) cell.
-\biotest{}'s closed polygon spans all six cells (four host
-languages); each coverage-guided fuzzer applies to a single host
-language and appears as a single point on its single applicable
-axis. \biotest{} \emph{exceeds} every baseline on seqan3/SAM by
-$+6.87$\,pp ($\bigstar$) and \emph{trails the strongest baseline}
-by $1.5$ to $4.2$\,pp on the four close-margin pairs (htsjdk/VCF,
-htsjdk/SAM, vcfpy/VCF, noodles/VCF) which all clear family-wise
-$\alpha{=}0.05$ under Holm--Bonferroni
-(\S\ref{sec:mutation-adequacy}). The only large gap is biopython/SAM
+\biotest{}'s closed polygon spans all six cells; each
+coverage-guided fuzzer applies to one host language and appears as
+a single-axis polygon. \biotest{} \emph{exceeds} every baseline on
+seqan3/SAM by $+6.87$\,pp, \emph{ties} Atheris on vcfpy/VCF
+($-0.05$\,pp, inside both samples' standard deviations), and
+\emph{trails the strongest baseline} by $0.4$ to $4.2$\,pp on the
+three remaining close-margin pairs (htsjdk/VCF, htsjdk/SAM,
+noodles/VCF), each clearing family-wise $\alpha{=}0.05$ under
+Holm--Bonferroni (\S\ref{sec:mutation-adequacy}). The only large gap is biopython/SAM
 ($-32.5$\,pp vs Atheris) where the parser is byte-content-lenient
 and coverage-guided fuzzing is structurally
-favoured~\citep{klees2018fuzz,boehme2020boosting}. Per-cell
-$n_{\mathrm{BT}}/n_{\mathrm{base}}$, std (\biotest/baseline), and
-mutation engine are listed in
-\S\ref{sec:mutation-adequacy}.}
+favoured~\citep{klees2018fuzz,boehme2020boosting}. Per-cell sample
+sizes and engine details are in \S\ref{sec:mutation-adequacy}.}
 \label{fig:mutation-radar}
-\end{figure*}
+\end{figure}

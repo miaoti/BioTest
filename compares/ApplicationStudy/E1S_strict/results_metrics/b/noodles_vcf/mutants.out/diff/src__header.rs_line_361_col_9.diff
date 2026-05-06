@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::sample_names -> &SampleNames with Box::leak(Box::new(Default::default()))
+@@ -353,17 +353,17 @@
+     ///
+     /// let expected: IndexSet<_> = [String::from("sample0"), String::from("sample1")]
+     ///     .into_iter()
+     ///     .collect();
+     ///
+     /// assert_eq!(header.sample_names(), &expected);
+     /// ```
+     pub fn sample_names(&self) -> &SampleNames {
+-        &self.sample_names
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a mutable reference to a list of sample names that come after the FORMAT column in
+     /// the header record.
+     ///
+     /// # Examples
+     ///
+     /// ```

@@ -1,0 +1,149 @@
+
+*** src/io/reader/record.rs:48:13: replace += with *= in read_record
+
+*** mutation diff:
+--- src/io/reader/record.rs
++++ replace += with *= in read_record
+@@ -40,17 +40,17 @@
+     len += read_required_field(reader, buf)?;
+     bounds.filters_end = buf.len();
+ 
+     let (n, is_eol) = read_last_required_field(reader, buf)?;
+     len += n;
+     bounds.info_end = buf.len();
+ 
+     if !is_eol {
+-        len += read_line(reader, buf)?;
++        len *= /* ~ changed by cargo-mutants ~ */ read_line(reader, buf)?;
+     }
+ 
+     Ok(len)
+ }
+ 
+ fn read_required_field<R>(reader: &mut R, dst: &mut String) -> io::Result<usize>
+ where
+     R: BufRead,
+
+
+*** /root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo test --no-run --verbose --package=noodles-vcf@0.70.0
+       Fresh adler2 v2.0.0
+       Fresh cfg-if v1.0.0
+       Fresh miniz_oxide v0.8.2
+       Fresh crossbeam-utils v0.8.21
+       Fresh unicode-ident v1.0.14
+       Fresh memchr v2.7.4
+       Fresh hashbrown v0.15.2
+       Fresh byteorder v1.5.0
+       Fresh equivalent v1.0.1
+       Fresh bytes v1.9.0
+       Fresh bit-vec v0.8.0
+       Fresh pin-project-lite v0.2.15
+       Fresh percent-encoding v2.3.1
+       Fresh crc32fast v1.4.2
+       Fresh crossbeam-channel v0.5.14
+       Fresh bstr v1.11.1
+       Fresh proc-macro2 v1.0.92
+       Fresh indexmap v2.7.0
+       Fresh flate2 v1.0.35
+       Fresh quote v1.0.37
+       Fresh noodles-core v0.15.0
+       Fresh noodles-bgzf v0.34.0
+       Fresh syn v2.0.90
+       Fresh noodles-csi v0.41.0
+       Fresh tokio-macros v2.4.0
+       Fresh noodles-tabix v0.47.0
+       Fresh tokio v1.42.0
+       Dirty noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp): the file `src/io/reader/record.rs` has changed (1778014677.240524275s, 3s after last build at 1778014674.390830355s)
+   Compiling noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp)
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=ce80f1facd87980e -C extra-filename=-c25326ed8f560d15 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e6456573256cb532 -C extra-filename=-846f3f957bfab11c --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rmeta --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rmeta --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rmeta --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rmeta --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rmeta --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rmeta --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rmeta`
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> src/record/fields.rs:52:35
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases {
+   |                                   ^^^^^     ^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                   |
+   |                                   the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases<'_> {
+   |                                                           ++++
+
+warning: `noodles-vcf` (lib) generated 1 warning (run `cargo fix --lib -p noodles-vcf` to apply 1 suggestion)
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_reheader --edition=2021 examples/vcf_reheader.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e0b2d7b2ab07c326 -C extra-filename=-9e1d10db5dd148c7 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_index --edition=2021 examples/vcf_index.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=4bde18ce597a7066 -C extra-filename=-17ebf49326ac4d81 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_view --edition=2021 examples/vcf_view.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e0948b5640618995 -C extra-filename=-a635e03599ef27e0 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_count --edition=2021 examples/vcf_count.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=6ef86d1f7adbec50 -C extra-filename=-43ced7610c215608 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_write --edition=2021 examples/vcf_write.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=85226040666c6dbd -C extra-filename=-c38f5db40eb40c5b --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name biotest_corpus_oracle --edition=2021 tests/biotest_corpus_oracle.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=27a0416fae348bec -C extra-filename=-dc43ebeda786eb76 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_read_header --edition=2021 examples/vcf_read_header.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=4499b5e3a81abeba -C extra-filename=-06bfbfa4af333152 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_query --edition=2021 examples/vcf_query.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=c102bbd1eb4c741d -C extra-filename=-e7f43caf09fce78b --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name vcf_extract --edition=2021 examples/vcf_extract.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type bin --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=e1c5ee6bde1ee167 -C extra-filename=-91d58f5f2cd008a1 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/examples -C incremental=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/incremental -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libindexmap-ef9b859f7cba9871.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libmemchr-dcc0c986b403e508.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_bgzf-d413ea864f6595f8.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_core-c76460cdfa09c24f.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_csi-120d63f4c0bd19f8.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_tabix-662e4c05c03fbdfc.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libnoodles_vcf-846f3f957bfab11c.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libpercent_encoding-2490259065368812.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/libtokio-da68203304847442.rlib`
+warning: `noodles-vcf` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.60s
+  Executable `/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/noodles_vcf-c25326ed8f560d15`
+  Executable `/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/debug/deps/biotest_corpus_oracle-dc43ebeda786eb76`
+
+*** result: Success
+
+*** /root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo test --verbose --package=noodles-vcf@0.70.0 --release --test biotest_corpus_oracle
+       Fresh adler2 v2.0.0
+       Fresh cfg-if v1.0.0
+       Fresh miniz_oxide v0.8.2
+       Fresh crossbeam-utils v0.8.21
+       Fresh unicode-ident v1.0.14
+       Fresh memchr v2.7.4
+       Fresh bytes v1.9.0
+       Fresh hashbrown v0.15.2
+       Fresh equivalent v1.0.1
+       Fresh byteorder v1.5.0
+       Fresh bit-vec v0.8.0
+       Fresh pin-project-lite v0.2.15
+       Fresh percent-encoding v2.3.1
+       Fresh crc32fast v1.4.2
+       Fresh bstr v1.11.1
+       Fresh crossbeam-channel v0.5.14
+       Fresh indexmap v2.7.0
+       Fresh proc-macro2 v1.0.92
+       Fresh flate2 v1.0.35
+       Fresh noodles-core v0.15.0
+       Fresh noodles-bgzf v0.34.0
+       Fresh quote v1.0.37
+       Fresh noodles-csi v0.41.0
+       Fresh syn v2.0.90
+       Fresh noodles-tabix v0.47.0
+       Fresh tokio-macros v2.4.0
+       Fresh tokio v1.42.0
+       Dirty noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp): the file `src/io/reader/record.rs` has changed (1778014677.240524275s, 2s after last build at 1778014675.054251165s)
+   Compiling noodles-vcf v0.70.0 (/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp)
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name noodles_vcf --edition=2021 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C embed-bitcode=no --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=d88a850ba3f643b9 -C extra-filename=-2a7809bbf733ab55 --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps -C strip=debuginfo -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libindexmap-9ec0447c2030e61b.rmeta --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libmemchr-389192b1cced1859.rmeta --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_bgzf-fb3a0dfc22651ebd.rmeta --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_core-8b86878a79f6fd9e.rmeta --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_csi-6e1fbfc6e3a4179f.rmeta --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_tabix-6da8f2ee846f118a.rmeta --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libpercent_encoding-ae9ff8f3e9f424d7.rmeta`
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> src/record/fields.rs:52:35
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases {
+   |                                   ^^^^^     ^^^^^^^^^^^^^^ the same lifetime is hidden here
+   |                                   |
+   |                                   the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+52 |     pub(super) fn alternate_bases(&self) -> AlternateBases<'_> {
+   |                                                           ++++
+
+warning: `noodles-vcf` (lib) generated 1 warning (run `cargo fix --lib -p noodles-vcf` to apply 1 suggestion)
+     Running `/root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name biotest_corpus_oracle --edition=2021 tests/biotest_corpus_oracle.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("async"))' -C metadata=2c00c5f3cac20f69 -C extra-filename=-5f6759ddb9f74a3e --out-dir /tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps -C strip=debuginfo -L dependency=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps --extern indexmap=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libindexmap-9ec0447c2030e61b.rlib --extern memchr=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libmemchr-389192b1cced1859.rlib --extern noodles_bgzf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_bgzf-fb3a0dfc22651ebd.rlib --extern noodles_core=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_core-8b86878a79f6fd9e.rlib --extern noodles_csi=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_csi-6e1fbfc6e3a4179f.rlib --extern noodles_tabix=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_tabix-6da8f2ee846f118a.rlib --extern noodles_vcf=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libnoodles_vcf-2a7809bbf733ab55.rlib --extern percent_encoding=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libpercent_encoding-ae9ff8f3e9f424d7.rlib --extern tokio=/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/libtokio-5788e8e60cf12332.rlib`
+    Finished `release` profile [optimized] target(s) in 1.79s
+     Running `/tmp/cargo-mutants-noodles-vcf-0.70-src-dSAnXh.tmp/target/release/deps/biotest_corpus_oracle-5f6759ddb9f74a3e`
+
+running 1 test
+test corpus_oracle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s
+
+
+*** result: Success

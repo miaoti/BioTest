@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace <impl AsRef<str> for Samples<'_>>::as_ref -> &str with "xyzzy"
+@@ -72,17 +72,17 @@
+                 Some(parse_sample(&mut src, self.keys()))
+             }
+         })
+     }
+ }
+ 
+ impl AsRef<str> for Samples<'_> {
+     fn as_ref(&self) -> &str {
+-        self.0
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::Samples for Samples<'_> {
+     fn is_empty(&self) -> bool {
+         self.0.is_empty()
+     }
+ 

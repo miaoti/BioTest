@@ -1,0 +1,40 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace parse_first_allele -> io::Result<(Option<usize>, Phasing)> with Ok((Some(0), Default::default()))
+@@ -26,36 +26,17 @@
+                     Some(parse_allele(&mut src))
+                 }
+             })),
+         )
+     }
+ }
+ 
+ fn parse_first_allele(src: &mut &str) -> io::Result<(Option<usize>, Phasing)> {
+-    let mut buf = next_allele(src);
+-
+-    let phasing = if buf.starts_with(['|', '/']) {
+-        let p = parse_phasing(&buf[..1])?;
+-        buf = &buf[1..];
+-        p
+-    } else if src
+-        .as_bytes()
+-        .iter()
+-        .filter(|&&b| matches!(b, b'|' | b'/'))
+-        .any(|&b| b == b'/')
+-    {
+-        Phasing::Unphased
+-    } else {
+-        Phasing::Phased
+-    };
+-
+-    let position = parse_position(buf)?;
+-
+-    Ok((position, phasing))
++    Ok((Some(0), Default::default())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_allele(src: &mut &str) -> io::Result<(Option<usize>, Phasing)> {
+     let buf = next_allele(src);
+ 
+     let phasing = parse_phasing(&buf[..1])?;
+     let position = parse_position(&buf[1..])?;
+ 

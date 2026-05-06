@@ -1,0 +1,31 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace parse_phasing -> io::Result<Phasing> with Ok(Default::default())
+@@ -76,27 +76,17 @@
+ fn is_phasing_indicator(c: char) -> bool {
+     const PHASED: char = '|';
+     const UNPHASED: char = '/';
+ 
+     matches!(c, PHASED | UNPHASED)
+ }
+ 
+ fn parse_phasing(src: &str) -> io::Result<Phasing> {
+-    const PHASED: &str = "|";
+-    const UNPHASED: &str = "/";
+-
+-    match src {
+-        PHASED => Ok(Phasing::Phased),
+-        UNPHASED => Ok(Phasing::Unphased),
+-        _ => Err(io::Error::new(
+-            io::ErrorKind::InvalidData,
+-            "invalid phasing indicator",
+-        )),
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_position(src: &str) -> io::Result<Option<usize>> {
+     const MISSING: &str = ".";
+ 
+     match src {
+         MISSING => Ok(None),
+         _ => src

@@ -1,0 +1,29 @@
+--- src/record/samples/keys.rs
++++ replace Keys<'a>::iter -> impl Iterator<Item =&'a str>+'a with ::std::iter::once("xyzzy")
+@@ -6,25 +6,17 @@
+ 
+ impl<'a> Keys<'a> {
+     pub(super) fn new(src: &'a str) -> Self {
+         Self(src)
+     }
+ 
+     /// Returns an iterator over keys.
+     pub fn iter(&self) -> impl Iterator<Item = &'a str> + 'a {
+-        let mut src = self.0;
+-
+-        iter::from_fn(move || {
+-            if src.is_empty() {
+-                None
+-            } else {
+-                Some(parse_key(&mut src))
+-            }
+-        })
++        ::std::iter::once("xyzzy") /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ fn parse_key<'a>(src: &mut &'a str) -> &'a str {
+     const DELIMITER: char = ':';
+ 
+     let (buf, rest) = src
+         .split_once(DELIMITER)

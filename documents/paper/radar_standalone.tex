@@ -1,0 +1,238 @@
+\documentclass[border=5pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,calc}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\newcommand{\biotest}{\textsc{BioTest}}
+\begin{document}
+\colorlet{btblue}{blue!60!black}
+\colorlet{atherisclr}{orange!85!red}
+\colorlet{jazzerclr}{red!80!black}
+\colorlet{cargoclr}{violet!85!black}
+\colorlet{libfclr}{green!55!black}
+\colorlet{aflclr}{cyan!60!black}
+\colorlet{prclr}{black!55}
+
+\begin{tikzpicture}
+
+\pgfmathsetmacro{\R}{2.0}
+\useasboundingbox (-4.3,-4.10) rectangle (4.3,2.75);
+
+\foreach \pct in {25,50,75,100}{%
+  \draw[draw=black!16, line width=0.30pt]
+        (0,0) circle ({\R*\pct/100});
+}
+\foreach \pct in {25,50,75}{%
+  \node[font=\fontsize{5}{5.5}\selectfont, text=black!50,
+        anchor=south west, inner sep=0.3pt]
+        at (62:{\R*\pct/100}) {\pct};
+}
+
+\foreach \ang in {90,30,-30,-90,-150,150}{%
+  \draw[draw=black!22, line width=0.30pt] (0,0) -- (\ang:\R);
+}
+
+\filldraw[fill=prclr, fill opacity=0.45,
+          draw=prclr, line width=0.7pt, line join=round]
+   (90:{\R*0.0089}) -- (30:0) -- (-30:{\R*0.0719})
+-- (-90:{\R*0.0024}) -- (-150:{\R*0.0120}) -- (150:0) -- cycle;
+
+\filldraw[fill=aflclr, fill opacity=0.20,
+          draw=aflclr, line width=1.6pt, line join=round]
+   (90:0) -- (30:0) -- (-30:{\R*0.7322})
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=libfclr, fill opacity=0.20,
+          draw=libfclr, line width=1.6pt, line join=round]
+   (90:0) -- (30:0) -- (-30:{\R*0.9057})
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=cargoclr, fill opacity=0.22,
+          draw=cargoclr, line width=2.0pt, line join=round]
+   (90:0) -- (30:{\R*0.0874}) -- (-30:0)
+-- (-90:0) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=atherisclr, fill opacity=0.20,
+          draw=atherisclr, line width=1.6pt, line join=round]
+   (90:{\R*0.8737}) -- (30:0) -- (-30:0)
+-- (-90:{\R*0.5800}) -- (-150:0) -- (150:0) -- cycle;
+
+\filldraw[fill=jazzerclr, fill opacity=0.22,
+          draw=jazzerclr, line width=1.4pt, line join=round]
+   (90:0) -- (30:0) -- (-30:0)
+-- (-90:0) -- (-150:{\R*0.2361}) -- (150:{\R*0.3659}) -- cycle;
+
+\filldraw[fill=btblue, fill opacity=0.22,
+          draw=btblue, line width=1.3pt, line join=round]
+   (90:{\R*0.8566}) -- (30:{\R*0.0810}) -- (-30:{\R*0.9744})
+-- (-90:{\R*0.2548}) -- (-150:{\R*0.2114}) -- (150:{\R*0.3240})
+-- cycle;
+
+\foreach \ang/\val in {90/0.8566, 30/0.0810, -30/0.9744,
+  -90/0.2548, -150/0.2114, 150/0.3240}{%
+  \fill[btblue] (\ang:{\R*\val}) circle (2.1pt);
+}
+\foreach \ang/\val in {90/0.8737, -90/0.5800}{%
+  \node[regular polygon, regular polygon sides=3,
+        fill=atherisclr, draw=atherisclr,
+        inner sep=0pt, minimum size=5.5pt]
+        at (\ang:{\R*\val}) {};
+}
+\foreach \ang/\val in {150/0.3659, -150/0.2361}{%
+  \node[fill=jazzerclr, draw=jazzerclr,
+        shape=rectangle, inner sep=0pt, minimum size=4.6pt]
+        at (\ang:{\R*\val}) {};
+}
+\node[diamond, fill=cargoclr, draw=cargoclr,
+      inner sep=0pt, minimum size=5.8pt]
+      at (30:{\R*0.0874}) {};
+\node[regular polygon, regular polygon sides=5,
+      fill=libfclr, draw=libfclr,
+      inner sep=0pt, minimum size=5.5pt]
+      at (-30:{\R*0.9057}) {};
+\node[regular polygon, regular polygon sides=6,
+      fill=aflclr, draw=aflclr,
+      inner sep=0pt, minimum size=5.8pt]
+      at (-30:{\R*0.7322}) {};
+\foreach \ang/\val in {90/0.0089, -30/0.0719,
+  -90/0.0024, -150/0.0120}{%
+  \fill[prclr] (\ang:{\R*\val}) circle (1.0pt);
+}
+
+\node[anchor=south, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (90:{\R + 0.30}) {vcfpy / VCF};
+\node[anchor=south west, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (30:{\R + 0.30}) {noodles / VCF};
+\node[anchor=west, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-30:{\R + 0.30}) {seqan3 / SAM};
+\node[anchor=north, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-90:{\R + 0.30}) {biopython / SAM};
+\node[anchor=north east, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (-150:{\R + 0.30}) {htsjdk / SAM};
+\node[anchor=south east, inner sep=1pt,
+      font=\fontsize{7.5}{7.5}\selectfont\bfseries]
+      at (150:{\R + 0.30}) {htsjdk / VCF};
+
+\node[anchor=east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(90:{\R*0.8566}) + (-1mm,0)$) {85.7};
+\node[anchor=west, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(30:{\R*0.0810}) + (1.5mm,0)$) {8.1};
+\node[anchor=south east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-30:{\R*0.9744}) + (60:2mm)$) {97.4};
+\node[anchor=west, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-90:{\R*0.2548}) + (2mm,0)$) {25.5};
+\node[anchor=north, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at ($(-150:{\R*0.2114}) + (0,-3mm)$) {21.1};
+\node[anchor=east, font=\fontsize{6.8}{7}\selectfont\bfseries,
+      text=btblue, inner sep=0.4pt]
+      at (150:{\R*0.50}) {32.4};
+
+\node[anchor=west, font=\fontsize{6.0}{6.3}\selectfont,
+      text=atherisclr, inner sep=0.3pt]
+      at ($(90:{\R*0.8737}) + (1mm,0)$) {87.4};
+\node[anchor=west, font=\fontsize{6.0}{6.3}\selectfont,
+      text=atherisclr, inner sep=0.3pt]
+      at ($(-90:{\R*0.5800}) + (1mm,0)$) {58.0};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=jazzerclr, inner sep=0.3pt]
+      at ($(150:{\R*0.3659}) + (-120:2mm)$) {36.6};
+\node[anchor=east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=jazzerclr, inner sep=0.3pt]
+      at (-150:{\R*0.50}) {23.6};
+\node[anchor=west, font=\fontsize{6.2}{6.5}\selectfont\bfseries,
+      text=cargoclr, inner sep=0.3pt]
+      at (30:{\R*0.32}) {8.7};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=libfclr, inner sep=0.3pt]
+      at ($(-30:{\R*0.9057}) + (-120:2mm)$) {90.6};
+\node[anchor=north east, font=\fontsize{6.0}{6.3}\selectfont,
+      text=aflclr, inner sep=0.3pt]
+      at ($(-30:{\R*0.7322}) + (-120:2mm)$) {73.2};
+
+\begin{scope}[shift={(0,-3.10)}]
+  \filldraw[fill=btblue, fill opacity=0.22,
+            draw=btblue, line width=1.0pt]
+            (-39mm,-1mm) rectangle (-34mm,1mm);
+  \fill[btblue] (-36.5mm,0) circle (1.7pt);
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-33mm, 0)
+        {\textsc{BioTest} (6/6)};
+
+  \filldraw[fill=prclr, fill opacity=0.45,
+            draw=prclr, line width=0.7pt]
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \fill[prclr] (-9.5mm, 0) circle (1.0pt);
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {Pure-Random};
+
+  \filldraw[fill=atherisclr, fill opacity=0.20,
+            draw=atherisclr, line width=1.0pt]
+            (16mm,-1mm) rectangle (21mm,1mm);
+  \node[regular polygon, regular polygon sides=3,
+        fill=atherisclr, draw=atherisclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (18.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (22mm, 0)
+        {Atheris (Py)};
+\end{scope}
+
+\begin{scope}[shift={(0,-3.50)}]
+  \filldraw[fill=jazzerclr, fill opacity=0.22,
+            draw=jazzerclr, line width=1.0pt]
+            (-39mm,-1mm) rectangle (-34mm,1mm);
+  \node[fill=jazzerclr, draw=jazzerclr,
+        shape=rectangle, inner sep=0pt, minimum size=4pt]
+        at (-36.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-33mm, 0)
+        {Jazzer (Java)};
+
+  \filldraw[fill=cargoclr, fill opacity=0.22,
+            draw=cargoclr, line width=1.0pt]
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \node[diamond, fill=cargoclr, draw=cargoclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (-9.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {cargo-fuzz (Rs)};
+
+  \filldraw[fill=libfclr, fill opacity=0.20,
+            draw=libfclr, line width=1.0pt]
+            (16mm,-1mm) rectangle (21mm,1mm);
+  \node[regular polygon, regular polygon sides=5,
+        fill=libfclr, draw=libfclr,
+        inner sep=0pt, minimum size=4.5pt]
+        at (18.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (22mm, 0)
+        {libFuzzer (C++)};
+\end{scope}
+
+\begin{scope}[shift={(0,-3.85)}]
+  \filldraw[fill=aflclr, fill opacity=0.20,
+            draw=aflclr, line width=1.0pt]
+            (-12mm,-1mm) rectangle (-7mm,1mm);
+  \node[regular polygon, regular polygon sides=6,
+        fill=aflclr, draw=aflclr,
+        inner sep=0pt, minimum size=4.7pt]
+        at (-9.5mm, 0) {};
+  \node[anchor=west, font=\fontsize{6.4}{7.2}\selectfont,
+        inner sep=1pt] at (-6mm, 0)
+        {AFL++ (C++)};
+\end{scope}
+
+\end{tikzpicture}
+\end{document}

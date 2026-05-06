@@ -1,0 +1,21 @@
+--- src/record/fields/bounds.rs
++++ replace Bounds::info_range -> Range<usize> with Range::new()
+@@ -37,17 +37,17 @@
+         self.alternate_bases_end..self.quality_score_end
+     }
+ 
+     pub fn filters_range(&self) -> Range<usize> {
+         self.quality_score_end..self.filters_end
+     }
+ 
+     pub fn info_range(&self) -> Range<usize> {
+-        self.filters_end..self.info_end
++        Range::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn genotypes_range(&self) -> RangeFrom<usize> {
+         self.info_end..
+     }
+ }
+ 
+ impl Default for Bounds {

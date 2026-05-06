@@ -1,0 +1,21 @@
+--- src/io/reader/builder.rs
++++ delete match arm Some("gz" | "bgz") in Builder::build_from_path
+@@ -44,17 +44,17 @@
+     pub fn build_from_path<P>(mut self, src: P) -> io::Result<Reader<Box<dyn BufRead>>>
+     where
+         P: AsRef<Path>,
+     {
+         let src = src.as_ref();
+ 
+         if self.compression_method.is_none() {
+             self.compression_method = match src.extension().and_then(|ext| ext.to_str()) {
+-                Some("gz" | "bgz") => Some(CompressionMethod::Bgzf),
++                 /* ~ changed by cargo-mutants ~ */
+                 _ => Some(CompressionMethod::None),
+             };
+         }
+ 
+         let reader = File::open(src)?;
+         self.build_from_reader(reader)
+     }
+ 

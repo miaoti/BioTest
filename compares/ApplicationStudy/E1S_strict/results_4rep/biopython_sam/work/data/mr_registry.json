@@ -1,0 +1,170 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "invalid_header_rejection_after_reorder",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "If the original SAM header is invalid (e.g., missing required tags, malformed), the parser must reject it. After reordering header records, the parser must still reject the transformed input.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Uncovered code at sam.py:66-74 shows HD header writing logic where VN tag must come first and is required. Invalid headers lacking VN or with wrong tag order should be rejected consistently regardless of header record ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "invalid_sq_rejection_after_shuffle",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "If the original SAM file has an invalid SQ record (e.g., missing SN tag, invalid LN value), the parser must reject it. After shuffling SQ record subtags, the parser must still reject the transformed input.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Uncovered code at sam.py:95-106 handles SQ record fields including UR and DS tags. Invalid SQ records should be consistently rejected regardless of subtag ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "invalid_optional_tag_rejection_after_permute",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "If the original SAM record has an invalid optional tag (e.g., wrong type character, malformed value), the parser must reject it. After permuting the order of optional tag fields, the parser must still reject the transformed input.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification requires optional tags to have correct type characters (A, i, f, Z, H, B). Invalid type characters should cause rejection regardless of tag ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "54701ced9fe4",
+      "mr_name": "invalid_cigar_seq_length_rejection_after_canonicalize",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_cigar_match_operators"
+      ],
+      "oracle": "If the original SAM record has a CIGAR string whose length does not match the SEQ field, the parser must reject it. After canonicalizing CIGAR match operators (e.g., converting =/X to M), the parser must still reject the transformed input.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification requires CIGAR operations to consume bases consistent with SEQ length. A mismatch between CIGAR consumption and SEQ length is invalid and must be rejected regardless of CIGAR operator representation.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "193607c97130",
+      "mr_name": "invalid_flag_exclusivity_rejection_after_strip_mate",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "strip_mate_flags_if_unpaired"
+      ],
+      "oracle": "If the original SAM record has mutually exclusive flag bits set (e.g., both 0x4 unmapped and 0x2 mapped mate), the parser must reject it. After stripping mate-related flags if the read is unpaired, the parser must still reject the transformed input if the exclusivity violation remains.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM flag bits have exclusivity rules (e.g., 0x4 and 0x2 cannot both be set inconsistently). Violations should be consistently rejected.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "invalid_tlen_sign_rejection_after_roundtrip",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "If the original SAM record has an invalid TLEN value (e.g., sign inconsistent with pairing orientation), the parser must reject it. After SAM/BAM round-trip conversion, the parser must still reject the transformed input.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification requires TLEN to be 0 for unpaired reads or negative for reads where mate maps to lower position. Invalid TLEN values should be consistently rejected across format conversions.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "607158396225",
+      "mr_name": "invalid_hd_missing_vn_rejection_after_bump_version",
+      "scope": "SAM.header",
+      "preconditions": [],
+      "transform_steps": [
+        "bump_hd_vn_minor"
+      ],
+      "oracle": "If the original SAM header is missing the required VN tag in the HD line, the parser must reject it. After bumping the HD VN minor version, the parser must still reject the transformed input since the fundamental invalidity (missing VN) persists.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "Uncovered code at sam.py:66-68 shows VN is required in HD header. A header missing VN is invalid regardless of version number.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "invalid_cigar_zero_length_rejection_after_removal",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "If the original SAM record has a CIGAR string with invalid operations (e.g., non-canonical operators), the parser must reject it. After removing zero-length CIGAR operations, the parser must still reject the transformed input if the underlying invalidity remains.",
+      "evidence": [
+        {
+          "chunk_id": "spec-blind",
+          "quote": "SAM specification requires CIGAR operations to have positive lengths. Zero-length operations are invalid and should be rejected.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 8,
+    "total": 8
+  }
+}

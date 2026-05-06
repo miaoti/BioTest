@@ -1,0 +1,21 @@
+src/header.rs:361:9: replace Header::sample_names -> &SampleNames with Box::leak(Box::new(Default::default()))
+src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(Vec::new()))
+src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(vec![0]))
+src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(vec![1]))
+src/io/reader/header.rs:54:34: replace && with || in <impl BufRead for Reader<R>>::fill_buf
+src/io/reader/header.rs:54:60: replace != with == in <impl BufRead for Reader<R>>::fill_buf
+src/io/reader/header.rs:68:9: replace <impl BufRead for Reader<R>>::consume with ()
+src/io/reader/header.rs:76:5: replace read_header -> io::Result<Header> with Ok(Default::default())
+src/io/reader/header.rs:81:45: replace != with == in read_header
+src/io/reader/header.rs:96:5: replace read_line -> io::Result<usize> with Ok(0)
+src/io/reader/header.rs:96:5: replace read_line -> io::Result<usize> with Ok(1)
+src/io/reader/record.rs:13:5: replace read_record -> io::Result<usize> with Ok(0)
+src/io/reader/record.rs:47:8: delete ! in read_record
+src/io/reader/record.rs:58:5: replace read_required_field -> io::Result<usize> with Ok(0)
+src/io/reader/record.rs:71:5: replace read_last_required_field -> io::Result<(usize, bool)> with Ok((0, true))
+src/io/reader/record.rs:71:5: replace read_last_required_field -> io::Result<(usize, bool)> with Ok((0, false))
+src/io/reader/record.rs:78:5: replace read_field -> io::Result<(usize, bool)> with Ok((0, true))
+src/io/reader/record.rs:78:5: replace read_field -> io::Result<(usize, bool)> with Ok((0, false))
+src/io/reader/record.rs:78:5: replace read_field -> io::Result<(usize, bool)> with Ok((1, true))
+src/io/reader/record.rs:97:31: replace + with - in read_field
+src/io/reader/record.rs:97:31: replace + with * in read_field

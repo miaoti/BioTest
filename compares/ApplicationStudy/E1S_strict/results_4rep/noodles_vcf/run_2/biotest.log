@@ -1,0 +1,471 @@
+[harness_run/E1S] mode = E1S
+[harness_run/E1S] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex)
+[harness_run/E1S] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB validation)
+[harness_run/E1S] pre-import patch: engine.build_system_prompt: stub (minimal — no spec/chromadb/precondition hints)
+[harness_run/E1S] pre-import patch: prompts.build_system_prompt: stub (same as engine)
+[harness_run/E1S] pre-import patch: transforms_menu.build_transforms_menu: stub (bare names)
+[harness_run/E1S] pre-import patch: behavior.get_system_prompt_fragment: stub (enum value only)
+[harness_run/E1S] pre-import patch: blindspot_builder.build_blindspot_ticket: wrapped (clears spec rules)
+[harness_run/E1S] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E1S] config: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/run_2/biotest_config.rep2.yaml
+[harness_run/E1S] phase_filter: D,E
+04:29:09 [INFO] test_engine.feedback.scc_tracker: SCC tracker initialized: 453 testable rules (CRITICAL + ADVISORY)
+  Primary target: noodles (drives evolution)
+  Format context: VCF (feedback scoped to this format)
+
+  --- Iteration 1 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_writer', 'pysam_runtime_reachable']
+  Mining VCF / ordering_invariance...
+04:29:10 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:29:10 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+04:29:41 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:29:41 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+04:29:41 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:29:41 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+04:29:41 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:29:41 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+04:30:15 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:30:15 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+04:30:15 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:30:15 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+04:30:15 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:30:15 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+04:31:12 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[3].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+04:31:12 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:32:16 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+04:32:16 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:32:47 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 3; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:32:47 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+04:32:47 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:32:47 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+04:32:47 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:32:47 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+04:33:38 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[2].: Value error, Compound-step violation for group 'alt_permutation': found ['remap_GT'] but missing ['choose_permutation', 'permute_ALT', 'permute_Number_A_R_fields'
+04:33:38 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:34:07 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:34:07 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/rejection_invariance — emitting empty MR array (no applicable evidence).
+04:34:07 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:34:07 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/rejection_invariance; terminating theme cleanly.
+    0 MRs for VCF/rejection_invariance: no relations returned
+  Mining VCF / coordinate_indexing_invariance...
+04:34:07 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:34:07 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+04:34:52 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:34:52 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+04:34:52 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:34:52 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+04:34:52 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:34:52 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+04:35:30 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:35:30 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+04:35:30 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:35:30 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+04:35:30 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:35:30 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+04:36:21 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:36:21 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+04:36:21 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:36:21 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+04:36:21 [INFO] mr_engine.registry: Triage result: 0 enforced, 0 quarantine
+04:36:21 [INFO] mr_engine.registry: Merged 0 new MRs into /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+04:36:21 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/vcfpy', '/usr/local/lib/python3.12/dist-packages/Bio/Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+04:36:22 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+04:36:22 [INFO] test_engine.generators.seeds: Seed corpus loaded: 68 VCF seeds, 74 SAM seeds
+04:36:22 [INFO] test_engine.generators.seeds: Seed corpus loaded: 68 VCF seeds, 74 SAM seeds
+04:36:22 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+04:36:22 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+04:36:22 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+04:36:22 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+04:36:22 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 35, 'sam': 0}, 'canonical_buckets': {'vcf': 35, 'sam': 0}}
+04:36:22 [INFO] test_engine.oracles.det_tracker: DET report exported to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/det_report.json
+04:36:22 [WARNING] biotest: Coverage-guided cull skipped: primary target 'noodles' has no per-file measurer (Python SUTs only in MVP)
+04:36:23 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage (14 files traced with >0 lines)
+    C: FAIL (0 tests, 0 bugs)
+04:36:23 [INFO] test_engine.feedback.scc_tracker: SCC report exported to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/scc_report.json (0.0%)
+    SCC: 0.0% (0/316 rules)
+04:36:23 [INFO] test_engine.feedback.loop_controller: Iteration 1: SCC=0.0%, coverage=0.0%, enforced=0, demoted=0
+04:36:23 [INFO] mr_engine.index_loader: Loading ephemeral SpecIndex from parsed JSON...
+04:38:19 [INFO] mr_engine.index_loader: Ephemeral index ready: 2048 documents in 115.9s
+04:38:19 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (0 cooling down).
+04:38:19 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1297', 'VCFv4.5.tex::BCF specification::p1301', 'VCFv4.5.tex::Overall file organization::p1396', 'VCFv4.5.tex::Header::p1400', 'VCFv4.5.tex::BCF specification::p1292']
+04:38:19 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1297', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1301', 'complexity': 6, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Overall file organization::p1396', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Header::p1400', 'complexity': 5, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1292', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+
+  --- Iteration 2 ---
+  Mining MRs (Phase B)...
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_writer', 'pysam_runtime_reachable']
+  Mining VCF / ordering_invariance...
+04:38:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:38:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+04:38:58 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:38:58 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/ordering_invariance — emitting empty MR array (no applicable evidence).
+04:38:58 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:38:58 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/ordering_invariance; terminating theme cleanly.
+    0 MRs for VCF/ordering_invariance: no relations returned
+  Mining VCF / semantics_preserving_permutation...
+04:38:58 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:38:58 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+04:39:30 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:39:30 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+04:39:30 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:39:30 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for VCF/semantics_preserving_permutation: no relations returned
+  Mining VCF / normalization_invariance...
+04:39:30 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:39:30 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+04:40:26 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[3].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+04:40:26 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:41:07 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+04:41:07 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:41:36 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 3; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:41:36 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/normalization_invariance — emitting empty MR array (no applicable evidence).
+04:41:36 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:41:36 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/normalization_invariance; terminating theme cleanly.
+    0 MRs for VCF/normalization_invariance: no relations returned
+  Mining VCF / rejection_invariance...
+04:41:36 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:41:36 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+04:42:14 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[6].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+04:42:14 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:42:45 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:42:45 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/rejection_invariance — emitting empty MR array (no applicable evidence).
+04:42:45 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:42:45 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/rejection_invariance; terminating theme cleanly.
+    0 MRs for VCF/rejection_invariance: no relations returned
+  Mining VCF / coordinate_indexing_invariance...
+04:42:45 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:42:45 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+04:43:21 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 1; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:43:21 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/coordinate_indexing_invariance — emitting empty MR array (no applicable evidence).
+04:43:21 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:43:21 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/coordinate_indexing_invariance; terminating theme cleanly.
+    0 MRs for VCF/coordinate_indexing_invariance: no relations returned
+  Mining VCF / round_trip_invariance...
+04:43:21 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:43:21 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+04:44:20 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[4].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the syst
+04:44:20 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:44:59 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:44:59 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+04:44:59 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:44:59 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+04:44:59 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:44:59 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+04:45:51 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[6].: Value error, Compound-step violation for group 'alt_permutation': found ['permute_ALT'] but missing ['choose_permutation', 'permute_Number_A_R_fields', 'remap_GT'
+04:45:51 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:46:30 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[2].: Value error, MR uses transform `query_method_roundtrip` but `query_methods` is empty. Supply 2-5 method names from the AVAILABLE QUERY METHODS catalog in the syst
+04:46:30 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:47:01 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+04:47:03 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 3
+    OK mined 4 MR(s) for VCF/api_query_invariance
+04:47:03 [INFO] mr_engine.registry: Triage result: 0 enforced, 4 quarantine
+04:47:03 [INFO] mr_engine.registry: Merged 4 new MRs into /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/mr_registry.json
+    B: OK (0 mined this round)
+  Running tests (Phase C)...
+04:47:03 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/vcfpy', '/usr/local/lib/python3.12/dist-packages/Bio/Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+04:47:03 [INFO] test_engine.generators.seeds: Seed corpus loaded: 68 VCF seeds, 74 SAM seeds
+04:47:03 [INFO] test_engine.generators.seeds: Seed corpus loaded: 68 VCF seeds, 74 SAM seeds
+04:47:03 [INFO] test_engine.orchestrator: Loaded 4 MRs from registry (enforced=0, quarantine=4)
+04:47:03 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+04:47:03 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+04:47:03 [INFO] test_engine.orchestrator: Testing MR f335b8c5d509 (sample permutation preserves per-sample queries) -- scope=VCF.record, transforms=['permute_sample_columns']
+04:47:03 [INFO] test_engine.orchestrator:   MR f335b8c5d509: scaled max_examples 50 -> 72 (VCF corpus=68, baseline=33)
+04:47:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+04:47:05 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044705_848296_1
+04:47:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+04:47:05 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044705_887971_2
+04:47:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+04:47:05 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044705_941546_3
+04:47:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=0) -- 1 diffs
+04:47:06 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044705_978960_4
+04:47:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+04:47:06 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044706_013080_5
+04:47:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_bcftools_norm_split.vcf (seed=0) -- 1 diffs
+04:47:07 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044707_945449_6
+04:47:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_norm_split.vcf (seed=0) -- 7 diffs
+04:47:08 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044707_978393_7
+04:47:08 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_norm_split.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:47:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_norm_split.vcf (seed=2027434229) -- 1 diffs
+04:47:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044709_654241_8
+04:47:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_bcftools_norm_split.vcf (seed=2027434229) -- 1 diffs
+04:47:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044709_709580_9
+04:47:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_norm_split.vcf (seed=2027434229) -- 1 diffs
+04:47:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044709_744862_10
+04:47:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_norm_split.vcf (seed=2027434229) -- 1 diffs
+04:47:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044709_811280_11
+04:47:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_norm_split.vcf (seed=2027434229) -- 1 diffs
+04:47:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044709_871639_12
+04:47:10 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_norm_split.vcf (seed=2027434229): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:47:14 [ERROR] test_engine.orchestrator: Transform failed on kept_fdc45849677b0006.vcf (seed=46038): list index out of range
+04:47:16 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_bcftools_norm_split.vcf (seed=0) -- 1 diffs
+04:47:16 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044716_336181_13
+04:47:16 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_norm_split.vcf (seed=0) -- 7 diffs
+04:47:16 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044716_375276_14
+04:47:16 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_norm_split.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:47:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:47:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044730_632737_15
+04:47:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:47:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044730_701696_16
+04:47:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_HiSeq.10000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:47:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=1) -- 1 diffs
+04:47:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044733_635343_17
+04:47:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=1) -- 1 diffs
+04:47:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044733_690185_18
+04:47:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=1) -- 1 diffs
+04:47:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044733_742954_19
+04:47:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=1) -- 1 diffs
+04:47:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044733_782756_20
+04:47:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=1) -- 1 diffs
+04:47:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044733_810009_21
+/usr/local/lib/python3.12/dist-packages/hypothesis/core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 218 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:47:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:47:49 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044749_952082_22
+04:47:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:47:50 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044750_001034_23
+04:47:50 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_HiSeq.10000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:47:51 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR f335b8c5d509 (sample permutation preserves per-sample queries) to minimal failing case
+04:47:51 [INFO] test_engine.orchestrator:   MR f335b8c5d509: Hypothesis found and shrunk a failure
+04:47:51 [INFO] test_engine.orchestrator: Testing MR ffbe4a62d130 (meta-line shuffle preserves header queries) -- scope=VCF.header, transforms=['shuffle_meta_lines']
+04:47:51 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: scaled max_examples 50 -> 72 (VCF corpus=68, baseline=33)
+04:47:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:47:53 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044753_531915_24
+04:47:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_d1eafe3b129b8e73.vcf (seed=1000000001) -- 1 diffs
+04:47:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044755_069180_25
+04:47:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: vcfpy on kept_d1eafe3b129b8e73.vcf (seed=1000000001) -- 1 diffs
+04:47:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044755_096497_26
+04:47:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on kept_d1eafe3b129b8e73.vcf (seed=1000000001) -- 1 diffs
+04:47:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044755_135854_27
+04:47:55 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_d1eafe3b129b8e73.vcf (seed=1000000001): consensus=['htsjdk', 'reference'], dissent=[]
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:48:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on htsjdk_HiSeq.10000.vcf (seed=42277) -- 1 diffs
+04:48:18 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044812_163499_28
+04:48:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_HiSeq.10000.vcf (seed=42277) -- 1 diffs
+04:48:18 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044818_011517_29
+04:48:18 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on htsjdk_HiSeq.10000.vcf (seed=42277) -- 1 diffs
+04:48:23 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044818_106544_30
+04:48:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on htsjdk_HiSeq.10000.vcf (seed=42277) -- 1 diffs
+04:48:23 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044823_678556_31
+04:48:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on htsjdk_HiSeq.10000.vcf (seed=42277) -- 1 diffs
+04:48:28 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044823_733777_32
+04:48:29 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_HiSeq.10000.vcf (seed=42277): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:48:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:48:32 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044832_031739_33
+04:48:33 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:48:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044833_629946_34
+04:48:33 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR ffbe4a62d130 (meta-line shuffle preserves header queries) to minimal failing case
+04:48:33 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: Hypothesis found and shrunk a failure
+04:48:33 [INFO] test_engine.orchestrator: Testing MR 6320bd43d214 (BCF round-trip preserves record queries) -- scope=VCF.record, transforms=['vcf_bcf_round_trip']
+04:48:33 [INFO] test_engine.orchestrator:   MR 6320bd43d214: scaled max_examples 50 -> 72 (VCF corpus=68, baseline=33)
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmp07ro4v9m.bcf'
+04:48:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:48:36 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044836_125459_35
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmpjpv0e6gl.bcf'
+04:48:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on minimal_single.vcf (seed=60569) -- 7 diffs
+04:48:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044837_343155_36
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:48:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_fdc45849677b0006.vcf (seed=224) -- 1 diffs
+04:48:50 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044850_293565_37
+04:48:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_fdc45849677b0006.vcf (seed=224) -- 1 diffs
+04:48:50 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044850_329714_38
+04:48:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on kept_fdc45849677b0006.vcf (seed=224) -- 1 diffs
+04:48:50 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044850_364702_39
+04:48:50 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_fdc45849677b0006.vcf (seed=224): consensus=['reference', 'vcfpy'], dissent=[]
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmpwokhnrhb.bcf'
+04:48:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:48:52 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044852_266415_40
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmp1sh7y1sn.bcf'
+04:48:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+04:48:53 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044853_954428_41
+04:48:54 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 6320bd43d214 (BCF round-trip preserves record queries) to minimal failing case
+04:48:54 [INFO] test_engine.orchestrator:   MR 6320bd43d214: Hypothesis found and shrunk a failure
+04:48:54 [INFO] test_engine.orchestrator: Testing MR 9e3642fe5315 (write round-trip preserves record queries) -- scope=VCF.record, transforms=['sut_write_roundtrip']
+04:48:54 [INFO] test_engine.orchestrator:   MR 9e3642fe5315: scaled max_examples 50 -> 72 (VCF corpus=68, baseline=33)
+[E::vcf_parse_format] Number of columns at Y:8657215 does not match the number of samples (2 vs 3)
+04:48:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+04:48:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044855_344940_42
+04:48:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+04:48:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044855_385284_43
+04:48:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+04:48:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044855_429310_44
+04:48:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=0) -- 1 diffs
+04:48:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044855_465820_45
+04:48:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+04:48:55 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044855_497182_46
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:49:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:07 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044907_480459_47
+04:49:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:07 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044907_537982_48
+04:49:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:07 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044907_585330_49
+04:49:08 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_fdc45849677b0006.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=[]
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:49:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_fdc45849677b0006.vcf (seed=142) -- 1 diffs
+04:49:23 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044923_311920_50
+04:49:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_fdc45849677b0006.vcf (seed=142) -- 1 diffs
+04:49:23 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044923_378243_51
+04:49:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on kept_fdc45849677b0006.vcf (seed=142) -- 1 diffs
+04:49:23 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044923_434967_52
+04:49:23 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_fdc45849677b0006.vcf (seed=142): consensus=['reference', 'vcfpy'], dissent=[]
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:49:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:36 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044935_974085_53
+04:49:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:36 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044936_022814_54
+04:49:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on kept_fdc45849677b0006.vcf (seed=0) -- 1 diffs
+04:49:36 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044936_075145_55
+04:49:36 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on kept_fdc45849677b0006.vcf (seed=0): consensus=['reference', 'vcfpy'], dissent=[]
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:49:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:49:54 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044954_696072_56
+04:49:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:49:54 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044954_780312_57
+04:49:56 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_HiSeq.10000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+[E::vcf_parse_format] Number of columns at Y:8657215 does not match the number of samples (2 vs 3)
+04:49:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=1) -- 1 diffs
+04:49:57 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044957_574430_58
+04:49:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=1) -- 1 diffs
+04:49:57 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044957_618852_59
+04:49:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=1) -- 1 diffs
+04:49:57 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044957_670505_60
+04:49:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=1) -- 1 diffs
+04:49:57 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044957_708544_61
+04:49:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=1) -- 1 diffs
+04:49:57 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_044957_745046_62
+/usr/local/lib/python3.12/dist-packages/hypothesis/core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 218 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+[E::bcf_hdr_add_sample_len] Empty sample name: trailing spaces/tabs in the header line?
+/usr/local/lib/python3.12/dist-packages/vcfpy/header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+04:50:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:50:14 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_045014_761979_63
+04:50:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on htsjdk_HiSeq.10000.vcf (seed=0) -- 1 diffs
+04:50:14 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/bug_reports/BUG-20260503_045014_814773_64
+04:50:15 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_HiSeq.10000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+04:50:16 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 9e3642fe5315 (write round-trip preserves record queries) to minimal failing case
+04:50:16 [INFO] test_engine.orchestrator:   MR 9e3642fe5315: Hypothesis found and shrunk a failure
+04:50:16 [INFO] test_engine.orchestrator: Test suite complete: 144 tests, 64 metamorphic failures, 13 differential failures, 1 crashes, DET rate=0.5347
+04:50:16 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 1, 'skipped_duplicate': 4, 'skipped_ast_dup': 19, 'pool_size': {'vcf': 36, 'sam': 0}, 'canonical_buckets': {'vcf': 36, 'sam': 0}}
+04:50:16 [INFO] test_engine.oracles.det_tracker: DET report exported to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/det_report.json
+04:50:16 [WARNING] biotest: Coverage-guided cull skipped: primary target 'noodles' has no per-file measurer (Python SUTs only in MVP)
+04:50:16 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage (14 files traced with >0 lines)
+    C: OK (144 tests, 64 bugs)
+    Coverage: 1 SUT(s) collected -> noodles=29.6% (2243/7584 lines)
+    4 MR(s) endorsed by >=1 parser - kept in SCC via cross-validation rule
+04:50:17 [INFO] test_engine.feedback.scc_tracker: SCC report exported to /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/data/scc_report.json (0.0%)
+    Cooldown: 5 rule(s) stayed uncovered and entered backoff; 0 cleared.
+04:50:17 [INFO] biotest: Rule attempt outcomes: {'VCFv4.5.tex::BCF specification::p1297': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::BCF specification::p1301': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::Overall file organization::p1396': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::Header::p1400': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}, 'VCFv4.5.tex::BCF specification::p1292': {'outcome': 'uncovered', 'failure_count': 1, 'cooldown_iterations': 1, 'cooled_until_iteration': 3}}
+    SCC: 0.0% (0/316 rules)
+04:50:17 [INFO] test_engine.feedback.loop_controller: Iteration 2: SCC=0.0%, coverage=29.6%, enforced=0, demoted=0
+04:50:17 [INFO] test_engine.feedback.blindspot_builder: Total Blindspots: 316 | Injecting Top 5 into this ticket | 311 rules remaining in queue (5 cooling down).
+04:50:17 [INFO] test_engine.feedback.blindspot_builder: Top-K chunk_ids this iteration: ['VCFv4.5.tex::BCF specification::p1304', 'VCFv4.5.tex::Dictionary of strings::p1410', 'VCFv4.5.tex::BCF specification::p1323', 'VCFv4.5.tex::BCF2 records::p1429', 'VCFv4.5.tex::BCF specification::p1296']
+04:50:17 [INFO] test_engine.feedback.blindspot_builder: Top-K scores: [{'id': 'VCFv4.5.tex::BCF specification::p1304', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::Dictionary of strings::p1410', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1323', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF2 records::p1429', 'complexity': 4, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 1, 'failure_count': 0}, {'id': 'VCFv4.5.tex::BCF specification::p1296', 'complexity': 3, 'proximity': 0.0, 'format_penalty': 0, 'reachability_penalty': 0, 'severity_rank': 0, 'failure_count': 0}]
+  Phase D: OK  (19m 58s)
+04:50:17 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/vcf_struct', 'sut_validate': None}
+04:50:17 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/vcf_struct
+04:50:18 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/vcf_rawfuzz'}
+04:50:18 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/vcf_rawfuzz
+04:50:18 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/sam_struct', 'sut_validate': None}
+04:50:18 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/sam_struct
+04:50:18 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/sam_rawfuzz'}
+04:50:18 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in /work/compares/ApplicationStudy/E1S_strict/results_4rep/noodles_vcf/work/seeds/sam_rawfuzz
+  Phase E: OK  (1.5s, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                               │
+│ C: Execute   │   PASS   │        0ms │ 0 tests, 0 bugs found                 │
+│ D: Feedback  │   PASS   │    19m 58s │ 2 iter, SCC=0.0%, stop:               │
+│              │          │            │ budget_exhausted (iteration=2 >= 2)   │
+│ E: Augment   │   PASS   │       1.5s │ +0 corpus files (VCF: 0 struct + 0    │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)   │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+  Total Pipeline Duration:  19m 60s
+
+╭─────────────────────────── Phase D: Feedback Loop ───────────────────────────╮
+│ SCC Progression: 0.0% -> 0.0%                                                │
+│ Final SCC: 0.0%                                                              │
+│ Termination: budget_exhausted (iteration=2 >= 2)                             │
+│ MRs Quarantined: 0                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────── Code Coverage ────────────────────────────────╮
+│ Primary SUT: noodles (Rust)                                                  │
+│ Coverage Progression: 0.0% -> 29.6%                                          │
+│ Final Coverage: 29.6% (2243/7584 format-scoped lines)                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ALL CLEAR — No bugs detected across all parsers.                             │
+╰──────────────────────────────────────────────────────────────────────────────╯

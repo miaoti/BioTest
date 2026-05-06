@@ -1,0 +1,21 @@
+--- src/record/samples/sample.rs
++++ replace <impl AsRef<str> for Sample<'_>>::as_ref -> &str with "xyzzy"
+@@ -50,17 +50,17 @@
+                     .map(|(key, s)| parse_value(s, header, key).map(|value| (key, value))),
+             )
+         }
+     }
+ }
+ 
+ impl AsRef<str> for Sample<'_> {
+     fn as_ref(&self) -> &str {
+-        self.src
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl crate::variant::record::samples::Sample for Sample<'_> {
+     fn get<'a, 'h: 'a>(
+         &'a self,
+         header: &'h Header,
+         key: &str,

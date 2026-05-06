@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/filters.rs
++++ replace == with != in parse_filters
+@@ -23,17 +23,17 @@
+ }
+ 
+ pub(super) fn parse_filters(s: &str, filters: &mut Filters) -> Result<(), ParseError> {
+     const DELIMITER: char = ';';
+     const PASS: &str = "PASS";
+ 
+     if s.is_empty() {
+         return Err(ParseError::Empty);
+-    } else if s == PASS {
++    } else if s != /* ~ changed by cargo-mutants ~ */ PASS {
+         *filters = Filters::pass();
+         return Ok(());
+     }
+ 
+     let filters = filters.as_mut();
+     filters.clear();
+ 
+     for raw_filter in s.split(DELIMITER) {

@@ -1,0 +1,19 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency for each ALT allele">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count for each ALT allele">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of samples with data">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2
+
+chr1	1000	multi1	A	C,G,T	100	PASS	AF=0.3,0.2,0.1;AC=6,4,2;AN=20;NS=10	GT:GQ:DP:xL	0/1:99:30:0,100,1000,200,2000,3000	1/2:80:25:100,0,1000,200,2000,3000
+chr2	2000	multi2	T	A,C	80	PASCS	AF=0.5,0.3;AC=10,6;AN=20;NS=10	GT:GQ:DP:PL	0/2:90:35:0,200,2000,400,4000	1/1:70:2:200,0,2000,400,4000
+chr1	3000	multi3	G	A,T,C	120	UASS	AF=0.4,0.3,0.2;AC=8,6,4;AN=20;NS=10	GT:GQ:DP:PL	0/1:99:40:0,100,1000,200,2000,3000	2/3:85:30:200,2000,0,4000,400,4000

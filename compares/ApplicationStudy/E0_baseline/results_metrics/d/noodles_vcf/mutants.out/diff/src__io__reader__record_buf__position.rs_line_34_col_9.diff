@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/position.rs
++++ replace <impl From<num::ParseIntError> for ParseError>::from -> Self with Default::default()
+@@ -26,20 +26,17 @@
+             Self::Empty => write!(f, "empty input"),
+             Self::Invalid(_) => write!(f, "invalid input"),
+         }
+     }
+ }
+ 
+ impl From<num::ParseIntError> for ParseError {
+     fn from(e: num::ParseIntError) -> Self {
+-        match e.kind() {
+-            num::IntErrorKind::Empty => Self::Empty,
+-            _ => Self::Invalid(e),
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_position(s: &str) -> Result<Option<Position>, ParseError> {
+     const TELOMERE_START: &str = "0";
+ 
+     match s {
+         "" => Err(ParseError::Empty),

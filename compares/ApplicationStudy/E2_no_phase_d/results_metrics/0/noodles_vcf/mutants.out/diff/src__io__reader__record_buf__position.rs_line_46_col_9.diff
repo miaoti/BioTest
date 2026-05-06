@@ -1,0 +1,21 @@
+--- src/io/reader/record_buf/position.rs
++++ delete match arm TELOMERE_START in parse_position
+@@ -38,17 +38,17 @@
+     }
+ }
+ 
+ pub(super) fn parse_position(s: &str) -> Result<Option<Position>, ParseError> {
+     const TELOMERE_START: &str = "0";
+ 
+     match s {
+         "" => Err(ParseError::Empty),
+-        TELOMERE_START => Ok(None),
++         /* ~ changed by cargo-mutants ~ */
+         _ => s.parse().map(Some).map_err(ParseError::Invalid),
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 

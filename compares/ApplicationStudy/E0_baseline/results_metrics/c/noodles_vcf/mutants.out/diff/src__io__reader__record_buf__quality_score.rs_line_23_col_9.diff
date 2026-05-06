@@ -1,0 +1,24 @@
+--- src/io/reader/record_buf/quality_score.rs
++++ replace <impl fmt::Display for ParseError>::fmt -> fmt::Result with Ok(Default::default())
+@@ -15,20 +15,17 @@
+             Self::Empty => None,
+             Self::Invalid(e) => Some(e),
+         }
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        match self {
+-            Self::Empty => write!(f, "empty input"),
+-            Self::Invalid(_) => write!(f, "invalid input"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub(super) fn parse_quality_score(s: &str) -> Result<f32, ParseError> {
+     if s.is_empty() {
+         return Err(ParseError::Empty);
+     }
+ 

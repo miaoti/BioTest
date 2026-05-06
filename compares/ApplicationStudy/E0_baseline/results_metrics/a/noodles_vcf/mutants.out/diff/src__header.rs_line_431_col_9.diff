@@ -1,0 +1,21 @@
+--- src/header.rs
++++ replace Header::other_records_mut -> &mut OtherRecords with Box::leak(Box::new(Default::default()))
+@@ -423,17 +423,17 @@
+     ///
+     /// let collection = Collection::Unstructured(vec![String::from("20200709")]);
+     /// header.other_records_mut().insert("fileDate".parse()?, collection.clone());
+     ///
+     /// assert_eq!(header.other_records().get("fileDate"), Some(&collection));
+     /// # Ok::<_, vcf::header::record::key::other::ParseError>(())
+     /// ```
+     pub fn other_records_mut(&mut self) -> &mut OtherRecords {
+-        &mut self.other_records
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Returns a collection of header values with the given key.
+     ///
+     /// This includes all records other than `fileformat`, `INFO`, `FILTER`, `FORMAT`, `ALT`, and
+     /// `contig`.
+     ///
+     /// # Examples

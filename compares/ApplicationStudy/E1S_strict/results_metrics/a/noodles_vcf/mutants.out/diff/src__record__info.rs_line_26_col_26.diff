@@ -1,0 +1,21 @@
+--- src/record/info.rs
++++ replace == with != in Info<'r>::get
+@@ -18,17 +18,17 @@
+     pub fn get<'h: 'r>(
+         &'r self,
+         header: &'h Header,
+         key: &str,
+     ) -> Option<io::Result<Option<Value<'r>>>> {
+         for result in self.iter(header) {
+             match result {
+                 Ok((k, v)) => {
+-                    if k == key {
++                    if k != /* ~ changed by cargo-mutants ~ */ key {
+                         return Some(Ok(v));
+                     }
+                 }
+                 Err(e) => return Some(Err(e)),
+             }
+         }
+ 
+         None

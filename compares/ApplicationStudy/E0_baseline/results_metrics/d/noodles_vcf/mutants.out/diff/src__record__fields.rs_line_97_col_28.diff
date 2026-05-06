@@ -1,0 +1,21 @@
+--- src/record/fields.rs
++++ replace == with != in Fields::samples
+@@ -89,17 +89,17 @@
+     pub(super) fn samples(&self) -> Samples<'_> {
+         const DELIMITER: char = '\t';
+ 
+         let src = &self.buf[self.bounds.genotypes_range()];
+ 
+         let is_missing = || {
+             src.split(DELIMITER)
+                 .next()
+-                .map(|s| s == MISSING)
++                .map(|s| s != /* ~ changed by cargo-mutants ~ */ MISSING)
+                 .unwrap_or_default()
+         };
+ 
+         if src.is_empty() || is_missing() {
+             Samples::new("")
+         } else {
+             Samples::new(src)
+         }

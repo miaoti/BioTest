@@ -1,0 +1,21 @@
+--- src/record/samples.rs
++++ replace == with != in Samples<'r>::select
+@@ -44,17 +44,17 @@
+         self.iter().nth(i)
+     }
+ 
+     /// Returns the series with the given column name.
+     pub fn select(&'r self, column_name: &str) -> Option<Series<'r>> {
+         self.keys()
+             .iter()
+             .enumerate()
+-            .find(|(_, key)| *key == column_name)
++            .find(|(_, key)| *key != /* ~ changed by cargo-mutants ~ */ column_name)
+             .map(|(i, key)| Series::new(key, self, i))
+     }
+ 
+     /// Returns an iterator over series.
+     pub fn series(&'r self) -> impl Iterator<Item = Series<'r>> + 'r {
+         self.keys()
+             .iter()
+             .enumerate()

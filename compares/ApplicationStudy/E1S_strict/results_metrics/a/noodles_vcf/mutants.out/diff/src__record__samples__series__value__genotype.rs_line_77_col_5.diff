@@ -1,0 +1,24 @@
+--- src/record/samples/series/value/genotype.rs
++++ replace is_phasing_indicator -> bool with true
+@@ -69,20 +69,17 @@
+     };
+ 
+     *src = rest;
+ 
+     buf
+ }
+ 
+ fn is_phasing_indicator(c: char) -> bool {
+-    const PHASED: char = '|';
+-    const UNPHASED: char = '/';
+-
+-    matches!(c, PHASED | UNPHASED)
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_phasing(src: &str) -> io::Result<Phasing> {
+     const PHASED: &str = "|";
+     const UNPHASED: &str = "/";
+ 
+     match src {
+         PHASED => Ok(Phasing::Phased),

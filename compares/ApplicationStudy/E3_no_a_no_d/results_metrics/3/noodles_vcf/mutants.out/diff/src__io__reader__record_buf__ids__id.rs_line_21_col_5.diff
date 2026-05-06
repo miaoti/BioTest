@@ -1,0 +1,25 @@
+--- src/io/reader/record_buf/ids/id.rs
++++ replace parse_id -> Result<&str, ParseError> with Ok("")
+@@ -13,21 +13,17 @@
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::Empty => write!(f, "empty input"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_id(s: &str) -> Result<&str, ParseError> {
+-    if s.is_empty() {
+-        Err(ParseError::Empty)
+-    } else {
+-        Ok(s)
+-    }
++    Ok("") /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_id() {

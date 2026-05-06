@@ -1,0 +1,426 @@
+{
+  "enforced": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Shuffle meta-information lines preserves semantics",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has at least 2 meta-information lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "After shuffling all ##meta-information lines (keeping ##fileformat first), the SUT must produce identical canonical output (e.g., JSON representation) as before the shuffle.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Permute structured header line key-value order preserves semantics",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header has at least one ##INFO, ##FORMAT, or ##FILTER structured line with multiple key=value pairs"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "After reordering key=value pairs inside structured ##INFO/##FORMAT/##FILTER meta-lines, the SUT must produce identical canonical output as before the reorder.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p121",
+          "quote": "Implementations must not rely on the order of the fields within structured lines and are not required to preserve field ordering.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "Multi-allelic split invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2"
+      ],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "Splitting a multi-ALT record into one record per ALT allele (with synchronized Number=A INFO/FORMAT arrays and remapped GT indices) must preserve the same set of variant calls. A spec-compliant parser must recognize the split form as semantically equivalent to the multi-ALT form.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p16",
+          "quote": "A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section data-lines).",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p50",
+          "quote": "ALT --- alternate base(s): Comma-separated list of alternate non-reference alleles.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "Telomeric boundary coordinate invariance (POS=0 and POS=N+1)",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row",
+        "pos==1 OR pos_is_telomeric"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "Telomeres are indicated by using positions 0 or N+1, where N is the length of the corresponding chromosome or contig. After a write round-trip, records with POS=0 or POS=N+1 must be preserved exactly. A parser that incorrectly converts between 0-based and 1-based coordinates (e.g., by blindly adding/subtracting 1) will corrupt telomeric positions.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p395",
+          "quote": "Telomeres are indicated by using positions 0 or N+1, where N is the length of the corresponding chromosome or contig.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Fixed fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "END field 1-based coordinate invariance under BCF round-trip",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "has_info_end OR has_svlen"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "The END field (when present) must be set to the maximum end reference position (1-based) considering REF allele end, SVLEN end, and FORMAT LEN for <*> alleles. After VCF->BCF->VCF round-trip, the END value must be identical. A codec that mishandles the 1-based to 0-based conversion internally will produce a shifted END value.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p61",
+          "quote": "This is a computed field that, when present, must be set to the maximum end reference position (1-based) of: the position of the final base of the REF allele, the end position corresponding to the SVLEN of a symbolic SV allele, and the end positions calculated from FORMAT LEN for the <*> symbolic allele.",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "##fileformat first-line violation detection",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "A VCF where ##fileformat is not the first line violates the spec. A spec-compliant parser should reject or flag such a file. Per VCF v4.5, ##fileformat must be the first line.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "[VCF v4.5 — Meta-information lines] Meta-information lines are optional, but if they are present then they must be completely well-formed. Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::List of changes::p1624",
+          "quote": "[VCF v4.5 — List of changes] * We state explicitly that zero length strings are not allowed, this includes the CHROM and ID column, INFO IDs, FILTER IDs and FORMAT IDs. Meta-information lines can be in any order, with the exception of ##fileformat which must come first.",
+          "rule_severity": "CRITICAL",
+          "section_id": "List of changes"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "GT allele index out-of-bounds violation detection",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count=1",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "A GT field with an allele index exceeding len(ALT) violates the VCF spec (valid indices are 0..len(ALT)). A spec-compliant parser should reject or flag such a record.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::The VCF specification::p63",
+          "quote": "[VCF v4.5 — The VCF specification] Genotype fields If genotype information is present, then the same types of data must be present for all samples. First a FORMAT field is given specifying the data types and order (colon-separated FORMAT keys matching the regular expression \\^[A-Za-z\\_][0-9A-Za-z\\_.]*\\$, duplicate keys are not allowed).",
+          "rule_severity": "CRITICAL",
+          "section_id": "The VCF specification"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "Number=A INFO cardinality violation detection",
+      "scope": "VCF.record",
+      "preconditions": [
+        "header_has_info_number_a",
+        "alt_count=1"
+      ],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "An INFO field declared Number=A must have exactly len(ALT) comma-separated values. A record with mismatched cardinality violates the VCF spec and should be rejected or flagged.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p157",
+          "quote": "[VCF v4.5 — Information field format] * A: The field has one value per alternate allele. The values must be in the same order as listed in the ALT column (described in section <ref>).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "Required fixed columns violation detection",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "A VCF data record missing one of the 8 mandatory fixed columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO) violates the VCF spec. A spec-compliant parser should reject or flag such a record.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p394",
+          "quote": "[VCF v4.5 — Fixed fields] * CHROM — chromosome: An identifier from the reference genome or an angle-bracketed ID String (\"<ID>\") pointing to a contig in the assembly file (cf. the ##assembly line in the header). All entries for a specific CHROM must form a contiguous block within the VCF file. (String, no whitespace permitted, Required).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Fixed fields"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "quarantine": [
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "Shuffle INFO field key-value order in data lines preserves semantics",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least one data record with 2+ INFO key=value pairs"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "After shuffling the semicolon-separated key=value entries in the INFO column of data lines, the SUT must produce identical canonical output as before the shuffle.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p221",
+          "quote": "Arbitrary keys are permitted, although those listed in Table <ref> and described below are reserved (albeit optional).",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that INFO key-value order is semantically irrelevant, but it permits arbitrary keys and does not mandate any specific ordering. Some parsers may preserve original order as a courtesy."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "Permute BCF header dictionary order preserves semantics",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "After shuffling ##contig/##INFO/##FORMAT/##FILTER dictionary entries and round-tripping through BCF, the SUT must produce identical canonical output as before the shuffle.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1316",
+          "quote": "It is recommended to respect the ordering as specified in the input VCF/BCF2 file, but parsers should not rely on a specific ordering.",
+          "rule_severity": "ADVISORY",
+          "section_id": "BCF specification"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec recommends respecting input ordering but says parsers should not rely on it — this is advisory language, not a hard requirement."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Permute sample column order preserves semantics",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least 2 sample columns in the VCF header"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "After permuting sample column order consistently across the header and all data lines, the SUT must produce output that, when re-indexed to the original sample order, is identical to the original output.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Other than |##fileformat|, they may appear in any order.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Meta-information lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "Sample column ordering is not explicitly addressed in the spec as order-independent; however, sample identity is determined by the column header ID, not position. Some tools may assume a fixed sample order."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with consistent GT remapping and Number=A/R field reordering",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2",
+        "format_has_gt",
+        "header_has_info_or_format_with_number_A_or_R"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles and remapping GT indices (0=REF unchanged) and reordering Number=A and Number=R INFO/FORMAT values to match the new ALT order, the semantically equivalent VCF record must produce identical variant interpretation. Any parser that re-serializes the record must produce the same set of variant calls.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p505",
+          "quote": "The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele listed in ALT, 2 for the second allele list in ALT and so on.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Genotype fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Information field format::p158",
+          "quote": "R: The field has one value for each possible allele, including the reference. The order of the values must be the reference allele first, then the alternate alleles as listed in the ALT column.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Information field format"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p409",
+          "quote": "AC\t\t    A\t\t    Integer\t    Allele count in genotypes, for each ALT allele, in the same order as listed",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Fixed fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p413",
+          "quote": "AF\t\t    A\t\t    Float\t\t    Allele frequency for each ALT allele in the same order as listed (estimated from primary data, not called genotypes)",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Fixed fields"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p226",
+          "quote": "AC\t\t    A\t\t    Integer\t    Allele count in genotypes, for each ALT allele, in the same order as listed",
+          "rule_severity": "INFORMATIONAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "Common affix trimming invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]"
+      ],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "After trimming shared prefix/suffix bases between REF and ALT and adjusting POS accordingly, the resulting canonical representation must be recognized as the same variant by a spec-compliant parser. The trimmed form (left-anchored and parsimonious per Tan et al. 2015) is semantically equivalent to the original padded form.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p214",
+          "quote": "REF — reference base(s): Each base must be one of A,C,G,T,N (case insensitive). Multiple bases are permitted. The value in the POS field refers to the position of the first base in the String. For simple insertions and deletions in which either the REF or one of the ALT alleles would otherwise be null/empty, the REF and ALT Strings must include the base before the variant (which must be reflected in the POS field)...",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The VCF spec mandates padding bases for insertions/deletions but does not explicitly require trimming of common affixes; normalization is an implementation-defined behavior per Tan et al. 2015, not a VCF spec requirement."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "Left-alignment of indels in homopolymer runs",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)!=len(ALT)",
+        "REF[0]==REF[-1]",
+        "pos>=2"
+      ],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "After left-shifting an indel in a homopolymer run (decrementing POS by 1 while preserving the first base of REF/ALT), the resulting representation must be recognized as the same variant by a spec-compliant parser. The left-aligned form is the canonical normalized representation per Tan et al. 2015.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Data lines::p214",
+          "quote": "REF — reference base(s): Each base must be one of A,C,G,T,N (case insensitive). Multiple bases are permitted. The value in the POS field refers to the position of the first base in the String.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Data lines"
+        }
+      ],
+      "ambiguity_flags": [
+        "The VCF spec does not explicitly mandate left-alignment of indels; this is a normalization convention from Tan et al. 2015, not a VCF spec requirement. The spec only requires that POS refers to the first base of the REF string."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6cd9bfb18f53",
+      "mr_name": "Missing-value FORMAT field injection invariance",
+      "scope": "VCF.record",
+      "preconditions": [],
+      "transform_steps": [
+        "inject_equivalent_missing_values"
+      ],
+      "oracle": "Appending a FORMAT field filled with '.' (missing) to all samples must produce a semantically equivalent VCF. Missing values in FORMAT fields are semantically no-ops.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p432",
+          "quote": "[VCF v4.5 — Genotype fields] If genotype information is present, then the same types of data must be present for all samples. First a FORMAT field is given specifying the data types and order (colon-separated FORMAT keys matching the regular expression , duplicate keys are not allowed). This is followed by one data block per sample, with the colon-separated data corresponding to the types specified in the format.",
+          "rule_severity": "CRITICAL",
+          "section_id": "Genotype fields"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec allows additional FORMAT keys to be defined in meta-information; software support for them is not guaranteed."
+      ],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 9,
+    "quarantine_count": 7,
+    "total": 16
+  }
+}

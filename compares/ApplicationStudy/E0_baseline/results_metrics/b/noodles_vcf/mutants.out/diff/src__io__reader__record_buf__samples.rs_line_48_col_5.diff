@@ -1,0 +1,49 @@
+--- src/io/reader/record_buf/samples.rs
++++ replace parse_samples -> Result<(), ParseError> with Ok(())
+@@ -40,45 +40,17 @@
+     }
+ }
+ 
+ pub(super) fn parse_samples(
+     header: &Header,
+     mut s: &str,
+     genotypes: &mut Samples,
+ ) -> Result<(), ParseError> {
+-    genotypes.keys.as_mut().clear();
+-
+-    let sample_count = header.sample_names().len();
+-
+-    if sample_count == 0 {
+-        genotypes.values.clear();
+-
+-        if s.is_empty() {
+-            return Ok(());
+-        } else {
+-            return Err(ParseError::UnexpectedInput);
+-        }
+-    }
+-
+-    for values in &mut genotypes.values {
+-        values.clear();
+-    }
+-
+-    let field = next_field(&mut s);
+-    parse_keys(header, field, &mut genotypes.keys).map_err(ParseError::InvalidKeys)?;
+-
+-    genotypes.values.resize(sample_count, Vec::new());
+-
+-    for values in &mut genotypes.values {
+-        let field = next_field(&mut s);
+-        parse_values(header, &genotypes.keys, field, values).map_err(ParseError::InvalidValues)?;
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_samples() -> Result<(), Box<dyn std::error::Error>> {

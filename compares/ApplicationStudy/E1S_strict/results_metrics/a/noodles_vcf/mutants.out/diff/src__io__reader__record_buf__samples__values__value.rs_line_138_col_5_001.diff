@@ -1,0 +1,23 @@
+--- src/io/reader/record_buf/samples/values/value.rs
++++ replace parse_raw_string -> Result<String, ParseError> with Ok("xyzzy".into())
+@@ -130,19 +130,17 @@
+             MISSING => Ok(None),
+             _ => parse_raw_char(t).map(Some),
+         })
+         .collect::<Result<_, _>>()
+         .map(|values| Value::Array(Array::Character(values)))
+ }
+ 
+ fn parse_raw_string(s: &str) -> Result<String, ParseError> {
+-    value::percent_decode(s)
+-        .map(|t| t.into())
+-        .map_err(ParseError::InvalidString)
++    Ok("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn parse_string(s: &str) -> Result<Value, ParseError> {
+     parse_raw_string(s).map(Value::String)
+ }
+ 
+ fn parse_string_array(s: &str) -> Result<Value, ParseError> {
+     s.split(DELIMITER)

@@ -1,0 +1,30 @@
+--- src/io/reader/record_buf.rs
++++ replace <impl error::Error for ParseError>::source -> Option<&(dyn error::Error +'static)> with None
+@@ -42,26 +42,17 @@
+     /// The info is invalid.
+     InvalidInfo(info::ParseError),
+     /// The samples are invalid.
+     InvalidSamples(samples::ParseError),
+ }
+ 
+ impl error::Error for ParseError {
+     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+-        match self {
+-            Self::InvalidPosition(e) => Some(e),
+-            Self::InvalidIds(e) => Some(e),
+-            Self::InvalidReferenceBases(e) => Some(e),
+-            Self::InvalidAlternateBases(e) => Some(e),
+-            Self::InvalidQualityScore(e) => Some(e),
+-            Self::InvalidFilters(e) => Some(e),
+-            Self::InvalidInfo(e) => Some(e),
+-            Self::InvalidSamples(e) => Some(e),
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl fmt::Display for ParseError {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match self {
+             Self::InvalidPosition(_) => write!(f, "invalid position"),
+             Self::InvalidIds(_) => write!(f, "invalid IDs"),

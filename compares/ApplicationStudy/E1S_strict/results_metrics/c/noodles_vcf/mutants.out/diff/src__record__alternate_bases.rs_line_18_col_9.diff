@@ -1,0 +1,21 @@
+--- src/record/alternate_bases.rs
++++ replace <impl fmt::Debug for AlternateBases<'_>>::fmt -> fmt::Result with Ok(Default::default())
+@@ -10,17 +10,17 @@
+ impl<'a> AlternateBases<'a> {
+     pub(super) fn new(src: &'a str) -> Self {
+         Self(src)
+     }
+ }
+ 
+ impl fmt::Debug for AlternateBases<'_> {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        f.debug_list().entries(self.iter()).finish()
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl AsRef<str> for AlternateBases<'_> {
+     fn as_ref(&self) -> &str {
+         self.0
+     }
+ }

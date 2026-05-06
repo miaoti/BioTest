@@ -1,0 +1,111 @@
+[master] cells: ['htsjdk_vcf', 'noodles_vcf', 'htsjdk_sam']
+[master] vcf_budget_s=5400  sam_budget_s=5400  reps=4
+[setup] preparing container cov binaries...
+[setup] container cov binaries ready
+[master] launching 3 cells in parallel...
+[master] cumulative=False
+[12:28:12] [htsjdk_vcf    ] === cascade start (host, max_iter=2) ===
+[12:28:12] [noodles_vcf   ] === cascade start (container, max_iter=2) ===
+[12:28:12] [htsjdk_sam    ] === cascade start (host, max_iter=2) ===
+[12:28:12] [htsjdk_sam    ]     initial seeds: VCF=33  SAM=74
+[12:28:12] [noodles_vcf   ]     initial seeds: VCF=33  SAM=74
+[12:28:12] [noodles_vcf   ] --- rep 0 ---
+[12:28:12] [htsjdk_sam    ] --- rep 0 ---
+[12:28:12] [htsjdk_vcf    ]     initial seeds: VCF=33  SAM=74
+[12:28:12] [htsjdk_vcf    ] --- rep 0 ---
+[12:28:12] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:28:12] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:28:12] [htsjdk_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:28:12] [noodles_vcf   ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:28:12] [htsjdk_vcf    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:28:12] [htsjdk_sam    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:28:12] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep0.yaml --phase B,C,E
+[12:28:12] [htsjdk_vcf    ]     budget: 5400s (host)
+[12:28:12] [htsjdk_sam    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep0.yaml --phase B,C,E
+[12:28:12] [htsjdk_sam    ]     budget: 5400s (host)
+[12:28:12] [htsjdk_sam    ]     env: BIOTEST_MULTISHOT_K=2  BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (refine round 4)
+[12:28:12] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E3 ...
+[12:28:12] [noodles_vcf   ]     budget: 5400s (container)
+[12:35:50] [htsjdk_sam    ]     rep 0 exit=1 elapsed=457s
+[12:35:50] [htsjdk_sam    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:35:50] [htsjdk_sam    ] --- rep 1 ---
+[12:35:50] [htsjdk_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:35:50] [htsjdk_sam    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:35:50] [htsjdk_sam    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep1.yaml --phase B,C,E
+[12:35:50] [htsjdk_sam    ]     budget: 5400s (host)
+[12:35:50] [htsjdk_sam    ]     env: BIOTEST_MULTISHOT_K=2  BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (refine round 4)
+[12:40:00] [noodles_vcf   ]     rep 0 exit=0 elapsed=708s
+[12:40:04] [noodles_vcf   ]     -> line=32.70% covered=2481/7584 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:40:04] [noodles_vcf   ] --- rep 1 ---
+[12:40:04] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:40:05] [noodles_vcf   ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:40:05] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E3 ...
+[12:40:05] [noodles_vcf   ]     budget: 5400s (container)
+[12:44:37] [htsjdk_vcf    ]     rep 0 exit=0 elapsed=985s
+[12:44:39] [htsjdk_vcf    ]     -> line=38.00% covered=1430/3760 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:44:39] [htsjdk_vcf    ] --- rep 1 ---
+[12:44:39] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:44:39] [htsjdk_vcf    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:44:40] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep1.yaml --phase B,C,E
+[12:44:40] [htsjdk_vcf    ]     budget: 5400s (host)
+[12:49:58] [htsjdk_vcf    ]     rep 1 exit=1 elapsed=319s
+[12:49:58] [htsjdk_vcf    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:49:58] [htsjdk_vcf    ] --- rep 2 ---
+[12:49:58] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:49:58] [htsjdk_vcf    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:49:58] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep2.yaml --phase B,C,E
+[12:49:58] [htsjdk_vcf    ]     budget: 5400s (host)
+[12:50:31] [noodles_vcf   ]     rep 1 exit=0 elapsed=626s
+[12:50:34] [noodles_vcf   ]     -> line=15.40% covered=1170/7584 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:50:34] [noodles_vcf   ] --- rep 2 ---
+[12:50:34] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:50:34] [noodles_vcf   ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:50:34] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E3 ...
+[12:50:34] [noodles_vcf   ]     budget: 5400s (container)
+[12:55:47] [noodles_vcf   ]     rep 2 exit=0 elapsed=312s
+[12:55:47] [noodles_vcf   ]     llvm-cov regen failed: 
+[12:55:47] [noodles_vcf   ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:55:47] [noodles_vcf   ] --- rep 3 ---
+[12:55:47] [noodles_vcf   ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[12:55:47] [noodles_vcf   ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[12:55:47] [noodles_vcf   ]     cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode E3 ...
+[12:55:47] [noodles_vcf   ]     budget: 5400s (container)
+[13:05:58] [noodles_vcf   ]     rep 3 exit=0 elapsed=612s
+[13:06:03] [noodles_vcf   ]     -> line=15.60% covered=1183/7584 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[13:06:03] [noodles_vcf   ] === cascade complete (4 reps) ===
+[master] [noodles_vcf] CASCADE OK
+[13:14:36] [htsjdk_sam    ]     rep 1 exit=0 elapsed=2327s
+[13:14:38] [htsjdk_sam    ]     -> line=30.40% covered=1580/5200 status=ok seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[13:14:38] [htsjdk_sam    ] --- rep 2 ---
+[13:14:38] [htsjdk_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[13:14:44] [htsjdk_sam    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[13:14:44] [htsjdk_sam    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep2.yaml --phase B,C,E
+[13:14:44] [htsjdk_sam    ]     budget: 5400s (host)
+[13:14:44] [htsjdk_sam    ]     env: BIOTEST_MULTISHOT_K=2  BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (refine round 4)
+[13:41:32] [htsjdk_sam    ]     rep 2 exit=1 elapsed=1608s
+[13:41:32] [htsjdk_sam    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[13:41:32] [htsjdk_sam    ] --- rep 3 ---
+[13:41:32] [htsjdk_sam    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[13:41:32] [htsjdk_sam    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[13:41:32] [htsjdk_sam    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep3.yaml --phase B,C,E
+[13:41:32] [htsjdk_sam    ]     budget: 5400s (host)
+[13:41:32] [htsjdk_sam    ]     env: BIOTEST_MULTISHOT_K=2  BIOTEST_AUTO_INVOKE_PUBLIC_METHODS=1 (refine round 4)
+[14:19:58] [htsjdk_vcf    ]     timeout after 5400s — sending CTRL_BREAK_EVENT (graceful)
+[14:19:58] [htsjdk_vcf    ]     rep 2 exit=3221225786 elapsed=5400s
+[14:19:58] [htsjdk_vcf    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[14:19:58] [htsjdk_vcf    ] --- rep 3 ---
+[14:19:58] [htsjdk_vcf    ]     seeds entering rep: {'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[14:19:58] [htsjdk_vcf    ]     reset data/ + bug_reports/ + coverage_artifacts/ (seeds preserved — independent trials)
+[14:19:58] [htsjdk_vcf    ]     cmd: python harness_run.py --mode E3 --config biotest_config.rep3.yaml --phase B,C,E
+[14:19:58] [htsjdk_vcf    ]     budget: 5400s (host)
+[15:11:32] [htsjdk_sam    ]     timeout after 5400s — sending CTRL_BREAK_EVENT (graceful)
+[15:11:32] [htsjdk_sam    ]     rep 3 exit=3221225786 elapsed=5400s
+[15:11:32] [htsjdk_sam    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[15:11:32] [htsjdk_sam    ] === cascade complete (4 reps) ===
+[master] [htsjdk_sam] CASCADE OK
+[15:35:49] [htsjdk_vcf    ]     rep 3 exit=1 elapsed=4551s
+[15:35:49] [htsjdk_vcf    ]     -> line=0.00% covered=0/0 status=missing seeds_after={'vcf_total': 33, 'vcf_kept': 0, 'vcf_synthetic': 0, 'sam_total': 74, 'sam_kept': 0, 'sam_synthetic': 0}
+[15:35:49] [htsjdk_vcf    ] === cascade complete (4 reps) ===
+[master] [htsjdk_vcf] CASCADE OK
+
+[master] all cells complete in 187.6 min

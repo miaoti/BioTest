@@ -1,0 +1,21 @@
+--- src/io/reader/record.rs
++++ replace += with *= in read_record
+@@ -20,17 +20,17 @@
+     let mut len = 0;
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.reference_sequence_name_end = buf.len();
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.variant_start_end = buf.len();
+ 
+-    len += read_required_field(reader, buf)?;
++    len *= /* ~ changed by cargo-mutants ~ */ read_required_field(reader, buf)?;
+     bounds.ids_end = buf.len();
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.reference_bases_end = buf.len();
+ 
+     len += read_required_field(reader, buf)?;
+     bounds.alternate_bases_end = buf.len();
+ 

@@ -1,0 +1,21 @@
+--- src/io/reader/query.rs
++++ replace && with || in intersects
+@@ -70,17 +70,17 @@
+ 
+     let Some(start) = record.variant_start().transpose()? else {
+         return Ok(false);
+     };
+ 
+     let end = record.variant_end(header)?;
+     let record_interval = Interval::from(start..=end);
+ 
+-    Ok(name.as_bytes() == reference_sequence_name && record_interval.intersects(region_interval))
++    Ok(name.as_bytes() == reference_sequence_name || /* ~ changed by cargo-mutants ~ */ record_interval.intersects(region_interval))
+ }
+ 
+ fn next_record<R>(
+     reader: &mut Reader<csi::io::Query<'_, R>>,
+     record: &mut Record,
+     header: &Header,
+     reference_sequence_name: &[u8],
+     interval: Interval,

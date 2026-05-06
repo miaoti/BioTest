@@ -1,0 +1,35 @@
+--- src/io/reader/record_buf/ids.rs
++++ replace parse_ids -> Result<(), ParseError> with Ok(())
+@@ -31,31 +31,17 @@
+             Self::Empty => write!(f, "empty input"),
+             Self::InvalidId(_) => write!(f, "invalid ID"),
+             Self::DuplicateId(id) => write!(f, "duplicate ID: {id}"),
+         }
+     }
+ }
+ 
+ pub(super) fn parse_ids(s: &str, ids: &mut Ids) -> Result<(), ParseError> {
+-    const DELIMITER: char = ';';
+-
+-    if s.is_empty() {
+-        return Err(ParseError::Empty);
+-    }
+-
+-    for raw_id in s.split(DELIMITER) {
+-        let id = parse_id(raw_id).map_err(ParseError::InvalidId)?;
+-
+-        if let Some(id) = ids.as_mut().replace(id.into()) {
+-            return Err(ParseError::DuplicateId(id));
+-        }
+-    }
+-
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn test_parse_ids() -> Result<(), Box<dyn std::error::Error>> {

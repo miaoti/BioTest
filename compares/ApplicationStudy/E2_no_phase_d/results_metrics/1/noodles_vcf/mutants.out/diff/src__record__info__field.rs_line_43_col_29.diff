@@ -1,0 +1,21 @@
+--- src/record/info/field.rs
++++ replace && with || in parse_field
+@@ -35,17 +35,17 @@
+     let raw_value = components.next();
+ 
+     let definition = header
+         .infos()
+         .get(key)
+         .map(|info| (info.number(), info.ty()))
+         .or_else(|| definition(header.file_format(), key).map(|(n, t, _)| (n, t)));
+ 
+-    if definition.is_none() && raw_value.is_none() {
++    if definition.is_none() || /* ~ changed by cargo-mutants ~ */ raw_value.is_none() {
+         return Ok((key, Some(Value::Flag)));
+     }
+ 
+     let (number, ty) = definition.unwrap_or_default();
+ 
+     let value = match raw_value {
+         Some(MISSING) => None,
+         Some(t) => parse_value(t, number, ty).map(Some)?,
