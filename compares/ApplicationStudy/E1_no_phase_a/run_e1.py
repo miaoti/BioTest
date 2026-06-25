@@ -412,6 +412,44 @@ def apply_e1_strict_extras() -> dict:
     }
 
 
+def apply_e1_medium_patches() -> dict:
+    """E1M (medium) — clean Phase A RAG-only ablation. Disables ChromaDB
+    retrieval and chunk_id validation, but KEEPS all static prompt
+    content (compound-group rule in transforms_menu.py:261, transform
+    menu with descriptions/preconditions/contextual hints, behavior
+    fragment hints, blindspot ticket spec rules).
+
+    Why this exists: E1S strips BOTH dynamic RAG retrieval AND static
+    spec-derived prompt engineering. E0 vs E1S therefore conflates two
+    distinct contributions. E1M isolates retrieval alone, so:
+      E0 vs E1M  = pure Phase A RAG contribution
+      E1M vs E1S = static prompt-engineering contribution
+      E0 vs E1S  = combined (current measurement)
+
+    Patches applied (same as E1's RAG disable, NO prompt strip):
+      1. tools.get_ephemeral_index → stub (empty SpecIndex)
+      2. compiler._hydrate_evidence → stub (no ChromaDB validation)
+
+    Patches NOT applied (kept from E0):
+      - build_system_prompt (static template with compound rule, etc.)
+      - transforms_menu (full descriptions + compound block)
+      - behavior fragment (full hints)
+      - blindspot ticket (spec rules retained)
+    """
+    import mr_engine.agent.tools as _tools
+    import mr_engine.dsl.compiler as _compiler
+    from mr_engine.dsl.models import HydratedEvidence
+
+    _tools.get_ephemeral_index = lambda: _STUB_INDEX
+    _compiler._hydrate_evidence = _make_stub_hydrate(HydratedEvidence)
+
+    return {
+        "tools.get_ephemeral_index": "stub (empty SpecIndex — RAG retrieval returns nothing)",
+        "compiler._hydrate_evidence": "stub (no ChromaDB chunk_id validation)",
+        "static prompt": "UNCHANGED (compound-group rule + transform descriptions + behavior hints all retained)",
+    }
+
+
 def apply_e1_strict_patches() -> dict:
     """E1-strict bundle: tools stub + chunk_id stub + (no naive spec
     stuffing) + transform-menu strip + behavior fragment strip + blindspot

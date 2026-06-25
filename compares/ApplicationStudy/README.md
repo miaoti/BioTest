@@ -31,12 +31,16 @@ E0 不在本目录运行——它就是 `biotest.py` 默认全开的主线评估
      凡是名字以 `kept_`、`synthetic_`、`.kept_`、`.synthetic_` 开头的文件
      都跳过（前两者是 Rank 8 / Rank 1 的运行产物；后两者是审计日志）。
      `seeds/{vcf,sam}_{struct,rawfuzz,diverse,bytefuzz}/` 兄弟目录整体跳过
-     （那些是 Phase E + 手工 CLI 工具的产物）。
+     （那些是 Corpus Stack 增量层 + 手工 CLI 工具的产物；下面表格里仍按代码
+     里的历史名 `Phase E` 标注，见**命名说明**）。
    * 起始 corpus 拷贝到 `<variant>/results/corpus/`，**故意不叫 `seeds/`**——
      避免与主 `seeds/` 概念混淆。
-   * 运行中产出（kept_、synthetic_、Phase E 的 `_struct/_rawfuzz`）都落在
-     `<variant>/results/corpus/` 内，**不写主 `seeds/`**。Phase E 因为源码
-     里硬编码了路径，需要靠 monkey-patch 强制隔离（详见 E1 README）。
+   * 运行中产出（kept_、synthetic_、Corpus Stack 增量层产生的
+     `_struct/_rawfuzz`）都落在 `<variant>/results/corpus/` 内，**不写主
+     `seeds/`**。代码里 `run_phase_e` 因为源码硬编码了路径，需要靠 monkey-patch
+     强制隔离（详见 E1 README）。
+
+> **命名说明**：本文档表格 / 路径里出现的 `Phase E` 是代码历史名（`biotest.py:run_phase_e`、`biotest_config.yaml: phase_e.enabled`、CLI `--phase E`）。论文 (`documents/paper`) 把它重新框定为 **Corpus Stack 的增量层（Ranks 12 + 13）**，不算独立的 phase——BioTest 概念上只有四个 phase（A 规范摄入、B LLM MR 挖掘、C 多 runner 执行 + 共识 oracle、D 覆盖反馈）。代码标识保留是为向后兼容；对外描述请使用 "Corpus Stack 增量层"。
    * `<variant>/results/input_manifest.json` 记录每个起始 corpus 文件的
      SHA-256 + 跳过的 BioTest 产物清单——审计用。
 

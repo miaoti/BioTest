@@ -15,9 +15,9 @@
     rectangle, rounded corners=1.5pt,
     draw=black!55, fill=black!3,
     line width=0.4pt,
-    inner sep=4pt,
+    inner sep=3pt,
     text width=82mm, align=left,
-    font=\footnotesize
+    font=\scriptsize
   },
   llmio/llm/.style={
     llmio/box,
@@ -25,14 +25,15 @@
     line width=0.5pt
   },
   llmio/flow/.style={
-    -{Latex[length=1.6mm,width=1.4mm]},
-    line width=0.55pt, draw=black!75
+    -{Latex[length=1.4mm,width=1.2mm]},
+    line width=0.5pt, draw=black!75
   },
 }
 
-\begin{figure*}[!t]
+\begin{figure*}[!tbp]
 \centering
-\begin{tikzpicture}[node distance=6mm and 4mm, font=\footnotesize]
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=4mm and 3mm, font=\scriptsize]
 
 % Row 1: (1) Spec chunk on the left, (2) LLM prompt on the right
 \node[llmio/box] (chunk)
@@ -44,7 +45,7 @@
    order.''};
 
 \node[llmio/llm, right=of chunk] (prompt)
-  {\textbf{(2) Phase~B prompt to \texttt{deepseek-v4-flash}}\hfill
+  {\textbf{(2) Phase~B prompt to the LLM}\hfill
    {\scriptsize RAG-conditioned}\\[2pt]
    \textit{Goal:} mine MRs for \texttt{ordering\_invariance} on
    VCF.\\
@@ -79,7 +80,7 @@
 \draw[llmio/flow] (prompt.south) -- (mr.north);
 \draw[llmio/flow] (mr.west)     -- (val.east);
 
-\end{tikzpicture}
+\end{tikzpicture}}
 \caption{LLM I/O traced through one accepted metamorphic
 relation. Panels~2 and~3 are LLM-touched (blue), panels~1 and~4
 are framework data (grey). Every panel reproduces an artefact

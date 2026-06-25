@@ -81,7 +81,7 @@ BioTest 的论文叙事建立在两根支柱上：
 
 1. Rank 1 (seed synthesis)、Rank 8 (corpus keeper)、Rank 4 (`hypothesis.target()`) 这些杠杆即使在单轮内也会激活——只关外循环并不能真正测出"无反馈"的下界。
 2. 论文叙事里 Phase D 不只是"多跑几轮"——它是 SCC + 覆盖率 + 盲区 + 9 层 lever 的整体设计。E2 / E3 必须真正关掉所有这些机制，结论才指向"整套 Phase D 设计有用"，而不是"多迭代有用"（后者过于平庸）。
-3. corpus_keeper 与 Phase E 的 augment 输出会被下游 Phase-3 mutation harness 显式 union 进 corpus（详见 `compares/scripts/phase3_jazzer_pit.sh`）。E2/E3 必须关闭这两路，否则 mutation 度量被污染。
+3. corpus_keeper 与 Corpus Stack 增量层（代码内仍叫 `phase_e`，对应 Ranks 12 + 13）的 augment 输出会被下游 Phase-3 mutation harness 显式 union 进 corpus（详见 `compares/scripts/phase3_jazzer_pit.sh`）。E2/E3 必须关闭这两路，否则 mutation 度量被污染。
 
 **落地清单**（4 行 yaml override + 1 个环境变量）：
 

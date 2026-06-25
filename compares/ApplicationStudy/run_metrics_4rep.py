@@ -204,13 +204,33 @@ def _run_one_mutation_cell(
     _log(f"{config}[{run_id}] {cell}: done — {results[fmt].get(cell, {})}")
 
 
+def _to_container_path(p: Path) -> str:
+    """Convert host path under PROJECT_ROOT to /work/... container path."""
+    abs_p = p if p.is_absolute() else (PROJECT_ROOT / p)
+    s = str(abs_p).replace("\\", "/")
+    repo_str = str(PROJECT_ROOT).replace("\\", "/")
+    if s.startswith(repo_str):
+        suffix = s[len(repo_str):]
+        if not suffix.startswith("/"):
+            suffix = "/" + suffix
+        return "/work" + suffix
+    return s
+
+
 def run_bug_bench_for_config(config: str, budget_s: int = 600) -> None:
-    """Run bug_bench against each rep's final corpus for the config."""
+    """Run bug_bench against each rep's final corpus for the config.
+
+    Invoked via `docker exec biotest-bench-setup` so that:
+      * vcfpy / noodles / biopython pre-fix installs find their
+        container-local venvs (/opt/atheris-venv/bin/pip, etc.).
+      * Uses manifest.verified.json (32 frozen bugs from 2026-04-21
+        audit) — same file the paper's bug_bench table is built on.
+    """
     cfg = CONFIGS[config]
     sub = cfg["sub"]
-    manifest = PROJECT_ROOT / "compares" / "bug_bench" / "manifest.json"
+    manifest = PROJECT_ROOT / "compares" / "bug_bench" / "manifest.verified.json"
     if not manifest.exists():
-        _log("bug_bench manifest missing — skip")
+        _log("bug_bench manifest.verified.json missing — skip")
         return
 
     for run_id in cfg["ids"]:
@@ -221,7 +241,6 @@ def run_bug_bench_for_config(config: str, budget_s: int = 600) -> None:
             _log(f"{config}[{run_id}] bug_bench: skip — already done")
             continue
 
-        # Use the cell-level combined corpus dirs for vcf+sam.
         vcf_dir = (PROJECT_ROOT / "compares" / "ApplicationStudy" /
                    sub / "results_metrics" / f"{run_id}" / "htsjdk_vcf" / "combined_corpus")
         sam_dir = (PROJECT_ROOT / "compares" / "ApplicationStudy" /
@@ -230,17 +249,24 @@ def run_bug_bench_for_config(config: str, budget_s: int = 600) -> None:
             _log(f"{config}[{run_id}] bug_bench: skip — corpus dirs missing")
             continue
 
-        cmd = [
-            "py", "-3.12",
-            str(PROJECT_ROOT / "compares" / "scripts" / "bug_bench_driver.py"),
-            "--manifest", str(manifest),
-            "--out", str(out_dir),
-            "--time-budget-s", str(budget_s),
-            "--seed-corpus-vcf", str(vcf_dir),
-            "--seed-corpus-sam", str(sam_dir),
-            "--only-tool", "biotest",
-        ]
-        _log(f"{config}[{run_id}] bug_bench: launching")
+        # Container paths
+        c_manifest = _to_container_path(manifest)
+        c_out = _to_container_path(out_dir)
+        c_vcf = _to_container_path(vcf_dir)
+        c_sam = _to_container_path(sam_dir)
+
+        inner = (
+            f"cd /work && python3.12 compares/scripts/bug_bench_driver.py "
+            f"--manifest {c_manifest} "
+            f"--out {c_out} "
+            f"--time-budget-s {budget_s} "
+            f"--seed-corpus-vcf {c_vcf} "
+            f"--seed-corpus-sam {c_sam} "
+            f"--only-tool biotest"
+        )
+        cmd = ["docker", "exec", "biotest-bench-setup", "bash", "-lc", inner]
+
+        _log(f"{config}[{run_id}] bug_bench: launching (docker, manifest.verified.json)")
         try:
             r = subprocess.run(
                 cmd, cwd=str(PROJECT_ROOT),

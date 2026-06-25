@@ -45,8 +45,10 @@ CELLS_BY_LABEL = {
 CONFIGS = {
     "E0":  {"sub": "E0_baseline",     "layout": "big_runs", "ids": ["a", "b", "c", "d"], "reps": 3, "cum": "true"},
     "E1S": {"sub": "E1S_strict",      "layout": "big_runs", "ids": ["a", "b", "c", "d"], "reps": 3, "cum": "true"},
+    "E1M": {"sub": "E1M_medium",      "layout": "big_runs", "ids": ["a", "b", "c", "d"], "reps": 3, "cum": "true"},
     "E2":  {"sub": "E2_no_phase_d",   "layout": "reps",     "ids": [0, 1, 2, 3],         "reps": 4, "cum": "false"},
     "E3":  {"sub": "E3_no_a_no_d",    "layout": "reps",     "ids": [0, 1, 2, 3],         "reps": 4, "cum": "false"},
+    "E3M": {"sub": "E3M_medium",      "layout": "reps",     "ids": [0, 1, 2, 3],         "reps": 4, "cum": "false"},
 }
 
 LOG_LOCK = threading.Lock()

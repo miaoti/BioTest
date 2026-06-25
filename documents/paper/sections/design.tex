@@ -1,6 +1,6 @@
-% Design section for the BioTest paper.
+% Methodology section for the BioTest paper.
 
-\section{Design}
+\section{Methodology}
 \label{sec:design}
 
 \biotest{} treats a parser as an opaque function from bytes to a
@@ -16,6 +16,24 @@ formats: header declarations constrain record-level types, and
 they admit multiple semantically-equivalent surface forms (tag
 order, integer encodings, mandatory-vs-default values) that make
 them amenable to metamorphic testing.
+
+Figure~\ref{fig:architecture} gives the architectural overview.
+The framework is organised as four phases.
+\textbf{Phase~A}~(specification ingest) and
+\textbf{Phase~B}~(LLM-driven MR mining) run \emph{once per format}
+to populate a specification vector store and an admitted-MR
+registry. \textbf{Phase~C}~(multi-runner execution and consensus
+oracle) and \textbf{Phase~D}~(coverage-driven feedback) run
+\emph{per iteration on the SUT pool}. A corpus stack supplies the
+inputs that Phase~C consumes, spanning a semantics-preserving
+metamorphic tier and a per-iteration augmentation tier that
+trades semantic equivalence for branch and value diversity. The subsections that follow describe each component in turn,
+with \S\ref{sec:design-corpus} cataloguing the corpus stack.
+The matched-protocol setup we use when grading \biotest{}
+against coverage-guided fuzzers is described at the start of
+the evaluation in \S\ref{sec:evaluation}.
+
+\input{sections/pipeline_figure}
 
 \subsection{Design Constraints}
 \label{sec:design-constraints}
@@ -40,129 +58,119 @@ coverage-feedback's bug-finding advantage on byte-content-lenient
 parsers~\citep{klees2018fuzz,boehme2020boosting} in exchange for
 portability across four parser languages.
 
-\subsection{Pipeline}
-\label{sec:design-pipeline}
+\subsection{Specification Ingest}
+\label{sec:design-phase-a}
 
-The framework runs as five phases (Figure~\ref{fig:pipeline}).
-Phases~A and~B run once per format, and phases~C, D, and~E run
-per iteration on the SUT pool. \textbf{Phase~A} chunks the
-published specification and embeds the chunks into a vector store
-for retrieval-augmented prompting~\citep{lewis2020rag}, parametric
-over format and spec version. \textbf{Phase~B} prompts an LLM to
-propose candidate metamorphic relations
+The published format specification is segmented at rule and
+field-definition boundaries, embedded with a sentence-transformer
+encoder, and indexed in a vector store for retrieval-augmented
+prompting~\citep{lewis2020rag}. The store is parametric over
+format and spec version. It runs once per format and is rebuilt
+only when the spec version changes, so the cost amortises across
+every SUT that targets the same format.
+
+\subsection{LLM-Driven MR Mining}
+\label{sec:design-phase-b}
+
+Conditioned on the top-ranked spec chunks retrieved from the
+Phase~A store by cosine similarity to the rule a proposal must
+cite, an LLM proposes candidate metamorphic relations of the form
 $\mathit{out}(\mathit{parse}(x)) \equiv
-\mathit{out}(\mathit{parse}(T(x)))$, each grounded in spec rules
-retrieved from the Phase~A store and validated against a reference
-parser on a seed corpus before admission. \textbf{Phase~C} routes
-each input $x$ and its transform $T(x)$ through every configured
-parser runner. Outputs are canonicalised to JSON and graded by the
-consensus oracle of \S\ref{sec:design-consensus}, which layers
-metamorphic equivalence on top of differential
-agreement~\citep{mckeeman1998differential}. \textbf{Phase~D}
-reduces coverage telemetry to per-class blind-spot tickets and
-folds the highest-yield uncovered classes back into Phase~B's
-prompt. \textbf{Phase~E} content-hashes inputs accepted by at
-least one runner and runs the augmentation operators of
-\S\ref{sec:design-corpus} (Ranks~8--13).
+\mathit{out}(\mathit{parse}(T(x)))$. The model is constrained to
+a whitelist of $\sim$20 atomic transforms registered in the
+framework. Each candidate MR traverses three sequential admission
+gates. (i)~A \emph{whitelist gate} rejects unrecognised
+transforms. (ii)~A \emph{hash gate} collapses candidates whose
+$(\mathit{format}, \mathit{scope}, \mathit{transform\_steps})$
+tuple matches an already-admitted MR, so LLM nondeterminism does
+not inflate the registry. (iii)~A \emph{seed-corpus gate}
+validates round-trip equality on a hand-curated reference corpus
+before admission, and is the load-bearing rejection cause across
+recorded snapshots. Phase~B runs once per format and writes its
+output to an MR registry that Phase~C consumes.
 
-\input{sections/pipeline_figure}
+\subsection{Multi-Runner Execution and Consensus Oracle}
+\label{sec:design-phase-c}
+\label{sec:design-consensus}
+
+For each input $x$ in the corpus stack and each admitted MR $T$,
+Phase~C routes $x$ and $T(x)$ through every configured parser
+runner. The VCF runner pool is htsjdk, vcfpy, noodles, and pysam.
+The SAM pool is htsjdk, biopython, seqan3, and pysam. When the
+SUT under grading is one of these runners, the remaining three
+voters supply the consensus. Each runner emits a parsed record
+set canonicalised to JSON and hashed, alongside an exception
+class on failure.
+
+The oracle classifies the input under three layered
+predicates~\citep{mckeeman1998differential}.
+(i)~\emph{Differential consensus}: if a strict majority of
+runners agrees on a digest $\sigma^\star$ and runner~$i$
+disagrees, runner~$i$ is implicated.
+(ii)~\emph{Metamorphic consensus}: if
+$\sigma^\star_x = \sigma^\star_{T(x)}$ but
+$\sigma_i^x \ne \sigma_i^{T(x)}$, runner~$i$ is implicated.
+(iii)~\emph{Relation quarantine}: if the consensus disagrees on
+$x$ versus $T(x)$, the relation has misclassified what the spec
+says is semantics-preserving and is quarantined. The choice
+$N\ge 3$ is the minimum that admits a strict majority and
+distinguishes ``one runner is wrong'' from ``the spec is
+ambiguous''~\citep{barr2015oracle}.
+
+\subsection{Coverage-Driven Feedback}
+\label{sec:design-phase-d}
+
+After each iteration of Phase~C, \biotest{} reduces per-language
+coverage telemetry to per-class blind-spot tickets and folds the
+highest-yield uncovered classes back into Phase~B's prompt as the
+next round's mining target. The feedback loop terminates on a
+stop criterion (consecutive iterations with no admitted MR or no
+uncovered class above a yield threshold) rather than on a fixed
+wall-clock tick. This is the only part of the framework that
+consumes per-SUT coverage information, and only at the prompt
+level.
 
 \subsection{Corpus Stack}
 \label{sec:design-corpus}
 
 A pure metamorphic test loop ceilings at modest line coverage on
-file-format parsers. We therefore widen the corpus along two tiers
-ordered by decreasing semantic preservation. Ranks~1--7 are
-semantics-preserving metamorphic transforms whose outputs the
-consensus oracle scores under the metamorphic predicate.
-Ranks~8--13 trade strict semantic equivalence for branch and value
-diversity, and their outputs feed mutation grading and the
-differential-only oracle, which does not require metamorphic
-validity to declare a kill.
+file-format parsers. We therefore widen the corpus along two
+tiers ordered by decreasing semantic preservation.
 
-\begin{itemize}\setlength{\itemsep}{1pt}
-  \item \textbf{Ranks~1--7 (metamorphic).} LLM-synthesised seeds
-  (R1), upstream-derived corpora (R2), spec-rule-targeted
-  malformed mutators (R3), Hypothesis-targeted property-based
-  generation (R4), API-query relations
-  $P(\mathit{parse}(x))\equiv P(\mathit{parse}(T(x)))$ over
-  reflection-discovered scalar getters (R5), opt-in
-  LLM-synthesised relations (R6), and theme-restricted
-  spec-invariant registries (R7).
+\textbf{Metamorphic tier.} The metamorphic tier supplies inputs
+whose Phase~C outputs the consensus oracle scores under the
+metamorphic predicate. Seeds come from LLM-synthesised inputs
+targeting uncovered spec rules and from an upstream-derived
+corpus of real-world VCF/SAM files. Metamorphic relations are
+mined through three additional channels beyond Phase~B's primary
+registry: spec-rule-targeted malformed mutators that flip a
+single grammar production; a Hypothesis-driven property-based
+generator parameterised by the format's canonical schema; and
+reflection-discovered API-query relations of the form
+$P(\mathit{parse}(x)) \equiv P(\mathit{parse}(T(x)))$ over the
+parser's public scalar getters. An opt-in LLM-mined relation
+channel and a theme-restricted spec-invariant registry round out
+the tier.
 
-  \item \textbf{R8 corpus keeper.} Persists every transformed
-  input accepted by at least one runner, deduplicated by canonical
-  AST-hash.
+\textbf{Augmentation tier.} The augmentation tier trades strict
+semantic equivalence for branch and value diversity. Every
+transformed input accepted by at least one runner is
+content-hashed and deduplicated into a persistent corpus keeper,
+so each iteration starts from a strictly larger pool. Value-level
+operators perturb spec-bounded numerical fields (POS, QUAL, MAPQ,
+AF, DP, TLEN) within validity bounds and emit Boundary Value
+Analysis~\citep{myers1979art} variants at the spec extremes.
+Byte-level operators apply validity-gated bit-flip,
+byte-substitute, byte-insert, and byte-delete on non-header
+positions; a lenient companion drops the validity gate for inputs
+consumed only by mutation-adequacy grading. A structural
+enumerator emits spec-derived branch-diverse inputs (CIGAR-shape
+mixes, tag-type permutations, multi-sample records, varied
+FILTER/INFO/FORMAT compositions). Augmentation outputs feed
+mutation grading and the differential-only oracle, which does not
+require metamorphic validity to declare a kill.
 
-  \item \textbf{R9 value diversifier.} Perturbs spec-bounded
-  numerical fields (POS, QUAL, MAPQ, AF, DP, TLEN) within bounds,
-  gated by a canonical-normaliser validity check.
-
-  \item \textbf{R10 byte fuzzer.} Validity-gated bit-flip,
-  byte-substitution, byte-insert, and byte-delete operators on
-  non-header positions.
-
-  \item \textbf{R11 boundary-value generator.} Boundary Value
-  Analysis~\citep{myers1979art} on spec-bounded numerical fields.
-
-  \item \textbf{R12 structural variant generator.} Spec-derived
-  enumerator emitting branch-diverse inputs (CIGAR-shape mixes,
-  tag-type permutations, multi-sample records, varied
-  FILTER/INFO/FORMAT compositions).
-
-  \item \textbf{R13 lenient byte fuzzer.} Weak-gate byte-level
-  mutator retaining files with at least one line. Not metamorphic,
-  consumed only by mutation-adequacy grading.
-\end{itemize}
-
-\subsection{Consensus Oracle}
-\label{sec:design-consensus}
-
-Phase~C parses each input with $N \ge 3$ SUTs drawn from the
-runner pool. The VCF pool is htsjdk, vcfpy, noodles, and pysam.
-The SAM pool is htsjdk, biopython, seqan3, and pysam. When the
-SUT under grading is one of these runners, the remaining three
-voters supply the consensus.
-Each runner emits a parsed record set canonicalised to JSON and
-hashed, alongside an exception class on failure. The oracle
-classifies the input under three layered predicates. (i)
-Differential consensus: if a strict majority of runners agrees on
-a digest $\sigma^\star$ and runner $i$ disagrees, runner~$i$ is
-implicated. (ii) Metamorphic consensus: if
-$\sigma^\star_x = \sigma^\star_{T(x)}$ but
-$\sigma_i^x \ne \sigma_i^{T(x)}$, runner~$i$ is implicated. (iii)
-Relation quarantine: if the consensus disagrees on $x$ versus
-$T(x)$, the relation has misclassified what the spec says is
-semantics-preserving. The choice $N\ge 3$ is the minimum that
-admits a strict majority and distinguishes ``one runner is wrong''
-from ``the spec is
-ambiguous''~\citep{barr2015oracle}.
-
-\subsection{Cross-Tool Fairness Recipe}
-\label{sec:design-fairness}
-
-\S\ref{sec:evaluation} grades \biotest{} against coverage-guided
-fuzzers under four identical conditions. Each pair uses the same
-mutation engine (PIT~\citep{coles2016pit} for htsjdk,
-mutmut~\citep{mutmut2024} for vcfpy and biopython,
-cargo-mutants~\citep{cargomutants2024} for noodles, a DIY
-mull-style \textsc{aor}/\textsc{ror}/\textsc{lor} operator
-set~\citep{denisov2018mull,just2014mutants} for seqan3), the same
-target-class scope, the same kill predicate (parse-success flip,
-canonical-JSON divergence, or crash-class flip) scored as
-$\mathit{killed}/\mathit{reachable}$~\citep{coles2016pit,papadakis2019mutation},
-and the same wall-clock budget per pair across $n$ reps. Only the
-corpus differs.
-
-Wall-clock parity is not iteration-cost parity. In-process fuzzers
-iterate faster than fork-server fuzzers, and the imbalance shows
-up on seqan3/SAM as a $17$\,pp gap between
-AFL++~\citep{fioraldi2020aflpp} and
-libFuzzer~\citep{libfuzzer2024} despite identical mutants. Every corpus is trimmed to $\le 200$
-files by an AFL-cmin-style minimiser using per-file
-kill-cardinality on Python SUTs~\citep{vikram2023guiding} and an
-SUT-agnostic outcome-fingerprint elsewhere. The selector adds
-$+1$ to $+2$\,pp on pairs where it actively trims. As an
-uninformed-fuzzing reference~\citep{klees2018fuzz} we add a
-Pure-Random byte emitter under identical conditions and report it
-as a per-pair floor.
+% Cross-Tool Fairness Recipe content distributed to:
+% - evaluation_intro.tex: matching protocol, corpus trim, Pure-Random floor
+% - mutation_score_section.tex Setup: engine list, kill predicate
+% - threats.tex: wall-clock parity caveat (AFL++/libFuzzer 17pp gap)

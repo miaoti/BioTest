@@ -53,3 +53,171 @@ Metamorphic & Differential Testing for Bioinformatics Parsers
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ PIPELINE FAILED — Phase(s) C encountered errors.                            │
 └─────────────────────────────────────────────────────────────────────────────┘
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.cell.yaml
+
+                                 Configuration                                  
+                                                                                
+ Spec Versions          VCF v4.5, SAM v1.6                                      
+ Test Format            VCF (cascades to B, C, D)                               
+ MR Themes              ordering_invariance, semantics_preserving_permutation,  
+                        normalization_invariance, rejection_invariance,         
+                        coordinate_indexing_invariance, round_trip_invariance,  
+                        api_query_invariance                                    
+ Active SUTs            htsjdk, biopython, seqan3, pysam, vcfpy, noodles,       
+                        htslib                                                  
+ Enabled Phases         A -> B -> C -> D                                        
+                                                                                
+
+19:28:58 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/vcfpy', '/usr/local/lib/python3.12/dist-packages/Bio/Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+19:28:59 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+19:28:59 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+19:28:59 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+19:28:59 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+19:28:59 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+19:28:59 [INFO] test_engine.orchestrator: Execution mode: static
+19:28:59 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+19:28:59 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 0, 'sam': 926}, 'canonical_buckets': {'vcf': 0, 'sam': 0}}
+19:28:59 [INFO] test_engine.oracles.det_tracker: DET report exported to /tmp/biotest_bench_reports/cell_a75a7e2e_det_report.json
+19:28:59 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (628ms)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                               │
+│ C: Execute   │   FAIL   │      628ms │ Phase C executed 0 tests — registry   │
+│              │          │            │ has no enforced MRs to run. Phase B   │
+│              │          │            │ probably produced no output (check    │
+│              │          │            │ LLM errors).                          │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+  Total Pipeline Duration:  1.0s
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PIPELINE FAILED — Phase(s) C encountered errors.                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.cell.yaml
+
+                                 Configuration                                  
+                                                                                
+ Spec Versions          VCF v4.5, SAM v1.6                                      
+ Test Format            VCF (cascades to B, C, D)                               
+ MR Themes              ordering_invariance, semantics_preserving_permutation,  
+                        normalization_invariance, rejection_invariance,         
+                        coordinate_indexing_invariance, round_trip_invariance,  
+                        api_query_invariance                                    
+ Active SUTs            htsjdk, biopython, seqan3, pysam, vcfpy, noodles,       
+                        htslib                                                  
+ Enabled Phases         A -> B -> C -> D                                        
+                                                                                
+
+19:36:59 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/Bio/Align', '/usr/local/lib/python3.12/dist-packages/vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+19:36:59 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+19:37:00 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+19:37:00 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+19:37:00 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+19:37:00 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+19:37:00 [INFO] test_engine.orchestrator: Execution mode: static
+19:37:00 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+19:37:00 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 0, 'sam': 926}, 'canonical_buckets': {'vcf': 0, 'sam': 0}}
+19:37:00 [INFO] test_engine.oracles.det_tracker: DET report exported to /tmp/biotest_bench_reports/cell_86d6571f_det_report.json
+19:37:00 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (763ms)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                               │
+│ C: Execute   │   FAIL   │      763ms │ Phase C executed 0 tests — registry   │
+│              │          │            │ has no enforced MRs to run. Phase B   │
+│              │          │            │ probably produced no output (check    │
+│              │          │            │ LLM errors).                          │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+  Total Pipeline Duration:  1.3s
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PIPELINE FAILED — Phase(s) C encountered errors.                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ____  _       _____         _   
+ | __ )(_) ___ |_   _|__  ___| |_ 
+ |  _ \| |/ _ \  | |/ _ \/ __| __|
+ | |_) | | (_) | | |  __/\__ \ |_ 
+ |____/|_|\___/  |_|\___||___/\__|
+
+Metamorphic & Differential Testing for Bioinformatics Parsers
+
+  Config loaded from: biotest_config.cell.yaml
+
+                                 Configuration                                  
+                                                                                
+ Spec Versions          VCF v4.5, SAM v1.6                                      
+ Test Format            VCF (cascades to B, C, D)                               
+ MR Themes              ordering_invariance, semantics_preserving_permutation,  
+                        normalization_invariance, rejection_invariance,         
+                        coordinate_indexing_invariance, round_trip_invariance,  
+                        api_query_invariance                                    
+ Active SUTs            htsjdk, biopython, seqan3, pysam, vcfpy, noodles,       
+                        htslib                                                  
+ Enabled Phases         A -> B -> C -> D                                        
+                                                                                
+
+20:04:09 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/vcfpy', '/usr/local/lib/python3.12/dist-packages/Bio/Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+20:04:10 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+20:04:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+20:04:10 [INFO] test_engine.generators.seeds: Seed corpus loaded: 0 VCF seeds, 1319 SAM seeds
+20:04:10 [INFO] test_engine.orchestrator: Loaded 0 MRs from registry (enforced=0, quarantine=0)
+20:04:10 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+20:04:10 [INFO] test_engine.orchestrator: Execution mode: static
+20:04:10 [INFO] test_engine.orchestrator: Test suite complete: 0 tests, 0 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.0000
+20:04:10 [INFO] test_engine.orchestrator: Corpus keeper stats: {'enabled': True, 'max_files_per_format': 2000, 'kept_this_session': 0, 'skipped_duplicate': 0, 'skipped_ast_dup': 0, 'pool_size': {'vcf': 0, 'sam': 926}, 'canonical_buckets': {'vcf': 0, 'sam': 0}}
+20:04:10 [INFO] test_engine.oracles.det_tracker: DET report exported to /tmp/biotest_bench_reports/cell_1f1047c5_det_report.json
+20:04:10 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: FAIL  (733ms)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │        0ms │ skipped                               │
+│ C: Execute   │   FAIL   │      733ms │ Phase C executed 0 tests — registry   │
+│              │          │            │ has no enforced MRs to run. Phase B   │
+│              │          │            │ probably produced no output (check    │
+│              │          │            │ LLM errors).                          │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+  Total Pipeline Duration:  1.2s
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PIPELINE FAILED — Phase(s) C encountered errors.                             │
+╰──────────────────────────────────────────────────────────────────────────────╯

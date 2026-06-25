@@ -1,47 +1,46 @@
 % Standalone table -- included by mutation_score_section.tex.
-% Layout: three VCF columns plus three SAM columns, one row per
-% testing tool. Empty entries are tools that don't run on that SUT.
+% Single-column layout. Citations inline. Std rendered inline at
+% \tiny (one step smaller than the table's \scriptsize cell font).
+% Bolded mean marks column-best. Per-pair engine + replicate
+% metadata in the trailing footnote.
 
-\begin{table*}[!t]
+\begin{table}[!htbp]
 \centering
-\caption{Mutation-adequacy mean $\pm$ sample std (\%) across the
-six $(\mathrm{SUT, format})$ pairs. Identical mutation engines and
-target-class scopes per \S\ref{sec:design-fairness}.
-``---'' indicates the tool is not language-applicable.}
+\caption{Mutation adequacy mean $\pm$ std (\%) across the six
+$(\mathrm{SUT, format})$ pairs. ``---'' indicates the tool is
+not language-applicable.}
 \label{tab:mutation-headline}
-\small
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{l c c c c c c c}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.0}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{l c c c c c c}
 \toprule
-& \multicolumn{3}{c}{\textbf{VCF}}
-& & \multicolumn{3}{c}{\textbf{SAM}} \\
-\cmidrule(lr){2-4} \cmidrule(lr){6-8}
-Tool & htsjdk & vcfpy & noodles & & htsjdk & biopython$^{\dagger}$ & seqan3 \\
+& \multicolumn{3}{c}{\textbf{VCF}} & \multicolumn{3}{c}{\textbf{SAM}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Tool & htsjdk & vcfpy & noodles & htsjdk & biopy$^{\dagger}$ & seqan3 \\
 \midrule
-\biotest               & $32.40{\pm}0.71$ & $87.32{\pm}0.28$ & $\phantom{0}8.39{\pm}0.11$ & & $21.14{\pm}1.42$ & $25.48{\pm}0.79$ & $\mathbf{97.44{\pm}0.00}$ \\
-Jazzer~\citep{jazzer2024}                 & $36.59{\pm}1.34$ & ---              & ---             & & $23.61{\pm}1.21$ & ---             & ---             \\
-Atheris~\citep{atheris2023}               & ---             & $87.37{\pm}1.83$ & ---             & & ---             & $58.00{\pm}0.36$ & ---             \\
-cargo-fuzz~\citep{cargofuzz2024}          & ---             & ---             & $\phantom{0}8.74{\pm}1.91$ & & ---             & ---             & ---             \\
-libFuzzer~\citep{libfuzzer2024}           & ---             & ---             & ---             & & ---             & ---             & $90.57{\pm}0.00$ \\
-AFL++~\citep{fioraldi2020aflpp}            & ---             & ---             & ---             & & ---             & ---             & $73.22{\pm}3.57$ \\
-Pure-Random                               & $\phantom{0}0.00{\pm}0.00$ & $\phantom{0}0.89{\pm}0.10$ & $\phantom{0}0.00{\pm}0.00$ & & $\phantom{0}1.20{\pm}0.06$ & $\phantom{0}0.24{\pm}0.47$ & $\phantom{0}7.19{\pm}0.57$ \\
-\midrule
-\biotest engine          & PIT          & mutmut        & cargo-mutants & & PIT             & mutmut-AST      & DIY mull-style \\
-$n_{\text{biotest}}$     & 10           & 10            & 10            & & 10              & 4               & 4              \\
-$n_{\text{baseline}}$    & 10           & 6             & 9             & & 6               & 4               & 3 / 4$^\ddag$  \\
+\biotest{} (ours)                 & $32.4$\,{\tiny$\pm0.7$} & $87.3$\,{\tiny$\pm0.3$} & $8.4$\,{\tiny$\pm0.1$}  & $21.1$\,{\tiny$\pm1.4$} & $25.5$\,{\tiny$\pm0.8$} & $\mathbf{97.4}$\,{\tiny$\pm0.0$} \\
+Jazzer~\citep{jazzer2024}         & $36.6$\,{\tiny$\pm1.3$} & ---                     & ---                     & $23.6$\,{\tiny$\pm1.2$} & ---                     & ---                     \\
+Atheris~\citep{atheris2023}       & ---                     & $87.4$\,{\tiny$\pm1.8$} & ---                     & ---                     & $58.0$\,{\tiny$\pm0.4$} & ---                     \\
+cargo-fuzz~\citep{cargofuzz2024}  & ---                     & ---                     & $8.7$\,{\tiny$\pm1.9$}  & ---                     & ---                     & ---                     \\
+libFuzzer~\citep{libfuzzer2024}   & ---                     & ---                     & ---                     & ---                     & ---                     & $90.6$\,{\tiny$\pm0.0$} \\
+AFL++~\citep{fioraldi2020aflpp}   & ---                     & ---                     & ---                     & ---                     & ---                     & $73.2$\,{\tiny$\pm3.6$} \\
+Pure-Random                       & $0.0$\,{\tiny$\pm0.0$}  & $0.9$\,{\tiny$\pm0.1$}  & $0.0$\,{\tiny$\pm0.0$}  & $1.2$\,{\tiny$\pm0.1$}  & $0.2$\,{\tiny$\pm0.5$}  & $7.2$\,{\tiny$\pm0.6$}  \\
 \bottomrule
-\end{tabular}
-\\[0.4em]
-{\footnotesize
+\end{tabular}}
+\\[0.1em]
+{\scriptsize
+\textbf{Engines.} htsjdk: PIT;
+vcfpy: mutmut;
+noodles: cargo-mutants;
+biopython: mutmut-AST;
+seqan3: DIY mull-style.
+\textbf{Replicates ($n_{\text{biotest}}$/$n_{\text{baseline}}$):}
+htsjdk/VCF $10/10$; vcfpy $10/6$; noodles $10/9$; htsjdk/SAM
+$10/6$; biopython $4/4$; seqan3 $4/3$ for libFuzzer and $4/4$
+for AFL++.
 $^{\dagger}$~biopython matched-budget caps both \biotest{} and
-Atheris at the first 262 of 523 generated mutants. Full-population
-\biotest{} score: $25.81{\pm}0.00\%$.
-\quad
-$^{\ddag}$~Close-margin pairs were boosted from $n{=}4$ to
-$n{=}10$ on \biotest{}, and baseline $n$ is the achieved value
-shown. Close-margin baseline values are Jazzer/SAM $n{=}6$,
-Atheris/vcfpy $n{=}6$, and cargo-fuzz/noodles $n{=}9$ from
-documented run failures. seqan3 baseline values are
-libFuzzer $n{=}3$ and AFL++ $n{=}4$.}
-\end{table*}
+Atheris at the first 262 of 523 generated mutants;
+full-population \biotest{} score: $25.8\,${\tiny$\pm 0.0$}\%.
+Numbers shown to one decimal; full precision is in the artefact.}
+\end{table}

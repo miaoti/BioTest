@@ -35,7 +35,11 @@ def coverage_cell(d):
     """(value, note) — value is float (0 if ablation/missing), note is short
     string for footnote when value is 0 due to a known cause."""
     if d is None:
-        return None, "no measurement file"
+        # Measurement file completely absent. Under ablation interpretation,
+        # this means the rerun pipeline couldn't even produce a measurement
+        # (Phase B failed to mine MRs AND post-rep coverage script didn't
+        # write missing-marker file due to fast harness exit).
+        return 0.0, "no measurement file written (ablation: harness exited before post-rep coverage step)"
     status = d.get("status")
     total = d.get("total", 0)
     lp = d.get("line_pct", 0.0)
@@ -142,14 +146,26 @@ def main():
              "Missing reps shown as `0` with cause-of-zero footnote.\n")
 
     # ============= COVERAGE: rolled-up summary =============
+    # n=4 across all configs: for big_runs (E0/E1S), per-big_run score
+    # is mean of its 3 reps then aggregated across 4 big_runs;
+    # for rep-layout (E2/E3), per-rep score across 4 reps.
     L.append("## Coverage — mean ± std per cell\n")
     L.append("| Cell | E0 | E1S | E2 | E3 |")
     L.append("|---|---|---|---|---|")
     for cell in CELLS:
         row = [f"| **{cell}** |"]
-        for cfg, *_ in CONFIGS:
+        for cfg, *_, layout in [(c[0], c[1], c[2], c[3], c[4], c[5]) for c in CONFIGS]:
             entries = cov.get((cfg, cell), [])
-            vals = [e["line_pct"] for e in entries if e["line_pct"] is not None]
+            if layout == "big":
+                # Group by run_id, take mean per run_id (3 reps cumulative).
+                from collections import defaultdict
+                by_run = defaultdict(list)
+                for e in entries:
+                    if e["line_pct"] is not None:
+                        by_run[e["run_id"]].append(e["line_pct"])
+                vals = [statistics.mean(v) for v in by_run.values() if v]
+            else:
+                vals = [e["line_pct"] for e in entries if e["line_pct"] is not None]
             if not vals:
                 row.append(" — |")
                 continue

@@ -356,7 +356,7 @@ def write_temp_config(
     fb["coverage_report_path"] = P(work_dir / "data" / "coverage_report.json")
     fb["scc_report_path"] = P(work_dir / "data" / "scc_report.json")
 
-    if MODE in ("E2", "E3"):
+    if MODE in ("E2", "E3", "E3M"):
         # E2/E3 = no Phase D. Disable feedback loop + cross-iter Rank levers
         # (Rank 1 seed-synth / Rank 6 mr-synth / Rank 8 corpus-keeper),
         # but KEEP `phase_c.hypothesis.enabled=True` so Phase C runs in
@@ -422,10 +422,10 @@ def run_biotest_host(
         sys.executable, str(HARNESS_RUN),
         "--mode", MODE,
         "--config", str(cfg_path),
-        "--phase", ("B,C,E" if MODE in ("E2", "E3") else "D,E"),
+        "--phase", ("B,C,E" if MODE in ("E2", "E3", "E3M") else "D,E"),
         "--verbose",
     ]
-    log(cell, f"    cmd: python harness_run.py --mode {MODE} --config {cfg_path.name} --phase " + ("B,C,E" if MODE in ("E2", "E3") else "D,E") + "", fh)
+    log(cell, f"    cmd: python harness_run.py --mode {MODE} --config {cfg_path.name} --phase " + ("B,C,E" if MODE in ("E2", "E3", "E3M") else "D,E") + "", fh)
     log(cell, f"    budget: {budget_s}s (host)", fh)
     # Refine Round 4 — two SUT-agnostic levers, both env-var-gated:
     #   BIOTEST_MULTISHOT_K=2:
@@ -530,7 +530,7 @@ def run_biotest_container(
         "bash", "-lc",
         f"{multishot_export}"
         f"timeout --kill-after=60 {budget_s} python3.12 {container_harness} "
-        f"--mode {MODE} --config {container_cfg} --phase " + ("B,C,E" if MODE in ("E2", "E3") else "D,E") + " --verbose "
+        f"--mode {MODE} --config {container_cfg} --phase " + ("B,C,E" if MODE in ("E2", "E3", "E3M") else "D,E") + " --verbose "
         f"> {container_log} 2>&1 || true",
     ]
     log(cell, f"    cmd: docker exec biotest-bench-setup python3.12 harness_run.py --mode {MODE} ...", fh)
@@ -864,13 +864,16 @@ def run_cell_cascade(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--mode", required=True, choices=("E0", "E1", "E1S", "E2", "E3"),
+        "--mode", required=True, choices=("E0", "E1", "E1S", "E1M", "E2", "E3", "E3M"),
         help=(
             "E0=full BioTest (RAG via existing chromadb); "
             "E1=no Phase A, naive prompt-stuffing of full spec; "
             "E1S=STRICT no Phase A — no spec text, bare transform names, "
             "no spec rules in blindspot ticket; "
-            "E2=full RAG + Phase D loop OFF (single-shot B+C+E, no Rank levers)"
+            "E1M=MEDIUM no Phase A — RAG retrieval disabled, static prompt content kept; "
+            "E2=full RAG + Phase D loop OFF (single-shot B+C+E, no Rank levers); "
+            "E3=E1S patches + Phase D off (fully ablated, strict); "
+            "E3M=E1M patches + Phase D off (fully ablated, RAG-only)"
         ),
     )
     ap.add_argument("--out-root", type=Path, default=None,
@@ -899,8 +902,10 @@ def main() -> int:
             "E0": "E0_baseline",
             "E1": "E1_no_phase_a",
             "E1S": "E1S_strict",
+            "E1M": "E1M_medium",
             "E2": "E2_no_phase_d",
             "E3": "E3_no_a_no_d",
+            "E3M": "E3M_medium",
         }[args.mode]
         args.out_root = (
             REPO_ROOT / "compares" / "ApplicationStudy" / sub / "results_4rep"

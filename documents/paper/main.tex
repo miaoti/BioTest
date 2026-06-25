@@ -1,13 +1,20 @@
-% IEEE conference / journal style. Switch to journal class with the
-% [conference] option for IEEE conference venues.
+% IEEE-conference-template-062824. Local IEEEtran.cls and IEEEtran.bst
+% sit alongside this file so the template version is pinned.
 \documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% Template version as of 6/27/2024
 
-% --- packages ---
-\usepackage{cite}                 % IEEEtran's preferred citation style
+% --- packages: template defaults ---
+\usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% --- packages: paper-specific additions ---
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{enumitem}             % enumerate[label=...] support
@@ -16,6 +23,42 @@
 \usepackage{hyperref}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,backgrounds}
+\usepackage{placeins}
+% fontawesome5 supplies the meaningful phase icons rendered in the
+% pipeline figure's badges.
+\usepackage{fontawesome5}
+
+% Loosen default float-placement parameters so 2-column floats
+% (figure*, table*) settle near their cite-site instead of queueing
+% to the end of the document.
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.7}
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\setcounter{dbltopnumber}{4}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\dblfloatpagefraction}{0.7}
+
+% Tighten whitespace around floats and captions to recover page
+% budget. IEEEtran.cls re-initialises some of these in
+% \AtBeginDocument, so we re-set them inside \AtBeginDocument as
+% well to make sure our values stick.
+\AtBeginDocument{%
+  \setlength{\textfloatsep}{3pt plus 1pt minus 2pt}%
+  \setlength{\floatsep}{2pt plus 1pt minus 1pt}%
+  \setlength{\intextsep}{3pt plus 1pt minus 1pt}%
+  \setlength{\dbltextfloatsep}{3pt plus 1pt minus 2pt}%
+  \setlength{\dblfloatsep}{2pt plus 1pt minus 1pt}%
+  \setlength{\abovecaptionskip}{1pt}%
+  \setlength{\belowcaptionskip}{0pt}%
+  \setlength{\abovedisplayskip}{3pt plus 1pt minus 1pt}%
+  \setlength{\belowdisplayskip}{3pt plus 1pt minus 1pt}%
+  \setlength{\abovedisplayshortskip}{1pt plus 1pt minus 1pt}%
+  \setlength{\belowdisplayshortskip}{1pt plus 1pt minus 1pt}%
+}
 
 % --- We use IEEEtran's native \cite{} (not natbib) since IEEEtran has
 %     its own bibliography style.  For the Evaluation section's
@@ -54,18 +97,26 @@ testing
 \input{sections/introduction}
 \input{sections/related}
 \input{sections/design}
-\input{sections/implementation}
 
+\FloatBarrier
 \section{Evaluation}
 \label{sec:evaluation}
 \input{sections/evaluation_intro}
-\input{sections/mutation_score_section}
+\input{sections/implementation}
 \input{sections/coverage_section}
+\input{sections/mutation_score_section}
 \input{sections/bug_bench_section}
+\input{sections/ablation_study}
 
 \input{sections/threats}
 \input{sections/conclusion}
 
+% Flush the ablation Tables III/IV before the bibliography so they
+% settle on the last text page instead of drifting onto the
+% references page. Placing the barrier here (rather than before
+% Threats) lets the Threats/Conclusion text fill the page, so no
+% blank page is forced.
+\FloatBarrier
 \bibliographystyle{IEEEtran}
 \bibliography{biotest}
 

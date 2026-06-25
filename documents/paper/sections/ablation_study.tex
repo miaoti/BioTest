@@ -1,0 +1,146 @@
+% Ablation study — isolates the contribution of \biotest's
+% retrieval-augmented spec lookup (RAG, used by Phase B's
+% metamorphic-relation mining) and the coverage-feedback
+% iteration (the loop that re-scores seeds and steers Phase B
+% between rounds). Strictly two-by-two: each component is
+% disabled independently and jointly, yielding four
+% configurations evaluated on the same six $(\mathrm{SUT,
+% format})$ pairs and the same $32$-bug verified manifest used
+% in \S\ref{sec:coverage} and \S\ref{sec:bug-bench}.
+
+\subsection{Ablation Study}
+\label{sec:ablation}
+
+% Table III is declared at the top of the subsection (before the
+% prose) and pinned top-only [!t] so this double-column float can
+% claim the top of *this* page. Declared later, its earliest top
+% slot is the next page, which pushed it onto the references page.
+\begin{table*}[!t]
+\centering
+\caption{Line coverage (\%) per ablation. Mean$\pm$std across $n{=}4$ trials. Bold = full configuration.}
+\label{tab:ablation-coverage}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l c c c c c c c}
+\toprule
+& \multicolumn{3}{c}{\textbf{VCF}}
+& & \multicolumn{3}{c}{\textbf{SAM}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){6-8}
+Configuration & htsjdk & vcfpy & noodles & & htsjdk & biopython & seqan3 \\
+\midrule
+\textbf{\biotest{}} (full)
+  & $\mathbf{45.7}$\,{\scriptsize$\pm1.7$}
+  & $\mathbf{72.3}$\,{\scriptsize$\pm0.3$}
+  & $\mathbf{37.1}$\,{\scriptsize$\pm0.9$}
+  &
+  & $\mathbf{30.9}$\,{\scriptsize$\pm0.1$}
+  & $\mathbf{54.3}$\,{\scriptsize$\pm0.0$}
+  & $\mathbf{93.7}$\,{\scriptsize$\pm0.3$} \\
+\textit{w/o Phase A}
+  & $23.75$\,{\scriptsize$\pm15.92$}
+  & $59.02$\,{\scriptsize$\pm18.45$}
+  & $25.75$\,{\scriptsize$\pm11.89$}
+  &
+  & $14.32$\,{\scriptsize$\pm16.57$}
+  & $28.30$\,{\scriptsize$\pm16.69$}
+  & $90.95$\,{\scriptsize$\pm5.97$} \\
+\textit{w/o Phase D}
+  & $41.50$\,{\scriptsize$\pm5.14$}
+  & $72.03$\,{\scriptsize$\pm0.39$}
+  & $34.35$\,{\scriptsize$\pm1.15$}
+  &
+  & $30.02$\,{\scriptsize$\pm1.68$}
+  & $54.27$\,{\scriptsize$\pm0.05$}
+  & $93.68$\,{\scriptsize$\pm0.21$} \\
+\textit{w/o Phase A \& Phase D}
+  & $\phantom{0}9.50$\,{\scriptsize$\pm19.00$}
+  & $49.33$\,{\scriptsize$\pm20.35$}
+  & $15.93$\,{\scriptsize$\pm13.36$}
+  &
+  & $\phantom{0}7.60$\,{\scriptsize$\pm15.20$}
+  & $15.57$\,{\scriptsize$\pm25.15$}
+  & $46.60$\,{\scriptsize$\pm53.81$} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+We isolate the contribution of \biotest{}'s two principal
+phases. \textbf{Phase A} supplies spec-derived domain
+knowledge to the LLM that mines metamorphic relations --- it
+combines a retrieval-augmented lookup over the parsed
+specification with a structured prompt that encodes
+precondition hints, transform compositions, and spec-rule
+coverage targets; without Phase A the LLM sees only the bare
+SUT name and an empty schema, with no grounding for which MRs
+are valid for the format. \textbf{Phase D} is the
+coverage-feedback loop that, between iterations of mining,
+re-scores seeds against accumulated branch coverage,
+synthesises new seeds along under-explored rules, and
+re-steers Phase B's MR mining toward blind-spots; without
+Phase D the pipeline reduces to a single mining round followed
+by one execution pass, with no opportunity to recover from a
+mining miss. Each phase is ablated independently and jointly,
+yielding four configurations evaluated on the same six
+$(\mathrm{SUT}, \mathrm{format})$ pairs and the same $32$-bug
+verified manifest as
+\S\ref{sec:coverage}--\S\ref{sec:bug-bench}. Mutation adequacy is omitted: the
+mutant set is fixed by the external engines, so
+syntactic kill rates saturate across configurations and
+cross-ablation deltas fall inside the $\sim$1\,pp
+within-tool noise band of \S\ref{sec:mutation-adequacy}. Following the
+fuzz-testing methodology guidance of
+Klees~et~al.~\citep{klees2018fuzz}, we run $n=4$ independent
+trials per configuration and report
+$\mathrm{mean} \pm \mathrm{std}$ across all cells. Trials are independent: for
+\biotest{} (full) and the w/o-Phase-A configuration we use $4$ big-runs of $3$
+cumulative reps, where each big-run's score is the rep mean.
+For the feedback-disabled variants we use $4$ independent reps
+with no cross-rep accumulation, since the loop that would build
+on prior-rep state is the one being ablated.
+
+% --------- Table 2: bug-bench ablation (single-column) ---------
+\begin{table}[!htbp]
+\centering
+\caption{Real-bug detections per (SUT,~format) on the 32-bug
+manifest (split as in Table~\ref{tab:bugbench-headline}). Bold
+= column max.}
+\label{tab:ablation-bugbench}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}l c c c c c c@{}}
+\toprule
+& \multicolumn{3}{c}{\textbf{VCF}} & \multicolumn{2}{c|}{\textbf{SAM}} & \multirow{2}{*}{\textbf{Total}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-6}
+Configuration & htsjdk & vcfpy & noodles & htsjdk & \multicolumn{1}{c|}{seqan3} & \\
+\midrule
+\textbf{\biotest{}} (full)        & $\mathbf{4}$ & $\mathbf{3}$ & $\mathbf{1}$ & $\mathbf{2}$ & \multicolumn{1}{c|}{$0$} & $\mathbf{10}$ \\
+\textit{w/o Phase A}              & $4$          & $0$          & $0$          & $0$          & \multicolumn{1}{c|}{$0$} & $4$           \\
+\textit{w/o Phase D}              & $4$          & $0$          & $0$          & $2$          & \multicolumn{1}{c|}{$0$} & $6$           \\
+\textit{w/o Phase A \& Phase D}   & $1$          & $0$          & $0$          & $0$          & \multicolumn{1}{c|}{$0$} & $1$           \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\paragraph{Findings.} The full configuration is the row-max on
+every cell of both tables. The two ablations contribute
+non-overlapping signal: removing the feedback loop is benign
+on coverage for host-level Python/Java SUTs (deltas
+$\leq 1$~pp on vcfpy, biopython, htsjdk/SAM, seqan3) but already
+loses $4$ of $10$ real bugs --- the iterated seed-synthesis path
+is what bridges from htsjdk over to vcfpy and noodles
+regressions, and a single round of mining cannot recover
+those. Removing domain knowledge is the heavier ablation: in
+$1$--$3$ of $4$ trials per SUT, Phase~B mines $0$ valid MRs
+because the LLM without spec context emits empty or
+schema-invalid arrays under our prompt schema, producing the
+bimodal coverage profile visible in
+Table~\ref{tab:ablation-coverage} (mean kept low by trials anchored
+at or near zero), and bug detection collapses from $10$
+to $4$ because every bug outside the htsjdk/VCF
+over-strict-rejection cluster requires a spec-grounded MR to
+surface. Removing both is strictly worse
+than either single ablation, with mean coverage below $50\%$ on
+five of six SUTs and only one bug detected --- confirming that
+the two phases contribute complementary, non-redundant signal.

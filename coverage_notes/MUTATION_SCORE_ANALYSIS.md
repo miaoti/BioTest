@@ -6,6 +6,16 @@ reconciles the per-cell BioTest numbers against each baseline-*tool*'s
 numbers and grounds the gaps in published mutation-testing and
 oracle-strength literature.
 
+> **Naming note (2026-05-06)**: this document refers to "Phase E" /
+> "Phase E augmentation" in the run logs and tables below. That label
+> is the historical code identifier (`biotest.py:run_phase_e`,
+> `biotest_config.yaml: phase_e.enabled`, CLI `--phase E`). In the
+> paper (`documents/paper`) this is the **Corpus Stack augmentation
+> tier** (Ranks 12 + 13), not a phase. BioTest has four phases (A
+> spec ingest, B LLM MR mining, C multi-runner execution + consensus
+> oracle, D coverage-driven feedback); the augmentation tier is part
+> of the Corpus Stack component.
+
 ## 1. Headline — mean ± std across reps, same DESIGN §3.3 formula
 
 Score = `killed / reachable` where `reachable = killed + survived + timed_out`

@@ -1,5 +1,7 @@
 # E1 — Phase A 消融（去 RAG retrieval）
 
+> **命名说明**：本文档里的 `Phase E`、`run_phase_e`、`PhaseEResult`、`vcf_struct/sam_struct/vcf_rawfuzz/sam_rawfuzz` 等都是**代码层的历史名**，对应 Corpus Stack 的增量层（Ranks 12 + 13）。论文 (`documents/paper`) 已对齐：BioTest 概念上只有四个 phase（A 规范摄入、B LLM MR 挖掘、C 多 runner 执行 + 共识 oracle、D 覆盖反馈），增量层属于 Corpus Stack 组件的一部分。代码标识为向后兼容保留，不要按"第五 phase"来理解。
+
 ## 这个配置是什么
 
 对应 `compares/APPLICATION_STUDY.md` 的 **E1 cell**：

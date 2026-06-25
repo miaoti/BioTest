@@ -1,7 +1,6 @@
 src/header.rs:361:9: replace Header::sample_names -> &SampleNames with Box::leak(Box::new(Default::default()))
 src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(Vec::new()))
 src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(vec![0]))
-src/io/reader/header.rs:47:9: replace <impl BufRead for Reader<R>>::fill_buf -> io::Result<&[u8]> with Ok(Vec::leak(vec![1]))
 src/io/reader/header.rs:54:34: replace && with || in <impl BufRead for Reader<R>>::fill_buf
 src/io/reader/header.rs:54:60: replace != with == in <impl BufRead for Reader<R>>::fill_buf
 src/io/reader/header.rs:68:9: replace <impl BufRead for Reader<R>>::consume with ()

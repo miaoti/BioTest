@@ -1,51 +1,46 @@
 % Bug-bench headline table: per-(SUT, format) detection counts.
+% Single-column layout. Citations inline. Per-column manifest
+% counts kept in the caption to keep header rows tight.
 
-\begin{table*}[!t]
+\begin{table}[!htbp]
 \centering
-\caption{Real-bug detection per (SUT, format) on the $32$-bug
-manifest ($23$ VCF $+\,9$ SAM; \S\ref{sec:bug-bench}). Each cell
-is the number of bugs the tool's adapter detected under the
-pre-fix\,/\,post-fix differential predicate, in the ground-truth
-fuzzing style of Magma~\citep{hazimeh2020magma}. Column headers
-show the number of manifest bugs in each (SUT, format). ``---''
-indicates the tool is not language-applicable to the SUT.}
+\caption{Real-bug detection on the \biotest{} real-bug
+benchmark: $32$ historical VCF/SAM parser bugs, each pinned to a
+verified pre-fix\,/\,post-fix commit pair in the ground-truth
+fuzzing style of Magma~\citep{hazimeh2020magma}. Each cell counts
+the manifest bugs a tool's adapter detected under the
+pre-fix\,/\,post-fix differential predicate (per column:
+htsjdk/VCF $9$, htsjdk/SAM $3$, vcfpy/VCF $5$, noodles/VCF $9$,
+seqan3/SAM $6$; \S\ref{sec:bug-bench}). ``---'' indicates the
+tool is not language-applicable to the SUT.}
 \label{tab:bugbench-headline}
-\small
-\setlength{\tabcolsep}{4.5pt}
-\renewcommand{\arraystretch}{1.05}
-\begin{tabular}{l c c c c c c}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}l c c c c c c@{}}
 \toprule
-& \multicolumn{2}{c}{\textbf{htsjdk}}
-& \textbf{vcfpy}
-& \textbf{noodles}
-& \textbf{seqan3}$^{\dagger}$
-& \\
-\cmidrule(lr){2-3}
-Tool & VCF~(9) & SAM~(3) & VCF~(5) & VCF~(9) & SAM~(6) & Total~(32) \\
+& \multicolumn{3}{c}{\textbf{VCF}} & \multicolumn{2}{c|}{\textbf{SAM}} & \multirow{2}{*}{\textbf{Total}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-6}
+Tool & htsjdk & vcfpy & noodles & htsjdk & \multicolumn{1}{c|}{seqan3$^{\dagger}$} & \\
 \midrule
-\biotest{}                                    & $\mathbf{4}$ & $\mathbf{2}$ & $\mathbf{3}$ & $\mathbf{1}$ & $0$ & $\mathbf{10}$ \\
-Jazzer~\citep{jazzer2024}                     & $0$          & $0$          & ---          & ---          & --- & $0$           \\
-Atheris~\citep{atheris2023}                   & ---          & ---          & $0$          & ---          & --- & $0$           \\
-cargo-fuzz~\citep{cargofuzz2024}              & ---          & ---          & ---          & $0$          & --- & $0$           \\
-libFuzzer~\citep{libfuzzer2024}               & ---          & ---          & ---          & ---          & $0$ & $0$           \\
-Pure-Random~\citep{klees2018fuzz}             & $0$          & $0$          & $0$          & $0$          & $0$ & $0$           \\
+Pure-Random                                & $0$          & $0$          & $0$          & $0$          & \multicolumn{1}{c|}{$0$} & $0$           \\
+Jazzer~\citep{jazzer2024}                  & $0$          & ---          & ---          & $0$          & \multicolumn{1}{c|}{---} & $0$           \\
+Atheris~\citep{atheris2023}                & ---          & $0$          & ---          & ---          & \multicolumn{1}{c|}{---} & $0$           \\
+cargo-fuzz~\citep{cargofuzz2024}           & ---          & ---          & $0$          & ---          & \multicolumn{1}{c|}{---} & $0$           \\
+libFuzzer~\citep{libfuzzer2024}            & ---          & ---          & ---          & ---          & \multicolumn{1}{c|}{$0$} & $0$           \\
 \midrule
-EvoSuite-anchor$^{\flat}$~\citep{fraser2011evosuite} & $4$   & $0$          & ---          & ---          & --- & $4$           \\
-Randoop$^{\flat}$~\citep{pacheco2007randoop}  & $1$          & $2$          & ---          & ---          & --- & $3$           \\
+EvoSuite-anchor~\citep{fraser2011evosuite} & $\mathbf{4}$ & ---          & ---          & $0$          & \multicolumn{1}{c|}{---} & $4$           \\
+Randoop~\citep{pacheco2007randoop}         & $1$          & ---          & ---          & $\mathbf{2}$ & \multicolumn{1}{c|}{---} & $3$           \\
 \midrule
-\multicolumn{1}{l}{Any-tool union}            & $7$          & $3$          & $3$          & $1$          & $0$ & $\mathbf{14}$ \\
+\textbf{\biotest{} (ours)}                 & $\mathbf{4}$ & $\mathbf{3}$ & $\mathbf{1}$ & $\mathbf{2}$ & \multicolumn{1}{c|}{$0$} & $\mathbf{10}$ \\
 \bottomrule
-\end{tabular}
-\\[0.4em]
-{\footnotesize
+\end{tabular*}
+\\[0.1em]
+{\scriptsize
 $^{\dagger}$~The six seqan3/SAM manifest entries are paradigm-out
 for any file-input or unit-level fuzzer (alignment-internal
 score, zero-record writer, BGZF concurrency, FASTA, harness-build
 failures, oracle mismatches), so every tool scores $0$ on this
 column by construction. biopython/SAM is omitted because the
-verified manifest contains no biopython/SAM entries.
-\quad
-$^{\flat}$~Unit-level Java baselines (method-level test
-generation, not file-input fuzzing). Both are Java-only and run
-only on htsjdk.}
-\end{table*}
+verified manifest contains no biopython/SAM entries.}
+\end{table}

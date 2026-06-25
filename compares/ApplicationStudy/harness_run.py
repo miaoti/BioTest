@@ -34,15 +34,17 @@ sys.path.insert(0, str(E1_DIR))
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="E0/E1/E1S/E2/E3 thin runner — patches + biotest.run_pipeline")
+    p = argparse.ArgumentParser(description="E0/E1/E1S/E1M/E2/E3/E3M thin runner — patches + biotest.run_pipeline")
     p.add_argument(
-        "--mode", required=True, choices=("E0", "E1", "E1S", "E2", "E3"),
+        "--mode", required=True, choices=("E0", "E1", "E1S", "E1M", "E2", "E3", "E3M"),
         help=(
             "E0: full BioTest with RAG (Phase E patch only); "
             "E1: spec in prompt via naive stuffing (E1's 4 patches); "
             "E1S: STRICT — no spec text, bare transform names, no spec rules in blindspot; "
+            "E1M: MEDIUM — RAG retrieval disabled but static prompt content (compound rule, transform descs) kept; "
             "E2: full RAG + Phase D loop disabled (single-shot B+C+E); "
-            "E3: NO Phase A (E1S patches) + NO Phase D (E2 Phase C bound) — fully ablated"
+            "E3: NO Phase A (E1S patches) + NO Phase D (E2 Phase C bound) — fully ablated; "
+            "E3M: MEDIUM — E1M patches + Phase D disabled (clean isolation of RAG + Phase D contributions)"
         ),
     )
     p.add_argument("--config", required=True)
@@ -83,6 +85,17 @@ def main() -> int:
         from run_e1 import apply_e1_strict_patches
         for k, v in apply_e1_strict_patches().items():
             print(f"[harness_run/E3] pre-import patch: {k}: {v}", flush=True)
+    elif args.mode == "E1M":
+        # E1M: RAG retrieval disabled, static prompt content kept.
+        from run_e1 import apply_e1_medium_patches
+        for k, v in apply_e1_medium_patches().items():
+            print(f"[harness_run/E1M] pre-import patch: {k}: {v}", flush=True)
+    elif args.mode == "E3M":
+        # E3M = E1M patches (RAG-only ablation) + E2 Phase C bound (applied
+        # post-import below). Clean combined isolation.
+        from run_e1 import apply_e1_medium_patches
+        for k, v in apply_e1_medium_patches().items():
+            print(f"[harness_run/E3M] pre-import patch: {k}: {v}", flush=True)
 
     # Import biotest and apply post-import Phase E patch (BOTH modes —
     # Phase E in upstream biotest.py:1552 hardcodes seeds_root, so even
@@ -97,7 +110,7 @@ def main() -> int:
     # consume the whole wall budget and the post-Phase-C measurement
     # never executes — host cells (biopython, vcfpy) end with
     # status="missing".
-    if args.mode in ("E2", "E3"):
+    if args.mode in ("E2", "E3", "E3M"):
         from run_e1 import apply_e2_phase_c_patch
         for k, v in apply_e2_phase_c_patch(per_test_deadline_ms=5000).items():
             print(f"[harness_run/{args.mode}] phase_c patch: {k}: {v}", flush=True)

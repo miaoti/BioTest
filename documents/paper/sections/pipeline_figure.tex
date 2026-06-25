@@ -1,100 +1,137 @@
 % Pipeline overview figure for the BioTest paper.
 % Spans both columns of the IEEEtran conference template.
-% Two-row block diagram in the minimal academic style.
 %
-% Visual semantics (no embedded legend; caption does the work):
-%   - rounded rectangle, light fill, blue rule: framework phase
-%   - rounded rectangle, white fill, grey rule: data artefact
-%   - rounded rectangle, darker fill, heavier rule: user-supplied or decision step
-%   - solid arrow: forward data flow
-%   - dashed arrow: Phase D coverage feedback into Phase B
+% Visual semantics:
+%   - rounded rectangle, white fill, navy rule: framework phase
+%   - rounded rectangle, light blue fill: emphasised stage (consensus oracle)
+%   - rounded rectangle, grey rule: data artefact / I/O
+%   - cylinder:   persistent store (MR registry)
+%   - solid black arrow:   forward data flow
+%   - dashed orange arrow: Phase D coverage feedback into Phase B
+%   - light blue / slate bands: per-format vs per-SUT track grouping
+%   - dashed outer frame: framework boundary
 
-\tikzset{
-  bt/box/.style={
-    rectangle, rounded corners=1.5pt,
-    draw=black!55, fill=white,
-    line width=0.4pt,
-    inner sep=2.5pt, minimum height=7mm,
-    align=center, font=\scriptsize
-  },
-  bt/phase/.style={
-    bt/box,
-    draw=blue!50!black, fill=blue!4,
-    line width=0.5pt
-  },
-  bt/oracle/.style={
-    bt/box,
-    draw=blue!55!black, fill=blue!10,
-    line width=0.7pt
-  },
-  bt/user/.style={
-    bt/box,
-    draw=black!80, fill=black!8,
-    line width=0.6pt
-  },
-  bt/flow/.style={
-    -{Latex[length=1.3mm,width=1.1mm]},
-    line width=0.45pt, draw=black!75
-  },
-  bt/feedback/.style={
-    -{Latex[length=1.3mm,width=1.1mm]},
-    dashed, line width=0.45pt, draw=black!55
-  },
-}
+% Local colour palette (scoped to this figure file).
+\definecolor{cNavy}{HTML}{1E3A8A}
+\definecolor{cInk}{HTML}{0F172A}
+\definecolor{cMute}{HTML}{64748B}
+\definecolor{cLine}{HTML}{374151}
+\definecolor{cBandT}{HTML}{EFF6FF}
+\definecolor{cBandB}{HTML}{F8FAFC}
+\definecolor{cEmph}{HTML}{EEF2FF}
+\definecolor{cAcc}{HTML}{C2410C}
+\definecolor{cAccBg}{HTML}{FFF7ED}
+\definecolor{cAccBd}{HTML}{FDBA74}
 
-\begin{figure*}[t]
+\begin{figure*}[!tbp]
 \centering
-\begin{tikzpicture}[font=\scriptsize, node distance=3.5mm and 3.5mm]
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[
+  >={Stealth[length=2.2mm,width=1.8mm]},
+  font=\small,
+  node distance=10mm,
+  phase/.style ={rectangle, rounded corners=2pt, draw=cNavy, line width=0.9pt,
+                 fill=white, text=cInk, minimum width=32mm, minimum height=14mm,
+                 align=center, inner sep=2pt},
+  emph/.style  ={phase, fill=cEmph, line width=1.2pt},
+  io/.style    ={rectangle, rounded corners=2pt, draw=cMute, line width=0.6pt,
+                 fill=white, text=cInk, minimum width=20mm, minimum height=14mm,
+                 align=center, inner sep=2pt},
+  store/.style ={cylinder, shape border rotate=90, aspect=0.22,
+                 draw=cMute, line width=0.6pt, fill=white, text=cInk,
+                 minimum width=20mm, minimum height=14mm, align=center,
+                 inner sep=2pt},
+  flow/.style  ={->, draw=cLine, line width=0.7pt},
+  userflow/.style={->, draw=cLine, line width=1.1pt},
+  fb/.style    ={->, draw=cAcc, line width=1.0pt, dashed},
+  edgelbl/.style={font=\scriptsize\itshape, text=cMute,
+                  fill=white, inner sep=2pt},
+  numbadge/.style={circle, fill=cNavy, text=white, font=\scriptsize\bfseries,
+                   inner sep=0pt, minimum size=4.6mm},
+  sidelbl/.style={font=\scriptsize\itshape, text=cMute},
+]
 
-% --- Row 1: one-shot, per-format ----------------------------------
-\node[bt/box, text width=14mm] (spec)
-  {VCF / SAM\\spec};
-\node[bt/phase, right=of spec, text width=22mm] (A)
-  {\textbf{Phase A}\\Ingest \& embed\\\textit{(ChromaDB)}};
-\node[bt/phase, right=of A, text width=30mm] (B)
-  {\textbf{Phase B}\\LLM-RAG MR mining\\\textit{deepseek-v4-flash}};
-\node[bt/box, right=of B, text width=23mm] (mr)
-  {MR registry\\\textit{seed-validated}};
-\node[bt/box, right=of mr, text width=34mm] (stack)
-  {Corpus stack\\Ranks 1--7 metamorphic\\Ranks 8--13 \textbf{(Phase E)}\\augmentation};
+%--- Top row : per format -----------------------------------------------
+% Each phase node title carries a matched fontawesome icon inside the
+% box: file = Phase A (spec ingest), brain = Phase B (LLM-RAG mining),
+% cogs = Phase C (multi-runner execution), balance scale = Phase D
+% (consensus oracle).
+\node[io]                                (spec) {VCF\,/\,SAM\\ spec};
+\node[phase, right=14mm of spec]         (A)    {{\normalsize\faFile}~\textbf{Phase A}\\ Ingest \& embed\\ \textit{\scriptsize(ChromaDB)}};
+\node[phase, right=18mm of A]            (B)    {{\normalsize\faBrain}~\textbf{Phase B}\\ LLM-RAG\\ MR mining};
+\node[store, right=24mm of B]            (R)    {MR registry\\ \textit{\scriptsize seed-validated}};
+\node[io,    right=18mm of R, minimum width=24mm] (Cp) {Corpus stack\\ \textit{\scriptsize metamorphic}\\ \textit{\scriptsize+ augment.}};
 
-\draw[bt/flow] (spec) -- (A);
-\draw[bt/flow] (A) -- (B);
-\draw[bt/flow] (B) -- (mr);
-\draw[bt/flow] (mr) -- (stack);
+%--- Bottom row : per SUT  (locked to a single y for arrow planarity) ---
+\coordinate (botRow) at ($(A.center)+(0,-36mm)$);
+\node[io,    at=(botRow -| spec)]                  (sh) {user shim\\ \textit{\scriptsize(parse JSON)}};
+\node[phase, at=(botRow -| A)]                     (Cn) {{\normalsize\faCogs}~\textbf{Phase C}\\ Multi-runner\\ $N\!\geq\!3$ SUTs};
+\node[emph,  at=(botRow -| B)]                     (D)  {{\normalsize\faBalanceScale}~\textbf{Consensus oracle}\\ \textit{\scriptsize differential\,+}\\ \textit{\scriptsize metamorphic}};
+\node[io,    at=(botRow -| R), minimum width=24mm] (Bg) {Candidate\\ bugs\\ \textit{\scriptsize(disagree set)}};
 
-% --- Row 2: per-iteration -----------------------------------------
-\node[bt/user, below=11mm of A.south, text width=22mm] (shim)
-  {\textbf{User shim}\\\textit{parse} $\to$ JSON};
-\node[bt/phase, right=of shim, text width=24mm] (C)
-  {\textbf{Phase C}\\Multi-runner exec\\$N{\geq}3$ SUTs};
-\node[bt/oracle, right=of C, text width=27mm] (oracle)
-  {\textbf{Consensus oracle}\\differential $+$ metamorphic};
-\node[bt/box, right=of oracle, text width=28mm] (out)
-  {Candidate bugs\\$+$ mutation grading};
+%--- Numbered badges at top-left corners --------------------------------
+\node[numbadge, anchor=south east] at ([xshift=1mm]A.north west)  {1};
+\node[numbadge, anchor=south east] at ([xshift=1mm]B.north west)  {2};
+\node[numbadge, anchor=south east] at ([xshift=1mm]Cn.north west) {3};
+\node[numbadge, anchor=south east] at ([xshift=1mm]D.north west)  {4};
 
-\draw[bt/flow] (shim) -- (C);
-\draw[bt/flow] (C) -- (oracle);
-\draw[bt/flow] (oracle) -- (out);
+%--- Top-row arrows -----------------------------------------------------
+% Only "validated MRs" carries an inline label (the key artefact
+% from Phase B); the other arrows are left unlabelled so the box
+% names carry the semantics.
+\draw[flow] (spec) -- (A);
+\draw[flow] (A) -- (B);
 
-% Corpus stack feeds Phase C (drop between rows, lower channel)
-\draw[bt/flow]
-  (stack.south) |- ($(C.north)+(0,1.5mm)$) -- (C.north);
+\node[edgelbl] (lbl_vmr) at ($(B.east)!0.5!(R.west)$) {validated MRs};
+\draw[draw=cLine, line width=0.7pt] (B.east) -- (lbl_vmr.west);
+\draw[flow]                         (lbl_vmr.east) -- (R.west);
 
-% Phase D coverage feedback: oracle output back into Phase B
-% Routed in the upper channel between rows so it does not overlap
-% the corpus-drop arrow.
-\draw[bt/feedback]
-  (oracle.north) -- ++(0,6mm) -|
-  node[pos=0.18, above, font=\scriptsize, text=black!65]
-       {\textit{Phase D: coverage steering}}
-  (B.south);
+\draw[flow] (R) -- (Cp);
 
-\end{tikzpicture}
-\caption{\biotest{} pipeline. Phases~A and~B run once per format,
-and phases~C, D, and~E run per iteration. The dashed arrow marks
-Phase~D coverage feedback into Phase~B. The user's only per-SUT
-artefact is the parse-and-emit shim, the same artefact in-process
-coverage-guided fuzzers require.}
-\label{fig:pipeline}
+%--- Bottom-row arrows --------------------------------------------------
+% The user-shim->Phase C arrow is thicker (userflow): this is the
+% only user-supplied input crossing into the framework, so we make
+% the hand-off visually unambiguous.
+\draw[userflow] (sh) -- node[edgelbl, pos=0.5] {records} (Cn);
+\draw[flow]     (Cn) -- (D);
+\draw[flow]     (D)  -- (Bg);
+
+%--- Corpus -> Phase C (input batch), line broken at the label ----------
+% ibR sits 7mm below Cp.south so the horizontal segment (and the
+% "input batch" label) clears the per-format band's 4mm inner sep
+% and sits cleanly in the inter-row channel.
+\coordinate (ibR) at ($(Cp.south)+(0,-7mm)$);
+\coordinate (ibL) at (ibR -| Cn.north);
+\node[edgelbl] (iblbl) at ($(ibR)!0.72!(ibL)$) {input batch};
+\draw[draw=cLine, line width=0.7pt] (Cp.south) -- (ibR) -- (iblbl.east);
+\draw[flow]                         (iblbl.west) -- (ibL) -- (Cn.north);
+
+%--- Feedback D -> B with adjacent callout ------------------------------
+\draw[fb]   (D.north) -- (B.south);
+\node[draw=cAccBd, fill=cAccBg, rounded corners=2pt,
+      font=\scriptsize\itshape, text=cAcc, inner sep=2pt, anchor=west]
+      at ($(D.north)!0.5!(B.south) + (3mm,0)$)
+      {Phase D: coverage gap $\rightarrow$ re-mine};
+
+%--- Background bands + framework boundary ------------------------------
+\begin{scope}[on background layer]
+  \node[fill=cBandT, rounded corners=3pt,
+        fit=(spec)(A)(B)(R)(Cp), inner sep=4mm] (topBand) {};
+  \node[fill=cBandB, rounded corners=3pt,
+        fit=(sh)(Cn)(D)(Bg), inner sep=4mm]    (botBand) {};
+  \node[draw=cMute!50, dashed, rounded corners=4pt,
+        fit=(topBand)(botBand), inner sep=2mm] (frame) {};
+\end{scope}
+
+\node[sidelbl, rotate=90, anchor=south] at ([xshift=-2mm]topBand.west) {per format};
+\node[sidelbl, rotate=90, anchor=south] at ([xshift=-2mm]botBand.west) {per SUT};
+\node[sidelbl, anchor=south east] at ([yshift=1mm]frame.south east) {\biotest{} framework};
+
+\end{tikzpicture}%
+}% end \resizebox
+\caption{\biotest{} pipeline. Top track runs once per format
+(Phases~A--B); bottom track runs once per SUT
+(Phases~C--D). The dashed arrow is the Phase~D coverage-driven
+re-mining loop.}
+\label{fig:architecture}
 \end{figure*}

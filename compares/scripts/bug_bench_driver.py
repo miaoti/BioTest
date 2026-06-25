@@ -19,6 +19,7 @@ The tool-adapter contract is defined in `tool_adapters/_base.py`.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
@@ -30,6 +31,40 @@ import traceback
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Any
+
+try:
+    import fcntl
+    _HAVE_FLOCK = True
+except ImportError:
+    _HAVE_FLOCK = False
+
+
+@contextlib.contextmanager
+def _venv_install_lock(name: str):
+    """Cross-process file lock for shared-venv pip installs.
+
+    Multiple bug_bench_driver invocations running in parallel (one per
+    config × rep) all force-reinstall vcfpy/biopython into the SAME shared
+    venv (/opt/atheris-venv or sut-envs/biopython). Without serialization,
+    pip installs race and the post-install state is non-deterministic
+    (whichever finishes last wins, others may see partial trees).
+
+    Lock files live under /tmp so they're container-local (not on the 9p
+    /work share) — flock semantics are stable on tmpfs/overlay FS.
+    """
+    if not _HAVE_FLOCK:
+        yield
+        return
+    lock_path = Path("/tmp") / f".bugbench_venv_{name}.lock"
+    fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ADAPTERS_DIR = REPO_ROOT / "compares" / "scripts" / "tool_adapters"
@@ -138,23 +173,22 @@ def _install_biopython(version: str) -> None:
         raise RuntimeError(
             f"biopython sut-env venv missing at {SUT_VENV_BIO_PIP.parent.parent}. "
             "Run: bash compares/scripts/prepare_sut_install_envs.sh")
-    # Skip the expensive pip install when the venv already has the right
-    # version. The sut-env lives on the 9p /work share and hits
-    # `[Errno 12] Cannot allocate memory` under multi-chat I/O pressure
-    # on Windows Docker Desktop.
-    py = SUT_VENV_BIO_PIP.parent / "python"
-    probe = subprocess.run(
-        [str(py), "-c",
-         "import Bio, numpy; print(Bio.__version__)"],
-        capture_output=True, text=True,
-    )
-    if probe.returncode == 0 and probe.stdout.strip() == version:
-        return
-    subprocess.run(
-        [str(SUT_VENV_BIO_PIP), "install", "--force-reinstall",
-         f"biopython=={version}"],
-        check=True, capture_output=True,
-    )
+    with _venv_install_lock("biopython"):
+        # Re-probe inside the lock — another parallel driver may have just
+        # installed the version we need, in which case we skip.
+        py = SUT_VENV_BIO_PIP.parent / "python"
+        probe = subprocess.run(
+            [str(py), "-c",
+             "import Bio, numpy; print(Bio.__version__)"],
+            capture_output=True, text=True,
+        )
+        if probe.returncode == 0 and probe.stdout.strip() == version:
+            return
+        subprocess.run(
+            [str(SUT_VENV_BIO_PIP), "install", "--force-reinstall",
+             f"biopython=={version}"],
+            check=True, capture_output=True,
+        )
 
 
 def _install_vcfpy(version: str) -> None:
@@ -174,28 +208,28 @@ def _install_vcfpy(version: str) -> None:
         raise RuntimeError(
             f"atheris venv pip missing at {pip}. "
             "Run the bench image with the atheris layer.")
-    # --no-build-isolation lets pip use the atheris venv's already-installed
-    # setuptools/wheel rather than spin up a clean build env every time,
-    # which is the surface that fails in the 9p/sut-env regime.
-    cmd = [str(pip), "install", "--force-reinstall",
-           "--no-build-isolation", f"vcfpy=={version}"]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode == 0:
-        return
-    # PyPI install failed. Some old vcfpy releases either
-    #   (a) are not on PyPI at all (≤0.8.x were git-only), or
-    #   (b) have a setup.py that imports the removed pip.req API (≤0.11.0).
-    # Fall back to cloning from GitHub and patching setup.py before install.
-    stderr = proc.stderr or ""
-    fall_back = (
-        "No matching distribution found" in stderr
-        or "No module named 'pip.req'" in stderr
-    )
-    if not fall_back:
-        raise subprocess.CalledProcessError(
-            proc.returncode, cmd, output=proc.stdout, stderr=stderr,
+    with _venv_install_lock("vcfpy"):
+        # --no-build-isolation lets pip use the atheris venv's already-installed
+        # setuptools/wheel rather than spin up a clean build env every time.
+        cmd = [str(pip), "install", "--force-reinstall",
+               "--no-build-isolation", f"vcfpy=={version}"]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode == 0:
+            return
+        # PyPI install failed. Some old vcfpy releases either
+        #   (a) are not on PyPI at all (≤0.8.x were git-only), or
+        #   (b) have a setup.py that imports the removed pip.req API (≤0.11.0).
+        # Fall back to cloning from GitHub and patching setup.py.
+        stderr = proc.stderr or ""
+        fall_back = (
+            "No matching distribution found" in stderr
+            or "No module named 'pip.req'" in stderr
         )
-    _install_vcfpy_from_git(version, pip)
+        if not fall_back:
+            raise subprocess.CalledProcessError(
+                proc.returncode, cmd, output=proc.stdout, stderr=stderr,
+            )
+        _install_vcfpy_from_git(version, pip)
 
 
 def _install_vcfpy_from_git(version: str, pip: Path) -> None:
@@ -308,44 +342,42 @@ def _install_noodles(version: str) -> None:
             f"noodles harness Cargo.toml missing at {NOODLES_CARGO_TOML}. "
             "Run: bash compares/scripts/prepare_sut_install_envs.sh")
 
-    # Primary harness (canonical-JSON). Always rewrite + rebuild.
-    _rewrite_noodles_pin(NOODLES_CARGO_TOML, version)
-    # cargo ships under /root/.cargo/bin inside biotest-bench:latest;
-    # docker exec doesn't inherit login-shell PATH, so subprocess lookup
-    # fails without this prepend (fixed 2026-04-20).
-    env = os.environ.copy()
-    env["PATH"] = f"/root/.cargo/bin:{env.get('PATH', '')}"
-    subprocess.run(
-        ["cargo", "build", "--release",
-         "--manifest-path", str(NOODLES_CARGO_TOML)],
-        check=True, capture_output=True, env=env,
-    )
+    # Lock the noodles cargo build — Cargo.toml is shared across parallel
+    # drivers; concurrent rewrites + rebuilds would corrupt the binary.
+    with _venv_install_lock("noodles"):
+        # Primary harness (canonical-JSON). Always rewrite + rebuild.
+        _rewrite_noodles_pin(NOODLES_CARGO_TOML, version)
+        # cargo ships under /root/.cargo/bin inside biotest-bench:latest;
+        # docker exec doesn't inherit login-shell PATH, so subprocess lookup
+        # fails without this prepend (fixed 2026-04-20).
+        env = os.environ.copy()
+        env["PATH"] = f"/root/.cargo/bin:{env.get('PATH', '')}"
+        subprocess.run(
+            ["cargo", "build", "--release",
+             "--manifest-path", str(NOODLES_CARGO_TOML)],
+            check=True, capture_output=True, env=env,
+        )
 
-    # cargo-fuzz target. Rewrite its pin AND rebuild the target binary so
-    # the cargo_fuzz adapter finds a binary linked against the same
-    # noodles-vcf version as the canonical-JSON harness. Without the
-    # rebuild, _find_binary would return whichever version was built last
-    # (typically the scaffolding default), producing a fuzzer that parses
-    # post-fix-era VCFs even when the driver thinks we're on the pre-fix
-    # pin. This is the per-version fuzz rebuild called out in
-    # PHASE4_BASELINE_FIXES.md §0.9 / Chat 4 follow-up.
-    if NOODLES_FUZZ_CARGO_TOML.exists():
-        try:
-            _rewrite_noodles_pin(NOODLES_FUZZ_CARGO_TOML, version)
-        except RuntimeError:
-            return  # no pin present; harness side still pinned, good enough
-        try:
-            subprocess.run(
-                ["cargo", "fuzz", "build", "noodles_vcf_target",
-                 "--release", "--sanitizer", "none"],
-                cwd=str(NOODLES_FUZZ_DIR.parent),
-                check=True, capture_output=True, env=env,
-            )
-        except subprocess.CalledProcessError as e:
-            # Best-effort: the adapter will surface "binary not built" if
-            # the stale binary gets removed. Don't fail the whole install.
-            print(f"[noodles] cargo fuzz build failed for {version}: "
-                  f"stderr={e.stderr.decode(errors='replace')[-400:]}")
+        # cargo-fuzz target. Rewrite its pin AND rebuild the target binary so
+        # the cargo_fuzz adapter finds a binary linked against the same
+        # noodles-vcf version as the canonical-JSON harness.
+        if NOODLES_FUZZ_CARGO_TOML.exists():
+            try:
+                _rewrite_noodles_pin(NOODLES_FUZZ_CARGO_TOML, version)
+            except RuntimeError:
+                return  # no pin present; harness side still pinned, good enough
+            try:
+                subprocess.run(
+                    ["cargo", "fuzz", "build", "noodles_vcf_target",
+                     "--release", "--sanitizer", "none"],
+                    cwd=str(NOODLES_FUZZ_DIR.parent),
+                    check=True, capture_output=True, env=env,
+                )
+            except subprocess.CalledProcessError as e:
+                # Best-effort: the adapter will surface "binary not built" if
+                # the stale binary gets removed. Don't fail the whole install.
+                print(f"[noodles] cargo fuzz build failed for {version}: "
+                      f"stderr={e.stderr.decode(errors='replace')[-400:]}")
 
 
 def _install_htsjdk_jar(version: str, out_path: Path) -> None:
@@ -556,27 +588,30 @@ def _rebuild_seqan3_libfuzzer_harness(seqan3_src_dir: Path) -> None:
 def _install_seqan3(commit: str, seqan3_src_dir: Path) -> None:
     """Check out + rebuild the libfuzzer harness against the per-anchor
     source tree so pre-fix / post-fix binaries differ (§0.8 blocker)."""
-    _checkout_seqan3(commit, seqan3_src_dir)
-    # Invalidate the canonical binary up-front so a rebuild failure on
-    # this anchor CANNOT leave a stale symlink pointing at a prior
-    # anchor's binary — that would silently fuzz the wrong SUT version
-    # and produce misleading false+/FOUND results.
-    canonical = (REPO_ROOT / "compares" / "harnesses" / "libfuzzer"
-                 / "build" / "seqan3_sam_fuzzer_libfuzzer")
-    if canonical.exists() or canonical.is_symlink():
-        canonical.unlink()
-    try:
-        _rebuild_seqan3_libfuzzer_harness(seqan3_src_dir)
-    except subprocess.CalledProcessError as e:
-        # A compile failure against a specific anchor (e.g. old seqan3
-        # that isn't Clang-18-clean) is a tooling-level skip analogous
-        # to the noodles harness-skew case. Record it + keep going so
-        # downstream adapter invocations surface "binary not built"
-        # rather than halting the whole bench.
-        stderr = e.stderr.decode(errors="replace") if isinstance(
-            e.stderr, (bytes, bytearray)) else (e.stderr or "")
-        print(f"[seqan3] rebuild failed for {commit}: "
-              f"stderr={stderr[-400:]}")
+    # Lock seqan3 install — both the source dir checkout AND the canonical
+    # binary at compares/harnesses/libfuzzer/build/ are shared across
+    # parallel drivers; concurrent rebuild would corrupt the binary.
+    with _venv_install_lock("seqan3"):
+        _checkout_seqan3(commit, seqan3_src_dir)
+        # Invalidate the canonical binary up-front so a rebuild failure on
+        # this anchor CANNOT leave a stale symlink pointing at a prior
+        # anchor's binary — that would silently fuzz the wrong SUT version.
+        canonical = (REPO_ROOT / "compares" / "harnesses" / "libfuzzer"
+                     / "build" / "seqan3_sam_fuzzer_libfuzzer")
+        if canonical.exists() or canonical.is_symlink():
+            canonical.unlink()
+        try:
+            _rebuild_seqan3_libfuzzer_harness(seqan3_src_dir)
+        except subprocess.CalledProcessError as e:
+            # A compile failure against a specific anchor (e.g. old seqan3
+            # that isn't Clang-18-clean) is a tooling-level skip analogous
+            # to the noodles harness-skew case. Record it + keep going so
+            # downstream adapter invocations surface "binary not built"
+            # rather than halting the whole bench.
+            stderr = e.stderr.decode(errors="replace") if isinstance(
+                e.stderr, (bytes, bytearray)) else (e.stderr or "")
+            print(f"[seqan3] rebuild failed for {commit}: "
+                  f"stderr={stderr[-400:]}")
 
 
 def install_sut(sut: str, anchor: dict[str, Any], which: str) -> None:
@@ -601,20 +636,18 @@ def install_sut(sut: str, anchor: dict[str, Any], which: str) -> None:
         dest = REPO_ROOT / "compares" / "baselines" / "evosuite" / "fatjar" / (
             f"htsjdk-{version}.jar")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        _install_htsjdk_jar(version, dest)
-        # 2026-04-24: also rewrite BioTest's harness fatjar so that
-        # the version-pinned htsjdk classes actually get loaded at
-        # runtime. Without this, HTSJDKRunner keeps using the
-        # harness's build-time-bundled htsjdk and every htsjdk cell
-        # is a no-op version swap.
-        try:
-            _swap_htsjdk_in_harness(dest)
-        except Exception as e:
-            # Best-effort — if the swap fails we at least still have
-            # the pristine harness. Log so the cell's result.json
-            # shows the noise instead of crashing the bench.
-            print(f"[install_sut] htsjdk swap failed for {version}: "
-                  f"{type(e).__name__}: {str(e)[:200]}")
+        # Lock the htsjdk swap — biotest-harness-all.jar is shared across
+        # parallel drivers, and concurrent zip rewrites would corrupt it.
+        # The Maven download to the per-version dest is safe.
+        with _venv_install_lock("htsjdk"):
+            _install_htsjdk_jar(version, dest)
+            try:
+                _swap_htsjdk_in_harness(dest)
+            except Exception as e:
+                # Best-effort — if the swap fails we at least still have
+                # the pristine harness.
+                print(f"[install_sut] htsjdk swap failed for {version}: "
+                      f"{type(e).__name__}: {str(e)[:200]}")
     elif sut == "seqan3":
         seqan3_src = REPO_ROOT / "compares" / "baselines" / "seqan3" / "source"
         if not seqan3_src.exists():

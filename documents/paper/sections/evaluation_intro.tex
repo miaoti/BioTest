@@ -1,20 +1,28 @@
 % Short opener for the Evaluation section.
 
 We evaluate \biotest{} along three complementary axes.
-\S\ref{sec:mutation-adequacy} reports mutation adequacy of the
-corpus produced by \biotest{} relative to corpora produced by
-mainstream coverage-guided fuzzers under the matched-engine
-fairness recipe of \S\ref{sec:design-fairness}.
-\S\ref{sec:coverage} reports line coverage on the same scope and
-SUT slate. \S\ref{sec:bug-bench} reports a real-bug benchmark of
-$32$ verified historical parser bugs. Mutation kills correlate
-with real-fault detection at
-$r{\approx}0.7$~\citep{just2014mutants}, so the three axes together
-provide construct triangulation. Per-pair sample sizes are
-reported in Figure~\ref{fig:mutation-radar}.
+\S\ref{sec:coverage} reports final line coverage of the corpus
+produced by \biotest{} relative to corpora produced by mainstream
+coverage-guided fuzzers. \S\ref{sec:mutation-adequacy} grades the
+same corpus on mutation adequacy under matched mutation engines.
+\S\ref{sec:bug-bench} reports a real-bug benchmark of $32$
+verified historical parser bugs. Mutation kills correlate with
+real-fault detection at
+$r{\approx}0.7$~\citep{just2014mutants}, so the three axes
+together provide construct triangulation.
 
 The evaluation spans six $(\mathrm{SUT, format})$ pairs:
 htsjdk/VCF, htsjdk/SAM (Java), vcfpy/VCF, biopython/SAM (Python),
-noodles/VCF (Rust), and seqan3/SAM (C++). All runs execute inside
-the reproducibility container described in
-\S\ref{sec:implementation}.
+noodles/VCF (Rust), and seqan3/SAM (C++). All three axes use the
+same matched protocol: identical mutation engine, target-class
+scope, kill predicate, and wall-clock budget per pair, so only
+the corpus differs between \biotest{} and each baseline. Every
+baseline corpus is trimmed to $\le 200$ files by an
+AFL-cmin-style minimiser, using per-file kill-cardinality on
+Python SUTs~\citep{vikram2023guiding} and an SUT-agnostic
+outcome-fingerprint elsewhere. The trim adds $+1$ to $+2$\,pp on
+pairs where it actively engages. As an uninformed-fuzzing
+reference~\citep{klees2018fuzz} we add a Pure-Random byte emitter
+under identical conditions and report it as a per-pair floor.
+All runs execute inside the reproducibility container described
+in \S\ref{sec:implementation}.

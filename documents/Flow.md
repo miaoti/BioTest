@@ -1611,13 +1611,15 @@ for cell in (SUT, format):
 
 这会在 biopython 自动跳过 diverse/BV（probe rate ~15%），回到 run-1 的 primary-only corpus。**目前各细胞的 best-kept composite 通过手动选 run 实现（见 `compares/results/mutation/biotest/summary.csv`）；Run-6 的待办事项是把 probe-per-corpus-type 落地为 staging 脚本**。
 
-#### 🔧 第十三层：Phase E 自动语料库扩展 (Auto Corpus Augmentation — Ranks 12 + 13)
+#### 🔧 第十三层：Corpus Stack 增量层 (Ranks 12 + 13) — 代码内仍叫 `phase_e`
+
+> **命名说明（2026-05-06 与论文对齐后）**：本节里 `Phase E`、`run_phase_e`、`phase_e.enabled` 等标识都是**代码层的历史名字**，论文 (`documents/paper`) 已经改写——它**不是** BioTest 工作流的第五个阶段，而是 **Corpus Stack 的增量层（augmentation tier）**。论文里 BioTest 只有四个 phase（A 规范摄入、B LLM MR 挖掘、C 多 runner 执行 + 共识 oracle、D 覆盖反馈），Ranks 12 + 13 属于 Corpus Stack 在每轮迭代里的扩增步骤。代码标识为了不破坏现有 config / CLI 兼容性而保留，但任何对外文档（README、论文、figure）都按"Corpus Stack 增量层"描述。
 
 **触发（2026-04-23 Run-9 fresh-baseline post-mortem）**：早期实验中 Rank 12（structural diversifier）和 Rank 13（lenient byte fuzzer）作为**独立 CLI 工具**存在 (`mr_engine/transforms/structural_diversifier.py`、`mr_engine/transforms/lenient_byte_fuzzer.py`)，需要操作员手动调用并把输出 stage 到 mutation 语料库 dir 里。这意味着 Run-8（4-rep mutation 度量）虽然使用了 Rank 12 + 13 的输出，但**那些都不是 `biotest.py` 默认管道的产物**——只是操作员临时拼接的增量。如果把 Run-8 的分数当作"工具的 mutation score"上报，就是把操作员手工劳动的结果记到工具账上。Run-9 fresh 用纯外部 seed 实测了这个差距。
 
-**修复（2026-04-23 Option B）**：把 Rank 12 + Rank 13 写进 `biotest.py` 的默认管道，作为 **Phase E (Corpus Augmentation)** 自动跑。从此默认运行 `py biotest.py` 会自动产生 `seeds/<fmt>_struct/` 和 `seeds/<fmt>_rawfuzz/`，下游 Phase 3 mutation harness 自动 union 这些 dir 进入 mutation 语料库。
+**修复（2026-04-23 Option B）**：把 Rank 12 + Rank 13 写进 `biotest.py` 的默认管道，作为 Corpus Stack 增量层自动跑（代码入口 `run_phase_e`）。从此默认运行 `py biotest.py` 会自动产生 `seeds/<fmt>_struct/` 和 `seeds/<fmt>_rawfuzz/`，下游 Phase 3 mutation harness 自动 union 这些 dir 进入 mutation 语料库。
 
-**Phase E 构造（biotest.py:run_phase_e）**：
+**子步骤构造（`biotest.py:run_phase_e`）**：
 
 | 子步骤 | 调用模块 | 输出 dir | 默认参数 |
 | :--- | :--- | :--- | :--- |
@@ -1628,7 +1630,7 @@ for cell in (SUT, format):
 
 **Phase 3 mutation 自动 union**：Phase 3 driver 脚本（`phase3_jazzer_pit.sh`、`mutation_driver.py`）在 staging 阶段检测 `TOOL=biotest*` 并自动把 `seeds/<fmt>_struct/` 和 `seeds/<fmt>_rawfuzz/` 加入语料库（去重，受 `CORPUS_MAX` 上限）。**严格 parser SUT（biopython, noodles）跳过此 union**——保持 primary-only，避免 Run-5 post-mortem 中 reach 膨胀的回归。
 
-**配置开关**：`biotest_config.yaml: phase_e.enabled: true|false`（默认 `true`）。同样 `--phase E` 可单独运行 augmentation 步骤而不重新跑 Phase D。
+**配置开关**：`biotest_config.yaml: phase_e.enabled: true|false`（默认 `true`；代码 key 仍叫 `phase_e` 保持向后兼容）。`--phase E` 可单独运行 augmentation 步骤而不重新跑 Phase D；这个 CLI flag 同样是历史名，对应的工作是 Corpus Stack 的增量层执行，不是另一个 phase。
 
 **SUT-agnostic 性质保留**：
 
