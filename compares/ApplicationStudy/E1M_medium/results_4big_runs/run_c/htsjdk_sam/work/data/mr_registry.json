@@ -1,0 +1,209 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "SAM optional tag field permutation preserves semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (sorted optional tags)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::p1",
+          "quote": "Each alignment line has 11 mandatory fields (QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, SEQ, QUAL) followed by a variable number of optional fields in the format TAG:TYPE:VALUE.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line reordering preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (sorted @CO lines)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p1",
+          "quote": "@CO is a one-line free-text comment. Multiple @CO lines are allowed and their order is not semantically meaningful.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "SAM @HD subtag permutation preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (sorted @HD subtags)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p1",
+          "quote": "The @HD line consists of key-value pairs in the format TAG:VALUE. The order of these pairs is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SAM @SQ subtag permutation preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (sorted @SQ subtags)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p1",
+          "quote": "Each @SQ line consists of key-value pairs in the format TAG:VALUE. The order of these pairs is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "SAM @RG subtag permutation preserves semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization (sorted @RG subtags)",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p1",
+          "quote": "Each @RG line consists of key-value pairs in the format TAG:VALUE. The order of these pairs is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "All SUTs must REJECT the transformed file (raise validation error or crash). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::CIGAR",
+          "quote": "The sum of lengths of the M/I/S/=/X operations shall equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Unmapped flag with mapped coordinates must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "All SUTs must REJECT the transformed file (raise validation error or crash). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::FLAG",
+          "quote": "Bit 0x4: segment unmapped. If this bit is set, RNAME MUST be '*' and POS MUST be 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Illegal optional tag type character must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "All SUTs must REJECT the transformed file (raise validation error or crash). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMtags.tex::Optional tags::Type encoding",
+          "quote": "The type character MUST be one of: A (character), i (integer), f (float), Z (string), H (hex array), B (numeric array).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "Same-signed TLEN on paired reads must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "All SUTs must REJECT the transformed file (raise validation error or crash). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::TLEN",
+          "quote": "TLEN: observed Template LENgth. If all segments are mapped, the absolute value of TLEN must equal the distance between the leftmost and rightmost mapped positions of the template. For a paired-end read, the two reads of a template MUST have opposite signs.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 9,
+    "total": 9
+  }
+}

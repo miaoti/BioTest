@@ -1,0 +1,65 @@
+##fileformat=VCFv4.3
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Count">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<ID=HOMLEN,Number=1,Type=Integer,Description="Length of base pair identical micro-homology">
+##INFO=<ID=HOMSEQ,Number=1,Type=String,Description="Sequence of base pair identical micro-homology">
+##INFO=<ID=BKPTID,Number=.,Type=String,Description="ID of the assembled alternate allele">
+##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info">
+##INFO=<ID=METRANS,Number=4,Type=String,Description="Mobile element transduction info">
+##INFO=<ID=DGVID,Number=1,Type=String,Description="ID of the assembled alternate allele">
+##INFO=<ID=DBVARID,Number=1,Type=String,Description="ID of the assembled alternate allele">
+##INFO=<ID=DBRIPID,Number=1,Type=String,Description="ID of the assembled alternate allele">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakend">
+##INFO=<ID=PARID,Number=1,Type=String,Description="ID of partner breakend">
+##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event">
+##INFO=<ID=CILEN,Number=2,Type=Integer,Description="Confidence interval around SVLEN">
+##INFO=<ID=DPADJ,Number=.,Type=Integer,Description="Adjusted depth">
+##INFO=<ID=CN,Number=1,Type=Integer,Description="Copy number">
+##INFO=<ID=CNADJ,Number=.,Type=Integer,Description="Adjusted copy number">
+##INFO=<ID=CICN,Number=2,Type=Integer,Description="Confidence interval around copy number">
+##INFO=<ID=CICNADJ,Number=.,Type=Integer,Description="Confidence interval around adjusted copy number">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1>
+##contig=<ID=chr2>
+##contig=<ID=chr3>
+##contig=<ID=chr4>
+##contig=<ID=chr5>
+##contig=<ID=chrX>
+##contig=<ID=chrY>
+##contig=<ID=chrM>
+##assembly=GRCh38
+##pedigree=<ID=Sample1,Father=Sample2,Mother=Sample3>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1	Sample2	Sample3
+chr4	566915	rs922338	AAATCCC	GCCCA	41.41	q10	AF=0.1353;DP=328;AC=2;AN=88;NS=26	GT:GQ:DP:AD:PL	0/0:16:32:32,36:668,432,957	0/1:35:37:72,44:812,112,321	0/0:56:59:48,4:840,727,814
+chr3	19179	rs871562;rs868196;rs707688	GCGAAT	<INS>	31.00	s50	AF=0.9392;DP=943;AC=10;AN=30;END=22730;SVLEN=-9690	GT:GQ:DP:AD:PL	1/1:85:1:38,40:504,333,471	0/0:37:23:11,24:741,636,559	1/1:21:56:81,66:347,650,257
+chr4	581305	rs852357	CGCCGTGG	TGCC,TAGAG,C	30.71	PASS	AF=0.0511;DP=444;AC=4;AN=21	GT:GQ:DP:AD:PL	0/0:24:16:50,1:854,894,795	0/0:54:44:77,57:62,128,175	0/1:59:49:79,11:495,986,94
+chrM	21778	rs406852	ACTTAGA	CCTC	66.55	q10;s50	AF=0.3390;DP=302;AC=7;AN=89	GT:GQ:DP:AD:PL	0/0:84:41:75,59:77,540,651	0/0:85:83:58,23:845,818,222	0/0:9:86:37,92:676,500,366
+chr4	279280	rs667442	CGT	CCTT	7.71	PASS	AF=0.6462;DP=825;AC=7;AN=15;NS=78	GT:GQ:DP:AD:PL	0/1:74:2:81,36:536,509,641	0/1:30:46:65,96:359,148,83	./.:94:86:39,46:264,728,5
+chrY	146374	rs766045;rs126422;rs566468	CGGCGA	CGACG	42.11	PASS	AF=0.9378;DP=662;AC=8;AN=69	GT:GQ:DP:AD:PL	0/0:81:76:81,11:57,778,714	0/1:42:46:96,49:781,631,885	0/1:63:70:12,36:774,730,388
+chr4	588002	rs628601;rs895914;rs305827	AGGGTGTCT	ATTCT	55.79	PASS	AF=0.1516;DP=849;AC=4;AN=30;HOMSEQ=G	GT:GQ:DP:AD:PL	0/0:32:34:60,19:752,802,453	0/0:70:32:16,95:539,566,171	0/0:48:15:71,24:207,555,786
+chrX	551952	rs678958	ATGC	ACGTA	.	q10;s50	AF=0.1870;DP=476;AC=1;AN=82;HOMLEN=10	GT:GQ:DP:AD:PL	0/0:25:97:14,92:553,768,167	1/1:62:99:64,43:935,699,327	0/1:10:20:16,53:166,186,496
+chr4	307192	rs995667;rs201253	AACTGTT	C,CCC,A	26.52	PASS	AF=0.9757;DP=168;AC=9;AN=92	GT:GQ:DP:AD:PL	./.:35:74:1,42:171,862,707	0/0:83:31:49,77:788,428,147	0/0:89:39:79,58:149,190,345
+chr1	982124	rs628685;rs513839	A	AGCG	66.65	q10	AF=0.5195;DP=703;AC=5;AN=92;NS=90	GT:GQ:DP:AD:PL	0/0:78:25:30,29:170,971,674	0/0:64:6:55,83:848,99,50	0/0:28:96:96,10:247,757,39
+chr3	109953	rs309122;rs685205;rs392409	GCTCAAACA	GGGGAG	26.04	PASS	AF=0.0634;DP=322;AC=4;AN=22	GT:GQ:DP:AD:PL	0/0:36:62:61,86:652,811,672	0/0:20:8:60,43:149,211,578	0/1:90:73:31,68:35,207,761
+chr5	689595	rs765934;rs316337;rs349917	GATC	<DEL>	51.98	PASS	AF=0.4866;DP=259;AC=5;AN=58;SVTYPE=DUP;NS=73;HOMLEN=46	GT:GQ:DP:AD:PL	0/0:44:9:44,66:47,432,414	0/0:8:77:30,57:270,561,474	0/0:96:92:84,97:853,242,651
+chr5	467201	.	TGATCTTCA	<DUP>	59.49	q10	AF=0.1553;DP=520;AC=2;AN=90;CIPOS=-27,43;HOMLEN=39	GT:GQ:DP:AD:PL	0/1:6:33:79,77:269,438,504	0/0:88:89:80,40:54,950,831	0/1:85:14:87,20:939,277,258
+chrX	264624	.	ATAGAGT	AGCTCGGG	21.57	s50	AF=0.5313;DP=622;AC=9;AN=88	GT:GQ:DP:AD:PL	0/0:34:83:12,98:490,314,285	0/1:93:44:63,80:142,505,393	./.:41:6:64,60:155,355,476
+chrM	680256	rs265799;rs180218	GT	T	73.14	PASS	AF=0.4118;DP=993;AC=10;AN=32;NS=41;HOMSEQ=CACCTC	GT:GQ:DP:AD:PL	0/0:91:34:43,100:319,429,297	0/0:59:96:62,56:784,897,798	0/0:66:16:28,4:789,744,456
+chr3	895110	.	AGCAGCG	GAT,CTC,CGAT	83.82	s50	AF=0.8927;DP=162;AC=2;AN=96	GT:GQ:DP:AD:PL	0/0:9:39:76,79:863,152,350	0/0:21:80:50,32:12,500,501	1/1:58:73:28,90:626,787,514
+chrM	283405	rs532802;rs120015;rs635663	AGC	AGT	53.54	PASS	AF=0.9976;DP=385;AC=8;AN=51;NS=38	GT:GQ:DP:AD:PL	0/1:93:92:96,77:942,614,116	0/0:26:100:58,0:612,128,752	0/0:80:79:26,90:412,491,623
+chr3	284969	rs633747;rs114636	ACGGGTCATA	CCA,TGCA,T	31.44	q10	AF=0.0701;DP=360;AC=4;AN=52;HOMLEN=36	GT:GQ:DP:AD:PL	0/1:91:93:83,0:299,134,802	1/1:50:43:49,87:929,854,540	0/0:38:88:37,90:309,528,191

@@ -1,0 +1,253 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "SAM @SQ header record reordering invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "Parsing the reordered header produces the same reference dictionary as the original; all alignment records resolve to the same contig indices.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p5",
+          "quote": "Each @SQ line defines a reference sequence. The order of @SQ lines is not significant; the reference dictionary is keyed by the SN tag.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "Parsing the shuffled header produces the same set of comment lines; the order of @CO lines does not affect alignment record interpretation.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p7",
+          "quote": "@CO lines are one-line comments that are ignored by the parser. They have no ordering semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "SAM optional tag field permutation invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "Parsing the permuted alignment record yields the same tag-value dictionary as the original; all tag keys and values are preserved.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Optional fields::p45",
+          "quote": "Each alignment line may have optional fields in the format TAG:TYPE:VALUE. The order of optional fields is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "SAM @HD header subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "Parsing the shuffled @HD line yields the same header version, sorting order, and grouping as the original; TAG:VALUE pair order within @HD is not significant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The @HD line has tags VN, SO, GO, and SS. The order of these tags is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SAM @SQ record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "Parsing the shuffled @SQ line yields the same reference sequence metadata (SN, LN, M5, UR, SP) as the original; TAG:VALUE pair order within @SQ is not significant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p5",
+          "quote": "Each @SQ line has tags SN, LN, M5, UR, SP, and AH. The order of these tags is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "SAM @RG record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "Parsing the shuffled @RG line yields the same read-group metadata (ID, SM, LB, PU, PL, CN, DS, DT, FO, KS, LB, PG, PI, PM, PU) as the original; TAG:VALUE pair order within @RG is not significant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p6",
+          "quote": "Each @RG line has tags ID, SM, LB, PU, PL, CN, DS, DT, FO, KS, PG, PI, PM. The order of these tags is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "SAM @PG record subtag shuffling invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "Parsing the shuffled @PG line yields the same program record metadata (ID, PN, VN, CL, PP, DS) as the original; TAG:VALUE pair order within @PG is not significant.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p7",
+          "quote": "Each @PG line has tags ID, PN, VN, CL, PP, and DS. The order of these tags is not specified.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH on the malformed record; silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::CIGAR",
+          "quote": "The sum of lengths of the M/I/S/=/X operations shall equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Flag bit 0x4 mapped/unmapped contradiction must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when FLAG 0x4 is set on a record with RNAME != '*' and POS > 0; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::FLAG",
+          "quote": "Bit 0x4: segment unmapped. If set, RNAME is '*' and POS is 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag illegal type character must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when an optional tag's type character is not one of A, i, f, Z, H, or B; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMtags.tex::Optional tags section::Tag types",
+          "quote": "The type character must be one of A, i, f, Z, H, or B.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when paired reads of a template have same-signed TLEN values instead of opposite-signed; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::TLEN",
+          "quote": "For paired reads, the two reads of a template must have equal magnitude but opposite sign TLEN values.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 11,
+    "total": 11
+  }
+}

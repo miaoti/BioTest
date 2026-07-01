@@ -1,0 +1,16 @@
+##fileformat=VCFv4.2
+##ALT=<Description="Deletion",ID=DEL>
+##FORMAT=<ID=GT,Description="Genotype",Type=String,Number=1>
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<Description="Confidence interval around POS",Type=Integer,ID=CIPOS,Number=2>
+##INFO=<ID=MATEID,Description="Mate ID for breakend",Type=String,Number=1>
+##INFO=<Description="Type of structural variant",Number=1,Type=String,ID=SVTYPE>
+##contig=<length=248956422,ID=chr1>
+##contig=<length=242193529,ID=chr2>
+##fileDate=20231001
+##source=testGenerator
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	10000	BND1	A	A]chr2:20000]	100	PASS	CIEND=-10,10;CIPOS=-5,5;MATEID=BND2;SVTYPE=BND	GT	0/1
+chr2	20000	BND2	A	]chr1:10000]A	100	PASS	CIEND=-5,5;CIPOS=-10,10;MATEID=BND1;SVTYPE=BND	GT	1/1
+chr1	30000	BND3	T	T[chr2:40000[	150	PASS	MATEID=BND4;SVTYPE=BND	GT	0/0
+chr2	40000	BND4	T	[chr1:30000[T	150	PASS	MATEID=BND3;SVTYPE=BND	GT	0/1

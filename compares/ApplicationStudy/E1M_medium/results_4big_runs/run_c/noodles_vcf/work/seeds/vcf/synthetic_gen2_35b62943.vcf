@@ -1,0 +1,36 @@
+##fileformat=VCFv4.3
+##INFO=<ID=BCF_SPEC,Number=0,Type=Flag,Description="BCF specification: All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality">
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O b -o test.bcf test.vcf
+##reference=file:///path/to/reference.fasta
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr3,length=198295559>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrY,length=57227415>
+##BCF2_extension=.bcf
+##BCF2_encoding=value
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr2	822339	.	AAATCCC	GCCCA,ATTCCG	76.35	LowQual	BCF_SPEC	GT:DP:GQ	1/2:12:16
+chr3	265045	rs542535	GGAGA	TACATGGC,AATGGC	62.26	PASS	BCF_SPEC	GT:DP:GQ	0/2:94:83
+chr2	743743	.	GTTAGG	TGCGCA,CTGG	65.76	.	BCF_SPEC	GT:DP:GQ	0/1:19:43
+chr2	181652	.	GGGTTGC	TAGAGACGGA	72.59	PASS	.	GT:DP:GQ	1/1:14:24
+chr2	414509	rs914312	TGTACCA	ATATAAG,ACTTAGA	.	LowQual	BCF_SPEC;AF=0.1836	GT:DP:GQ	1/0:92:85
+chr2	934414	.	TCTGG	ACTCCATA,TGCGC,CCGTGGCTT	7.71	PASS	.	GT:DP:GQ	0/2:46:92
+chr2	840759	.	AGTCGGCAGG	T,ATG	.	LowQual	.	GT:DP:GQ	2/1:41:65
+chr1	227863	.	TCATTT	GTTCT,AAGGTATAGT,CCAG	88.73	LowQual	.	GT:DP:GQ	1/0:64:84
+chrY	722993	.	TAT	CCTC	.	PASS	BCF_SPEC;AF=0.2580	GT:DP:GQ	2/1:95:56
+chrY	190651	.	CTA	CGAC,ATGCCTCGTA,C	2.82	PASS	BCF_SPEC	GT:DP:GQ	2/1:16:53
+chr2	800023	rs667114	TGG	ACCT,CTC,GTATA	64.69	LowQual	AF=0.8537	GT:DP:GQ	1/1:35:1
+chrY	199923	.	CCA	ACC,TATCT,GTA	92.18	PASS	AF=0.1742	GT:DP:GQ	2/1:32:49
+chrY	807345	.	GTCC	G,TAATGGCGG	64.44	PASS	.	GT:DP:GQ	2/0:37:98
+chrY	212832	rs275041	AT	AT,ACAC,TA	92.25	PASS	BCF_SPEC	GT:DP:GQ	2/1:79:70
+chrY	127333	rs176609	CAGGGAGGGA	GC	.	PASS	.	GT:DP:GQ	1/2:63:61
+chrX	496847	.	TG	CCAC	26.71	.	.	GT:DP:GQ	0/2:37:88
+chr1	415118	rs158348	GA	TGTCGTAGT,ACTCTGG,GA	8.30	PASS	BCF_SPEC;AF=0.4640	GT:DP:GQ	2/2:85:97
+chr2	667118	.	TGATC	CACTCGCT,TG	6.95	PASS	.	GT:DP:GQ	0/2:59:94

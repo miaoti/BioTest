@@ -1,0 +1,19 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testGenerator
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chrX,length=156040895>
+##INFO=<ID=FLAG1,Number=0,Type=Flag,Description="Flag type INFO field">
+##INFO=<ID=CHAR1,Number=1,Type=Character,Description="Character type INFO field">
+##INFO=<ID=QUOTED,Number=1,Type=String,Description="Quoted string with special chars">
+##INFO=<ID=MISSING,Number=1,Type=String,Description="Explicit missing value">
+##FILTER=<ID=LowQual,Description="Low quality filter">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##FORMAT=<ID=PGT,Number=1,Type=String,Description="Phased genotype">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Phasing ID">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	1	.	A	T	.	FLAG1;CHAR1=X;QUOTED="value,with;commas";MISSING=.	GT:PS:PGT:PID	0|1:100:0|1:test_phasing
+chr2	2147483648	.	ACGT	ACGTACGT	50	LowQual	FLAG1;CHAR1=Y;QUOTED="another,test;string";MISSING=.	GT:PS:PGT:PID	1|0:200:1|0:test_phasing2
+chrX	1000000	.	A	.	.	.	.	GT	./.

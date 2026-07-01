@@ -1,0 +1,259 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information line order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts all meta-information lines as a set (ignoring order), and all data records remain identical",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p1",
+          "quote": "File meta-information lines are generally optional, but if present they must be completely formatted as specified below. Meta-information lines can appear in any order with the exception that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key=value order invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "info_has_multiple_fields"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts INFO field key-value pairs as a set (order-independent), and all other fields remain identical",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Info fields::p1",
+          "quote": "INFO fields are encoded as a semicolon-separated series of keys with optional values in the format KEY=VALUE or KEY (flag). The order of INFO fields is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_sample_columns"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts sample genotype data as a set keyed by sample ID (order-independent)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Sample columns::p1",
+          "quote": "The order of sample columns in the VCF file is not semantically meaningful; each sample is identified by its column header ID.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured header key=value order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_structured_meta_lines"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts structured header definitions as sets of key-value pairs (order-independent within each structured line)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Structured header lines::p1",
+          "quote": "Structured header lines such as ##INFO, ##FORMAT, and ##FILTER contain key=value pairs. The order of these key=value pairs within a structured line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts all header dictionary entries (##contig, ##INFO, ##FORMAT, ##FILTER) as sets, ignoring declaration order",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF dictionary::p1",
+          "quote": "The order of dictionary entries in the BCF header (contig, INFO, FORMAT, FILTER) is implementation-defined. A BCF encoder must assign indices based on the dictionary order, and a decoder must resolve entries by their ID, not by index alone.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 'implementation-defined' which means different implementations may produce different dictionary orders, but the semantics must be preserved across any order."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with consistent GT and Number=A/R/G remapping",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2",
+        "format_has_gt",
+        "header_has_info_number_a OR header_has_info_number_r OR header_has_info_number_g OR header_has_format_number_a OR header_has_format_number_r OR header_has_format_number_g"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles and consistently remapping GT indices and Number=A/R/G INFO/FORMAT values, the semantically equivalent variant record must produce identical query results for is_snv(), is_variant(), is_het(), is_phased(), gt_type(), affected_start(), affected_end() when parsed by the SUT.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::pN",
+          "quote": "GT: genotype, encoded as allele values separated by either of / or |, e.g. 0/1 or 0|1. Allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele in ALT, 2 for the second allele in ALT, etc.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::pN",
+          "quote": "Number=A means that the field has one value per alternate allele.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::pN",
+          "quote": "Number=R means that the field has one value for each possible allele, including the reference.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::pN",
+          "quote": "Number=G means that the field has one value for each possible genotype.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "Reject missing required fixed columns (QUAL dropped)",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH on the malformed record; silent acceptance or SILENT_SKIP is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed columns::p1",
+          "quote": "The first fixed columns are: CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "Reject fileformat not on first line",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when ##fileformat is not the first line; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p1",
+          "quote": "The first line of a VCF file must be ##fileformat=VCFv4.5.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "Reject GT index out of bounds",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count=1",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when GT allele index exceeds len(ALT); silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p1",
+          "quote": "Each allele index must be an integer between 0 and the number of ALT alleles inclusive.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "Reject INFO Number=A cardinality mismatch",
+      "scope": "VCF.record",
+      "preconditions": [
+        "header_has_info_number_a",
+        "alt_count=1"
+      ],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "All SUTs must REJECT or CRASH when an INFO field declared Number=A has more values than len(ALT); silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::p1",
+          "quote": "The Number of values for an INFO field is defined in the header; Number=A means one value for each ALT allele.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 10,
+    "total": 10
+  }
+}

@@ -1,0 +1,445 @@
+[harness_run/E3M] mode = E3M
+[harness_run/E3M] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex � RAG retrieval returns nothing)
+[harness_run/E3M] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB chunk_id validation)
+[harness_run/E3M] pre-import patch: static prompt: UNCHANGED (compound-group rule + transform descriptions + behavior hints all retained)
+[harness_run/E3M] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E3M] phase_c patch: orchestrator.settings: wrapped: Phase.shrink stripped, deadline=5000ms
+[harness_run/E3M] config: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\run_2\biotest_config.rep2.yaml
+[harness_run/E3M] phase_filter: B,C,E
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 47 query methods on primary htsjdk for Rank 5
+  Mining VCF / ordering_invariance...
+03:44:14 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:44:14 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+03:44:47 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+03:44:47 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/ordering_invariance
+  Mining VCF / semantics_preserving_permutation...
+03:44:47 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:44:47 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+03:45:13 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+03:45:13 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:45:34 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:45:34 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:45:53 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:45:53 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:46:11 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/semantics_preserving_permutation: No MRs were produced after 
+compilation.
+  Mining VCF / normalization_invariance...
+03:46:11 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:46:11 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+03:46:35 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+03:46:35 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:46:56 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+03:46:56 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:47:13 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:47:13 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:47:31 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/normalization_invariance: No MRs were produced after 
+compilation.
+  Mining VCF / rejection_invariance...
+03:47:31 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:47:31 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+03:47:57 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+03:47:57 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:48:20 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:48:20 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:48:47 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:48:47 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:49:19 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/rejection_invariance: No MRs were produced after compilation.
+  Mining VCF / coordinate_indexing_invariance...
+03:49:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:49:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+03:49:56 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:49:56 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:50:21 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:50:21 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:50:42 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:50:42 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:51:00 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/coordinate_indexing_invariance: No MRs were produced after 
+compilation.
+  Mining VCF / round_trip_invariance...
+03:51:00 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:51:00 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+03:51:39 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:51:39 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:52:19 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+03:52:19 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/round_trip_invariance — emitting empty MR array (no applicable evidence).
+03:52:19 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+03:52:19 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/round_trip_invariance; terminating theme cleanly.
+    0 MRs for VCF/round_trip_invariance: no relations returned
+  Mining VCF / api_query_invariance...
+03:52:19 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:52:19 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+03:52:49 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+03:52:49 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/api_query_invariance
+03:52:49 [INFO] mr_engine.registry: Triage result: 0 enforced, 10 quarantine
+03:52:49 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\data\mr_registry.json (10 MRs)
+  Phase B: OK  (8m 39s)
+03:52:50 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+03:52:51 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+03:52:51 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+03:52:51 [INFO] test_engine.orchestrator: Loaded 10 MRs from registry (enforced=0, quarantine=10)
+03:52:51 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+03:52:51 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+03:52:51 [INFO] test_engine.orchestrator: Testing MR ffbe4a62d130 (Meta-information line order invariance) -- scope=VCF.header, transforms=['shuffle_meta_lines']
+03:53:00 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+03:53:00 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035300_054717_1
+03:53:00 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+03:53:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035305_563050_2
+03:53:05 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:05 [ERROR] test_engine.orchestrator:   Hypothesis error for MR ffbe4a62d130: Test took 5488.21ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:53:05 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: Hypothesis explored 50 examples — no failures
+03:53:05 [INFO] test_engine.orchestrator: Testing MR bc124d1e4573 (Structured header key-value pair order invariance) -- scope=VCF.header, transforms=['permute_structured_kv_order']
+03:53:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+03:53:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035309_887094_3
+03:53:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+03:53:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035309_897425_4
+03:53:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+03:53:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035309_924438_5
+03:53:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+03:53:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035309_945561_6
+03:53:09 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+03:53:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035313_533432_7
+03:53:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+03:53:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035313_542882_8
+03:53:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+03:53:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035313_561205_9
+03:53:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+03:53:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035313_578525_10
+03:53:13 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_csq.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_csq.vcf (seed=39480) -- 1 diffs
+03:53:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035317_451561_11
+03:53:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_csq.vcf (seed=39480) -- 1 diffs
+03:53:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035317_463148_12
+03:53:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_csq.vcf (seed=39480) -- 1 diffs
+03:53:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035317_480769_13
+03:53:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_csq.vcf (seed=39480) -- 1 diffs
+03:53:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035317_496142_14
+03:53:17 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_csq.vcf (seed=39480): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_annotate.vcf (seed=0) -- 1 diffs
+03:53:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035321_433762_15
+03:53:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_annotate.vcf (seed=0) -- 1 diffs
+03:53:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035321_445122_16
+03:53:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_annotate.vcf (seed=0) -- 1 diffs
+03:53:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035321_460535_17
+03:53:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_annotate.vcf (seed=0) -- 1 diffs
+03:53:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035321_473672_18
+03:53:21 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_annotate.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_annotate.vcf (seed=154) -- 1 diffs
+03:53:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035324_866083_19
+03:53:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_annotate.vcf (seed=154) -- 1 diffs
+03:53:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035324_873378_20
+03:53:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_annotate.vcf (seed=154) -- 1 diffs
+03:53:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035324_891676_21
+03:53:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_annotate.vcf (seed=154) -- 1 diffs
+03:53:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035324_904710_22
+03:53:24 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_annotate.vcf (seed=154): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_plugin_setGT.vcf (seed=0) -- 1 diffs
+03:53:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035329_228911_23
+03:53:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_plugin_setGT.vcf (seed=0) -- 1 diffs
+03:53:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035329_239969_24
+03:53:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_plugin_setGT.vcf (seed=0) -- 1 diffs
+03:53:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035329_256089_25
+03:53:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_plugin_setGT.vcf (seed=0) -- 1 diffs
+03:53:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035329_268380_26
+03:53:29 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_plugin_setGT.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_plugin_setGT.vcf (seed=60) -- 1 diffs
+03:53:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035332_660142_27
+03:53:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_plugin_setGT.vcf (seed=60) -- 1 diffs
+03:53:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035332_669394_28
+03:53:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_plugin_setGT.vcf (seed=60) -- 1 diffs
+03:53:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035332_688221_29
+03:53:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_plugin_setGT.vcf (seed=60) -- 1 diffs
+03:53:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035332_702484_30
+03:53:32 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_plugin_setGT.vcf (seed=60): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+03:53:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htsjdk_test_withNanQual.vcf (seed=51007) -- 1 diffs
+03:53:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035336_649550_31
+03:53:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htsjdk_test_withNanQual.vcf (seed=51007) -- 1 diffs
+03:53:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035336_655143_32
+03:53:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_htsjdk_test_withNanQual.vcf (seed=51007) -- 1 diffs
+03:53:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035336_660944_33
+03:53:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on real_world_htsjdk_test_withNanQual.vcf (seed=51007) -- 1 diffs
+03:53:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035336_668238_34
+03:53:36 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htsjdk_test_withNanQual.vcf (seed=51007): consensus=['htsjdk', 'vcfpy'], dissent=[]
+03:53:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_plugin_setGT.vcf (seed=12623) -- 1 diffs
+03:53:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035340_820954_35
+03:53:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_plugin_setGT.vcf (seed=12623) -- 1 diffs
+03:53:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035340_829327_36
+03:53:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_plugin_setGT.vcf (seed=12623) -- 1 diffs
+03:53:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035340_841469_37
+03:53:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_plugin_setGT.vcf (seed=12623) -- 1 diffs
+03:53:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035340_856365_38
+03:53:40 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_bcftools_plugin_setGT.vcf (seed=12623): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035346_179796_39
+03:53:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035346_286752_40
+03:53:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035346_587364_41
+03:53:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:47 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035346_909326_42
+03:53:47 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index.vcf (seed=2640802261): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 79 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+03:53:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:52 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035352_631472_43
+03:53:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035352_750883_44
+03:53:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035353_010790_45
+03:53:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_index.vcf (seed=2640802261) -- 1 diffs
+03:53:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035353_278135_46
+03:53:53 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index.vcf (seed=2640802261): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:53:53 [ERROR] test_engine.orchestrator:   Hypothesis error for MR bc124d1e4573: Test took 6069.28ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:53:53 [INFO] test_engine.orchestrator:   MR bc124d1e4573: Hypothesis explored 50 examples — no failures
+03:53:53 [INFO] test_engine.orchestrator: Testing MR 31e4b85ca55b (INFO field key-value order invariance) -- scope=VCF.record, transforms=['shuffle_info_field_kv']
+03:53:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+03:53:57 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035357_458582_47
+03:53:57 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on minimal_multisample.vcf (seed=0) -- 21 diffs
+03:54:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035402_855679_48
+03:54:02 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on minimal_multisample.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on minimal_multisample.vcf (seed=1403130450) -- 21 diffs
+03:54:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035410_581194_49
+03:54:10 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on minimal_multisample.vcf (seed=1403130450): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:19 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on minimal_multisample.vcf (seed=1403130450) -- 21 diffs
+03:54:19 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035419_828675_50
+03:54:19 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on minimal_multisample.vcf (seed=1403130450): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:19 [ERROR] test_engine.orchestrator:   Hypothesis error for MR 31e4b85ca55b: Test took 9242.62ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:54:19 [INFO] test_engine.orchestrator:   MR 31e4b85ca55b: Hypothesis explored 50 examples — no failures
+03:54:19 [INFO] test_engine.orchestrator: Testing MR f335b8c5d509 (Sample column permutation invariance) -- scope=VCF.record, transforms=['permute_sample_columns']
+03:54:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035427_228957_51
+03:54:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035427_267355_52
+03:54:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035427_291833_53
+03:54:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035427_313443_54
+03:54:27 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035435_830863_55
+03:54:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035435_848248_56
+03:54:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035435_866750_57
+03:54:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+03:54:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035435_890922_58
+03:54:35 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:35 [ERROR] test_engine.orchestrator:   Hypothesis error for MR f335b8c5d509: Test took 8568.65ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:54:35 [INFO] test_engine.orchestrator:   MR f335b8c5d509: Hypothesis explored 50 examples — no failures
+03:54:35 [INFO] test_engine.orchestrator: Testing MR 9746c6e5c109 (BCF header dictionary order invariance) -- scope=VCF.header, transforms=['permute_bcf_header_dictionary']
+03:54:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+03:54:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035445_294524_59
+03:54:45 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: pysam on bcftools_test.vcf (seed=0) -- 21 diffs
+03:54:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\bug_reports\BUG-20260506_035453_690521_60
+03:54:53 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on bcftools_test.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=['pysam']
+03:54:53 [ERROR] test_engine.orchestrator:   Hypothesis error for MR 9746c6e5c109: Test took 8380.14ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:54:53 [INFO] test_engine.orchestrator:   MR 9746c6e5c109: Hypothesis explored 50 examples — no failures
+03:54:53 [INFO] test_engine.orchestrator: Testing MR 0340d2bf0c09 (Meta-line shuffle preserves variant classification and allele count queries) -- scope=VCF.header, transforms=['shuffle_meta_lines', 'query_method_roundtrip']
+03:55:09 [ERROR] test_engine.orchestrator:   Hypothesis error for MR 0340d2bf0c09: Test took 8303.34ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:55:09 [INFO] test_engine.orchestrator:   MR 0340d2bf0c09: Hypothesis explored 50 examples — no failures
+03:55:09 [INFO] test_engine.orchestrator: Testing MR d2e70d8d4cb6 (Sample column permutation preserves per-sample and per-record query results) -- scope=VCF.record, transforms=['permute_sample_columns', 'query_method_roundtrip']
+Exception in thread Thread-238 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb2 in position 228: invalid start byte
+Exception in thread Thread-240 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb2 in position 228: invalid start byte
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:845: HeaderMissingDescription: Field "Description" not found in header line INFO=<ID=HOMSEQ,Number=.,Type=String>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:897: HeaderMissingDescription: Field "Description" not found in header line FORMAT=<ID=CNL,Number=.,Type=Integer>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+Exception in thread Thread-370 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb2 in position 228: invalid start byte
+Exception in thread Thread-372 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xb2 in position 223: invalid start byte
+03:57:00 [ERROR] test_engine.orchestrator: Transform failed on htsjdk_HiSeq.10000.vcf (seed=3190329791): list index out of range
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 218 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+03:57:25 [ERROR] test_engine.orchestrator:   Hypothesis error for MR d2e70d8d4cb6: Test took 10419.35ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:57:25 [INFO] test_engine.orchestrator:   MR d2e70d8d4cb6: Hypothesis explored 50 examples — no failures
+03:57:25 [INFO] test_engine.orchestrator: Testing MR ad668b4509db (INFO field key-value shuffling preserves variant type and allele queries) -- scope=VCF.record, transforms=['shuffle_info_field_kv', 'query_method_roundtrip']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 79 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+03:57:59 [ERROR] test_engine.orchestrator:   Hypothesis error for MR ad668b4509db: Test took 6173.74ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:57:59 [INFO] test_engine.orchestrator:   MR ad668b4509db: Hypothesis explored 50 examples — no failures
+03:57:59 [INFO] test_engine.orchestrator: Testing MR f64872b0c184 (Structured meta-line key-value reorder preserves record-level queries) -- scope=VCF.header, transforms=['permute_structured_kv_order', 'query_method_roundtrip']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT GT not found using String/1 instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: NaN cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: -nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\parser.py:257: CannotConvertValue: +nan cannot be converted to Integer, keeping as string.
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 218 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+03:59:34 [ERROR] test_engine.orchestrator:   Hypothesis error for MR f64872b0c184: Test took 9449.15ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:59:34 [INFO] test_engine.orchestrator:   MR f64872b0c184: Hypothesis explored 50 examples — no failures
+03:59:34 [INFO] test_engine.orchestrator: Testing MR 45784efe0361 (Equivalent missing value injection preserves variant classification queries) -- scope=VCF.record, transforms=['inject_equivalent_missing_values', 'query_method_roundtrip']
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT YY not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:635: FieldInfoNotFound: Field "length" not found in header line contig=<ID=1>
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT . not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT ZZ not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT XX not found using String/'.' instead
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 218 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:337: DuplicateHeaderLineWarning: Seen FILTER header more than once: LowQual, using first occurence
+  warnings.warn(
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\vcfpy\header.py:471: FieldInfoNotFound: FORMAT YY not found using String/'.' instead
+  warnings.warn(
+04:01:10 [ERROR] test_engine.orchestrator:   Hypothesis error for MR 45784efe0361: Test took 9593.19ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+04:01:10 [INFO] test_engine.orchestrator:   MR 45784efe0361: Hypothesis explored 50 examples — no failures
+04:01:10 [INFO] test_engine.orchestrator: Test suite complete: 353 tests, 60 metamorphic failures, 21 differential failures, 1 crashes, DET rate=0.2295
+04:01:10 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\data\det_report.json
+04:01:10 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+  Phase C: OK  (8m 20s)
+04:01:10 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_vcf\\work\\seeds\\vcf_struct', 'sut_validate': None}
+04:01:10 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\seeds\vcf_struct
+04:01:10 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_vcf\\work\\seeds\\vcf_rawfuzz'}
+04:01:10 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\seeds\vcf_rawfuzz
+04:01:10 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_vcf\\work\\seeds\\sam_struct', 'sut_validate': None}
+04:01:10 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\seeds\sam_struct
+04:01:10 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_vcf\\work\\seeds\\sam_rawfuzz'}
+04:01:10 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_vcf\work\seeds\sam_rawfuzz
+  Phase E: OK  (453ms, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │     8m 39s │ 0 enforced, 10 quarantine            │
+│ C: Execute   │   PASS   │     8m 20s │ 353 tests, 60 bugs found             │
+│ E: Augment   │   PASS   │      453ms │ +0 corpus files (VCF: 0 struct + 0   │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)  │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+┌─────────────────────────────── Test Metrics ────────────────────────────────┐
+│                                                                             │
+│  Format Tested                      VCF v4.5                                │
+│  Format Tested                      SAM v1.6                                │
+│  Themes Tested                             7                                │
+│    ordering_invariance                                                      │
+│    semantics_preserving_perm…                                               │
+│    normalization_invariance                                                 │
+│    rejection_invariance                                                     │
+│    coordinate_indexing_invar…                                               │
+│    round_trip_invariance                                                    │
+│    api_query_invariance                                                     │
+│                                                                             │
+│  Seeds Used                              107                                │
+│  Variants Generated                      353                                │
+│  Runners                             htsjdk,                                │
+│                                   biopython,                                │
+│                                       pysam,                                │
+│                                       vcfpy,                                │
+│                                      htslib,                                │
+│                                    reference                                │
+│                                                                             │
+│  Total Tests                             353                                │
+│  Metamorphic Failures                     60                                │
+│  Differential Failures                    21                                │
+│  Crashes                                   1                                │
+│                                                                             │
+│  DET Rate                              22.9%                                │
+│  Bugs / DETs Found                        60                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Total Pipeline Duration:  17m 0s
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BUGS DETECTED — 60 difference-exposing test(s) found. Check bug_reports/    │
+│ for details.                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘

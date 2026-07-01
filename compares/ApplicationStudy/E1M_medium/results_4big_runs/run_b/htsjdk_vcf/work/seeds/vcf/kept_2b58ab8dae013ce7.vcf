@@ -1,0 +1,58 @@
+##fileformat=VCFv4.3
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total Allele Number">
+##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<ID=HOMLEN,Number=1,Type=Integer,Description="Length of base pair identical micro-homology">
+##INFO=<ID=HOMSEQ,Number=1,Type=String,Description="Sequence of base pair identical micro-homology">
+##INFO=<ID=BKPTID,Number=.,Type=String,Description="ID of the assembled alternate allele in the assembly">
+##INFO=<ID=MEINFO,Number=4,Type=String,Description="Mobile element info">
+##INFO=<ID=METRANS,Number=4,Type=String,Description="Mobile element transduction info">
+##INFO=<ID=DGVID,Number=1,Type=String,Description="ID of the assembled alternate allele in the assembly">
+##INFO=<ID=DBVARID,Number=1,Type=String,Description="ID of the variant in dbVar">
+##INFO=<ID=DBRIPID,Number=1,Type=String,Description="ID of the variant in DBRIP">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
+##INFO=<ID=PARID,Number=1,Type=String,Description="ID of partner breakend">
+##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event">
+##INFO=<ID=CILEN,Number=2,Type=Integer,Description="Confidence interval around SVLEN">
+##INFO=<ID=DPADJ,Number=.,Type=Integer,Description="Adjusted depth">
+##INFO=<ID=CN,Number=1,Type=Integer,Description="Copy number">
+##INFO=<ID=CNADJ,Number=.,Type=Integer,Description="Copy number adjusted">
+##INFO=<ID=CICN,Number=2,Type=Integer,Description="Confidence interval around copy number">
+##INFO=<ID=CICNADJ,Number=.,Type=Integer,Description="Confidence interval around adjusted copy number">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=q10,Description="Quality below 10">
+##FILTER=<ID=s50,Description="Less than 50% of samples have data">
+##contig=<ID=chr1,length=116938138>
+##contig=<ID=chr2,length=150764259>
+##contig=<ID=chr3,length=87079290>
+##contig=<ID=chr4,length=105667611>
+##contig=<ID=chr5,length=166336747>
+##contig=<ID=chrX,length=97319419>
+##contig=<ID=chrY,length=63458149>
+##contig=<ID=chrM,length=17522468>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=CNV,Description="Copy number variable region">
+##assembly=GRCh38
+##reference=file:///reference/genome.fa
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1	SAMPLE2
+chr3	519732	rs767942	TCAGA	.chr5:399334-	.	PASS	DP=819;AF=0.0623,99;AC=6;AN=24;NS=4;SVTYPE=BND;END=526781;SVLEN=7674;CIPOS=-42,32;CIEND=-11,39;HOMLEN=39;HOMSEQ=AGTT;MEINFO=709,346,361,536	GT:GQ:DP:AD:PL	0/0:13:42:13,46:96,64,203	0/0:97:7:24,44:22,34,176
+chr1	549504	sv242	TAGT	ATG	32.25	PASS	DP=275;AF=0.4221;AC=9;AN=74;NS=1	GT:GQ:DP:AD:PL	0/0:67:91:41,3:136,245,95	0/1:18:19:22,24:123,181,44
+chrM	509013	rs981984	CCCTA	<INV>	34.17	PASS	DP=501;AF=0.8830;AC=9;AN=47;NS=5;SVTYPE=INV;END=511176;SVLEN=9015;CIPOS=-47,24;CIEND=-38,29;HOMLEN=3;HOMSEQ=GAC	GT:GQ:DP:AD:PL	0/0:90:38:39,27:57,238,142	0/0:68:67:29,32:232,91,120
+chr3	999973	rs299899	CAGTC	AAA	63.08	PASS	DP=715;AF=0.2918;AC=2;AN=91;NS=8;CILEN=-30,34	GT:GQ:DP:AD:PL	0/0:5:67:4,48:70,126,182	0/0:85:92:14,47:40,189,248
+chrX	903972	.	CGTAG	ATA	19.67	q10	DP=47;AF=0.8737;AC=3;AN=48;NS=9;CN=4	GT:GQ:DP:AD:PL	0/1:19:29:0,29:38,188,191	0/0:46:91:46,31:106,5,177
+chr1	870881	.	ACGTA	.chr2:694693+	12.76	PASS	DP=144;AF=0.2595;AC=6;AN=53;NS=7;SVTYPE=BND;END=879319;SVLEN=8983;CIPOS=-25,47;CIEND=-13,43;HOMLEN=41;HOMSEQ=CG;MEINFO=770,728,866,129;END=871793	GT:GQ:DP:AD:PL	0/0:50:60:19,2:169,56,30	0/0:87:47:18,35:36,201,228
+chr1	885332	rs460389	CG	T	33.00	PASS	DP=449;AF=0.4000;AC=3;AN=21;NS=4	GT:GQ:DP:AD:PL	0/0:67:79:12,44:43,84,21	0/0:82:6:43,19:63,31,200

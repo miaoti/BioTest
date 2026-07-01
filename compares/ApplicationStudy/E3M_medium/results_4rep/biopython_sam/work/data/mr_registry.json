@@ -1,0 +1,99 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "SAM flag bit 0x4 exclusivity violation must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "Every SUT must REJECT (raise error or crash) when FLAG 0x4 is set on a record with RNAME != '*' and POS > 0. Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::§1.4.1 Flag field::pNA",
+          "quote": "Bit 0x4 indicates the segment is unmapped. When bit 0x4 is set, RNAME MUST be '*' and POS MUST be 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "SAM CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "Every SUT must REJECT when the sum of query-consuming CIGAR operators (M, I, S, =, X) does not equal len(SEQ) and SEQ != '*'. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::§1.4.6 CIGAR field::pNA",
+          "quote": "The sum of lengths of the M/I/S/=/X operations MUST equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "SAM optional tag type character violation must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "Every SUT must REJECT when an optional tag's type character is not one of A, i, f, Z, H, or B. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::§2.1 Tag types::pNA",
+          "quote": "The type character MUST be one of A (character), i (integer), f (float), Z (string), H (hex array), or B (general array).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "SAM TLEN sign consistency violation must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "Every SUT must REJECT when both reads of a paired template carry same-signed TLEN values. The spec requires opposite signs for the two mates.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::§1.4 TLEN field::pNA",
+          "quote": "For paired-end reads, the two reads of a template MUST have equal magnitude but opposite sign TLEN values.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 4,
+    "total": 4
+  }
+}

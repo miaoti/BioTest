@@ -1,0 +1,21 @@
+##fileformat=VCFv4.3
+##INFO=<ID=BCF_SPEC,Number=0,Type=Flag,Description="BCF specification: All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality">
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O b -o test.bcf test.vcf
+##reference=file:///path/to/reference.fasta
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr3,length=198295559>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrY,length=57227415>
+##BCF2_extension=.bcf
+##BCF2_encoding=value
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr2	67363 	.	AAGTT	CA,GTATCACA,AÇG	40.51	LowQual	.	GT:DP:GQ	1/0:20:13
+chr3	416740	.	AGCCAAATCA	TAAC,CATAA	21.06	LowQual	BCF_SPEC	GT:DP:GQ	0/0:52:49

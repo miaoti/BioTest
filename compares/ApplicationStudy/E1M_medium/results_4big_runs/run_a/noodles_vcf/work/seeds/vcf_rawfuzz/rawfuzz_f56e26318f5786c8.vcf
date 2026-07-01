@@ -1,0 +1,17 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=test_generator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency for each ALT allele">
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes for each ALT allele">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype likelihoods">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chr1	1000	multi1	A	T,C,G	100	PASS	A³=0.3,0.2,0.1;AC=3,2,1;AN=0	GT:GQ:PL	0/1:99:0,10,100,20,200,300,30,400,500,600
+chr2	2000	multi2	C	A,G	80	PASS	AF=0.4,0.3;AC=4,3;AN=10	GT:GQ:PL	1/2:90:100,20,0,300,400,500
+chr1	3›00	multi3	G	T,A	70	PASS	AF=0.5,0.;AC=5,2;AN=10	GT:GQ:PL	0/0:99:0,255,255,255,255,255

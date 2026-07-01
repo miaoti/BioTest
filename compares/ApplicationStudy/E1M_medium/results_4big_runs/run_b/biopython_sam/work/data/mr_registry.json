@@ -1,0 +1,99 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH on the malformed record; silent acceptance or silent record-drop is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::CIGAR",
+          "quote": "The sum of lengths of the M/I/S/=/X operations must equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Flag bit exclusivity violation for unmapped segment must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when FLAG 0x4 is set but RNAME != '*' and POS > 0; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::Flag field",
+          "quote": "Bit 0x4: segment unmapped. If this bit is set, RNAME must be '*' and POS must be 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Optional tag with illegal type character must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when an optional tag's type character is not one of AifZHB; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMtags.tex::Optional tags::Type field",
+          "quote": "The type character must be one of A, i, f, Z, H, or B.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation for paired reads must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "error_consensus: all SUTs must REJECT or CRASH when paired reads of the same template have same-signed TLEN values; silent acceptance is a conformance bug",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::TLEN field",
+          "quote": "For paired reads, the two reads of a template must have equal magnitude but opposite sign TLEN values.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 4,
+    "total": 4
+  }
+}

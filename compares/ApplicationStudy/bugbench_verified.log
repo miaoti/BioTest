@@ -1,0 +1,250 @@
+[14:23:19] [bugbench_verified] ===== START: bug_bench with manifest.verified.json (32 bugs), via docker exec =====
+[14:23:19] [bugbench_verified] === BUG_BENCH step (E0/E1S/E2/E3 only, 4 runs each) ===
+[14:23:19] [metrics_4rep] === config E0 ===
+[14:23:19] [metrics_4rep] E0[a] bug_bench: launching (docker, manifest.verified.json)
+[14:32:03] [smoke] ===== SMOKE TEST: 1 rep per config (E0/a, E1S/a, E2/0, E3/0) =====
+[14:32:03] [smoke] === E0/a launching ===
+[orchestrator] 32 bug(s) in 24 anchor group(s) — 48 install-swaps (vs 64 without grouping)
+
+[group] htsjdk  2.24.1 -> 3.0.0  (2 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1757k  100 1757k    0     0  5418k      0 --:--:-- --:--:-- --:--:-- 5424k
+[run] biotest @ htsjdk-1554  t=600s
+[seed-filter] htsjdk/vcf: 278/1462 accepted (probe: ParserRunner)
+[pov] htsjdk-1554: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1554/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+[run] biotest @ htsjdk-1544  t=600s
+[pov] htsjdk-1544: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1544/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1914k  100 1914k    0     0  5802k      0 --:--:-- --:--:-- --:--:-- 5802k
+
+[group] htsjdk  3.0.3 -> 3.0.4  (1 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 30 1916k   30  583k    0     0  2855k      0 --:--:-- --:--:-- --:--:-- 2848k100 1916k  100 1916k    0     0  6024k      0 --:--:-- --:--:-- --:--:-- 6006k
+[run] biotest @ htsjdk-1637  t=600s
+[pov] htsjdk-1637: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1637/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1915k  100 1915k    0     0  5786k      0 --:--:-- --:--:-- --:--:-- 5788k
+
+[group] seqan3  df9fd5ff64f59fdb124c4a564a4141d1f9cff22b -> 8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600  (1 bug(s))
+Previous HEAD position was 745c645fe Merge pull request #3404 from eseiler/fix/clang22
+HEAD is now at df9fd5ff6 [MISC] rename include/seqan3/io/{alignment => sam}_file  (#2412)
+[seqan3] rebuild failed for df9fd5ff64f59fdb124c4a564a4141d1f9cff22b: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-2418  t=600s
+[seed-filter] seqan3/sam: 1314/1887 accepted (probe: ParserRunner)
+[pov] seqan3-2418: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-2418/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] seqan3  fa221c1302cfe515211ea70de375a1802826d3d9 -> c84f5671665478ec1b71535201cbffbe1fdd8c82  (1 bug(s))
+Previous HEAD position was df9fd5ff6 [MISC] rename include/seqan3/io/{alignment => sam}_file  (#2412)
+HEAD is now at fa221c130 [DOC,FIX] Correct exception message.
+[seqan3] rebuild failed for fa221c1302cfe515211ea70de375a1802826d3d9: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3081  t=600s
+[pov] seqan3-3081: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-3081/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] seqan3  ca4d668390e35b4045ccd02d070927f8178ed2ce -> 11564cb3bcea39666d6d3979080bc5d8fdbe1d7e  (1 bug(s))
+Previous HEAD position was fa221c130 [DOC,FIX] Correct exception message.
+HEAD is now at ca4d66839 Merge pull request #3263 from seqan/dependabot/github_actions/fsfe/reuse-action-4
+[run] biotest @ seqan3-3269  t=600s
+[pov] seqan3-3269: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-3269/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] seqan3  4961904fbc3b254f7a611b5b467c2e33ae5b1042 -> 4fe548913e96d3f908dd524bd3dc13b48f87bfa4  (1 bug(s))
+Previous HEAD position was ca4d66839 Merge pull request #3263 from seqan/dependabot/github_actions/fsfe/reuse-action-4
+HEAD is now at 4961904fb Merge pull request #3097 from eseiler/fix/api
+[seqan3] rebuild failed for 4961904fbc3b254f7a611b5b467c2e33ae5b1042: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3098  t=600s
+[pov] seqan3-3098: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-3098/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] seqan3  edbfa956f^ -> edbfa956f  (1 bug(s))
+Previous HEAD position was 4961904fb Merge pull request #3097 from eseiler/fix/api
+HEAD is now at 9ec41b7fd Update concatenated seqs (#2947)
+[seqan3] rebuild failed for edbfa956f^: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-2869  t=600s
+[pov] seqan3-2869: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-2869/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] seqan3  745c645fe26272791464cd67180775d28c00bf28 -> 5e5c05a471269703d7afc38bdc4348cef60be63b  (1 bug(s))
+Previous HEAD position was 9ec41b7fd Update concatenated seqs (#2947)
+HEAD is now at 745c645fe Merge pull request #3404 from eseiler/fix/clang22
+[seqan3] rebuild failed for 745c645fe26272791464cd67180775d28c00bf28: stderr=xit code 1 (use -v to see invocation)
+make[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:97: seqan3_sam_fuzzer_libfuzzer] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3406  t=600s
+[pov] seqan3-3406: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/seqan3-3406/seeds_merged general_kept=0 per_sut_skipped=573 pov_added=0
+
+[group] htsjdk  2.19.0 -> 2.20.0  (5 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 91 1632k   91 1497k    0     0  4701k      0 --:--:-- --:--:-- --:--:-- 4694k100 1632k  100 1632k    0     0  4899k      0 --:--:-- --:--:-- --:--:-- 4887k
+[run] biotest @ htsjdk-1364  t=600s
+[pov] htsjdk-1364: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1364/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+[run] biotest @ htsjdk-1389  t=600s
+[pov] htsjdk-1389: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1389/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+[run] biotest @ htsjdk-1372  t=600s
+[pov] htsjdk-1372: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1372/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+[run] biotest @ htsjdk-1401  t=600s
+[pov] htsjdk-1401: seeds_merged=/work/compares/ApplicationStudy/E0_baseline/results_metrics/a/bug_bench/biotest/htsjdk-1401/seeds_merged general_kept=0 per_sut_skipped=1184 pov_added=0
+[run] biotest @ htsjdk-1360  t=600s
+[14:43:34] [smoke] === E0/a done rc=1 elapsed=11min ===
+[14:43:34] [smoke] === E1S/a launching ===
+[orchestrator] 32 bug(s) in 24 anchor group(s) — 48 install-swaps (vs 64 without grouping)
+
+[group] htsjdk  2.24.1 -> 3.0.0  (2 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1757k  100 1757k    0     0  5650k      0 --:--:-- --:--:-- --:--:-- 5669k
+[run] biotest @ htsjdk-1554  t=600s
+[14:43:46] [smoke] === E1S/a done rc=137 elapsed=0min ===
+[14:43:46] [smoke] === E2/0 launching ===
+[orchestrator] 32 bug(s) in 24 anchor group(s) — 48 install-swaps (vs 64 without grouping)
+
+[group] htsjdk  2.24.1 -> 3.0.0  (2 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1757k  100 1757k    0     0  5079k      0 --:--:-- --:--:-- --:--:-- 5093k
+[run] biotest @ htsjdk-1554  t=600s
+[seed-filter] htsjdk/vcf: 31/33 accepted (probe: ParserRunner)
+[pov] htsjdk-1554: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1554/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+[run] biotest @ htsjdk-1544  t=600s
+[pov] htsjdk-1544: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1544/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 78 1914k   78 1507k    0     0  5205k      0 --:--:-- --:--:-- --:--:-- 5198k100 1914k  100 1914k    0     0  5878k      0 --:--:-- --:--:-- --:--:-- 5873k
+
+[group] htsjdk  3.0.3 -> 3.0.4  (1 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 92 1916k   92 1777k    0     0  5134k      0 --:--:-- --:--:-- --:--:-- 5121k100 1916k  100 1916k    0     0  5387k      0 --:--:-- --:--:-- --:--:-- 5382k
+[run] biotest @ htsjdk-1637  t=600s
+[pov] htsjdk-1637: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1637/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1915k  100 1915k    0     0  5916k      0 --:--:-- --:--:-- --:--:-- 5913k
+
+[group] seqan3  df9fd5ff64f59fdb124c4a564a4141d1f9cff22b -> 8e374d7ce7a1ce4de0077bc3698d5ae2c8e79600  (1 bug(s))
+Previous HEAD position was 745c645fe Merge pull request #3404 from eseiler/fix/clang22
+HEAD is now at df9fd5ff6 [MISC] rename include/seqan3/io/{alignment => sam}_file  (#2412)
+[seqan3] rebuild failed for df9fd5ff64f59fdb124c4a564a4141d1f9cff22b: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-2418  t=600s
+[seed-filter] seqan3/sam: 64/74 accepted (probe: ParserRunner)
+[pov] seqan3-2418: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-2418/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] seqan3  fa221c1302cfe515211ea70de375a1802826d3d9 -> c84f5671665478ec1b71535201cbffbe1fdd8c82  (1 bug(s))
+Previous HEAD position was df9fd5ff6 [MISC] rename include/seqan3/io/{alignment => sam}_file  (#2412)
+HEAD is now at fa221c130 [DOC,FIX] Correct exception message.
+[seqan3] rebuild failed for fa221c1302cfe515211ea70de375a1802826d3d9: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3081  t=600s
+[pov] seqan3-3081: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-3081/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] seqan3  ca4d668390e35b4045ccd02d070927f8178ed2ce -> 11564cb3bcea39666d6d3979080bc5d8fdbe1d7e  (1 bug(s))
+Previous HEAD position was fa221c130 [DOC,FIX] Correct exception message.
+HEAD is now at ca4d66839 Merge pull request #3263 from seqan/dependabot/github_actions/fsfe/reuse-action-4
+[run] biotest @ seqan3-3269  t=600s
+[pov] seqan3-3269: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-3269/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] seqan3  4961904fbc3b254f7a611b5b467c2e33ae5b1042 -> 4fe548913e96d3f908dd524bd3dc13b48f87bfa4  (1 bug(s))
+Previous HEAD position was ca4d66839 Merge pull request #3263 from seqan/dependabot/github_actions/fsfe/reuse-action-4
+HEAD is now at 4961904fb Merge pull request #3097 from eseiler/fix/api
+[seqan3] rebuild failed for 4961904fbc3b254f7a611b5b467c2e33ae5b1042: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3098  t=600s
+[pov] seqan3-3098: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-3098/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] seqan3  edbfa956f^ -> edbfa956f  (1 bug(s))
+Previous HEAD position was 4961904fb Merge pull request #3097 from eseiler/fix/api
+HEAD is now at 9ec41b7fd Update concatenated seqs (#2947)
+[seqan3] rebuild failed for edbfa956f^: stderr=ake[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:76: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/seqan3_sam_fuzzer.cpp.o] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-2869  t=600s
+[pov] seqan3-2869: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-2869/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] seqan3  745c645fe26272791464cd67180775d28c00bf28 -> 5e5c05a471269703d7afc38bdc4348cef60be63b  (1 bug(s))
+Previous HEAD position was 9ec41b7fd Update concatenated seqs (#2947)
+HEAD is now at 745c645fe Merge pull request #3404 from eseiler/fix/clang22
+[seqan3] rebuild failed for 745c645fe26272791464cd67180775d28c00bf28: stderr=xit code 1 (use -v to see invocation)
+make[3]: *** [CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/build.make:97: seqan3_sam_fuzzer_libfuzzer] Error 1
+make[2]: *** [CMakeFiles/Makefile2:89: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:96: CMakeFiles/seqan3_sam_fuzzer_libfuzzer.dir/rule] Error 2
+make: *** [Makefile:124: seqan3_sam_fuzzer_libfuzzer] Error 2
+
+[run] biotest @ seqan3-3406  t=600s
+[pov] seqan3-3406: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/seqan3-3406/seeds_merged general_kept=0 per_sut_skipped=10 pov_added=0
+
+[group] htsjdk  2.19.0 -> 2.20.0  (5 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1632k  100 1632k    0     0  4699k      0 --:--:-- --:--:-- --:--:-- 4691k
+[run] biotest @ htsjdk-1364  t=600s
+[pov] htsjdk-1364: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1364/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+[run] biotest @ htsjdk-1389  t=600s
+[pov] htsjdk-1389: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1389/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+[run] biotest @ htsjdk-1372  t=600s
+[pov] htsjdk-1372: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1372/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+[run] biotest @ htsjdk-1401  t=600s
+[pov] htsjdk-1401: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1401/seeds_merged general_kept=1 per_sut_skipped=2 pov_added=0
+[run] biotest @ htsjdk-1360  t=600s
+[seed-filter] htsjdk/sam: 51/74 accepted (probe: ParserRunner)
+[pov] htsjdk-1360: seeds_merged=/work/compares/ApplicationStudy/E2_no_phase_d/results_metrics/0/bug_bench/biotest/htsjdk-1360/seeds_merged general_kept=51 per_sut_skipped=23 pov_added=1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 35 1656k   35  585k    0     0  2548k      0 --:--:-- --:--:-- --:--:-- 2544k100 1656k  100 1656k    0     0  4668k      0 --:--:-- --:--:-- --:--:-- 4666k
+
+[group] htsjdk  2.20.0 -> 2.20.1  (1 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 1656k  100 1656k    0     0  5833k      0 --:--:-- --:--:-- --:--:-- 5853k
+[14:47:12] [smoke] === E2/0 done rc=137 elapsed=3min ===
+[14:47:12] [smoke] === E3/0 launching ===
+[orchestrator] 32 bug(s) in 24 anchor group(s) — 48 install-swaps (vs 64 without grouping)
+
+[group] htsjdk  2.24.1 -> 3.0.0  (2 bug(s))
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 61 1757k   61 1088k    0     0  4053k      0 --:--:-- --:--:-- --:--:-- 4046k100 1757k  100 1757k    0     0  4948k      0 --:--:-- --:--:-- --:--:-- 4936k
+[run] biotest @ htsjdk-1554  t=600s
+[14:58:11] [parallel-smoke] ===== PARALLEL SMOKE START (4 configs concurrent, locked driver) =====
+[14:58:11] [parallel-smoke] PIDs: E0=136176 E1S=136177 E2=136179 E3=136181
+[14:58:11] [parallel-smoke] === E0/a launching (parallel) ===
+[14:58:11] [parallel-smoke] === E1S/a launching (parallel) ===
+[14:58:11] [parallel-smoke] === E2/0 launching (parallel) ===
+[14:58:11] [parallel-smoke] === E3/0 launching (parallel) ===
+[15:05:15] [parallel-smoke] === E2/0 done rc=0 elapsed=7min ===
+[15:13:44] [parallel-smoke] === E3/0 done rc=0 elapsed=15min ===
+[15:20:54] [parallel-smoke] === E1S/a done rc=0 elapsed=22min ===
+[15:29:43] [parallel-smoke] === E0/a done rc=0 elapsed=31min ===
+[15:29:43] [parallel-smoke] ===== PARALLEL SMOKE DONE (E0=0 E1S=0 E2=0 E3=0) =====
+===PARALLEL SMOKE DONE===

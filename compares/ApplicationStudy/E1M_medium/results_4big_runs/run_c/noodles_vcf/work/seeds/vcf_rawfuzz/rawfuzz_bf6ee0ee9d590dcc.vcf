@@ -1,0 +1,31 @@
+##fileformat=VCFv4.3
+##INFO=<ID=BCF_SPEC,Number=0,Type=Flag,Description="BCF specification: All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality">
+##bcftools_viewVersion=1.9+htslib-1.9
+##bcftools_viewCommand=view -O b -o test.bcf test.vcf
+##reference=file:///path/to/reference.fasta
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr3,length=198295559>
+##contig=<ID=chrX,length=156040895>
+##contig=<ID=chrY,length=57227415>
+##BCF2_extension=.bcf
+##BCF2_encoding=value
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+
+chrX	642280	.	TCCTATATCA	ACGTTGAACA,TTTAGACCGA,CCCACG	2.26	LowQual	BCF_SPEC	GT:DP:GQ	1/2:4:68
+chrX	372112	.	CAT	CCGC	98.66	PA-SS	BCF_SPEC	GT:DP:GQ	1/1:14:0
+chr1	748847	.	TACATACCT	TT,TA,TTCCGTC	83.69	PASS	BCF_SPEC	FT:DP:GQ	1/2:84:98
+chr3	526906	rs210985	ACGGAGGC	TCATAGA,GATCG,G	18.88	PASS	BCF_SPEC;AF=0.3433	GT:DP:GQ	0/2:26:66
+chr2	488611	.	TCTATG	CG,TG,ATGAGCTC	58.03	PASS	.	GT:DP:GQ	0/1:74:94
+chrX	679432	.	AGCCC	CTCAAGTC,ATAA	79.61	PASS	BCF_SPEC	GT:DP:GQ	1/1:33:51
+chr3	429849	.	ACCG	GT,TAT,GACTATGCGT	.	.	.	GT:DP:GQ	2/1:82:47
+chr2	110935	.	TGG	TTATTCT	.	LowQual	BCF_SPEC;AF=0.3520	GT:DP:GQ	1/0:21:91
+chr2	211652	.	GG	CTGTCCG,TTGAGTGTG	38.27	PASS	BCF_SPEC	GT:DP:GQ	1/1:14:80
+chrY	700806	.	CT	AAA,CTA	.	.	AF=0.7447	GT:DP:GQ	0/1:37:73
+chr3	866113	rs770690	GAGTGT	AAT,ACTAG,CAGCGTA	47.70	.	BCF_SPEC	GT:DP:GQ	0/0:62:87
+chr1	796758	rs874152	TATAG	TGAGT,GC,CGGGCG	96.35	PASS	BCF_SPEC	GT:DP:GQ	2/0:91:75

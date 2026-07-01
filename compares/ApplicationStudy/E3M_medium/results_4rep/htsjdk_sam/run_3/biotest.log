@@ -1,0 +1,968 @@
+[harness_run/E3M] mode = E3M
+[harness_run/E3M] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex � RAG retrieval returns nothing)
+[harness_run/E3M] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB chunk_id validation)
+[harness_run/E3M] pre-import patch: static prompt: UNCHANGED (compound-group rule + transform descriptions + behavior hints all retained)
+[harness_run/E3M] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E3M] phase_c patch: orchestrator.settings: wrapped: Phase.shrink stripped, deadline=5000ms
+[harness_run/E3M] config: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\run_3\biotest_config.rep3.yaml
+[harness_run/E3M] phase_filter: B,C,E
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 42 query methods on primary htsjdk for Rank 5
+  Mining SAM / ordering_invariance...
+04:12:56 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:12:56 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+04:13:32 [INFO] mr_engine.dsl.compiler: Compiled 8 MRs successfully
+04:13:32 [INFO] mr_engine.agent.engine: Successfully compiled 8 MRs on attempt 1
+    OK mined 8 MR(s) for SAM/ordering_invariance
+  Mining SAM / semantics_preserving_permutation...
+04:13:32 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:13:32 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+04:14:09 [INFO] mr_engine.dsl.compiler: Compiled 7 MRs successfully
+04:14:09 [INFO] mr_engine.agent.engine: Successfully compiled 7 MRs on attempt 1
+    OK mined 7 MR(s) for SAM/semantics_preserving_permutation
+  Mining SAM / normalization_invariance...
+04:14:09 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:14:09 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+04:15:02 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+04:15:02 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:15:48 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+04:15:48 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/normalization_invariance — emitting empty MR array (no applicable evidence).
+04:15:48 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+04:15:48 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/normalization_invariance; terminating theme cleanly.
+    0 MRs for SAM/normalization_invariance: no relations returned
+  Mining SAM / rejection_invariance...
+04:15:48 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:15:48 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+04:16:23 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+04:16:23 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for SAM/rejection_invariance
+  Mining SAM / coordinate_indexing_invariance...
+04:16:23 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:16:23 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+04:16:49 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+04:16:49 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:17:13 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+04:17:13 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:17:33 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+04:17:33 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+04:17:59 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+    0 MRs for SAM/coordinate_indexing_invariance: Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  Mining SAM / round_trip_invariance...
+04:17:59 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:17:59 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+04:19:01 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+04:19:01 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:19:28 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+04:19:28 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:19:47 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+04:19:47 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+04:20:10 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/round_trip_invariance: No MRs were produced after 
+compilation.
+  Mining SAM / api_query_invariance...
+04:20:10 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+04:20:10 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+04:21:00 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+04:21:00 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+04:21:25 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+04:21:25 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+04:21:45 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+04:21:45 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+04:22:11 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/api_query_invariance: No MRs were produced after compilation.
+04:22:11 [INFO] mr_engine.registry: Dedup: skipped 8 duplicate MR(s)
+04:22:11 [INFO] mr_engine.registry: Triage result: 0 enforced, 11 quarantine
+04:22:11 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\data\mr_registry.json (11 MRs)
+  Phase B: OK  (9m 17s)
+04:22:11 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+04:22:11 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+04:22:11 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+04:22:11 [INFO] test_engine.orchestrator: Loaded 11 MRs from registry (enforced=0, quarantine=11)
+04:22:11 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+04:22:11 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+04:22:11 [INFO] test_engine.orchestrator: Testing MR a6d5fda42b2b (SAM @SQ header record reordering invariance) -- scope=SAM.header, transforms=['reorder_header_records']
+04:22:11 [INFO] test_engine.orchestrator:   MR a6d5fda42b2b: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:22:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042215_814467_1
+04:22:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042215_823111_2
+04:22:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042215_829373_3
+04:22:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042215_836503_4
+04:22:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042215_841214_5
+04:22:15 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_13dda956.sam (seed=0): consensus=[], dissent=[]
+04:22:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042220_255938_6
+04:22:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042220_260596_7
+04:22:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042220_266236_8
+04:22:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042220_271192_9
+04:22:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_13dda956.sam (seed=0) -- 1 diffs
+04:22:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042220_276411_10
+04:22:20 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_13dda956.sam (seed=0): consensus=[], dissent=[]
+04:22:20 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR a6d5fda42b2b (SAM @SQ header record reordering invariance) to minimal failing case
+04:22:20 [INFO] test_engine.orchestrator:   MR a6d5fda42b2b: Hypothesis found and shrunk a failure
+04:22:20 [INFO] test_engine.orchestrator: Testing MR 2967d6eb3016 (SAM @CO comment line shuffling invariance) -- scope=SAM.header, transforms=['shuffle_co_comments']
+04:22:20 [INFO] test_engine.orchestrator:   MR 2967d6eb3016: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:22:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_c2_pad.sam (seed=1913) -- 1 diffs
+04:22:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042224_487023_11
+04:22:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_c2_pad.sam (seed=1913) -- 1 diffs
+04:22:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042224_494496_12
+04:22:24 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_c2_pad.sam (seed=1913): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_c2_pad.sam (seed=31) -- 1 diffs
+04:22:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042229_054067_13
+04:22:29 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_c2_pad.sam (seed=31) -- 1 diffs
+04:22:29 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042229_057606_14
+04:22:29 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_c2_pad.sam (seed=31): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_xx_tlen.sam (seed=1735175959) -- 1 diffs
+04:22:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042232_667907_15
+04:22:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_xx_tlen.sam (seed=1735175959) -- 1 diffs
+04:22:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042232_671660_16
+04:22:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_xx_tlen.sam (seed=1735175959) -- 1 diffs
+04:22:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042232_675328_17
+04:22:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_xx_tlen.sam (seed=1735175959) -- 1 diffs
+04:22:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042232_683229_18
+04:22:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_xx_tlen.sam (seed=1735175959) -- 1 diffs
+04:22:32 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042232_691046_19
+04:22:32 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_xx_tlen.sam (seed=1735175959): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_c2_pad.sam (seed=45577) -- 1 diffs
+04:22:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042236_800346_20
+04:22:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_c2_pad.sam (seed=45577) -- 1 diffs
+04:22:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042236_803863_21
+04:22:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_c2_pad.sam (seed=45577) -- 1 diffs
+04:22:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042236_807932_22
+04:22:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_c2_pad.sam (seed=45577) -- 1 diffs
+04:22:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042236_814332_23
+04:22:36 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_c2_pad.sam (seed=45577) -- 1 diffs
+04:22:36 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042236_821851_24
+04:22:36 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_c2_pad.sam (seed=45577): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_xx_tlen.sam (seed=61348) -- 1 diffs
+04:22:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042240_488228_25
+04:22:40 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_xx_tlen.sam (seed=61348) -- 1 diffs
+04:22:40 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042240_491496_26
+04:22:40 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_xx_tlen.sam (seed=61348): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_index3_exp.sam (seed=2442405194) -- 1 diffs
+04:22:44 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042244_255200_27
+04:22:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_index3_exp.sam (seed=2442405194) -- 1 diffs
+04:22:44 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042244_258232_28
+04:22:44 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index3_exp.sam (seed=2442405194): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_index3.sam (seed=30119) -- 1 diffs
+04:22:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042248_706425_29
+04:22:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_index3.sam (seed=30119) -- 1 diffs
+04:22:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042248_712302_30
+04:22:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_index3.sam (seed=30119) -- 1 diffs
+04:22:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042248_718740_31
+04:22:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_index3.sam (seed=30119) -- 1 diffs
+04:22:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042248_729150_32
+04:22:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_index3.sam (seed=30119) -- 1 diffs
+04:22:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042248_740703_33
+04:22:48 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index3.sam (seed=30119): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_xx_tlen.sam (seed=57495) -- 1 diffs
+04:22:52 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042252_745252_34
+04:22:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_xx_tlen.sam (seed=57495) -- 1 diffs
+04:22:52 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042252_749336_35
+04:22:52 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_xx_tlen.sam (seed=57495): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htsjdk on real_world_htslib_index3_exp.sam (seed=1455170531) -- 1 diffs
+04:22:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042256_252208_36
+04:22:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_index3_exp.sam (seed=1455170531) -- 1 diffs
+04:22:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042256_257711_37
+04:22:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_htslib_index3_exp.sam (seed=1455170531) -- 1 diffs
+04:22:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042256_260836_38
+04:22:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_index3_exp.sam (seed=1455170531) -- 1 diffs
+04:22:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042256_265003_39
+04:22:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_index3_exp.sam (seed=1455170531) -- 1 diffs
+04:22:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042256_270177_40
+04:22:56 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index3_exp.sam (seed=1455170531): consensus=['htslib', 'pysam', 'reference'], dissent=[]
+04:22:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:22:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042259_646977_41
+04:22:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:22:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042259_652374_42
+04:22:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:22:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042259_658025_43
+04:22:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:22:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042259_662310_44
+04:22:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:22:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042259_666899_45
+04:22:59 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=29): consensus=[], dissent=[]
+04:23:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:23:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042302_922868_46
+04:23:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:23:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042302_926935_47
+04:23:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:23:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042302_930776_48
+04:23:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:23:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042302_935368_49
+04:23:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=29) -- 1 diffs
+04:23:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042302_938500_50
+04:23:02 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=29): consensus=[], dissent=[]
+04:23:02 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 2967d6eb3016 (SAM @CO comment line shuffling invariance) to minimal failing case
+04:23:02 [INFO] test_engine.orchestrator:   MR 2967d6eb3016: Hypothesis found and shrunk a failure
+04:23:02 [INFO] test_engine.orchestrator: Testing MR 97a5283cec91 (SAM optional tag field permutation invariance) -- scope=SAM.record, transforms=['permute_optional_tag_fields']
+04:23:02 [INFO] test_engine.orchestrator:   MR 97a5283cec91: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on complex_cigar.sam (seed=0) -- 1 diffs
+04:23:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042306_487245_51
+04:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on complex_cigar.sam (seed=0) -- 1 diffs
+04:23:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042306_492317_52
+04:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on complex_cigar.sam (seed=0) -- 1 diffs
+04:23:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042306_496329_53
+04:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on complex_cigar.sam (seed=0) -- 1 diffs
+04:23:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042306_500349_54
+04:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on complex_cigar.sam (seed=0) -- 1 diffs
+04:23:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042306_502913_55
+04:23:06 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on complex_cigar.sam (seed=0): consensus=['htsjdk', 'reference'], dissent=[]
+04:23:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_medium_08b3daaa.sam (seed=0) -- 1 diffs
+04:23:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042309_967537_56
+04:23:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_medium_08b3daaa.sam (seed=0) -- 1 diffs
+04:23:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042309_978142_57
+04:23:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_medium_08b3daaa.sam (seed=0) -- 1 diffs
+04:23:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042309_984094_58
+04:23:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_medium_08b3daaa.sam (seed=0) -- 1 diffs
+04:23:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042309_988023_59
+04:23:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_medium_08b3daaa.sam (seed=0) -- 1 diffs
+04:23:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042309_992625_60
+04:23:10 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_medium_08b3daaa.sam (seed=0): consensus=[], dissent=['htsjdk', 'reference']
+04:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_medium_08b3daaa.sam (seed=129) -- 1 diffs
+04:23:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042313_478108_61
+04:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_medium_08b3daaa.sam (seed=129) -- 1 diffs
+04:23:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042313_488320_62
+04:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_medium_08b3daaa.sam (seed=129) -- 1 diffs
+04:23:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042313_491842_63
+04:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_medium_08b3daaa.sam (seed=129) -- 1 diffs
+04:23:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042313_495038_64
+04:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_medium_08b3daaa.sam (seed=129) -- 1 diffs
+04:23:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042313_498940_65
+04:23:13 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_medium_08b3daaa.sam (seed=129): consensus=[], dissent=['htsjdk', 'reference']
+04:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn03_exp.sam (seed=0) -- 1 diffs
+04:23:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042317_170064_66
+04:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: biopython on real_world_htslib_realn03_exp.sam (seed=0) -- 1 diffs
+04:23:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042317_175530_67
+04:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn03_exp.sam (seed=0) -- 1 diffs
+04:23:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042317_179114_68
+04:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn03_exp.sam (seed=0) -- 1 diffs
+04:23:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042317_182627_69
+04:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn03_exp.sam (seed=0) -- 1 diffs
+04:23:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042317_187067_70
+04:23:17 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn03_exp.sam (seed=0): consensus=['biopython', 'htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn03_exp.sam (seed=3858401085) -- 1 diffs
+04:23:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042320_631695_71
+04:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: biopython on real_world_htslib_realn03_exp.sam (seed=3858401085) -- 1 diffs
+04:23:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042320_636732_72
+04:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn03_exp.sam (seed=3858401085) -- 1 diffs
+04:23:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042320_640267_73
+04:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn03_exp.sam (seed=3858401085) -- 1 diffs
+04:23:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042320_645461_74
+04:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn03_exp.sam (seed=3858401085) -- 1 diffs
+04:23:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042320_651216_75
+04:23:20 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn03_exp.sam (seed=3858401085): consensus=['biopython', 'htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_c1_noseq.sam (seed=0) -- 1 diffs
+04:23:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042324_454824_76
+04:23:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_c1_noseq.sam (seed=0) -- 1 diffs
+04:23:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042324_462227_77
+04:23:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_c1_noseq.sam (seed=0) -- 1 diffs
+04:23:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042324_464731_78
+04:23:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_c1_noseq.sam (seed=0) -- 1 diffs
+04:23:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042324_469551_79
+04:23:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_c1_noseq.sam (seed=0) -- 1 diffs
+04:23:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042324_475798_80
+04:23:24 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_c1_noseq.sam (seed=0): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_c1_noseq.sam (seed=2760731399) -- 1 diffs
+04:23:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042328_276260_81
+04:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_c1_noseq.sam (seed=2760731399) -- 1 diffs
+04:23:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042328_283098_82
+04:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_c1_noseq.sam (seed=2760731399) -- 1 diffs
+04:23:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042328_287112_83
+04:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_c1_noseq.sam (seed=2760731399) -- 1 diffs
+04:23:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042328_290783_84
+04:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_c1_noseq.sam (seed=2760731399) -- 1 diffs
+04:23:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042328_296318_85
+04:23:28 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_c1_noseq.sam (seed=2760731399): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:23:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap1.sam (seed=0) -- 1 diffs
+04:23:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042331_551867_86
+04:23:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap1.sam (seed=0) -- 1 diffs
+04:23:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042331_556535_87
+04:23:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap1.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap1.sam (seed=88) -- 1 diffs
+04:23:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042335_159716_88
+04:23:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap1.sam (seed=88) -- 1 diffs
+04:23:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042335_165394_89
+04:23:35 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap1.sam (seed=88): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_exp_e.sam (seed=36650) -- 1 diffs
+04:23:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042338_676187_90
+04:23:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_exp_e.sam (seed=36650) -- 1 diffs
+04:23:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042338_685490_91
+04:23:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_exp_e.sam (seed=36650) -- 1 diffs
+04:23:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042338_689637_92
+04:23:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_exp_e.sam (seed=36650) -- 1 diffs
+04:23:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042338_693633_93
+04:23:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_exp_e.sam (seed=36650) -- 1 diffs
+04:23:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042338_703070_94
+04:23:38 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_exp_e.sam (seed=36650): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:23:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap1.sam (seed=36985) -- 1 diffs
+04:23:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042342_525313_95
+04:23:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap1.sam (seed=36985) -- 1 diffs
+04:23:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042342_529385_96
+04:23:42 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap1.sam (seed=36985): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on spec_example.sam (seed=23396) -- 1 diffs
+04:23:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042345_899020_97
+04:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on spec_example.sam (seed=23396) -- 1 diffs
+04:23:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042345_906579_98
+04:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on spec_example.sam (seed=23396) -- 1 diffs
+04:23:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042345_909881_99
+04:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on spec_example.sam (seed=23396) -- 1 diffs
+04:23:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042345_915399_100
+04:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on spec_example.sam (seed=23396) -- 1 diffs
+04:23:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042345_922689_101
+04:23:45 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on spec_example.sam (seed=23396): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_exp_e.sam (seed=34) -- 1 diffs
+04:23:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042349_542642_102
+04:23:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_exp_e.sam (seed=34) -- 1 diffs
+04:23:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042349_553317_103
+04:23:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_exp_e.sam (seed=34) -- 1 diffs
+04:23:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042349_556659_104
+04:23:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_exp_e.sam (seed=34) -- 1 diffs
+04:23:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042349_560845_105
+04:23:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_exp_e.sam (seed=34) -- 1 diffs
+04:23:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042349_571955_106
+04:23:49 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_exp_e.sam (seed=34): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:23:49 [ERROR] test_engine.orchestrator: Transform failed on jazzer_medium_029a2980.sam (seed=2919033078): Duplicate optional tags detected: ['*', '0', '0', '*', '*']
+04:23:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on spec_example.sam (seed=10304) -- 1 diffs
+04:23:52 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042352_811357_107
+04:23:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on spec_example.sam (seed=10304) -- 1 diffs
+04:23:52 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042352_813862_108
+04:23:52 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on spec_example.sam (seed=10304): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:23:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_small_0e138ae1.sam (seed=13979) -- 1 diffs
+04:23:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042356_255833_109
+04:23:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_0e138ae1.sam (seed=13979) -- 1 diffs
+04:23:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042356_262893_110
+04:23:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_0e138ae1.sam (seed=13979) -- 1 diffs
+04:23:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042356_267533_111
+04:23:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htslib on jazzer_small_0e138ae1.sam (seed=13979) -- 1 diffs
+04:23:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042356_270673_112
+04:23:56 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_small_0e138ae1.sam (seed=13979) -- 1 diffs
+04:23:56 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042356_273604_113
+04:23:56 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_small_0e138ae1.sam (seed=13979): consensus=['htsjdk', 'reference'], dissent=[]
+04:23:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn03_exp.sam (seed=16227) -- 1 diffs
+04:23:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042359_579398_114
+04:23:59 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn03_exp.sam (seed=16227): consensus=['biopython', 'htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on literals_biopython_md_cigar.sam (seed=28077) -- 1 diffs
+04:24:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042403_472623_115
+04:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: biopython on literals_biopython_md_cigar.sam (seed=28077) -- 1 diffs
+04:24:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042403_478958_116
+04:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on literals_biopython_md_cigar.sam (seed=28077) -- 1 diffs
+04:24:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042403_484964_117
+04:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on literals_biopython_md_cigar.sam (seed=28077) -- 1 diffs
+04:24:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042403_489161_118
+04:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on literals_biopython_md_cigar.sam (seed=28077) -- 1 diffs
+04:24:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042403_495078_119
+04:24:03 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on literals_biopython_md_cigar.sam (seed=28077): consensus=['biopython', 'htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_0e138ae1.sam (seed=52241) -- 1 diffs
+04:24:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042406_583475_120
+04:24:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_0e138ae1.sam (seed=52241) -- 1 diffs
+04:24:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042406_591167_121
+04:24:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htslib on jazzer_small_0e138ae1.sam (seed=52241) -- 1 diffs
+04:24:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042406_595774_122
+04:24:06 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_small_0e138ae1.sam (seed=52241): consensus=['htsjdk', 'reference'], dissent=[]
+04:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn03_exp.sam (seed=242) -- 1 diffs
+04:24:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042409_951281_123
+04:24:09 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn03_exp.sam (seed=242): consensus=['biopython', 'htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:09 [ERROR] test_engine.orchestrator: Transform failed on jazzer_large_1b280906.sam (seed=62848): Duplicate optional tags detected: ['AS', 'XN', 'XM', 'XO', 'XG', 'NM', 'MD', 'BCAABD@B?@ABBDABBDBCADBDDCDDDBCDCCDCACCCDCCCCCCCCCACCDCCCCCCCCCCCCCCBCCCCCCCCCCBBCCCCCCCCCCCCCCCCCCC', 'AS', 'XN', 'XM', 'XO', 'XG', 'NM', 'MD', 'YT']
+04:24:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htsjdk_coordinate_sorted.sam (seed=100) -- 1 diffs
+04:24:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042413_201961_124
+04:24:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htsjdk_coordinate_sorted.sam (seed=100) -- 1 diffs
+04:24:13 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042413_206761_125
+04:24:13 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htsjdk_coordinate_sorted.sam (seed=100): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_auxf_values.sam (seed=9453) -- 1 diffs
+04:24:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042417_066016_126
+04:24:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_auxf_values.sam (seed=9453) -- 1 diffs
+04:24:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042417_072377_127
+04:24:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_auxf_values.sam (seed=9453) -- 1 diffs
+04:24:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042417_074915_128
+04:24:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_auxf_values.sam (seed=9453) -- 1 diffs
+04:24:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042417_078708_129
+04:24:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_auxf_values.sam (seed=9453) -- 1 diffs
+04:24:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042417_084525_130
+04:24:17 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_auxf_values.sam (seed=9453): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:17 [ERROR] test_engine.orchestrator: Transform failed on jazzer_medium_029a2980.sam (seed=41158): Duplicate optional tags detected: ['*', '0', '0', '*', '*']
+04:24:17 [ERROR] test_engine.orchestrator: Transform failed on jazzer_large_4e6d29d9.sam (seed=38): Duplicate optional tags detected: ['0', '0', 'CCTAGCCCTAACCCTAACCCTAACCCTAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAA', '#############################@B?8B?BA@@DDBCDDCBC@CDCDCCCCCCCCCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAA', '#############################@B?8B?BA@@DDBCDDCBC@CDCDCCCCCCCCCCCCCCCKCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC', 'XG', 'XM', 'XN', 'XO', 'XS', 'AS', 'YT']
+04:24:17 [ERROR] test_engine.orchestrator: Transform failed on jazzer_large_2491b4c7.sam (seed=4219613903): Duplicate optional tags detected: ['0', '0', 'CCTAGCCCTAACCCTAACCCTAACCCTAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAA', '#############################@B?8B?BA@@DDBCDDCBC@CDCDCCCCCCCCCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAAGCCTAA', '#############################@B?8B?BA@@DDBCDDCBC@CDCDCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC', 'XG', 'XM', 'XN', 'XO', 'XS', 'AS', 'YT']
+04:24:17 [ERROR] test_engine.orchestrator: Transform failed on jazzer_large_1b280906.sam (seed=234): Duplicate optional tags detected: ['AS', 'XN', 'XM', 'XO', 'XG', 'NM', 'MD', 'BCAABD@B?@ABBDABBDBCADBDDCDDDBCDCCDCACCCDCCCCCCCCCACCDCCCCCCCCCCCCCCBCCCCCCCCCCBBCCCCCCCCCCCCCCCCCCC', 'AS', 'XN', 'XM', 'XO', 'XG', 'NM', 'MD', 'YT']
+04:24:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on literals_htsjdk_cigar_ops.sam (seed=630093332) -- 1 diffs
+04:24:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042420_647223_131
+04:24:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on literals_htsjdk_cigar_ops.sam (seed=630093332) -- 1 diffs
+04:24:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042420_653632_132
+04:24:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on literals_htsjdk_cigar_ops.sam (seed=630093332) -- 1 diffs
+04:24:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042420_659548_133
+04:24:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on literals_htsjdk_cigar_ops.sam (seed=630093332) -- 1 diffs
+04:24:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042420_664392_134
+04:24:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on literals_htsjdk_cigar_ops.sam (seed=630093332) -- 1 diffs
+04:24:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042420_670086_135
+04:24:20 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on literals_htsjdk_cigar_ops.sam (seed=630093332): consensus=['htsjdk', 'reference'], dissent=[]
+04:24:20 [ERROR] test_engine.orchestrator: Transform failed on jazzer_medium_28dcae2a.sam (seed=57118): Duplicate optional tags detected: ['0', '0', 'AAAAGATAAGGATA', '*', 'RG', 'XS', 'NM']
+04:24:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_ce_tag_padded.sam (seed=218) -- 1 diffs
+04:24:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042424_435007_136
+04:24:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_tag_padded.sam (seed=218) -- 1 diffs
+04:24:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042424_439614_137
+04:24:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_tag_padded.sam (seed=218) -- 1 diffs
+04:24:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042424_443139_138
+04:24:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_ce_tag_padded.sam (seed=218) -- 1 diffs
+04:24:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042424_446995_139
+04:24:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_ce_tag_padded.sam (seed=218) -- 1 diffs
+04:24:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042424_453702_140
+04:24:24 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_tag_padded.sam (seed=218): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042427_989587_141
+04:24:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:27 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042427_994457_142
+04:24:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042427_997482_143
+04:24:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042428_000503_144
+04:24:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042428_003509_145
+04:24:28 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=4066564049): consensus=[], dissent=[]
+04:24:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042431_363469_146
+04:24:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042431_366606_147
+04:24:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042431_369798_148
+04:24:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042431_372408_149
+04:24:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=4066564049) -- 1 diffs
+04:24:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042431_375020_150
+04:24:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=4066564049): consensus=[], dissent=[]
+04:24:31 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 97a5283cec91 (SAM optional tag field permutation invariance) to minimal failing case
+04:24:31 [INFO] test_engine.orchestrator:   MR 97a5283cec91: Hypothesis found and shrunk a failure
+04:24:31 [INFO] test_engine.orchestrator: Testing MR 04b5bce80e00 (SAM @HD header subtag shuffling invariance) -- scope=SAM.header, transforms=['shuffle_hd_subtags']
+04:24:31 [INFO] test_engine.orchestrator:   MR 04b5bce80e00: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:24:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042435_289618_151
+04:24:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042435_296639_152
+04:24:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042435_300320_153
+04:24:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042435_304420_154
+04:24:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042435_307699_155
+04:24:35 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on complex_cigar.sam (seed=0): consensus=['htsjdk', 'reference'], dissent=[]
+04:24:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042438_547707_156
+04:24:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042438_551344_157
+04:24:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042438_553957_158
+04:24:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042438_557078_159
+04:24:38 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:38 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042438_559895_160
+04:24:38 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=0): consensus=[], dissent=[]
+04:24:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042442_076338_161
+04:24:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042442_080909_162
+04:24:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042442_084310_163
+04:24:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042442_087866_164
+04:24:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_small_013bf3e8.sam (seed=0) -- 1 diffs
+04:24:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042442_091942_165
+04:24:42 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_small_013bf3e8.sam (seed=0): consensus=[], dissent=[]
+04:24:42 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 04b5bce80e00 (SAM @HD header subtag shuffling invariance) to minimal failing case
+04:24:42 [INFO] test_engine.orchestrator:   MR 04b5bce80e00: Hypothesis found and shrunk a failure
+04:24:42 [INFO] test_engine.orchestrator: Testing MR 44dda30be8fa (SAM @SQ record subtag shuffling invariance) -- scope=SAM.header, transforms=['shuffle_sq_record_subtags']
+04:24:42 [INFO] test_engine.orchestrator:   MR 44dda30be8fa: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:24:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042446_233837_166
+04:24:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042446_240170_167
+04:24:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042446_243965_168
+04:24:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042446_247504_169
+04:24:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on complex_cigar.sam (seed=0) -- 1 diffs
+04:24:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042446_251076_170
+04:24:46 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on complex_cigar.sam (seed=0): consensus=['htsjdk', 'reference'], dissent=[]
+04:24:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=0) -- 1 diffs
+04:24:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042449_730874_171
+04:24:49 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=0) -- 1 diffs
+04:24:49 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042449_735266_172
+04:24:49 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=31998) -- 1 diffs
+04:24:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042453_269241_173
+04:24:53 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=31998) -- 1 diffs
+04:24:53 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042453_273436_174
+04:24:53 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=31998): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:24:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_index_dos.sam (seed=0) -- 1 diffs
+04:24:57 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042457_225358_175
+04:24:57 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_index_dos.sam (seed=0) -- 1 diffs
+04:24:57 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042457_230046_176
+04:24:57 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index_dos.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:01 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_index_dos.sam (seed=2641600856) -- 1 diffs
+04:25:01 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042501_570342_177
+04:25:01 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_index_dos.sam (seed=2641600856) -- 1 diffs
+04:25:01 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042501_697302_178
+04:25:01 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_index_dos.sam (seed=2641600856) -- 1 diffs
+04:25:01 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042501_702862_179
+04:25:01 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_index_dos.sam (seed=2641600856) -- 1 diffs
+04:25:01 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042501_707483_180
+04:25:01 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_index_dos.sam (seed=2641600856) -- 1 diffs
+04:25:01 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042501_818204_181
+04:25:01 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_index_dos.sam (seed=2641600856): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042505_425568_182
+04:25:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042505_430863_183
+04:25:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042505_434893_184
+04:25:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042505_440266_185
+04:25:05 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:05 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042505_445392_186
+04:25:05 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_70bda767.sam (seed=0): consensus=[], dissent=[]
+04:25:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042509_349320_187
+04:25:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042509_352943_188
+04:25:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042509_358620_189
+04:25:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042509_363988_190
+04:25:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_70bda767.sam (seed=0) -- 1 diffs
+04:25:09 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042509_367012_191
+04:25:09 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_70bda767.sam (seed=0): consensus=[], dissent=[]
+04:25:09 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 44dda30be8fa (SAM @SQ record subtag shuffling invariance) to minimal failing case
+04:25:09 [INFO] test_engine.orchestrator:   MR 44dda30be8fa: Hypothesis found and shrunk a failure
+04:25:09 [INFO] test_engine.orchestrator: Testing MR 27f46a752f05 (SAM @RG record subtag shuffling invariance) -- scope=SAM.header, transforms=['shuffle_rg_record_subtags']
+04:25:09 [INFO] test_engine.orchestrator:   MR 27f46a752f05: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:25:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on literals_htsjdk_cigar_ops.sam (seed=35615) -- 1 diffs
+04:25:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042512_963779_192
+04:25:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on literals_htsjdk_cigar_ops.sam (seed=35615) -- 1 diffs
+04:25:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042512_970870_193
+04:25:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on literals_htsjdk_cigar_ops.sam (seed=35615) -- 1 diffs
+04:25:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042512_974385_194
+04:25:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on literals_htsjdk_cigar_ops.sam (seed=35615) -- 1 diffs
+04:25:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042512_978442_195
+04:25:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on literals_htsjdk_cigar_ops.sam (seed=35615) -- 1 diffs
+04:25:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042512_981299_196
+04:25:12 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on literals_htsjdk_cigar_ops.sam (seed=35615): consensus=['htsjdk', 'reference'], dissent=[]
+04:25:12 [ERROR] test_engine.orchestrator: Transform failed on jazzer_large_1d2b3402.sam (seed=17523): Duplicate optional tags detected: ['X1', 'X1', 'MD', 'RG', 'AM', 'NM', 'SM', 'MQ', 'XT']
+04:25:16 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_tag_depadded.sam (seed=44403) -- 1 diffs
+04:25:16 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042516_398052_197
+04:25:16 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_tag_depadded.sam (seed=44403) -- 1 diffs
+04:25:16 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042516_403434_198
+04:25:16 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_tag_depadded.sam (seed=44403): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_auxf_values.sam (seed=57211) -- 1 diffs
+04:25:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042520_119850_199
+04:25:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_auxf_values.sam (seed=57211) -- 1 diffs
+04:25:20 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042520_125003_200
+04:25:20 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_auxf_values.sam (seed=57211): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=11399) -- 1 diffs
+04:25:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042523_703232_201
+04:25:23 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=11399) -- 1 diffs
+04:25:23 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042523_708801_202
+04:25:23 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=11399): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:26 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on literals_htsjdk_cigar_ops.sam (seed=3614761877) -- 1 diffs
+04:25:26 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042526_972300_203
+04:25:26 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on literals_htsjdk_cigar_ops.sam (seed=3614761877) -- 1 diffs
+04:25:26 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042526_979066_204
+04:25:26 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on literals_htsjdk_cigar_ops.sam (seed=3614761877) -- 1 diffs
+04:25:26 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042526_982985_205
+04:25:26 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on literals_htsjdk_cigar_ops.sam (seed=3614761877) -- 1 diffs
+04:25:26 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042526_986128_206
+04:25:26 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on literals_htsjdk_cigar_ops.sam (seed=3614761877) -- 1 diffs
+04:25:26 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042526_989271_207
+04:25:26 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on literals_htsjdk_cigar_ops.sam (seed=3614761877): consensus=['htsjdk', 'reference'], dissent=[]
+04:25:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_exp_a.sam (seed=61625) -- 1 diffs
+04:25:30 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042530_441545_208
+04:25:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_exp_a.sam (seed=61625) -- 1 diffs
+04:25:30 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042530_452361_209
+04:25:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_exp_a.sam (seed=61625) -- 1 diffs
+04:25:30 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042530_455174_210
+04:25:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_exp_a.sam (seed=61625) -- 1 diffs
+04:25:30 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042530_458314_211
+04:25:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_exp_a.sam (seed=61625) -- 1 diffs
+04:25:30 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042530_466787_212
+04:25:30 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_exp_a.sam (seed=61625): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:25:34 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on htsjdk_coordinate_sorted.sam (seed=0) -- 1 diffs
+04:25:34 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042534_049231_213
+04:25:34 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on htsjdk_coordinate_sorted.sam (seed=0) -- 1 diffs
+04:25:34 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042534_057202_214
+04:25:34 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_coordinate_sorted.sam (seed=0) -- 1 diffs
+04:25:34 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042534_062630_215
+04:25:34 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on htsjdk_coordinate_sorted.sam (seed=0) -- 1 diffs
+04:25:34 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042534_067320_216
+04:25:34 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on htsjdk_coordinate_sorted.sam (seed=0) -- 1 diffs
+04:25:34 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042534_074068_217
+04:25:34 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_coordinate_sorted.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_large_7bb59360.sam (seed=3930092632) -- 1 diffs
+04:25:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042537_569248_218
+04:25:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_7bb59360.sam (seed=3930092632) -- 1 diffs
+04:25:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042537_581462_219
+04:25:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_7bb59360.sam (seed=3930092632) -- 1 diffs
+04:25:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042537_584601_220
+04:25:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_7bb59360.sam (seed=3930092632) -- 1 diffs
+04:25:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042537_587208_221
+04:25:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_large_7bb59360.sam (seed=3930092632) -- 1 diffs
+04:25:37 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042537_591339_222
+04:25:37 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_large_7bb59360.sam (seed=3930092632): consensus=['htsjdk', 'reference'], dissent=[]
+04:25:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_r.sam (seed=48095) -- 1 diffs
+04:25:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042541_339576_223
+04:25:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_r.sam (seed=48095) -- 1 diffs
+04:25:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042541_350645_224
+04:25:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_r.sam (seed=48095) -- 1 diffs
+04:25:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042541_355510_225
+04:25:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_r.sam (seed=48095) -- 1 diffs
+04:25:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042541_359985_226
+04:25:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_r.sam (seed=48095) -- 1 diffs
+04:25:41 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042541_371008_227
+04:25:41 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_r.sam (seed=48095): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:25:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_large_1d2b3402.sam (seed=2147483647) -- 1 diffs
+04:25:44 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042544_970482_228
+04:25:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_1d2b3402.sam (seed=2147483647) -- 1 diffs
+04:25:44 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042544_985830_229
+04:25:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_1d2b3402.sam (seed=2147483647) -- 1 diffs
+04:25:44 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042544_991093_230
+04:25:44 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_1d2b3402.sam (seed=2147483647) -- 1 diffs
+04:25:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042544_995998_231
+04:25:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_large_1d2b3402.sam (seed=2147483647) -- 1 diffs
+04:25:45 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042545_001354_232
+04:25:45 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_1d2b3402.sam (seed=2147483647): consensus=[], dissent=['htsjdk', 'reference']
+04:25:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on htsjdk_coordinate_sorted.sam (seed=158) -- 1 diffs
+04:25:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042548_249791_233
+04:25:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on htsjdk_coordinate_sorted.sam (seed=158) -- 1 diffs
+04:25:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042548_258137_234
+04:25:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_coordinate_sorted.sam (seed=158) -- 1 diffs
+04:25:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042548_263175_235
+04:25:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on htsjdk_coordinate_sorted.sam (seed=158) -- 1 diffs
+04:25:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042548_268294_236
+04:25:48 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on htsjdk_coordinate_sorted.sam (seed=158) -- 1 diffs
+04:25:48 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042548_275295_237
+04:25:48 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_coordinate_sorted.sam (seed=158): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_auxf_values.sam (seed=2873645445) -- 1 diffs
+04:25:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042551_700475_238
+04:25:51 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_auxf_values.sam (seed=2873645445) -- 1 diffs
+04:25:51 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042551_704650_239
+04:25:51 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_auxf_values.sam (seed=2873645445): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:25:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_r.sam (seed=58099) -- 1 diffs
+04:25:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042555_100852_240
+04:25:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_r.sam (seed=58099) -- 1 diffs
+04:25:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042555_119492_241
+04:25:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_r.sam (seed=58099) -- 1 diffs
+04:25:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042555_124303_242
+04:25:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_r.sam (seed=58099) -- 1 diffs
+04:25:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042555_129668_243
+04:25:55 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_r.sam (seed=58099) -- 1 diffs
+04:25:55 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042555_142813_244
+04:25:55 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_r.sam (seed=58099): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:25:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on htsjdk_coordinate_sorted.sam (seed=25758) -- 1 diffs
+04:25:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042559_086030_245
+04:25:59 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on htsjdk_coordinate_sorted.sam (seed=25758) -- 1 diffs
+04:25:59 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042559_091673_246
+04:25:59 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on htsjdk_coordinate_sorted.sam (seed=25758): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=38288) -- 1 diffs
+04:26:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042602_570251_247
+04:26:02 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=38288) -- 1 diffs
+04:26:02 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042602_574037_248
+04:26:02 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=38288): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_exp_a.sam (seed=185) -- 1 diffs
+04:26:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042606_669766_249
+04:26:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_exp_a.sam (seed=185) -- 1 diffs
+04:26:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042606_683693_250
+04:26:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_exp_a.sam (seed=185) -- 1 diffs
+04:26:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042606_687943_251
+04:26:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_exp_a.sam (seed=185) -- 1 diffs
+04:26:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042606_692100_252
+04:26:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_exp_a.sam (seed=185) -- 1 diffs
+04:26:06 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042606_708535_253
+04:26:06 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_exp_a.sam (seed=185): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:26:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_exp_a.sam (seed=58656) -- 1 diffs
+04:26:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042610_369505_254
+04:26:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_exp_a.sam (seed=58656) -- 1 diffs
+04:26:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042610_382812_255
+04:26:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_exp_a.sam (seed=58656) -- 1 diffs
+04:26:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042610_389679_256
+04:26:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_exp_a.sam (seed=58656) -- 1 diffs
+04:26:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042610_397791_257
+04:26:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_exp_a.sam (seed=58656) -- 1 diffs
+04:26:10 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042610_411154_258
+04:26:10 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_exp_a.sam (seed=58656): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:26:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_r.sam (seed=28213) -- 1 diffs
+04:26:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042614_126524_259
+04:26:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_r.sam (seed=28213) -- 1 diffs
+04:26:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042614_135880_260
+04:26:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_r.sam (seed=28213) -- 1 diffs
+04:26:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042614_139407_261
+04:26:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_r.sam (seed=28213) -- 1 diffs
+04:26:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042614_142923_262
+04:26:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_r.sam (seed=28213) -- 1 diffs
+04:26:14 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042614_151665_263
+04:26:14 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_r.sam (seed=28213): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:26:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_realn02_r.sam (seed=206144330) -- 1 diffs
+04:26:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042617_851291_264
+04:26:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_realn02_r.sam (seed=206144330) -- 1 diffs
+04:26:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042617_860923_265
+04:26:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_realn02_r.sam (seed=206144330) -- 1 diffs
+04:26:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042617_862888_266
+04:26:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_realn02_r.sam (seed=206144330) -- 1 diffs
+04:26:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042617_867047_267
+04:26:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_realn02_r.sam (seed=206144330) -- 1 diffs
+04:26:17 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042617_876931_268
+04:26:17 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_realn02_r.sam (seed=206144330): consensus=['htslib', 'reference'], dissent=['htsjdk']
+04:26:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_tag_padded.sam (seed=697997561) -- 1 diffs
+04:26:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042621_395148_269
+04:26:21 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_tag_padded.sam (seed=697997561) -- 1 diffs
+04:26:21 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042621_399180_270
+04:26:21 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_tag_padded.sam (seed=697997561): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:21 [ERROR] test_engine.orchestrator: Transform failed on jazzer_medium_3137e5dc.sam (seed=38922): Duplicate optional tags detected: ['PG', 'NM', 'AS', 'XS', 'RG', 'ZQ', 'PGFFJJJFJJJJJJFJJFJJFJJJJJJJJJJJJJJJJJJJJFFJJJJJJJJJJJJJJJJJJJJFFFAA', 'PG', 'RG']
+04:26:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_tag_padded.sam (seed=3488996807) -- 1 diffs
+04:26:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042624_917035_271
+04:26:24 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_tag_padded.sam (seed=3488996807) -- 1 diffs
+04:26:24 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042624_921763_272
+04:26:24 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_tag_padded.sam (seed=3488996807): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_tag_padded.sam (seed=154) -- 1 diffs
+04:26:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042628_088050_273
+04:26:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_tag_padded.sam (seed=154) -- 1 diffs
+04:26:28 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042628_092051_274
+04:26:28 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_tag_padded.sam (seed=154): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_large_7bb59360.sam (seed=58156) -- 1 diffs
+04:26:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042631_389211_275
+04:26:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_7bb59360.sam (seed=58156) -- 1 diffs
+04:26:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042631_404027_276
+04:26:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_7bb59360.sam (seed=58156) -- 1 diffs
+04:26:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042631_407524_277
+04:26:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_7bb59360.sam (seed=58156) -- 1 diffs
+04:26:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042631_411168_278
+04:26:31 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_large_7bb59360.sam (seed=58156) -- 1 diffs
+04:26:31 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042631_414405_279
+04:26:31 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_large_7bb59360.sam (seed=58156): consensus=['htsjdk', 'reference'], dissent=[]
+04:26:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_large_7bb59360.sam (seed=25532) -- 1 diffs
+04:26:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042635_666646_280
+04:26:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_7bb59360.sam (seed=25532) -- 1 diffs
+04:26:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042635_679140_281
+04:26:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_7bb59360.sam (seed=25532) -- 1 diffs
+04:26:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042635_682735_282
+04:26:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_7bb59360.sam (seed=25532) -- 1 diffs
+04:26:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042635_687004_283
+04:26:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_large_7bb59360.sam (seed=25532) -- 1 diffs
+04:26:35 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042635_691072_284
+04:26:35 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_large_7bb59360.sam (seed=25532): consensus=['htsjdk', 'reference'], dissent=[]
+04:26:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_auxf_values.sam (seed=8388607) -- 1 diffs
+04:26:39 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042639_212074_285
+04:26:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_auxf_values.sam (seed=8388607) -- 1 diffs
+04:26:39 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042639_216177_286
+04:26:39 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_auxf_values.sam (seed=8388607): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on jazzer_large_7bb59360.sam (seed=65536) -- 1 diffs
+04:26:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042642_746545_287
+04:26:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_7bb59360.sam (seed=65536) -- 1 diffs
+04:26:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042642_758254_288
+04:26:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_7bb59360.sam (seed=65536) -- 1 diffs
+04:26:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042642_762385_289
+04:26:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_7bb59360.sam (seed=65536) -- 1 diffs
+04:26:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042642_765931_290
+04:26:42 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on jazzer_large_7bb59360.sam (seed=65536) -- 1 diffs
+04:26:42 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042642_769897_291
+04:26:42 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on jazzer_large_7bb59360.sam (seed=65536): consensus=['htsjdk', 'reference'], dissent=[]
+04:26:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042646_687241_292
+04:26:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042646_693685_293
+04:26:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042646_698133_294
+04:26:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042646_702892_295
+04:26:46 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:46 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042646_706331_296
+04:26:46 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_02475821.sam (seed=39462): consensus=[], dissent=[]
+C:\Users\miaot\AppData\Local\Programs\Python\Python312\Lib\site-packages\hypothesis\core.py:1063: HypothesisWarning: Generating overly large repr. This is an expensive operation, and with a length of 47 kB is unlikely to be useful. Use -Wignore to ignore the warning, or -Werror to get a traceback.
+  text_repr = repr_call(test, args, kwargs)
+04:26:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042650_561698_297
+04:26:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042650_567735_298
+04:26:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042650_572251_299
+04:26:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042650_576218_300
+04:26:50 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_02475821.sam (seed=39462) -- 1 diffs
+04:26:50 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042650_580053_301
+04:26:50 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_02475821.sam (seed=39462): consensus=[], dissent=[]
+04:26:50 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 27f46a752f05 (SAM @RG record subtag shuffling invariance) to minimal failing case
+04:26:50 [INFO] test_engine.orchestrator:   MR 27f46a752f05: Hypothesis found and shrunk a failure
+04:26:50 [INFO] test_engine.orchestrator: Testing MR e9f5e0fe0e71 (SAM @PG record subtag shuffling invariance) -- scope=SAM.header, transforms=['shuffle_pg_record_subtags']
+04:26:50 [INFO] test_engine.orchestrator:   MR e9f5e0fe0e71: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:26:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=0) -- 1 diffs
+04:26:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042654_199812_302
+04:26:54 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=0) -- 1 diffs
+04:26:54 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042654_203873_303
+04:26:54 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:26:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htslib_ce_unmap2.sam (seed=5000) -- 1 diffs
+04:26:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042658_283564_304
+04:26:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on real_world_htslib_ce_unmap2.sam (seed=5000) -- 1 diffs
+04:26:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042658_297073_305
+04:26:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htslib_ce_unmap2.sam (seed=5000) -- 1 diffs
+04:26:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042658_302367_306
+04:26:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on real_world_htslib_ce_unmap2.sam (seed=5000) -- 1 diffs
+04:26:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042658_307099_307
+04:26:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htslib_ce_unmap2.sam (seed=5000) -- 1 diffs
+04:26:58 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042658_319338_308
+04:26:58 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htslib_ce_unmap2.sam (seed=5000): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:27:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on spec_example.sam (seed=0) -- 1 diffs
+04:27:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042703_095818_309
+04:27:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on spec_example.sam (seed=0) -- 1 diffs
+04:27:03 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042703_099929_310
+04:27:03 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on spec_example.sam (seed=0): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:27:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on spec_example.sam (seed=2888581631) -- 1 diffs
+04:27:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042707_199576_311
+04:27:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on spec_example.sam (seed=2888581631) -- 1 diffs
+04:27:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042707_205957_312
+04:27:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on spec_example.sam (seed=2888581631) -- 1 diffs
+04:27:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042707_210658_313
+04:27:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htslib on spec_example.sam (seed=2888581631) -- 1 diffs
+04:27:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042707_214309_314
+04:27:07 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on spec_example.sam (seed=2888581631) -- 1 diffs
+04:27:07 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042707_220896_315
+04:27:07 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on spec_example.sam (seed=2888581631): consensus=['htsjdk', 'htslib', 'reference'], dissent=[]
+04:27:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042712_020888_316
+04:27:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042712_025594_317
+04:27:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042712_030541_318
+04:27:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042712_034803_319
+04:27:12 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:12 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042712_040062_320
+04:27:12 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_70bda767.sam (seed=8810): consensus=[], dissent=[]
+04:27:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: htsjdk on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042715_919187_321
+04:27:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: biopython on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042715_923477_322
+04:27:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042715_928185_323
+04:27:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [parse_error]: htslib on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042715_932355_324
+04:27:15 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: reference on jazzer_large_70bda767.sam (seed=8810) -- 1 diffs
+04:27:15 [INFO] test_engine.triage.report_builder: Bug report created: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\bug_reports\BUG-20260506_042715_937330_325
+04:27:15 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [inconclusive] on jazzer_large_70bda767.sam (seed=8810): consensus=[], dissent=[]
+04:27:15 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR e9f5e0fe0e71 (SAM @PG record subtag shuffling invariance) to minimal failing case
+04:27:15 [INFO] test_engine.orchestrator:   MR e9f5e0fe0e71: Hypothesis found and shrunk a failure
+04:27:15 [INFO] test_engine.orchestrator: Testing MR 319f95e31472 (CIGAR-SEQ length mismatch must be rejected) -- scope=SAM.record, transforms=['violate_cigar_seq_length']
+04:27:15 [INFO] test_engine.orchestrator:   MR 319f95e31472: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:27:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:19 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:23 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 319f95e31472 (CIGAR-SEQ length mismatch must be rejected) to minimal failing case
+04:27:23 [INFO] test_engine.orchestrator:   MR 319f95e31472: Hypothesis found and shrunk a failure
+04:27:23 [INFO] test_engine.orchestrator: Testing MR 99d69275e18a (Flag bit 0x4 mapped/unmapped contradiction must be rejected) -- scope=SAM.record, transforms=['violate_flag_bit_exclusivity']
+04:27:23 [INFO] test_engine.orchestrator:   MR 99d69275e18a: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:27:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:31 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:31 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 99d69275e18a (Flag bit 0x4 mapped/unmapped contradiction must be rejected) to minimal failing case
+04:27:31 [INFO] test_engine.orchestrator:   MR 99d69275e18a: Hypothesis found and shrunk a failure
+04:27:31 [INFO] test_engine.orchestrator: Testing MR fb51ee08fb7d (Optional tag illegal type character must be rejected) -- scope=SAM.record, transforms=['violate_optional_tag_type_character']
+04:27:31 [INFO] test_engine.orchestrator:   MR fb51ee08fb7d: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:27:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:40 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+04:27:40 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR fb51ee08fb7d (Optional tag illegal type character must be rejected) to minimal failing case
+04:27:40 [INFO] test_engine.orchestrator:   MR fb51ee08fb7d: Hypothesis found and shrunk a failure
+04:27:40 [INFO] test_engine.orchestrator: Testing MR 705c9755b48c (TLEN sign consistency violation must be rejected) -- scope=SAM.record, transforms=['violate_tlen_sign_consistency']
+04:27:40 [INFO] test_engine.orchestrator:   MR 705c9755b48c: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+04:28:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on jazzer_small_0725e4b2.sam (seed=1000) — majority crash rejected, this parser voted accept
+04:28:05 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on jazzer_small_0725e4b2.sam (seed=1000) — majority crash rejected, this parser voted accept
+04:28:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on jazzer_small_0725e4b2.sam (seed=1000) — majority crash rejected, this parser voted accept
+04:28:09 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on jazzer_small_0725e4b2.sam (seed=1000) — majority crash rejected, this parser voted accept
+04:28:09 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 705c9755b48c (TLEN sign consistency violation must be rejected) to minimal failing case
+04:28:09 [INFO] test_engine.orchestrator:   MR 705c9755b48c: Hypothesis found and shrunk a failure
+04:28:09 [INFO] test_engine.orchestrator: Test suite complete: 562 tests, 341 metamorphic failures, 82 differential failures, 9 crashes, DET rate=0.7527
+04:28:09 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\data\det_report.json
+04:28:09 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+  Phase C: OK  (5m 58s)
+04:28:09 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\vcf_struct', 'sut_validate': None}
+04:28:09 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\vcf_struct
+04:28:09 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\vcf_rawfuzz'}
+04:28:09 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\vcf_rawfuzz
+04:28:09 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\sam_struct', 'sut_validate': None}
+04:28:09 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\sam_struct
+04:28:09 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\sam_rawfuzz'}
+04:28:09 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\sam_rawfuzz
+  Phase E: OK  (312ms, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │     9m 17s │ 0 enforced, 11 quarantine            │
+│ C: Execute   │   PASS   │     5m 58s │ 562 tests, 325 bugs found            │
+│ E: Augment   │   PASS   │      312ms │ +0 corpus files (VCF: 0 struct + 0   │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)  │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+┌─────────────────────────────── Test Metrics ────────────────────────────────┐
+│                                                                             │
+│  Format Tested                      VCF v4.5                                │
+│  Format Tested                      SAM v1.6                                │
+│  Themes Tested                             7                                │
+│    ordering_invariance                                                      │
+│    semantics_preserving_perm…                                               │
+│    normalization_invariance                                                 │
+│    rejection_invariance                                                     │
+│    coordinate_indexing_invar…                                               │
+│    round_trip_invariance                                                    │
+│    api_query_invariance                                                     │
+│                                                                             │
+│  Seeds Used                              107                                │
+│  Variants Generated                      562                                │
+│  Runners                             htsjdk,                                │
+│                                   biopython,                                │
+│                                       pysam,                                │
+│                                       vcfpy,                                │
+│                                      htslib,                                │
+│                                    reference                                │
+│                                                                             │
+│  Total Tests                             562                                │
+│  Metamorphic Failures                    341                                │
+│  Differential Failures                    82                                │
+│  Crashes                                   9                                │
+│                                                                             │
+│  DET Rate                              75.3%                                │
+│  Bugs / DETs Found                       325                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Total Pipeline Duration:  15m 16s
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BUGS DETECTED — 325 difference-exposing test(s) found. Check bug_reports/   │
+│ for details.                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘

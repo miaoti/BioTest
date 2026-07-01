@@ -1,0 +1,345 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "shuffle_co_comments_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "After shuffling @CO comment lines, the SUT must produce identical output (or semantically equivalent output) compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p5",
+          "quote": "@CO comments are free-text comments with no ordering semantics.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "shuffle_hd_subtags_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs within @HD, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The order of tag-value pairs within a header line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "shuffle_sq_record_subtags_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs within each @SQ record, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The order of tag-value pairs within a header line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "shuffle_rg_record_subtags_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs within each @RG record, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The order of tag-value pairs within a header line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "shuffle_pg_record_subtags_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "After shuffling TAG:VALUE pairs within each @PG record, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The order of tag-value pairs within a header line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "permute_optional_tag_fields_preserves_semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "After permuting the order of optional TAG:TYPE:VALUE fields on alignment records, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Alignment section::p47",
+          "quote": "Each alignment line consists of 11 mandatory fields and a variable number of optional fields. The order of optional fields is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "reorder_header_records_preserves_semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "After reordering @SQ (or @RG) header records, the SUT must produce identical output compared to the original file.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::Header section::p4",
+          "quote": "The order of @SQ lines in the header is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "CIGAR-SEQ length mismatch must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "The SUT must reject the malformed record (raise validation error, crash, or refuse to emit). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::1.4.6 CIGAR::pN",
+          "quote": "Sum of lengths of the M/I/S/=/X operations shall equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Flag bit 0x4 mapped/unmapped contradiction must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "The SUT must reject the record where FLAG 0x4 is set but RNAME is not '*' and POS is not 0. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::1.4.1 Flag field::pN",
+          "quote": "Bit 0x4: the segment is unmapped. If 0x4 is set, RNAME must be '*' and POS must be 0.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Illegal optional tag type character must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "The SUT must reject the record when an optional tag's type character is not one of the allowed types (A, i, f, Z, H, B). Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMtags.tex::2.1 Tag format::pN",
+          "quote": "The type character must be one of: A (character), i (integer), f (float), Z (string), H (hex array), B (general array).",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "TLEN sign consistency violation for paired reads must be rejected",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "The SUT must reject the record pair where both reads of a template carry same-signed TLEN values instead of opposite-signed values. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::1.4 TLEN::pN",
+          "quote": "TLEN: signed observed Template LENgth. If all segments are mapped, the absolute value equals the number of bases from the leftmost mapped base to the rightmost mapped base. The sign of TLEN for the leftmost segment is positive, and for the rightmost segment is negative.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "POS shift with matching SQ length preserves alignment validity",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_with_ln"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting all alignment POS values by +shift and increasing the corresponding @SQ LN by the same shift, the SUT must accept the file as valid (no CIGAR_MAPS_OFF_REFERENCE error) and all alignment coordinates remain consistent with the reference sequence bounds.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM format specification::p0",
+          "quote": "POS: 1-based leftmost mapping position of the alignment. The first base of a reference sequence has coordinate 1.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2ce1f0f9845f",
+      "mr_name": "Unmapped record MAPQ normalization to sentinel 255",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields"
+      ],
+      "oracle": "For records with FLAG bit 0x4 set, normalizing MAPQ to 255 (the spec-defined sentinel for 'not available') must not change the semantic interpretation of the alignment; the SUT must accept both the original and normalized forms equivalently.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM format specification::p0",
+          "quote": "MAPQ: Mapping quality. 255 indicates that the mapping quality is not available.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec says 255 is 'not available' but does not mandate that unmapped reads MUST have MAPQ=255; some tools use 0 instead."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "CIGAR zero-length op removal preserves alignment semantics",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "Removing zero-length CIGAR operations and merging adjacent identical ops must produce a semantically equivalent alignment; the SUT must accept both forms and produce identical results for downstream operations.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM format specification::p0",
+          "quote": "CIGAR: Concise Idiosyncratic Gapped Alignment Report. A CIGAR string is a sequence of operations, each operation is represented by a number followed by an operator.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly forbid zero-length CIGAR ops, but the SAM Recommended Practice recommends adjacent CIGAR operations should be different."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "CIGAR split/merge preserves query and reference coordinate consistency",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "Splitting a CIGAR operation into two identical ops (e.g., 10M -> 4M6M) or merging adjacent identical ops (4M6M -> 10M) must preserve the total query-consumed length and reference-consumed length; the SUT must treat both representations as equivalent.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM format specification::p0",
+          "quote": "The sum of lengths of the M/I/S/=/X operations MUST equal the length of SEQ.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 15,
+    "total": 15
+  }
+}

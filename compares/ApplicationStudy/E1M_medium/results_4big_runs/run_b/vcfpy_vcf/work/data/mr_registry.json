@@ -1,0 +1,124 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information line order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has at least 2 meta-information lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) — the canonical parsed representation must be identical after shuffling meta-information lines (except ##fileformat which stays first)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured INFO/FORMAT header key-value pair order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header has at least one ##INFO, ##FORMAT, or ##FILTER structured line with multiple key=value pairs"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) — reordering key=value pairs inside structured meta-lines produces identical canonical output",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key-value order invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least one data row with 2+ INFO key=value pairs"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) — shuffling semicolon-separated key=value pairs in the INFO column produces identical canonical output",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has at least 2 sample columns"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after re-indexing sample IDs — the set of sample genotypes and FORMAT values is preserved under column permutation",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly mandate sample column order invariance, but sample columns are identified by header ID, not position"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header has multiple ##INFO, ##FORMAT, or ##contig entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) — BCF codec re-indexes dictionary entries so declaration order is irrelevant per VCF v4.5 §6.2.1",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF dictionary encoding::p122",
+          "quote": "The order of dictionary entries is implementation-defined; a BCF decoder must use the index from the dictionary, not assume any particular declaration order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
+  }
+}

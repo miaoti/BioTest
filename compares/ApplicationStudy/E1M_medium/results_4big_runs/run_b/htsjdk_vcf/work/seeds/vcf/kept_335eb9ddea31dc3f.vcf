@@ -1,0 +1,18 @@
+##fileformat=VCFv4.2
+##ALT=<ID=DEL,Description="Deletion">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="ID of mate breakend">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##fileDate=20231001
+##reference=file:///ref/hg38.fa
+##source=testSeedGenerator
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	500	bnd1	A	A]chr2:1000]	60	PASS	IMPRECISE;MATEID=bnd2;SVTYPE=BND	GT:GQ	0/1:99
+chr2	1000	bnd2	T	[chr1:500[T	60	PASS	IMPRECISE;MATEID=bnd1;SVTYPE=BND	GT:GQ	1/0:99
+chr1	1500	bnd3	C	C[chr2:2000[	45	PASS	MATEID=bnd4;SVTYPE=BND	GT:GQ	1/1:80
+chr2	2000	bnd4	G	]chr1:1500]G	45	PASS	MATEID=bnd3;SVTYPE=BND	GT:GQ	0/0:80

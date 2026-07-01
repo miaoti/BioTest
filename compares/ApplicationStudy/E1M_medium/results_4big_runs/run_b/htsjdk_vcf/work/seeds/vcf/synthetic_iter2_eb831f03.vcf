@@ -1,0 +1,18 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=testSeedGenerator
+##reference=file:///ref/hg38.fa
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##INFO=<ID=FLAG1,Number=0,Type=Flag,Description="Test flag without value">
+##INFO=<ID=CHAR1,Number=1,Type=Character,Description="Test character type">
+##INFO=<ID=QS,Number=1,Type=String,Description="Quoted string with special chars">
+##INFO=<ID=MS,Number=1,Type=String,Description="Missing value test">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=TC,Number=1,Type=String,Description="Trailing colon test">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	1	edge1	A	T	.	.	FLAG1;CHAR1=X;QS="value,with;commas";MS=.	GT:GQ:DP:TC	0/1:99:30:test:
+chr1	2147483648	edge2	C	G	50	PASS	FLAG1;CHAR1=Y;QS="another;test,string";MS=missing	GT:GQ:DP:TC	1/1:80:25:value:
+chr2	1	edge3	G	A	60	PASS	FLAG1;CHAR1=Z;QS="third,test;string";MS=.	GT:GQ:DP:TC	0/0:100:40:trailing:

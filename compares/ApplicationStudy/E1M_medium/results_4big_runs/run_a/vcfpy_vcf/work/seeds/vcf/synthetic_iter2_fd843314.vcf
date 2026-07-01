@@ -1,0 +1,15 @@
+##fileformat=VCFv4.3
+##fileDate=20231001
+##source=test_generator
+##reference=GRCh38
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##contig=<ID=chr3,length=198295559>
+##INFO=<ID=MATEID,Number=1,Type=String,Description="Mate ID for breakend records">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	100000	bnd1	A	A]chr2:200000]	60	PASS	SVTYPE=BND;MATEID=bnd2	GT	0/1
+chr2	200000	bnd2	T	T]chr1:100000]	60	PASS	SVTYPE=BND;MATEID=bnd1	GT	1/1
+chr1	150000	bnd3	G	[chr3:300000[G	50	PASS	SVTYPE=BND;MATEID=bnd4	GT	0/0
+chr3	300000	bnd4	C	C[chr1:150000[	50	PASS	SVTYPE=BND;MATEID=bnd3	GT	0/1

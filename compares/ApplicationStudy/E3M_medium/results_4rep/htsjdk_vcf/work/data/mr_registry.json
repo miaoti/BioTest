@@ -1,0 +1,163 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information line order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has at least 2 meta-information lines beyond ##fileformat"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts all meta-information content (ignoring line order)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured header key-value pair order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header contains at least one ##INFO, ##FORMAT, or ##FILTER structured line with multiple key=value pairs"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts the semantic content of structured header lines ignoring key=value order",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Structured header lines::p126",
+          "quote": "The order of key=value pairs within a structured header line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key-value order invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least one data record has multiple INFO sub-fields (semicolon-separated key=value pairs)"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts INFO field content ignoring the order of key=value pairs",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO field::p130",
+          "quote": "INFO fields are encoded as semicolon-separated key=value pairs; the order of these pairs is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header has multiple ##INFO, ##FORMAT, or ##contig entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts the canonical JSON representation; BCF codec re-indexes dictionary entries so order is irrelevant",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF dictionary order::p145",
+          "quote": "The order of dictionary entries in the BCF header is implementation-defined; parsers must use the dictionary index, not the declaration order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "BCF dictionary order is implementation-defined per spec, so some implementations may produce different internal indices but semantically equivalent output"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "at least 2 sample columns in the VCF header"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts genotype and format data keyed by sample ID (not column index)",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Sample columns::p115",
+          "quote": "Sample columns are identified by their column header IDs; the order of sample columns is not semantically significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with consistent remapping of dependent fields",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count >= 2",
+        "format_has_gt",
+        "header_has_info_number_a OR header_has_format_number_a OR header_has_info_number_r OR header_has_format_number_r OR header_has_number_g"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles and remapping GT indices and Number=A/R/G fields accordingly, the parsed variant semantics must be identical: all allele indices in GT fields correctly reference the reordered ALT list (0=REF unchanged), Number=A values are permuted by the same permutation, Number=R values have REF (index 0) fixed and ALT values permuted, and Number=G values are remapped according to the new allele ordering. The SUT must produce identical query results for getNAlleles(), isBiallelic(), getType(), isSNP(), isIndel(), isVariant(), getStart(), getEnd(), getChr(), getContig(), getID(), getPhredScaledQual(), filtersWereApplied(), isFiltered(), hasGenotypes(), getNSamples(), and getCalledChrCount() before and after the transform.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::pN",
+          "quote": "ALT: alternate base(s); comma-separated list of alternate non-reference alleles. If there are no alternative alleles, then the missing value symbol '.' must be used.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::pN",
+          "quote": "GT: genotype, encoded as allele values separated by either of '/' or '|', e.g. 0/1 or 0|1. The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele in ALT, 2 for the second allele in ALT, etc.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::pN",
+          "quote": "Number=A means one value per alternate allele; Number=R means one value for each possible allele, including the reference; Number=G means one value for each possible genotype.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 6,
+    "total": 6
+  }
+}

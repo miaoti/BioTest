@@ -1,0 +1,340 @@
+[harness_run/E3M] mode = E3M
+[harness_run/E3M] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex — RAG retrieval returns nothing)
+[harness_run/E3M] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB chunk_id validation)
+[harness_run/E3M] pre-import patch: static prompt: UNCHANGED (compound-group rule + transform descriptions + behavior hints all retained)
+[harness_run/E3M] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+08:13:23 [WARNING] test_engine.generators.z3_constraints: z3-solver not available; Z3 constraints will be skipped
+[harness_run/E3M] phase_c patch: orchestrator.settings: wrapped: Phase.shrink stripped, deadline=5000ms
+[harness_run/E3M] config: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/run_2/biotest_config.rep2.yaml
+[harness_run/E3M] phase_filter: B,C,E
+  Phase B format derived from phase_c.format_filter=VCF
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_writer', 'pysam_runtime_reachable']
+  Mining VCF / ordering_invariance...
+08:13:25 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:13:25 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=ordering_invariance (attempt 1)
+08:14:06 [INFO] mr_engine.dsl.compiler: Compiled 5 MRs successfully
+08:14:06 [INFO] mr_engine.agent.engine: Successfully compiled 5 MRs on attempt 1
+    OK mined 5 MR(s) for VCF/ordering_invariance
+  Mining VCF / semantics_preserving_permutation...
+08:14:07 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:14:07 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=semantics_preserving_permutation (attempt 1)
+08:14:35 [INFO] mr_engine.dsl.compiler: Compiled 1 MRs successfully
+08:14:35 [INFO] mr_engine.agent.engine: Successfully compiled 1 MRs on attempt 1
+    OK mined 1 MR(s) for VCF/semantics_preserving_permutation
+  Mining VCF / normalization_invariance...
+08:14:35 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:14:35 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=normalization_invariance (attempt 1)
+08:15:11 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+08:15:11 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+08:15:43 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+08:15:43 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+08:16:04 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+08:16:04 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+08:16:29 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/normalization_invariance: No MRs were produced after 
+compilation.
+  Mining VCF / rejection_invariance...
+08:16:29 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:16:29 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=rejection_invariance (attempt 1)
+08:16:57 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+08:16:57 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+08:17:36 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+08:17:36 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/rejection_invariance — emitting empty MR array (no applicable evidence).
+08:17:36 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+08:17:36 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/rejection_invariance; terminating theme cleanly.
+    0 MRs for VCF/rejection_invariance: no relations returned
+  Mining VCF / coordinate_indexing_invariance...
+08:17:36 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:17:36 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=coordinate_indexing_invariance (attempt 1)
+08:18:08 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+08:18:08 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+08:18:28 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+08:18:28 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+08:18:47 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+08:18:47 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+08:19:10 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/coordinate_indexing_invariance: No MRs were produced after 
+compilation.
+  Mining VCF / round_trip_invariance...
+08:19:10 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:19:10 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=round_trip_invariance (attempt 1)
+08:19:58 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+08:19:58 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+08:20:41 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+08:20:41 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+08:21:20 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+08:21:20 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+08:21:44 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for VCF/round_trip_invariance: No MRs were produced after compilation.
+  Mining VCF / api_query_invariance...
+08:21:44 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+08:21:44 [INFO] mr_engine.agent.engine: Mining MRs: format=VCF, target=api_query_invariance (attempt 1)
+08:22:18 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): No MRs were produced after compilation.
+08:22:18 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+08:23:00 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+08:23:00 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for VCF/api_query_invariance — emitting empty MR array (no applicable evidence).
+08:23:00 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+08:23:00 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for VCF/api_query_invariance; terminating theme cleanly.
+    0 MRs for VCF/api_query_invariance: no relations returned
+08:23:00 [INFO] mr_engine.registry: Triage result: 0 enforced, 6 quarantine
+08:23:00 [INFO] mr_engine.registry: Registry exported to /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/data/mr_registry.json (6 MRs)
+  Phase B: OK  (8m 57s)
+08:23:02 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=/work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage, source=['/usr/local/lib/python3.12/dist-packages/Bio/Align', '/usr/local/lib/python3.12/dist-packages/vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=24 modules)
+08:23:02 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+08:23:02 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+08:23:02 [INFO] test_engine.orchestrator: Loaded 6 MRs from registry (enforced=0, quarantine=6)
+08:23:02 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'seqan3', 'pysam', 'vcfpy', 'noodles', 'reference']
+08:23:02 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+08:23:02 [INFO] test_engine.orchestrator: Testing MR ffbe4a62d130 (Shuffle meta-information lines preserves semantics) -- scope=VCF.header, transforms=['shuffle_meta_lines']
+08:23:06 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:06 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082306_250748_1
+08:23:08 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:08 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082308_872068_2
+08:23:08 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR ffbe4a62d130 (Shuffle meta-information lines preserves semantics) to minimal failing case
+08:23:08 [INFO] test_engine.orchestrator:   MR ffbe4a62d130: Hypothesis found and shrunk a failure
+08:23:08 [INFO] test_engine.orchestrator: Testing MR bc124d1e4573 (Permute structured header key-value order) -- scope=VCF.header, transforms=['permute_structured_kv_order']
+08:23:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082310_510280_3
+08:23:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082310_557297_4
+08:23:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082310_611990_5
+08:23:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082310_647274_6
+08:23:10 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:10 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082310_671045_7
+08:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+08:23:13 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082313_028227_8
+08:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+08:23:13 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082313_194423_9
+08:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+08:23:13 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082313_265195_10
+08:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+08:23:13 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082313_313511_11
+08:23:13 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_csq.vcf (seed=0) -- 1 diffs
+08:23:13 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082313_354515_12
+08:23:16 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_csq.vcf (seed=42084) -- 1 diffs
+08:23:17 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082316_114661_13
+08:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_csq.vcf (seed=42084) -- 1 diffs
+08:23:17 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082317_577019_14
+08:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_csq.vcf (seed=42084) -- 1 diffs
+08:23:17 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082317_753144_15
+08:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_csq.vcf (seed=42084) -- 1 diffs
+08:23:17 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082317_870751_16
+08:23:17 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_csq.vcf (seed=42084) -- 1 diffs
+08:23:18 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082317_955963_17
+08:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_missing.vcf (seed=0) -- 1 diffs
+08:23:20 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082320_471809_18
+08:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_missing.vcf (seed=0) -- 1 diffs
+08:23:20 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082320_558568_19
+08:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_missing.vcf (seed=0) -- 1 diffs
+08:23:20 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082320_641808_20
+08:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_missing.vcf (seed=0) -- 1 diffs
+08:23:20 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082320_708020_21
+08:23:20 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_missing.vcf (seed=0) -- 1 diffs
+08:23:20 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082320_750421_22
+08:23:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_missing.vcf (seed=2000) -- 1 diffs
+08:23:25 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082325_737858_23
+08:23:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_missing.vcf (seed=2000) -- 1 diffs
+08:23:25 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082325_803044_24
+08:23:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_missing.vcf (seed=2000) -- 1 diffs
+08:23:25 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082325_852685_25
+08:23:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_missing.vcf (seed=2000) -- 1 diffs
+08:23:25 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082325_886322_26
+08:23:25 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_missing.vcf (seed=2000) -- 1 diffs
+08:23:25 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082325_915453_27
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+08:23:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:27 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082327_861615_28
+08:23:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:27 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082327_903813_29
+08:23:27 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:28 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082327_937056_30
+08:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:28 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082328_069042_31
+08:23:28 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:28 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082328_217602_32
+08:23:28 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+[E::bcf_hdr_parse_sample_line] Could not parse the "#CHROM.." line, either FORMAT is missing or spaces are present instead of tabs:
+	#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	
+
+08:23:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082330_686433_33
+08:23:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: pysam on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082330_756284_34
+08:23:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082330_789997_35
+08:23:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [crash]: noodles on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082330_897601_36
+08:23:30 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0) -- 1 diffs
+08:23:30 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082330_924934_37
+08:23:30 [WARNING] test_engine.orchestrator:   DIFFERENTIAL [against_consensus] on real_world_htsjdk_dbsnp_135.b37.1000.vcf (seed=0): consensus=['htsjdk', 'reference', 'vcfpy'], dissent=[]
+08:23:31 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR bc124d1e4573 (Permute structured header key-value order) to minimal failing case
+08:23:31 [INFO] test_engine.orchestrator:   MR bc124d1e4573: Hypothesis found and shrunk a failure
+08:23:31 [INFO] test_engine.orchestrator: Testing MR 31e4b85ca55b (Shuffle INFO field key-value pairs in data lines) -- scope=VCF.record, transforms=['shuffle_info_field_kv']
+08:23:32 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:33 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082332_961581_38
+08:23:35 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:35 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082335_372253_39
+08:23:35 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 31e4b85ca55b (Shuffle INFO field key-value pairs in data lines) to minimal failing case
+08:23:35 [INFO] test_engine.orchestrator:   MR 31e4b85ca55b: Hypothesis found and shrunk a failure
+08:23:35 [INFO] test_engine.orchestrator: Testing MR f335b8c5d509 (Permute sample column order preserves variant semantics) -- scope=VCF.record, transforms=['permute_sample_columns']
+08:23:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082337_584638_40
+08:23:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082337_634554_41
+08:23:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082337_682062_42
+08:23:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082337_721193_43
+08:23:37 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+08:23:37 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082337_748746_44
+08:23:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_af_dist.vcf (seed=0) -- 1 diffs
+08:23:39 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082339_599437_45
+08:23:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_af_dist.vcf (seed=0) -- 1 diffs
+08:23:39 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082339_698177_46
+08:23:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_af_dist.vcf (seed=0) -- 1 diffs
+08:23:39 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082339_749235_47
+08:23:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_af_dist.vcf (seed=0) -- 1 diffs
+08:23:39 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082339_830825_48
+08:23:39 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_af_dist.vcf (seed=0) -- 1 diffs
+08:23:40 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082339_915086_49
+08:23:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_af_dist.vcf (seed=114) -- 1 diffs
+08:23:41 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082341_630935_50
+08:23:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_af_dist.vcf (seed=114) -- 1 diffs
+08:23:41 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082341_688370_51
+08:23:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_af_dist.vcf (seed=114) -- 1 diffs
+08:23:41 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082341_741487_52
+08:23:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_af_dist.vcf (seed=114) -- 1 diffs
+08:23:41 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082341_808355_53
+08:23:41 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_af_dist.vcf (seed=114) -- 1 diffs
+08:23:41 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082341_870200_54
+08:23:43 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_annotate.vcf (seed=0) -- 7 diffs
+08:23:43 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082343_727744_55
+08:23:45 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_annotate.vcf (seed=0) -- 7 diffs
+08:23:45 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082345_920347_56
+08:23:45 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR f335b8c5d509 (Permute sample column order preserves variant semantics) to minimal failing case
+08:23:45 [INFO] test_engine.orchestrator:   MR f335b8c5d509: Hypothesis found and shrunk a failure
+08:23:45 [INFO] test_engine.orchestrator: Testing MR 9746c6e5c109 (Permute BCF header dictionary order) -- scope=VCF.header, transforms=['permute_bcf_header_dictionary']
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmpryf6xtbw.bcf'
+08:23:52 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:53 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082352_995323_57
+[E::idx_find_and_load] Could not retrieve index file for '/tmp/tmpzrh9u5pk.bcf'
+08:23:58 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on bcftools_test.vcf (seed=0) -- 7 diffs
+08:23:58 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082358_077275_58
+08:23:58 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 9746c6e5c109 (Permute BCF header dictionary order) to minimal failing case
+08:23:58 [INFO] test_engine.orchestrator:   MR 9746c6e5c109: Hypothesis found and shrunk a failure
+08:23:58 [INFO] test_engine.orchestrator: Testing MR 2af5800ea12a (ALT allele permutation with consistent remapping of dependent fields) -- scope=VCF.record, transforms=['choose_permutation', 'permute_ALT', 'remap_GT', 'permute_Number_A_R_fields']
+08:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on bcftools_test.vcf (seed=0) -- 1 diffs
+08:24:03 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082403_243453_59
+08:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on bcftools_test.vcf (seed=0) -- 1 diffs
+08:24:03 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082403_423653_60
+08:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on bcftools_test.vcf (seed=0) -- 1 diffs
+08:24:03 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082403_504211_61
+08:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on bcftools_test.vcf (seed=0) -- 1 diffs
+08:24:03 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082403_588492_62
+08:24:03 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on bcftools_test.vcf (seed=0) -- 1 diffs
+08:24:03 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082403_671458_63
+08:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: htsjdk on real_world_bcftools_view.vcf (seed=0) -- 1 diffs
+08:24:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082409_232250_64
+08:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: pysam on real_world_bcftools_view.vcf (seed=0) -- 1 diffs
+08:24:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082409_404283_65
+08:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: vcfpy on real_world_bcftools_view.vcf (seed=0) -- 1 diffs
+08:24:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082409_522756_66
+08:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: noodles on real_world_bcftools_view.vcf (seed=0) -- 1 diffs
+08:24:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082409_691169_67
+08:24:09 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [mr_invalid]: reference on real_world_bcftools_view.vcf (seed=0) -- 1 diffs
+08:24:09 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082409_814783_68
+08:24:14 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_view.vcf (seed=1996) -- 7 diffs
+08:24:14 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082414_600130_69
+08:24:19 [WARNING] test_engine.orchestrator:   METAMORPHIC FAILURE [against_consensus]: noodles on real_world_bcftools_view.vcf (seed=1996) -- 7 diffs
+08:24:19 [INFO] test_engine.triage.report_builder: Bug report created: /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/bug_reports/BUG-20260506_082419_494372_70
+08:24:19 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 2af5800ea12a (ALT allele permutation with consistent remapping of dependent fields) to minimal failing case
+08:24:19 [INFO] test_engine.orchestrator:   MR 2af5800ea12a: Hypothesis found and shrunk a failure
+08:24:19 [INFO] test_engine.orchestrator: Test suite complete: 132 tests, 70 metamorphic failures, 2 differential failures, 0 crashes, DET rate=0.5455
+08:24:19 [INFO] test_engine.oracles.det_tracker: DET report exported to /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/data/det_report.json
+08:24:22 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/coverage_artifacts/.coverage (14 files traced with >0 lines)
+  Phase C: OK  (1m 13s)
+08:24:22 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/vcf_struct', 'sut_validate': None}
+08:24:22 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/vcf_struct
+08:24:22 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': '/work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/vcf_rawfuzz'}
+08:24:22 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/vcf_rawfuzz
+08:24:23 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/sam_struct', 'sut_validate': None}
+08:24:23 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/sam_struct
+08:24:24 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': '/work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/sam_rawfuzz'}
+08:24:24 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in /work/compares/ApplicationStudy/E3M_medium/results_4rep/noodles_vcf/work/seeds/sam_rawfuzz
+  Phase E: OK  (2.0s, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ───────────────────────────────
+
+                                 Phase Results                                  
+╭──────────────┬──────────┬────────────┬───────────────────────────────────────╮
+│ Phase        │  Status  │   Duration │ Details                               │
+├──────────────┼──────────┼────────────┼───────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                              │
+│ B: Mine MRs  │   PASS   │     8m 57s │ 0 enforced, 6 quarantine              │
+│ C: Execute   │   PASS   │     1m 13s │ 132 tests, 70 bugs found              │
+│ E: Augment   │   PASS   │       2.0s │ +0 corpus files (VCF: 0 struct + 0    │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)   │
+╰──────────────┴──────────┴────────────┴───────────────────────────────────────╯
+
+╭──────────────────────────────── Test Metrics ────────────────────────────────╮
+│                                                                              │
+│  Format Tested                      VCF v4.5                                 │
+│  Format Tested                      SAM v1.6                                 │
+│  Themes Tested                             7                                 │
+│    ordering_invariance                                                       │
+│    semantics_preserving_perm…                                                │
+│    normalization_invariance                                                  │
+│    rejection_invariance                                                      │
+│    coordinate_indexing_invar…                                                │
+│    round_trip_invariance                                                     │
+│    api_query_invariance                                                      │
+│                                                                              │
+│  Seeds Used                              107                                 │
+│  Variants Generated                      132                                 │
+│  Runners                             htsjdk,                                 │
+│                                   biopython,                                 │
+│                                      seqan3,                                 │
+│                                       pysam,                                 │
+│                                       vcfpy,                                 │
+│                                     noodles,                                 │
+│                                    reference                                 │
+│                                                                              │
+│  Total Tests                             132                                 │
+│  Metamorphic Failures                     70                                 │
+│  Differential Failures                     2                                 │
+│  Crashes                                   0                                 │
+│                                                                              │
+│  DET Rate                              54.5%                                 │
+│  Bugs / DETs Found                        70                                 │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+  Total Pipeline Duration:  10m 14s
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ BUGS DETECTED — 70 difference-exposing test(s) found. Check bug_reports/ for │
+│ details.                                                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯

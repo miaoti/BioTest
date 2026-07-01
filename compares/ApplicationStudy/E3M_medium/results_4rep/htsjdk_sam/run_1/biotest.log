@@ -1,0 +1,215 @@
+[harness_run/E3M] mode = E3M
+[harness_run/E3M] pre-import patch: tools.get_ephemeral_index: stub (empty SpecIndex � RAG retrieval returns nothing)
+[harness_run/E3M] pre-import patch: compiler._hydrate_evidence: stub (no ChromaDB chunk_id validation)
+[harness_run/E3M] pre-import patch: static prompt: UNCHANGED (compound-group rule + transform descriptions + behavior hints all retained)
+[harness_run/E3M] post-import patch: biotest.run_phase_e: replaced (cfg-driven seeds_root)
+[harness_run/E3M] phase_c patch: orchestrator.settings: wrapped: Phase.shrink stripped, deadline=5000ms
+[harness_run/E3M] config: C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\run_1\biotest_config.rep1.yaml
+[harness_run/E3M] phase_filter: B,C,E
+  Phase B format derived from phase_c.format_filter=SAM
+  Runtime capabilities for Phase B menu: ['bcf_codec_available', 
+'cram_reference_available', 'htsjdk_runtime_reachable', 
+'primary_sut_has_query_methods', 'primary_sut_has_writer', 
+'pysam_runtime_reachable', 'samtools_available']
+  Discovered 42 query methods on primary htsjdk for Rank 5
+  Mining SAM / ordering_invariance...
+03:01:58 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:01:58 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=ordering_invariance (attempt 1)
+03:02:32 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:02:32 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:02:56 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:02:56 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:03:26 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:03:26 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:03:57 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+    0 MRs for SAM/ordering_invariance: Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR
+  Mining SAM / semantics_preserving_permutation...
+03:03:57 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:03:57 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=semantics_preserving_permutation (attempt 1)
+03:04:28 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:04:28 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:05:20 [WARNING] mr_engine.agent.engine: GraphRecursionError on attempt 2; falling back to single-shot synthesis (and skipping ReAct on future retries).
+03:05:20 [INFO] mr_engine.agent.engine: Fallback retrieval produced no below-threshold chunks for SAM/semantics_preserving_permutation — emitting empty MR array (no applicable evidence).
+03:05:20 [INFO] mr_engine.agent.engine: Synthesis fallback produced 2 chars of output
+03:05:20 [INFO] mr_engine.agent.engine: Synthesis returned empty array — no applicable MRs for SAM/semantics_preserving_permutation; terminating theme cleanly.
+    0 MRs for SAM/semantics_preserving_permutation: no relations returned
+  Mining SAM / normalization_invariance...
+03:05:20 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:05:20 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=normalization_invariance (attempt 1)
+03:05:54 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:05:54 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:06:20 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:06:20 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:06:43 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:06:43 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:07:04 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/normalization_invariance: No MRs were produced after 
+compilation.
+  Mining SAM / rejection_invariance...
+03:07:04 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:07:04 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=rejection_invariance (attempt 1)
+03:07:45 [INFO] mr_engine.dsl.compiler: Compiled 4 MRs successfully
+03:07:45 [INFO] mr_engine.agent.engine: Successfully compiled 4 MRs on attempt 1
+    OK mined 4 MR(s) for SAM/rejection_invariance
+  Mining SAM / coordinate_indexing_invariance...
+03:07:45 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:07:45 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=coordinate_indexing_invariance (attempt 1)
+03:08:19 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:08:19 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:08:49 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:08:49 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:09:05 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:09:05 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:09:23 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/coordinate_indexing_invariance: No MRs were produced after 
+compilation.
+  Mining SAM / round_trip_invariance...
+03:09:23 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:09:23 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=round_trip_invariance (attempt 1)
+03:10:19 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:10:19 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:10:51 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:10:51 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:11:08 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): No MRs were produced after compilation.
+03:11:08 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:11:29 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/round_trip_invariance: No MRs were produced after 
+compilation.
+  Mining SAM / api_query_invariance...
+03:11:29 [INFO] mr_engine.llm_factory: Initialized DeepSeek model 'deepseek-chat' at https://api.deepseek.com/v1
+03:11:29 [INFO] mr_engine.agent.engine: Mining MRs: format=SAM, target=api_query_invariance (attempt 1)
+03:12:00 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 1): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+  MR[1].: Value error, MR must have at least one evidence citation
+  MR[2].: Value error, MR must have at
+03:12:00 [INFO] mr_engine.agent.engine: Retry 1/3: feeding validation error back to agent
+03:12:31 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 2): No MRs were produced after compilation.
+03:12:31 [INFO] mr_engine.agent.engine: Retry 2/3: feeding validation error back to agent
+03:12:55 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 3): Pydantic validation errors:
+  MR[0].: Value error, MR must have at least one evidence citation
+03:12:55 [INFO] mr_engine.agent.engine: Retry 3/3: feeding validation error back to agent
+03:13:17 [WARNING] mr_engine.agent.engine: Compilation failed (attempt 4): No MRs were produced after compilation.
+    0 MRs for SAM/api_query_invariance: No MRs were produced after compilation.
+03:13:17 [INFO] mr_engine.registry: Triage result: 0 enforced, 4 quarantine
+03:13:17 [INFO] mr_engine.registry: Registry exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\data\mr_registry.json (4 MRs)
+  Phase B: OK  (11m 22s)
+03:13:17 [INFO] test_engine.feedback.coverage_collector: Python coverage started (data_file=C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\coverage_artifacts\.coverage, source=['C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\Bio\\Align', 'C:\\Users\\miaot\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\vcfpy'], source_pkgs=['Bio.Align', 'vcfpy'], evicted=26 modules)
+03:13:17 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+03:13:17 [INFO] test_engine.generators.seeds: Seed corpus loaded: 33 VCF seeds, 74 SAM seeds
+03:13:17 [INFO] test_engine.orchestrator: Loaded 4 MRs from registry (enforced=0, quarantine=4)
+03:13:17 [INFO] test_engine.orchestrator: Available runners: ['htsjdk', 'biopython', 'pysam', 'vcfpy', 'htslib', 'reference']
+03:13:17 [INFO] test_engine.orchestrator: Execution mode: hypothesis
+03:13:17 [INFO] test_engine.orchestrator: Testing MR 319f95e31472 (CIGAR-SEQ length mismatch must be rejected) -- scope=SAM.record, transforms=['violate_cigar_seq_length']
+03:13:17 [INFO] test_engine.orchestrator:   MR 319f95e31472: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+03:13:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:23 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:27 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:27 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 319f95e31472 (CIGAR-SEQ length mismatch must be rejected) to minimal failing case
+03:13:27 [INFO] test_engine.orchestrator:   MR 319f95e31472: Hypothesis found and shrunk a failure
+03:13:27 [INFO] test_engine.orchestrator: Testing MR 99d69275e18a (Flag bit exclusivity - mapped read with unmapped flag must be rejected) -- scope=SAM.record, transforms=['violate_flag_bit_exclusivity']
+03:13:27 [INFO] test_engine.orchestrator:   MR 99d69275e18a: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+03:13:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:32 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:36 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:36 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR 99d69275e18a (Flag bit exclusivity - mapped read with unmapped flag must be rejected) to minimal failing case
+03:13:36 [INFO] test_engine.orchestrator:   MR 99d69275e18a: Hypothesis found and shrunk a failure
+03:13:36 [INFO] test_engine.orchestrator: Testing MR fb51ee08fb7d (Optional tag type character must be valid - illegal type must be rejected) -- scope=SAM.record, transforms=['violate_optional_tag_type_character']
+03:13:36 [INFO] test_engine.orchestrator:   MR fb51ee08fb7d: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+03:13:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:41 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: htsjdk on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:46 [WARNING] test_engine.orchestrator:   REJECTION FAILURE [silent_accept_bug]: reference on complex_cigar.sam (seed=0) — majority crash rejected, this parser voted accept
+03:13:46 [INFO] test_engine.orchestrator:   Hypothesis shrunk MR fb51ee08fb7d (Optional tag type character must be valid - illegal type must be rejected) to minimal failing case
+03:13:46 [INFO] test_engine.orchestrator:   MR fb51ee08fb7d: Hypothesis found and shrunk a failure
+03:13:46 [INFO] test_engine.orchestrator: Testing MR 705c9755b48c (TLEN sign consistency for paired reads must be enforced) -- scope=SAM.record, transforms=['violate_tlen_sign_consistency']
+03:13:46 [INFO] test_engine.orchestrator:   MR 705c9755b48c: scaled max_examples 50 -> 75 (SAM corpus=74, baseline=33)
+03:14:08 [ERROR] test_engine.orchestrator:   Hypothesis error for MR 705c9755b48c: Test took 8350.32ms, which exceeds the deadline of 5000.00ms. If you expect test cases to take this long, you can use @settings(deadline=...) to either set a higher deadline, or to disable it with deadline=None.
+03:14:08 [INFO] test_engine.orchestrator:   MR 705c9755b48c: Hypothesis explored 75 examples — no failures
+03:14:08 [INFO] test_engine.orchestrator: Test suite complete: 45 tests, 12 metamorphic failures, 0 differential failures, 0 crashes, DET rate=0.2667
+03:14:08 [INFO] test_engine.oracles.det_tracker: DET report exported to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\data\det_report.json
+03:14:08 [INFO] test_engine.feedback.coverage_collector: Python coverage saved to C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\coverage_artifacts\.coverage (14 files traced with >0 lines)
+  Phase C: OK  (50.9s)
+03:14:08 [INFO] structural_diversifier: structural_diversifier result: {'sources': 33, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 1, 'rejected_duplicate': 163, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\vcf_struct', 'sut_validate': None}
+03:14:08 [INFO] biotest: Phase E (E1-isolated): Rank 12 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\vcf_struct
+03:14:08 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 33, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 330, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 320, 'rejected_size': 10, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\vcf_rawfuzz'}
+03:14:08 [INFO] biotest: Phase E (E1-isolated): Rank 13 (VCF) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\vcf_rawfuzz
+03:14:08 [INFO] structural_diversifier: structural_diversifier result: {'sources': 74, 'max_per_seed': 200, 'kept': 0, 'rejected_invalid': 0, 'rejected_duplicate': 100, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\sam_struct', 'sut_validate': None}
+03:14:08 [INFO] biotest: Phase E (E1-isolated): Rank 12 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\sam_struct
+03:14:09 [INFO] lenient_byte_fuzzer: lenient_byte_fuzzer result: {'sources': 74, 'n_per_seed': 10, 'mutations_per_variant': 4, 'attempted': 740, 'kept': 0, 'rejected_weak_gate': 0, 'rejected_duplicate': 740, 'rejected_size': 0, 'output_dir': 'C:\\Users\\miaot\\Github\\BioTest\\compares\\ApplicationStudy\\E3M_medium\\results_4rep\\htsjdk_sam\\work\\seeds\\sam_rawfuzz'}
+03:14:09 [INFO] biotest: Phase E (E1-isolated): Rank 13 (SAM) kept 0 in C:\Users\miaot\Github\BioTest\compares\ApplicationStudy\E3M_medium\results_4rep\htsjdk_sam\work\seeds\sam_rawfuzz
+  Phase E: OK  (375ms, +0 corpus files: VCF struct=0, rawfuzz=0; SAM struct=0, 
+rawfuzz=0)
+
+
+────────────────────────────── Executive Summary ──────────────────────────────
+
+                                 Phase Results                                 
+┌──────────────┬──────────┬────────────┬──────────────────────────────────────┐
+│ Phase        │  Status  │   Duration │ Details                              │
+├──────────────┼──────────┼────────────┼──────────────────────────────────────┤
+│ A: Ingest    │   PASS   │        0ms │ 0 chunks                             │
+│ B: Mine MRs  │   PASS   │    11m 22s │ 0 enforced, 4 quarantine             │
+│ C: Execute   │   PASS   │      50.9s │ 45 tests, 0 bugs found               │
+│ E: Augment   │   PASS   │      375ms │ +0 corpus files (VCF: 0 struct + 0   │
+│              │          │            │ rawfuzz; SAM: 0 struct + 0 rawfuzz)  │
+└──────────────┴──────────┴────────────┴──────────────────────────────────────┘
+
+┌─────────────────────────────── Test Metrics ────────────────────────────────┐
+│                                                                             │
+│  Format Tested                      VCF v4.5                                │
+│  Format Tested                      SAM v1.6                                │
+│  Themes Tested                             7                                │
+│    ordering_invariance                                                      │
+│    semantics_preserving_perm…                                               │
+│    normalization_invariance                                                 │
+│    rejection_invariance                                                     │
+│    coordinate_indexing_invar…                                               │
+│    round_trip_invariance                                                    │
+│    api_query_invariance                                                     │
+│                                                                             │
+│  Seeds Used                              107                                │
+│  Variants Generated                       45                                │
+│  Runners                             htsjdk,                                │
+│                                   biopython,                                │
+│                                       pysam,                                │
+│                                       vcfpy,                                │
+│                                      htslib,                                │
+│                                    reference                                │
+│                                                                             │
+│  Total Tests                              45                                │
+│  Metamorphic Failures                     12                                │
+│  Differential Failures                     0                                │
+│  Crashes                                   0                                │
+│                                                                             │
+│  DET Rate                              26.7%                                │
+│  Bugs / DETs Found                         0                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+  Total Pipeline Duration:  12m 13s
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ALL CLEAR — No bugs detected across all parsers.                            │
+└─────────────────────────────────────────────────────────────────────────────┘

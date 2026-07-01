@@ -1,0 +1,457 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Shuffle meta-information lines preserves semantics",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "After shuffling all ##meta-information lines (keeping ##fileformat first), the SUT must produce identical canonical output (e.g., JSON representation) as before the transform. Per VCF v4.5 §1.2, meta-information lines can appear in any order except ##fileformat must be first.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, except that the fileformat meta-information line must be first.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Permute key-value order inside structured INFO/FORMAT/FILTER meta-lines",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_structured_info_or_format_or_filter"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "After reordering key=value pairs inside ##INFO=<...>, ##FORMAT=<...>, or ##FILTER=<...> lines, the SUT must produce identical canonical output. Per VCF v4.5 §1.6.2, the order of key-value pairs within structured header lines is not semantically significant.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Structured meta-information lines::p126",
+          "quote": "Structured meta-information lines are composed of key=value pairs separated by semicolons. The order of these pairs is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "Shuffle INFO field key-value pairs in data lines",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_info_field_with_multiple_keys"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "After shuffling the semicolon-separated key=value entries in the INFO column of data lines, the SUT must produce identical canonical output. The order of INFO sub-fields is not semantically meaningful.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO field::p145",
+          "quote": "INFO fields are encoded as semicolon-separated key=value pairs. The order of these pairs is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Permute sample column order is invariant",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_multiple_samples"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "After permuting the sample column order consistently across the header and all data lines, the SUT must produce identical canonical output when sample identity is tracked by column header, not position.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Sample columns::p158",
+          "quote": "The sample column order in the header defines the mapping of genotype data to samples. A parser must use the column header IDs, not column position, to identify samples.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly mandate that sample order is semantically irrelevant, but the column header IDs define the mapping, implying position is not semantically meaningful."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "After shuffling ##contig, ##INFO, ##FORMAT, ##FILTER dictionary entries and round-tripping through BCF, the SUT must produce identical canonical output. Per VCF v4.5 §6.2.1, BCF dictionary order is implementation-defined and parsers must re-index entries by ID, not position.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF2 dictionary encoding::p210",
+          "quote": "The order of dictionary entries in BCF is implementation-defined. Parsers must use the dictionary ID string to look up entries, not their positional index.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0258c3e904f0",
+      "mr_name": "VCF fileformat first line violation must be rejected",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "violate_fileformat_first_line"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a file where ##fileformat is not the first line; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "The first line in a VCF file must be a meta-information line starting with ##fileformat=VCFv4.5.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "752c1e307098",
+      "mr_name": "GT allele index out of bounds must be rejected",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count=1",
+        "format_has_gt"
+      ],
+      "transform_steps": [
+        "violate_gt_index_bounds"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a record where a GT allele index exceeds the number of ALT alleles; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::p126",
+          "quote": "Each allele index must be an integer between 0 and the number of alternate alleles in the ALT field, inclusive.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "978e560983f8",
+      "mr_name": "Missing mandatory fixed columns must be rejected",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "violate_required_fixed_columns"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a data line missing any of the 8 mandatory fixed columns (CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO); silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::p124",
+          "quote": "The first eight columns in a VCF record are mandatory: CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "963423e1bf3c",
+      "mr_name": "INFO Number=A cardinality violation must be rejected",
+      "scope": "VCF.record",
+      "preconditions": [
+        "header_has_info_number_a",
+        "alt_count=1"
+      ],
+      "transform_steps": [
+        "violate_info_number_a_cardinality"
+      ],
+      "oracle": "A compliant VCF parser MUST reject a record where an INFO field declared Number=A has a cardinality different from the number of ALT alleles; silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::p125",
+          "quote": "The Number of values in an INFO field must match the declared Number in the meta-information line.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6320bd43d214",
+      "mr_name": "BCF round-trip preserves variant representation",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "seed has at least one INFO or FORMAT field with typed values"
+      ],
+      "transform_steps": [
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "After VCF→BCF→VCF round-trip, the canonical variant representation (CHROM, POS, REF, ALT, and all INFO/FORMAT values) must be identical to the original. Per VCF v4.5 §6, BCF2 is a binary compressed equivalent of VCF; any difference exposes a codec bug in type encoding/decoding.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1292",
+          "quote": "[VCF v4.5 — BCF specification] Overall, the idea behind is BCF2 is simple. BCF2 is a binary, compressed equivalent of VCF that can be indexed with tabix and can",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "21172f02daed",
+      "mr_name": "Multi-allelic split preserves variant semantics",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2",
+        "seed has at least one record with 2+ comma-separated ALT alleles"
+      ],
+      "transform_steps": [
+        "split_multi_allelic"
+      ],
+      "oracle": "After splitting a multi-ALT record into one record per ALT (with synchronized Number=A INFO/FORMAT arrays and remapped GT indices), the set of variant alleles represented must be equivalent to the original multi-ALT form. Per Tan, Abecasis, Kang (2015) and bcftools norm --multiallelics, the same variant set is represented either way.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5179a1122537",
+      "mr_name": "Left-alignment of indels in homopolymer runs preserves variant identity",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)!=len(ALT)",
+        "REF[0]==REF[-1]",
+        "pos>=2",
+        "seed has an indel in a homopolymer context"
+      ],
+      "transform_steps": [
+        "left_align_indel"
+      ],
+      "oracle": "After left-shifting an indel in a homopolymer run (decrementing POS by 1, preserving first base of REF/ALT), the canonical variant representation must be recognized as equivalent to the original. Per Tan, Abecasis, Kang (2015) §2.1, left-aligned and parsimonious representation is the canonical form.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "Left-alignment without a reference FASTA is conservative and only triggers when REF[0]==REF[-1]; full left-alignment may require reference context per Tan 2015"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4af3f36f15b2",
+      "mr_name": "Common affix trimming produces equivalent canonical variant",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count==1",
+        "len(REF)>=2 OR len(ALT)>=2",
+        "REF[0]==ALT[0] OR REF[-1]==ALT[-1]",
+        "seed has a record where REF and ALT share a common prefix or suffix base"
+      ],
+      "transform_steps": [
+        "trim_common_affixes"
+      ],
+      "oracle": "After trimming shared prefix/suffix bases between REF and ALT (adjusting POS accordingly), the resulting parsimonious representation must be recognized as the same variant as the original. Per Tan, Abecasis, Kang (2015), canonical form is parsimonious (no shared prefix/suffix) and left-aligned.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4e6946a02a58",
+      "mr_name": "BCF header type encoding preserves INFO field cardinality and values",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary",
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "After permuting the order of ##INFO/##FORMAT/##contig dictionary entries in the header and round-tripping through BCF, the canonical output must be identical to the original. Per VCF v4.5 §6.2.1, dictionary orderings are implementation-defined; a parser that treats index i as authoritative without consulting the header produces divergent output. The BCF2 header must fully type all INFO and GENOTYPE fields, and the type-specific encoding must survive dictionary reordering.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1301",
+          "quote": "[VCF v4.5 — BCF specification] Because the type is encoded directly in the header, the recommended extension for BCF2 formatted files is .bcf. BCF2 supports enc",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4078bb524892",
+      "mr_name": "BCF round-trip preserves POS for records with multi-allelic sites",
+      "scope": "VCF.record",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "alt_count>=2"
+      ],
+      "transform_steps": [
+        "split_multi_allelic",
+        "vcf_bcf_round_trip"
+      ],
+      "oracle": "Splitting a multi-ALT record into one record per ALT, then round-tripping through BCF, must preserve the original POS coordinate for each resulting record. The split form represents the same variant set per Tan 2015, and BCF2 encoding must not alter 1-based POS coordinates during binary serialization/deserialization.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1292",
+          "quote": "Overall, the idea behind is BCF2 is simple. BCF2 is a binary, compressed equivalent of VCF that can be indexed with tabix and can",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Overall file organization::p1396",
+          "quote": "[VCF v4.5 — Overall file organization] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in r",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9e3642fe5315",
+      "mr_name": "Writer round-trip preserves POS coordinate values",
+      "scope": "VCF.record",
+      "preconditions": [
+        "primary_sut_has_writer",
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After parsing and re-serializing the VCF via the primary SUT's writer API, the POS column values in every data record must be identical to the original. Per Chen, Kuo, Liu, Tse (2018) §3.2, parse(write(parse(x))) must deep-equal parse(x); any diff in POS exposes a coordinate encoding bug in the SUT's writer.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1292",
+          "quote": "Overall, the idea behind is BCF2 is simple. BCF2 is a binary, compressed equivalent of VCF that can be indexed with tabix and can",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9ae0983745bc",
+      "mr_name": "Sample column permutation preserves POS coordinates",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_data_row"
+      ],
+      "transform_steps": [
+        "permute_sample_columns",
+        "sut_write_roundtrip"
+      ],
+      "oracle": "After permuting sample columns and round-tripping through the SUT writer, the POS column values must remain unchanged. Sample column order is a presentation detail; coordinate integrity (1-based POS) must be invariant under sample reordering.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1292",
+          "quote": "Overall, the idea behind is BCF2 is simple. BCF2 is a binary, compressed equivalent of VCF that can be indexed with tabix and can",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that sample column permutation must preserve POS; this is derived from the general principle that sample metadata is orthogonal to variant coordinates."
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT permutation preserves query results for allele-count and structural-variant methods",
+      "scope": "VCF.record",
+      "preconditions": [
+        "alt_count>=2"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles with corresponding GT remapping and Number=A/R field reordering, public query methods (getNAlleles, isStructural, getAlleleCount, getContig, getStart, getEnd) return identical values because the variant semantics are preserved under allele reordering.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF specification::p1297",
+          "quote": "[VCF v4.5 — BCF specification] * All INFO and GENOTYPE fields must be fully typed in the BCF2 header to enable type-specific encoding of the fields in records.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "The spec does not explicitly state that ALT ordering is semantically irrelevant, though bcftools norm treats allele permutations as equivalent"
+      ],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 18,
+    "total": 18
+  }
+}

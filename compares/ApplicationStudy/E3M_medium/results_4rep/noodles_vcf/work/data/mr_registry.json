@@ -1,0 +1,49 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "2af5800ea12a",
+      "mr_name": "ALT allele permutation with consistent remapping of dependent fields",
+      "scope": "VCF.record",
+      "preconditions": [
+        "record has at least 2 ALT alleles (comma-separated)",
+        "FORMAT contains GT field",
+        "at least one INFO or FORMAT field with Number=A, Number=R, or Number=G"
+      ],
+      "transform_steps": [
+        "choose_permutation",
+        "permute_ALT",
+        "remap_GT",
+        "permute_Number_A_R_fields"
+      ],
+      "oracle": "After permuting ALT alleles and remapping all dependent fields (GT allele indices, Number=A values per-ALT, Number=R values REF+ALT, Number=G genotype values), the resulting VCF record must represent the same set of variant alleles and produce identical biological interpretation. A spec-compliant parser must treat the original and permuted records as semantically equivalent.",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Fixed fields::pN",
+          "quote": "ALT: alternate base(s); comma-separated list of alternate non-reference alleles",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::Genotype fields::pN",
+          "quote": "GT: genotype, encoded as allele values separated by either of / or |, e.g. 0/1 or 1|0. The allele values are 0 for the reference allele (what is in the REF field), 1 for the first allele in ALT, 2 for the second allele in ALT, etc.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "VCFv4.5.tex::INFO fields::pN",
+          "quote": "Number=A means one value for each alternate allele; Number=R means one value for each allele including the reference; Number=G means one value for each possible genotype",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 1,
+    "total": 1
+  }
+}

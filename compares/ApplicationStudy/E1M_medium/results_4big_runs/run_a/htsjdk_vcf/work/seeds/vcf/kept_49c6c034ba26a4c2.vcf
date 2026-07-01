@@ -1,0 +1,54 @@
+##fileformat=VCFv4.3
+##INFO=<Type=Float,Description="Allele Frequency",ID=AF,Number=A>
+##INFO=<ID=DP,Description="Total Depth",Type=Integer,Number=1>
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele Count">
+##INFO=<Description="Total Allele Count",Type=Integer,ID=AN,Number=1>
+##INFO=<ID=NS,Description="Number of Samples",Type=Integer,Number=1>
+##INFO=<Description="End position of structural variant",Number=1,Type=Integer,ID=END>
+##INFO=<Description="Type of structural variant",Number=1,Type=String,ID=SVTYPE>
+##INFO=<Type=Integer,Description="Length of structural variant",Number=1,ID=SVLEN>
+##INFO=<Description="Confidence interval around POS",Number=2,ID=CIPOS,Type=Integer>
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END">
+##INFO=<ID=HOMLEN,Type=Integer,Description="Length of base pair identical micro-homology",Number=1>
+##INFO=<Type=String,Number=1,Description="Sequence of base pair identical micro-homology",ID=HOMSEQ>
+##INFO=<Description="ID of the assembled alternate allele",ID=BKPTID,Number=.,Type=String>
+##INFO=<Type=String,ID=MEINFO,Description="Mobile element info",Number=4>
+##INFO=<ID=METRANS,Type=String,Description="Mobile element transduction info",Number=4>
+##INFO=<ID=DGVID,Type=String,Number=1,Description="ID of the assembled alternate allele">
+##INFO=<ID=DBVARID,Type=String,Number=1,Description="ID of the assembled alternate allele">
+##INFO=<ID=DBRIPID,Number=1,Type=String,Description="ID of the assembled alternate allele">
+##INFO=<Number=.,ID=MATEID,Type=String,Description="ID of mate breakend">
+##INFO=<ID=PARID,Type=String,Description="ID of partner breakend",Number=1>
+##INFO=<Type=String,Description="ID of event",ID=EVENT,Number=1>
+##INFO=<Number=2,ID=CILEN,Type=Integer,Description="Confidence interval around SVLEN">
+##INFO=<Description="Adjusted depth",Type=Integer,ID=DPADJ,Number=.>
+##INFO=<Description="Copy number",Number=1,Type=Integer,ID=CN>
+##INFO=<Description="Adjusted copy number",Number=.,ID=CNADJ,Type=Integer>
+##INFO=<ID=CICN,Description="Confidence interval around copy number",Type=Integer,Number=2>
+##INFO=<Type=Integer,ID=CICNADJ,Description="Confidence interval around adjusted copy number",Number=.>
+##FORMAT=<Description="Genotype",Type=String,ID=GT,Number=1>
+##FORMAT=<Number=1,ID=GQ,Description="Genotype Quality",Type=Integer>
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##FORMAT=<Description="Allelic depths",ID=AD,Type=Integer,Number=R>
+##FORMAT=<Type=Integer,Number=G,ID=PL,Description="Phred-scaled genotype likelihoods">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<Description="Quality below 10",ID=q10>
+##FILTER=<Description="Less than 50% of samples have data",ID=s50>
+##contig=<ID=chr1>
+##contig=<ID=chr2>
+##contig=<ID=chr3>
+##contig=<ID=chr4>
+##contig=<ID=chr5>
+##contig=<ID=chrX>
+##contig=<ID=chrY>
+##contig=<ID=chrM>
+##assembly=GRCh38
+##pedigree=<Mother=Sample3,Father=Sample2,ID=Sample1>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1	Sample2	Sample3
+chrY	585017	rs476247;rs343977;rs164540	TGC	<INS>	10.57	PASS	AF=0.8726;DP=326;AC=7;AN=79;END=592018;SVTYPE=DUP;SVLEN=-8883	GT:GQ:DP:AD:PL	0/0:37:58:63,20:244,708,345	0/0:17:47:38,52:615,524,990	0/0:4:13:37,26:746,992,961
+chr4	132860	rs899185;rs122901;rs996817	AAGACTT	TCA,G,GGAC,TAT	36.69	s50	AF=0.5261;DP=674;AC=1;AN=44;HOMLEN=10;HOMSEQ=TCGATT	GT:GQ:DP:AD:PL	1/1:76:28:95,21:232,890,997	0/1:73:69:1,99:802,368,328	0/0:89:54:2,61:912,192,716
+chr4	917976	.	GTCCACGACT	<CNV>	35.10	q10	AF=0.2682;DP=934;AC=5;AN=89;END=919900	GT:GQ:DP:AD:PL	0/1:20:6:24,81:572,708,950	1/1:3:79:47,82:974,450,243	0/0:90:12:9,3:633,370,645
+chr5	208555	rs193332;rs687146;rs621153	AATC	T	.	PASS	AF=0.9183;DP=374;AC=1;AN=33	GT:GQ:DP:AD:PL	1/1:10:47:62,89:337,882,597	0/1:79:31:90,45:589,447,948	0/0:46:40:74,67:998,64,457
+chr2	665611	rs710375	CTT	CCA,AGGT	67.39	PASS	AF=0.8789;DP=630;AC=6;AN=16	GT:GQ:DP:AD:PL	0/0:5:2:15,84:921,126,281	./.:0:42:16,32:303,804,687	0/0:33:48:65,74:387,748,207
+chr3	358076	rs415683	CA	AT	89.93	PASS	AF=0.8187;DP=730;AC=6;AN=24;NS=73	GT:GQ:DP:AD:PL	0/1:81:50:57,2:864,138,268	0/0:26:45:23,23:229,494,275	./.:20:25:12,54:407,474,191
+chr1	797581	rs937420;rs864151;rs821904	GCA	C	64.11	q10	AF=0.6931;DP=526;AC=1;AN=60;EVENT=EV35	GT:GQ:DP:AD:PL	0/0:23:31:18,21:546,304,694	1/1:76:56:48,65:59,481,217	0/1:66:45:87,66:221,988,979

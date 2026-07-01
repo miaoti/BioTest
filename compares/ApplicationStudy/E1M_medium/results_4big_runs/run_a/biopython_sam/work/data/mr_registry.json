@@ -1,0 +1,782 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "44dda30be8fa",
+      "mr_name": "SAM @SQ record subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "27f46a752f05",
+      "mr_name": "SAM @RG record subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_rg_line"
+      ],
+      "transform_steps": [
+        "shuffle_rg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "e9f5e0fe0e71",
+      "mr_name": "SAM @PG record subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "04b5bce80e00",
+      "mr_name": "SAM @HD record subtag order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2967d6eb3016",
+      "mr_name": "SAM @CO comment line order invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "97a5283cec91",
+      "mr_name": "SAM alignment optional tag field order invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "79d81ed64ecf",
+      "mr_name": "SAM @SQ header record order invariance with query roundtrip",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line",
+        "primary_sut_has_query_methods"
+      ],
+      "transform_steps": [
+        "reorder_header_records",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "shape",
+        "indices"
+      ]
+    },
+    {
+      "mr_id": "a6d5fda42b2b",
+      "mr_name": "SAM header @SQ line reordering preserves alignment semantics",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "reorder_header_records"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P sorts @SQ lines by SN tag",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "SAM spec does not mandate @SQ line ordering, but some tools may assume a specific order"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "6fa3de360685",
+      "mr_name": "SAM CIGAR zero-length op removal preserves alignment",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P normalizes CIGAR by removing zero-length ops and merging adjacent same-type ops",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7690cdb23c3e",
+      "mr_name": "SAM CIGAR split-or-merge adjacent ops preserves alignment",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P normalizes CIGAR by merging adjacent identical ops",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "ba8addc30176",
+      "mr_name": "SAM RNEXT '=' alias canonicalization preserves pairing semantics",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P canonicalizes RNEXT '=' to explicit RNAME when RNEXT==RNAME",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "319f95e31472",
+      "mr_name": "Reject CIGAR/SEQ length mismatch",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar",
+        "has_seq"
+      ],
+      "transform_steps": [
+        "violate_cigar_seq_length"
+      ],
+      "oracle": "Every SUT must REJECT or CRASH on the malformed record where CIGAR query-consuming length does not equal len(SEQ). Silent acceptance or silent record-drop is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "99d69275e18a",
+      "mr_name": "Reject flag-bit exclusivity violation (mapped read with unmapped flag)",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_mapped_read"
+      ],
+      "transform_steps": [
+        "violate_flag_bit_exclusivity"
+      ],
+      "oracle": "Every SUT must REJECT or CRASH when FLAG 0x4 (segment unmapped) is set on a record with RNAME != '*' and POS > 0. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "fb51ee08fb7d",
+      "mr_name": "Reject illegal optional tag type character",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "violate_optional_tag_type_character"
+      ],
+      "oracle": "Every SUT must REJECT or CRASH when an optional tag's type character is not one of A, i, f, Z, H, B. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "705c9755b48c",
+      "mr_name": "Reject TLEN sign consistency violation in paired reads",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_nonzero_tlen"
+      ],
+      "transform_steps": [
+        "violate_tlen_sign_consistency"
+      ],
+      "oracle": "Every SUT must REJECT or CRASH when paired-end reads of the same template have same-signed TLEN values instead of opposite-signed. Silent acceptance is a conformance bug.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "3e720e196184",
+      "mr_name": "POS coordinate shift with SQ LN adjustment preserves alignment validity",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_sq_with_ln"
+      ],
+      "transform_steps": [
+        "pos_shift_with_sq_ln_bound_check"
+      ],
+      "oracle": "After shifting all POS values by +shift and increasing corresponding @SQ LN by +shift, the parsed alignment records must have identical semantics: same RNAME, same CIGAR, same SEQ, same MAPQ, same FLAG bits. The number of records and their field values (except POS) must be preserved. POS must be increased by exactly shift for every mapped record.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "[SAM v1 — The SAM Format Specification] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of t",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "0f61b7b3a065",
+      "mr_name": "SAM-BAM round-trip preserves coordinate integrity",
+      "scope": "SAM.record",
+      "preconditions": [
+        "samtools_available"
+      ],
+      "transform_steps": [
+        "sam_bam_round_trip"
+      ],
+      "oracle": "After SAM-to-BAM-to-SAM round-trip, every alignment record's POS, RNAME, CIGAR, and MAPQ must be identical to the original. The @SQ header lines (SN, LN) must be preserved. Coordinate-based semantics must be invariant under binary encoding/decoding.",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The BAM Format Specification::p187",
+          "quote": "[SAM v1 — The BAM Format Specification] tabular|l|l|l|p8.15cm|l|r| 1-6 3|c| Field & 1c| Description & 1c| Type & 1c| Value \\1-6 3|l| magic & BAM magic st",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "SAMv1.tex::Indexing BAM::p262",
+          "quote": "[SAM v1 — Indexing BAM] tabular|l|l|l|l|l|l|r| 1-7 4|c| Field & 1c| Description & 1c| Type & 1c| Value \\1-7 4|l| magic & Magic string &  char[4] &  BAI92",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "BAM encoding may canonicalize certain CIGAR operations (e.g., merging adjacent identical ops) which could cause minor differences in CIGAR representation while preserving coordinate semantics"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "05df7439ad51",
+      "mr_name": "SAM header @HD VN version bump round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_vn"
+      ],
+      "transform_steps": [
+        "bump_hd_vn_minor",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: the @HD VN field change between 1.5 and 1.6 is semantics-preserving for files not using 1.6-only features, so the round-trip through BAM codec must produce identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "[SAM v1 — The header section] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "[SAM v1 — The SAM Format Specification] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of t",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9db2aacc1558",
+      "mr_name": "SAM header @HD subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.3 does not order TAG:VALUE pairs inside @HD, so shuffling them and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "[SAM v1 — The header section] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        },
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "4cf81a615e76",
+      "mr_name": "SAM @SQ record subtag shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.3 leaves @SQ subtag ordering unconstrained, so shuffling SN/LN/M5/UR/AS/DS/SP fields and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5beb106f86a8",
+      "mr_name": "SAM @CO comment line shuffle round-trip invariance",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.3 declares @CO to be free-text comments with no ordering semantics, so shuffling them and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "00207e6facc0",
+      "mr_name": "SAM RNEXT equals alias toggle round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "canonicalize_rnext_equals_alias",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.4.7 explicitly allows '=' as a synonym for 'same as RNAME', so toggling between explicit RNAME and '=' alias and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "[SAM v1 — The header section] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "5e368f4c73cc",
+      "mr_name": "SAM optional tag field permutation round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAM optional TAG:TYPE:VALUE fields (columns 12+) have no ordering semantics, so permuting them and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "2530f98aca23",
+      "mr_name": "SAM CIGAR zero-length op removal round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "cigar_zero_length_op_removal",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.4.6 doesn't forbid 0-length CIGAR ops but the SAM Recommended Practice says adjacent CIGAR operations should be different; removing zero-length ops and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "SAMv1 §1.4.6 does not explicitly forbid zero-length CIGAR ops, only the Recommended Practice advises against adjacent identical ops"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "998ade7274d1",
+      "mr_name": "SAM SEQ case normalization round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [],
+      "transform_steps": [
+        "normalize_seq_case",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: SAMv1 §1.4.10 states 'No assumptions can be made on the letter cases' of SEQ, so uppercasing SEQ and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "[SAM v1 — The header section] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "c8abffb1ecbd",
+      "mr_name": "SAM split or merge adjacent CIGAR ops round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_cigar"
+      ],
+      "transform_steps": [
+        "split_or_merge_adjacent_cigar_ops",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: splitting one CIGAR op into two identical ops or merging adjacent identical ops preserves total query-consumed length, and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "[SAM v1 — The header section] The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "SAMv1 §1.4.6 does not explicitly forbid adjacent identical CIGAR ops, only the Recommended Practice advises against them"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "8c5e32844942",
+      "mr_name": "SAM unmapped record MAPQ normalization round-trip invariance",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_unmapped_reads"
+      ],
+      "transform_steps": [
+        "normalize_unmapped_record_fields",
+        "sam_bam_round_trip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) after canonical normalization: when FLAG bit 0x4 (unmapped) is set, MAPQ should be 255 per SAMv1 spec; normalizing it and round-tripping through BAM must yield identical canonical content",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "[SAM v1 — The header section] 2|l @HD & File-level metadata. Optional. If present, there must be only one  @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [
+        "SAMv1 §1.4 says 'no assumptions can be made' about unmapped record fields, but MAPQ=255 is the recommended sentinel"
+      ],
+      "query_methods": []
+    },
+    {
+      "mr_id": "7bbdedead457",
+      "mr_name": "API query invariance under @HD subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_hd_line"
+      ],
+      "transform_steps": [
+        "shuffle_hd_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles @HD subtag order",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p86",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "aligned",
+        "counts"
+      ]
+    },
+    {
+      "mr_id": "a4eeeffccfb1",
+      "mr_name": "API query invariance under @SQ record subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_sq_line"
+      ],
+      "transform_steps": [
+        "shuffle_sq_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles @SQ subtag order",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "aligned",
+        "counts"
+      ]
+    },
+    {
+      "mr_id": "c109629a39d9",
+      "mr_name": "API query invariance under @CO comment shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_co_lines"
+      ],
+      "transform_steps": [
+        "shuffle_co_comments",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles @CO comment lines",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of t",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "aligned",
+        "counts"
+      ]
+    },
+    {
+      "mr_id": "ce4ded5e9811",
+      "mr_name": "API query invariance under optional tag field permutation",
+      "scope": "SAM.record",
+      "preconditions": [
+        "has_optional_tag"
+      ],
+      "transform_steps": [
+        "permute_optional_tag_fields",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T permutes optional tag fields",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The SAM Format Specification::p29",
+          "quote": "@HD & File-level metadata. Optional. If present, there must be only one @HD line and it must be the first line of t",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "aligned",
+        "counts"
+      ]
+    },
+    {
+      "mr_id": "5a747eb910c3",
+      "mr_name": "API query invariance under @PG record subtag shuffling",
+      "scope": "SAM.header",
+      "preconditions": [
+        "has_pg_line"
+      ],
+      "transform_steps": [
+        "shuffle_pg_record_subtags",
+        "query_method_roundtrip"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) for each listed method, where T shuffles @PG subtag order",
+      "evidence": [
+        {
+          "chunk_id": "SAMv1.tex::The header section::p84",
+          "quote": "The following table describes the header record types that may be used and their predefined tags. Tags listed with `*' are require",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": [
+        "length",
+        "aligned",
+        "counts"
+      ]
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 32,
+    "total": 32
+  }
+}

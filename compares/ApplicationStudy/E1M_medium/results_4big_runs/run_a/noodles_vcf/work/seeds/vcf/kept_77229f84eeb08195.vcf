@@ -1,0 +1,25 @@
+##fileDate=20231001
+##fileformat=VCFv4.3
+##source=testGenerator
+##reference=file:///ref/hg38.fa
+##contig=<length=248956422,ID=chr1>
+##contig=<length=242193529,ID=chr2>
+##contig=<ID=chrX,length=156040895>
+##ALT=<Description="Deletion",ID=DEL>
+##ALT=<Description="Duplication",ID=DUP>
+##ALT=<Description="Inversion",ID=INV>
+##ALT=<Description="Copy number variation",ID=CNV>
+##INFO=<Type=String,Description="Type of structural variant",Number=1,ID=SVTYPE>
+##INFO=<Description="Difference in length between REF and ALT alleles",Number=1,ID=SVLEN,Type=Integer>
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=CIPOS,Type=Integer,Description="Confidence interval around POS",Number=2>
+##INFO=<Type=Integer,Number=2,Description="Confidence interval around END",ID=CIEND>
+##INFO=<Description="Imprecise structural variation",ID=IMPRECISE,Number=0,Type=Flag>
+##INFO=<Type=String,ID=MATEID,Description="Mate record ID for breakend",Number=.>
+##FILTER=<Description="All filters passed",ID=PASS>
+##FORMAT=<ID=GT,Type=String,Number=1,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	100000	del1	A	<DEL>	50	PASS	SVTYPE=DEL;SVLEN=-500;END=100500;IMPRECISE	GT	0/1
+chr2	200000	dup1	T	<DUP>	60	PASS	SVTYPE=DUP;SVLEN=300;END=200300;CIPOS=-10,10;CIEND=-5,5	GT	1/1
+chrX	300000	inv1	G	<INV>	70	PASS	SVTYPE=INV;END=300800;IMPRECISE	GT	0/0
+chr1	400000	cnv1	C	<CNV>	40	PASS	SVTYPE=CNV;SVLEN=1000;END=401000	GT	./.

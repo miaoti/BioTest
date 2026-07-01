@@ -1,0 +1,122 @@
+{
+  "enforced": [],
+  "quarantine": [
+    {
+      "mr_id": "ffbe4a62d130",
+      "mr_name": "Meta-information lines order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "has_two_meta_lines"
+      ],
+      "transform_steps": [
+        "shuffle_meta_lines"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts all meta-information lines as a set (ignoring order), and the data records are identical",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Meta-information lines::p122",
+          "quote": "Meta-information lines can appear in any order, with the exception that the ##fileformat line must be the first line of the file.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "bc124d1e4573",
+      "mr_name": "Structured header key-value pair order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "header_has_structured_info_or_format_or_filter"
+      ],
+      "transform_steps": [
+        "permute_structured_kv_order"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts the structured header definitions as sets of key=value pairs, ignoring their order within each structured line",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Structured meta-information lines::p126",
+          "quote": "The order of key=value pairs within a structured meta-information line is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "31e4b85ca55b",
+      "mr_name": "INFO field key-value order invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "info_has_multiple_fields"
+      ],
+      "transform_steps": [
+        "shuffle_info_field_kv"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts INFO field values as a key-value map, ignoring the order of semicolon-separated entries",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::INFO field::p145",
+          "quote": "INFO fields are encoded as semicolon-separated key=value pairs; the order of these pairs is not significant.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "f335b8c5d509",
+      "mr_name": "Sample column permutation invariance",
+      "scope": "VCF.record",
+      "preconditions": [
+        "has_multiple_samples"
+      ],
+      "transform_steps": [
+        "permute_sample_columns"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts sample genotype data as a set of (sample_id, genotype) pairs, ignoring column ordering",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::Sample columns::p158",
+          "quote": "The order of sample columns in the VCF file is not semantically meaningful; each sample is identified by its column header.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    },
+    {
+      "mr_id": "9746c6e5c109",
+      "mr_name": "BCF header dictionary order invariance",
+      "scope": "VCF.header",
+      "preconditions": [
+        "bcf_codec_available",
+        "pysam_runtime_reachable",
+        "header_has_multiple_info_or_format_entries"
+      ],
+      "transform_steps": [
+        "permute_bcf_header_dictionary"
+      ],
+      "oracle": "P(parse(x)) == P(parse(T(x))) where P extracts the canonical JSON representation; BCF codec re-indexes dictionary entries so order is irrelevant",
+      "evidence": [
+        {
+          "chunk_id": "VCFv4.5.tex::BCF dictionary order::p210",
+          "quote": "The order of dictionary entries in the BCF header is implementation-defined; parsers must use the dictionary index to resolve types, not the declaration order.",
+          "rule_severity": "ADVISORY",
+          "section_id": "<E1-naive>"
+        }
+      ],
+      "ambiguity_flags": [],
+      "query_methods": []
+    }
+  ],
+  "summary": {
+    "enforced_count": 0,
+    "quarantine_count": 5,
+    "total": 5
+  }
+}

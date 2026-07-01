@@ -1,0 +1,11 @@
+##fileformat=VCFv4.3
+##ALT=<ID=BND,Description="Breakend">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=MATEID,Number=1,Type=String,Description="ID of mate breakend">
+##contig=<ID=chr1>
+##contig=<ID=chr2>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	5000	BND1	A	A]chr2:3000]	60	PASS	SVTYPE=BND;MATEID=BND2
+chr2	3000	BND2	T	T[chr1:5000[	60	PASS	SVTYPE=BND;MATEID=BND1
+chr1	7000	BND3	C	]chr2:4000]C	55	PASS	SVTYPE=BND;MATEID=BND4
+chr2	4000	BND4	G	G[chr1:7000[	55	PASS	SVTYPE=BND;MATEID=BND3

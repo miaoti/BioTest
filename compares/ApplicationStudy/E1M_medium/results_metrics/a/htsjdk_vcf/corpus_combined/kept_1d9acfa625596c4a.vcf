@@ -1,0 +1,18 @@
+##fileformat=VCFv4.3
+##FILTER=<ID=PASS,Description="All filters passed">
+##contig=<ID=chr1,length=248956422>
+##contig=<ID=chr2,length=242193529>
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variant">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##fileDate=20231001
+##source=testGenerator
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+chr1	50000	DEL1	A	<DEL>	100	PASS	SVTYPE=DEL;SVLEN=-200;END=50200;IMPRECISE	GT	2/0
+chr2	100000	DUP1	T	<DUP>	200	PASS	SVTYPE=DUP;SVLEN=150;END=100150	GT	1/1
+chr1	75000	INV1	G	<INV>	150	PASS	SVTYPE=INV;SVLEN=500;END=75500	GT	0/0
